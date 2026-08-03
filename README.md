@@ -1,6 +1,8 @@
-# Buildy
+# NewsFeed
 
 Localized news summarization monorepo. MVP: **Expo (React Native + Web)** + .NET 8 API + Postgres. No auth.
+
+> **Name:** `NewsFeed` is a placeholder — find-and-replace when the real product name is decided.
 
 ## Layout
 
@@ -16,6 +18,8 @@ docs/PRD.md           Product requirements (paste content here)
 ```
 
 One client codebase ships the Cloudflare Pages web/PWA via React Native Web and later native binaries — see `docs/adr/003-expo-universal-client.md`.
+
+UI is neutral black text on white (no branding/accents) so theming can change later without a rebuild.
 
 ## Prerequisites
 
@@ -35,7 +39,7 @@ cp apps/app/.env.example apps/app/.env
 docker compose up -d postgres
 
 # 3. API
-dotnet run --project apps/api/Buildy.Api.csproj
+dotnet run --project apps/api/NewsFeed.Api.csproj
 
 # 4. App (web in browser — primary MVP path)
 pnpm install
@@ -46,7 +50,7 @@ pnpm dev:web
 - API health: http://localhost:8080/api/health
 - OpenAPI: http://localhost:8080/openapi/v1.json
 
-Native later: `pnpm --filter @buildy/app ios` / `android` (same app).
+Native later: `pnpm --filter @newsfeed/app ios` / `android` (same app).
 
 ## Environments
 
@@ -61,7 +65,7 @@ Never point local/staging tools at production data.
 ## Shared types (OpenAPI → TypeScript)
 
 ```bash
-pnpm --filter @buildy/shared-types fetch-openapi
+pnpm --filter @newsfeed/shared-types fetch-openapi
 pnpm generate:types
 ```
 
@@ -70,7 +74,7 @@ Commit OpenAPI snapshot + generated types in the **same PR** as API contract cha
 ## Tests
 
 ```bash
-dotnet test Buildy.sln
+dotnet test NewsFeed.sln
 pnpm test:app
 pnpm build:web   # Expo static export used by Cloudflare Pages
 ```
@@ -88,3 +92,4 @@ Secrets: `RAILWAY_*`, `CLOUDFLARE_*`, var `EXPO_PUBLIC_API_BASE_URL`.
 
 - No login / authentication (see `docs/adr/002-no-auth-mvp.md`)
 - No separate Vite web app — web is the Expo export
+- No custom branding / accent colors — B&W UI only until name/theme are finalized

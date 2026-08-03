@@ -9,7 +9,7 @@
   },
   "codeGenerators": {
     "openApiToTypeScriptClient": {
-      "className": "BuildyApiClient",
+      "className": "NewsFeedApiClient",
       "moduleName": "",
       "namespace": "",
       "typeScriptVersion": 4.3,

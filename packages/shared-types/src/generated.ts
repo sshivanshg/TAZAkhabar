@@ -9,11 +9,37 @@
 
 
 
+export interface ArticleResponse {
+    id?: number;
+    cityId?: number;
+    headline?: string | undefined;
+    summary?: string | undefined;
+    sourceName?: string | undefined;
+    sourceUrl?: string | undefined;
+    publishedAt?: string;
+    category?: string | undefined;
+    imageUrl?: string | undefined;
+}
+
+export interface CityResponse {
+    id?: number;
+    name?: string | undefined;
+    state?: string | undefined;
+    slug?: string | undefined;
+}
+
 export interface HealthResponse {
     status?: string | undefined;
     service?: string | undefined;
     timestampUtc?: string;
     database?: string | undefined;
+}
+
+export interface PagedArticlesResponse {
+    items?: ArticleResponse[] | undefined;
+    total?: number;
+    offset?: number;
+    limit?: number;
 }
 
 export interface ProblemDetails {

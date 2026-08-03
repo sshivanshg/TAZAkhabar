@@ -1,5 +1,5 @@
 {
-  "name": "@buildy/shared-types",
+  "name": "@newsfeed/shared-types",
   "version": "0.1.0",
   "private": true,
   "type": "module",

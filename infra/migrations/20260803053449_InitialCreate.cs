@@ -1,8 +1,8 @@
-﻿using Microsoft.EntityFrameworkCore.Migrations;
+using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-namespace Buildy.Api.Migrations
+namespace NewsFeed.Api.Migrations
 {
     /// <inheritdoc />
     public partial class InitialCreate : Migration

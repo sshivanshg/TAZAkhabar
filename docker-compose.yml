@@ -1,17 +1,17 @@
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: buildy-postgres
+    container_name: newsfeed-postgres
     environment:
-      POSTGRES_DB: buildy
-      POSTGRES_USER: buildy
-      POSTGRES_PASSWORD: buildy_dev_password
+      POSTGRES_DB: newsfeed
+      POSTGRES_USER: newsfeed
+      POSTGRES_PASSWORD: newsfeed_dev_password
     ports:
       - "5432:5432"
     volumes:
-      - buildy_pgdata:/var/lib/postgresql/data
+      - newsfeed_pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U buildy -d buildy"]
+      test: ["CMD-SHELL", "pg_isready -U newsfeed -d newsfeed"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -20,13 +20,13 @@ services:
     build:
       context: .
       dockerfile: infra/docker/Dockerfile.api
-    container_name: buildy-api
+    container_name: newsfeed-api
     env_file:
       - .env.example
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://+:8080
-      ConnectionStrings__Database: Host=postgres;Port=5432;Database=buildy;Username=buildy;Password=buildy_dev_password
+      ConnectionStrings__Database: Host=postgres;Port=5432;Database=newsfeed;Username=newsfeed;Password=newsfeed_dev_password
       Cors__AllowedOrigins__0: http://localhost:8081
       Cors__AllowedOrigins__1: http://127.0.0.1:8081
       Cors__AllowedOrigins__2: http://localhost:19006
@@ -38,4 +38,4 @@ services:
         condition: service_healthy
 
 volumes:
-  buildy_pgdata:
+  newsfeed_pgdata:

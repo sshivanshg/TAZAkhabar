@@ -5,8 +5,8 @@
  *
  * Workflow:
  * 1. Start the API locally (or use CI artifact)
- * 2. pnpm --filter @buildy/shared-types fetch-openapi
- * 3. pnpm --filter @buildy/shared-types generate
+ * 2. pnpm --filter @newsfeed/shared-types fetch-openapi
+ * 3. pnpm --filter @newsfeed/shared-types generate
  * 4. Commit openapi/openapi.json + src/generated.ts in the same PR as API contract changes
  */
 import { spawnSync } from 'node:child_process'
@@ -21,7 +21,7 @@ const nswagConfig = path.join(packageRoot, 'nswag.json')
 
 if (!existsSync(openapiPath)) {
   console.error(
-    `Missing ${openapiPath}. Run: pnpm --filter @buildy/shared-types fetch-openapi`,
+    `Missing ${openapiPath}. Run: pnpm --filter @newsfeed/shared-types fetch-openapi`,
   )
   process.exit(1)
 }

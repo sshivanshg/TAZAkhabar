@@ -1,7 +1,8 @@
 using System.Threading.RateLimiting;
-using Buildy.Api.Data;
-using Buildy.Api.Dtos;
-using Buildy.Api.Options;
+using NewsFeed.Api.Data;
+using NewsFeed.Api.Dtos;
+using NewsFeed.Api.Endpoints;
+using NewsFeed.Api.Options;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
@@ -20,7 +21,8 @@ try
         .ReadFrom.Configuration(context.Configuration)
         .ReadFrom.Services(services)
         .Enrich.FromLogContext()
-        .WriteTo.Console());
+        .WriteTo.Console(),
+        preserveStaticLogger: true);
 
     builder.Services.Configure<CorsOptions>(builder.Configuration.GetSection(CorsOptions.SectionName));
     builder.Services.Configure<RateLimitingOptions>(builder.Configuration.GetSection(RateLimitingOptions.SectionName));
@@ -33,7 +35,7 @@ try
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddSwaggerGen(options =>
     {
-        options.SwaggerDoc("v1", new() { Title = "Buildy API", Version = "v1" });
+        options.SwaggerDoc("v1", new() { Title = "NewsFeed API", Version = "v1" });
     });
 
     var connectionString = builder.Configuration.GetConnectionString("Database");
@@ -136,7 +138,7 @@ try
             var canConnect = await db.Database.CanConnectAsync(cancellationToken);
             var response = new HealthResponse(
                 Status: canConnect ? "healthy" : "degraded",
-                Service: "buildy-api",
+                Service: "newsfeed-api",
                 TimestampUtc: DateTimeOffset.UtcNow,
                 Database: canConnect ? "up" : "down");
 
@@ -149,6 +151,9 @@ try
         .Produces<HealthResponse>(StatusCodes.Status200OK)
         .Produces<HealthResponse>(StatusCodes.Status503ServiceUnavailable)
         .ProducesProblem(StatusCodes.Status429TooManyRequests);
+
+    api.MapCitiesEndpoints();
+    api.MapArticlesEndpoints();
 
     app.MapHealthChecks("/healthz");
 

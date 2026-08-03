@@ -28,6 +28,8 @@ alwaysApply: true
 - **No breaking changes to shared-types without updating API and the Expo app in the same PR.**
 - **No auth for MVP** (see `docs/adr/002-no-auth-mvp.md`).
 - **One client codebase:** Expo in `apps/app` serves web (MVP hosting) and native later. Do not add a separate Vite/CRA web app. See `docs/adr/003-expo-universal-client.md`.
+- **Placeholder product name is NewsFeed** (packages, titles, manifests). Find-and-replace when the real name is chosen — do not invent alternate brand names.
+- **MVP UI is light with a single blue accent** (no multi-color brand palette / logo yet) so full branding can land later without a UI rebuild.
 
 ## Before structural changes
 

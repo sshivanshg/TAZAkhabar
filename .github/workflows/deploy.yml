@@ -55,14 +55,14 @@ jobs:
         env:
           EXPO_PUBLIC_API_BASE_URL: ${{ vars.EXPO_PUBLIC_API_BASE_URL }}
           EXPO_PUBLIC_APP_ENV: production
-        run: pnpm --filter @buildy/app build:web
+        run: pnpm --filter @newsfeed/app build:web
 
       - name: Publish to Cloudflare Pages
         uses: cloudflare/pages-action@v1
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          projectName: ${{ vars.CLOUDFLARE_PAGES_PROJECT_NAME || 'buildy-web' }}
+          projectName: ${{ vars.CLOUDFLARE_PAGES_PROJECT_NAME || 'newsfeed-web' }}
           directory: apps/app/dist
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
           wranglerVersion: "3"

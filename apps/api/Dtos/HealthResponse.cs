@@ -1,4 +1,4 @@
-namespace Buildy.Api.Dtos;
+namespace NewsFeed.Api.Dtos;
 
 public sealed record HealthResponse(
     string Status,

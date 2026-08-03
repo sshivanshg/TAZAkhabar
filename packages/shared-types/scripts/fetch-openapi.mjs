@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Fetch OpenAPI JSON from a running Buildy API and write the snapshot
+ * Fetch OpenAPI JSON from a running NewsFeed API and write the snapshot
  * used by NSwag generation.
  *
  * Default: http://localhost:8080/openapi/v1.json

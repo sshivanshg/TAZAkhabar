@@ -1,6 +1,6 @@
 # EF Core migrations
 
-Migrations for `Buildy.Api` are generated into this folder and compiled into the API assembly.
+Migrations for `NewsFeed.Api` are generated into this folder and compiled into the API assembly.
 
 ## Add a new migration
 
@@ -8,9 +8,9 @@ From the repo root:
 
 ```bash
 dotnet ef migrations add <Name> \
-  --project apps/api/Buildy.Api.csproj \
+  --project apps/api/NewsFeed.Api.csproj \
   --output-dir ../../infra/migrations \
-  --namespace Buildy.Api.Migrations
+  --namespace NewsFeed.Api.Migrations
 ```
 
 After generating, confirm **all** of these landed in this folder (not under `apps/api/...`):
@@ -19,7 +19,7 @@ After generating, confirm **all** of these landed in this folder (not under `app
 - `*_Name.Designer.cs`
 - `AppDbContextModelSnapshot.cs`
 
-If the snapshot was written under a nested `Buildy/Api/Migrations` path, move it here before committing.
+If the snapshot was written under a nested `NewsFeed/Api/Migrations` path, move it here before committing.
 
 ## Rules
 
