@@ -1,0 +1,43 @@
+---
+description: Expo / React Native universal client conventions — API client, a11y, web+native
+globs: apps/app/**/*.{ts,tsx}
+alwaysApply: false
+---
+
+# Frontend conventions (Expo)
+
+## Stack
+
+- **Expo + React Native** with React Native Web for Cloudflare Pages (web is the MVP surface).
+- Required web packages (installed): `react-dom`, `react-native-web`, `@expo/metro-runtime`.
+- Entry must import `@expo/metro-runtime` first (`index.ts`).
+- Functional components + hooks only — no class components.
+- **TypeScript strict mode** on. Prefer `@buildy/shared-types`.
+- Use RN primitives (`View`, `Text`, `Pressable`, `ScrollView`). Avoid web-only DOM/CSS except thin `Platform.OS === 'web'` forks.
+
+## API access
+
+- No inline `fetch` in screens. All HTTP goes through `src/api/` (typed client).
+- Config via `EXPO_PUBLIC_API_BASE_URL` / `EXPO_PUBLIC_APP_ENV` (never hardcode secrets).
+
+## Accessibility (hard requirements)
+
+- Minimum **16px** base font size (`fontSize: 16`+).
+- **WCAG AA** contrast for text and controls.
+- Large tap targets; readability for a 40+ demographic is mandatory.
+
+## Web + native
+
+- Develop primarily with `pnpm --filter @buildy/app web` for MVP pilots.
+- Keep screens native-safe so `ios` / `android` builds do not require a rewrite.
+- Web PWA: keep Expo web manifest / icons current; do not reintroduce a separate Vite app.
+
+## Example
+
+```ts
+// ❌ BAD
+useEffect(() => { fetch(`${process.env.EXPO_PUBLIC_API_BASE_URL}/feed`) }, []);
+
+// ✅ GOOD
+const feed = await apiClient.getFeed({ cityId });
+```

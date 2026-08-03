@@ -1,0 +1,34 @@
+---
+description: Monorepo layout, API/DB boundary, OpenAPI and shared-types contract rules
+alwaysApply: true
+---
+
+# Architecture
+
+## Layout
+
+```
+/apps
+  /app            # Expo universal client (web + iOS + Android)
+  /api            # .NET 8 Web API — only process that talks to Postgres
+/packages
+  /shared-types   # TS types generated from API OpenAPI (NSwag)
+/infra
+  /docker         # Dockerfiles for api and app (web static)
+  /migrations     # EF Core migrations (checked in; never edit applied ones)
+/docs
+  /adr            # One markdown file per architecture decision
+  PRD.md          # Product requirements — read before structural/product changes
+```
+
+## Hard boundaries
+
+- **API is the only thing that talks to the database.** Frontend never queries Postgres/Neon directly.
+- **All new endpoints must appear in the OpenAPI document** exposed by the API. Shared TS types are generated from that document.
+- **No breaking changes to shared-types without updating API and the Expo app in the same PR.**
+- **No auth for MVP** (see `docs/adr/002-no-auth-mvp.md`).
+- **One client codebase:** Expo in `apps/app` serves web (MVP hosting) and native later. Do not add a separate Vite/CRA web app. See `docs/adr/003-expo-universal-client.md`.
+
+## Before structural changes
+
+Read `.cursor/rules/architecture.mdc` and `docs/PRD.md`. Prefer an ADR under `docs/adr/` when changing hosting, auth, data ownership, or monorepo shape.

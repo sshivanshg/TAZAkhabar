@@ -1,0 +1,41 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: buildy-postgres
+    environment:
+      POSTGRES_DB: buildy
+      POSTGRES_USER: buildy
+      POSTGRES_PASSWORD: buildy_dev_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - buildy_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U buildy -d buildy"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: infra/docker/Dockerfile.api
+    container_name: buildy-api
+    env_file:
+      - .env.example
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__Database: Host=postgres;Port=5432;Database=buildy;Username=buildy;Password=buildy_dev_password
+      Cors__AllowedOrigins__0: http://localhost:8081
+      Cors__AllowedOrigins__1: http://127.0.0.1:8081
+      Cors__AllowedOrigins__2: http://localhost:19006
+      Cors__AllowedOrigins__3: http://127.0.0.1:19006
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  buildy_pgdata:

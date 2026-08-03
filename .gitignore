@@ -1,0 +1,62 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build outputs
+dist/
+build/
+out/
+*.tsbuildinfo
+apps/api/bin/
+apps/api/obj/
+apps/api.Tests/bin/
+apps/api.Tests/obj/
+**/bin/
+**/obj/
+
+# Environment / secrets
+.env
+.env.local
+.env.*.local
+!.env.example
+!.env.*.example
+apps/api/appsettings.*.local.json
+
+# IDE / OS
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Logs / coverage
+*.log
+logs/
+coverage/
+*.lcov
+TestResults/
+
+# .NET
+*.user
+*.suo
+*.nupkg
+project.lock.json
+artifacts/
+
+# PWA / Expo
+apps/web/dev-dist/
+apps/web/.vite/
+apps/app/dist/
+apps/app/.expo/
+
+# Cloudflare / Wrangler
+.wrangler/
+.dev.vars
+
+# Misc
+*.tmp
+.turbo/
+.cache/

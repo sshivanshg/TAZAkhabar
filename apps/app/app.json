@@ -1,0 +1,39 @@
+{
+  "expo": {
+    "name": "Buildy",
+    "slug": "buildy",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "scheme": "buildy",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "app.buildy.mobile"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#F7F4EF",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "package": "app.buildy.mobile",
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "single",
+      "favicon": "./assets/favicon.png",
+      "name": "Buildy",
+      "shortName": "Buildy",
+      "lang": "en",
+      "themeColor": "#1a1a1a",
+      "backgroundColor": "#f7f4ef",
+      "description": "Localized news summaries for your city — readable on any phone."
+    },
+    "plugins": [
+      "expo-font"
+    ]
+  }
+}

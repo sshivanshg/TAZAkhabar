@@ -1,0 +1,19 @@
+{
+  "name": "buildy",
+  "private": true,
+  "packageManager": "pnpm@9.15.0",
+  "scripts": {
+    "dev:app": "pnpm --filter @buildy/app start",
+    "dev:web": "pnpm --filter @buildy/app web",
+    "build:web": "pnpm --filter @buildy/app build:web",
+    "lint:app": "pnpm --filter @buildy/app lint",
+    "test:app": "pnpm --filter @buildy/app test",
+    "generate:types": "pnpm --filter @buildy/shared-types generate",
+    "dev:api": "dotnet run --project apps/api/Buildy.Api.csproj",
+    "test:api": "dotnet test Buildy.sln",
+    "build:api": "dotnet build Buildy.sln -c Release"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "version": 1,
+  "hooks": {
+    "sessionStart": [
+      {
+        "type": "prompt",
+        "prompt": "Before making structural or product-scope changes in this session, read `.cursor/rules/architecture.mdc` and `docs/PRD.md`. Remind yourself: API is the only DB client; no auth for MVP; the client is Expo at apps/app (web + native — no separate Vite app); OpenAPI + shared-types must stay in sync. Summarize any relevant constraints for this session in one short paragraph if helpful, then proceed with the user's request.",
+        "timeout": 30
+      }
+    ],
+    "beforeShellExecution": [
+      {
+        "command": ".cursor/hooks/guard-migrations.sh",
+        "matcher": "dotnet\\s+ef|Remove-Migration|migrations"
+      }
+    ],
+    "afterFileEdit": [
+      {
+        "command": ".cursor/hooks/remind-shared-types.sh",
+        "matcher": "Write|TabWrite"
+      }
+    ]
+  }
+}

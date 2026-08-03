@@ -1,0 +1,5 @@
+@host http://localhost:8080
+
+### Health
+GET {{host}}/api/health
+Accept: application/json

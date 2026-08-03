@@ -1,0 +1,93 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend lint, test, build
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: buildy_test
+          POSTGRES_USER: buildy
+          POSTGRES_PASSWORD: buildy_test_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U buildy -d buildy_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      ConnectionStrings__Database: Host=localhost;Port=5432;Database=buildy_test;Username=buildy;Password=buildy_test_password
+      Cors__AllowedOrigins__0: http://localhost:8081
+      ASPNETCORE_ENVIRONMENT: Development
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Restore
+        run: dotnet restore Buildy.sln
+
+      - name: Format check
+        run: dotnet format Buildy.sln --verify-no-changes --verbosity diagnostic
+
+      - name: Build
+        run: dotnet build Buildy.sln -c Release --no-restore
+
+      - name: Test
+        run: dotnet test Buildy.sln -c Release --no-build --verbosity normal
+
+  frontend:
+    name: Expo app lint, test, web export
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Enable pnpm
+        run: corepack enable && corepack prepare pnpm@9.15.0 --activate
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: pnpm-store-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            pnpm-store-${{ runner.os }}-
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm --filter @buildy/app lint
+
+      - name: Unit / component tests
+        run: pnpm --filter @buildy/app test
+
+      - name: Export web (Cloudflare Pages artifact)
+        run: pnpm --filter @buildy/app build:web
+        env:
+          EXPO_PUBLIC_API_BASE_URL: https://api.example.com
+          EXPO_PUBLIC_APP_ENV: ci
