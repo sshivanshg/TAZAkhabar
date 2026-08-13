@@ -183,6 +183,7 @@ function BookmarksBody() {
                 <CompactArticleCard
                   article={item}
                   index={index}
+                  density="compact"
                   onPress={() => openArticle(item)}
                   onMorePress={() => {
                     setActionItem(item)

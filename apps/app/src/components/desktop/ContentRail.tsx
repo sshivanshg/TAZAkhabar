@@ -23,7 +23,10 @@ const styles = StyleSheet.create({
     maxWidth: CONTENT_RAIL_MAX,
     width: '100%',
     alignSelf: 'center',
-    paddingVertical: space.xl,
+    // Optical: slightly tighter top so the header sits closer to content;
+    // extra bottom so the rail doesn't feel cropped above the viewport edge.
+    paddingTop: space.lg,
+    paddingBottom: space.xxl,
     flex: 1,
   },
 })

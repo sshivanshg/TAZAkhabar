@@ -85,3 +85,10 @@ it('marks Bookmarks selected and Home not selected when pathname is /bookmarks',
   expect(screen.getByTestId('sidebar-nav-bookmarks').props.accessibilityState?.selected).toBe(true)
   expect(screen.getByTestId('sidebar-nav-home').props.accessibilityState?.selected).toBe(false)
 })
+
+it('shows a static version footer so the sidebar does not trail into empty space', () => {
+  mockUsePathname.mockReturnValue('/')
+  renderSidebar()
+  expect(screen.getByTestId('sidebar-footer')).toBeTruthy()
+  expect(screen.getByText('NewsFeed v0.1')).toBeTruthy()
+})

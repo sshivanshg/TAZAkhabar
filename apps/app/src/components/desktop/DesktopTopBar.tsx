@@ -4,6 +4,7 @@ import {
   Pressable,
   StyleSheet,
   TextInput,
+  useWindowDimensions,
   View,
   type NativeSyntheticEvent,
   type PressableStateCallbackType,
@@ -26,12 +27,19 @@ type WebPressableState = PressableStateCallbackType & {
   focused?: boolean
 }
 
-const SEARCH_EXPANDED_WIDTH = 280
+/** Collapsed control is a circle — same size as the previous searchCircle. */
+const SEARCH_COLLAPSED_WIDTH = 36
+/** Fixed expanded width; grows left from the right-aligned icon, does not reflow the rail. */
+const SEARCH_EXPANDED_WIDTH = 340
+const MOTION_MS = 200
+const ANCHOR_SIZE = 36
 
-/** Desktop home header — city pill + search that expands inline into Discover. */
+/** Desktop home header — city pill + search morph + right-side visual anchor. */
 export function DesktopTopBar({ cityTitle, onCityPress }: Props) {
   const router = useRouter()
   const inputRef = useRef<TextInput>(null)
+  const { width: windowWidth } = useWindowDimensions()
+  const prevWindowWidth = useRef(windowWidth)
   const [expanded, setExpanded] = useState(false)
   const [query, setQuery] = useState('')
 
@@ -52,6 +60,25 @@ export function DesktopTopBar({ cityTitle, onCityPress }: Props) {
     return () => cancelAnimationFrame(id)
   }, [expanded])
 
+  // RN Web UA :focus-visible draws a blue box on <input>; kill it for this control only.
+  useEffect(() => {
+    if (Platform.OS !== 'web' || typeof document === 'undefined') {
+      return
+    }
+    const styleId = 'desktop-topbar-search-input-css'
+    if (document.getElementById(styleId)) {
+      return
+    }
+    const style = document.createElement('style')
+    style.id = styleId
+    style.textContent =
+      '[data-desktop-search-input="1"]:focus,' +
+      '[data-desktop-search-input="1"]:focus-visible{' +
+      'outline:none!important;box-shadow:none!important;border:none!important;' +
+      '}'
+    document.head.appendChild(style)
+  }, [])
+
   useEffect(() => {
     if (!expanded || Platform.OS !== 'web' || typeof window === 'undefined') {
       return
@@ -66,6 +93,14 @@ export function DesktopTopBar({ cityTitle, onCityPress }: Props) {
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [expanded, collapse])
 
+  // Resize while expanded — collapse so we never leave an orphaned mid-width state.
+  useEffect(() => {
+    if (prevWindowWidth.current !== windowWidth && expanded) {
+      collapse()
+    }
+    prevWindowWidth.current = windowWidth
+  }, [windowWidth, expanded, collapse])
+
   const submit = useCallback(() => {
     const trimmed = query.trim()
     router.push({
@@ -76,9 +111,9 @@ export function DesktopTopBar({ cityTitle, onCityPress }: Props) {
 
   const onBlur = useCallback(() => {
     if (query.trim().length === 0) {
-      setExpanded(false)
+      collapse()
     }
-  }, [query])
+  }, [query, collapse])
 
   const onKeyPress = useCallback(
     (event: NativeSyntheticEvent<TextInputKeyPressEventData>) => {
@@ -122,52 +157,80 @@ export function DesktopTopBar({ cityTitle, onCityPress }: Props) {
         ) : null}
       </View>
 
-      <MotiView
-        animate={{ width: expanded ? SEARCH_EXPANDED_WIDTH : HIT_TARGET }}
-        transition={{ type: 'timing', duration: 200 }}
-        style={styles.searchMotion}
-      >
-        {expanded ? (
-          <View style={styles.searchField}>
-            <Search size={18} strokeWidth={iconStroke} color={colors.text} />
-            <TextInput
-              ref={inputRef}
-              value={query}
-              onChangeText={setQuery}
-              onSubmitEditing={submit}
-              onBlur={onBlur}
-              onKeyPress={onKeyPress}
-              placeholder="Search"
-              placeholderTextColor={colors.textMuted}
-              accessibilityLabel="Search headlines"
-              returnKeyType="search"
-              autoCorrect={false}
-              autoCapitalize="none"
-              style={styles.input}
-            />
-          </View>
-        ) : (
-          <Pressable
-            onPress={expand}
-            accessibilityRole="button"
-            accessibilityLabel="Search and discover"
-            hitSlop={8}
-            style={(state) => {
-              const { pressed, hovered, focused } = state as WebPressableState
-              return [
-                styles.searchHit,
-                hovered ? styles.searchHover : null,
-                pressed ? styles.searchPressed : null,
-                focused ? styles.focusRing : null,
-              ]
-            }}
-          >
-            <View style={styles.searchCircle}>
+      <View style={styles.rightCluster}>
+        {/*
+          One chrome surface: Moti grows width from circle → pill.
+          Icon stays inside; input is clipped until width opens. Never two sibling controls.
+        */}
+        <MotiView
+          animate={{ width: expanded ? SEARCH_EXPANDED_WIDTH : SEARCH_COLLAPSED_WIDTH }}
+          transition={{ type: 'timing', duration: MOTION_MS }}
+          style={styles.searchControl}
+        >
+          <View style={styles.searchRow}>
+            {!expanded ? (
+              <Pressable
+                onPress={expand}
+                accessibilityRole="button"
+                accessibilityLabel="Search and discover"
+                hitSlop={8}
+                style={(state) => {
+                  const { pressed, hovered, focused } = state as WebPressableState
+                  return [
+                    StyleSheet.absoluteFillObject,
+                    hovered ? styles.searchHover : null,
+                    pressed ? styles.searchPressed : null,
+                    focused ? styles.focusRing : null,
+                  ]
+                }}
+              />
+            ) : null}
+            <View style={styles.iconSlot} pointerEvents="none">
               <Search size={18} strokeWidth={iconStroke} color={colors.text} />
             </View>
-          </Pressable>
-        )}
-      </MotiView>
+            <MotiView
+              animate={{ opacity: expanded ? 1 : 0 }}
+              transition={{ type: 'timing', duration: MOTION_MS }}
+              style={styles.inputWrap}
+              pointerEvents={expanded ? 'auto' : 'none'}
+            >
+              <TextInput
+                ref={inputRef}
+                value={query}
+                onChangeText={setQuery}
+                onSubmitEditing={submit}
+                onBlur={onBlur}
+                onKeyPress={onKeyPress}
+                editable={expanded}
+                accessible={expanded}
+                placeholder="Search"
+                placeholderTextColor={colors.textMuted}
+                accessibilityLabel="Search headlines"
+                returnKeyType="search"
+                autoCorrect={false}
+                autoCapitalize="none"
+                underlineColorAndroid="transparent"
+                style={styles.input}
+                {...(Platform.OS === 'web'
+                  ? ({ dataSet: { desktopSearchInput: '1' } } as object)
+                  : null)}
+              />
+            </MotiView>
+          </View>
+        </MotiView>
+
+        <View style={styles.divider} accessibilityElementsHidden importantForAccessibility="no" />
+
+        {/* Visual balance only — not wired to account / notifications. */}
+        <View
+          style={styles.anchor}
+          accessibilityElementsHidden
+          importantForAccessibility="no"
+          testID="desktop-topbar-anchor"
+        >
+          <View style={styles.anchorInner} />
+        </View>
+      </View>
     </View>
   )
 }
@@ -189,6 +252,13 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'flex-start',
     justifyContent: 'center',
+    minWidth: 0,
+  },
+  rightCluster: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexShrink: 0,
+    gap: space.sm,
   },
   cityPill: {
     flexDirection: 'row',
@@ -207,27 +277,27 @@ const styles = StyleSheet.create({
   cityPressed: {
     opacity: 0.85,
   },
-  searchMotion: {
-    height: HIT_TARGET,
+  searchControl: {
+    height: SEARCH_COLLAPSED_WIDTH,
     overflow: 'hidden',
-    alignItems: 'flex-end',
-    justifyContent: 'center',
-  },
-  searchHit: {
-    width: HIT_TARGET,
-    height: HIT_TARGET,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  searchCircle: {
-    width: 36,
-    height: 36,
     borderRadius: radius.full,
-    alignItems: 'center',
-    justifyContent: 'center',
     backgroundColor: colors.surface,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
+    flexShrink: 0,
+  },
+  searchRow: {
+    flex: 1,
+    height: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  iconSlot: {
+    width: SEARCH_COLLAPSED_WIDTH,
+    height: SEARCH_COLLAPSED_WIDTH,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
   },
   searchHover: {
     opacity: 0.92,
@@ -235,17 +305,12 @@ const styles = StyleSheet.create({
   searchPressed: {
     opacity: 0.85,
   },
-  searchField: {
+  inputWrap: {
     flex: 1,
-    height: 40,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    paddingHorizontal: space.sm + 2,
-    borderRadius: radius.full,
-    backgroundColor: colors.surface,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
+    minWidth: 0,
+    height: '100%',
+    justifyContent: 'center',
+    paddingRight: space.sm + 2,
   },
   input: {
     flex: 1,
@@ -253,7 +318,42 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     color: colors.text,
     paddingVertical: 0,
-    height: 40,
+    margin: 0,
+    height: SEARCH_COLLAPSED_WIDTH,
+    backgroundColor: 'transparent',
+    borderWidth: 0,
+    ...(Platform.OS === 'web'
+      ? ({
+          outline: 'none',
+          outlineWidth: 0,
+          outlineStyle: 'none',
+          outlineColor: 'transparent',
+          boxShadow: 'none',
+          WebkitAppearance: 'none',
+          appearance: 'none',
+        } as object)
+      : null),
+  },
+  divider: {
+    width: StyleSheet.hairlineWidth,
+    height: 20,
+    backgroundColor: colors.border,
+  },
+  anchor: {
+    width: ANCHOR_SIZE,
+    height: ANCHOR_SIZE,
+    borderRadius: radius.full,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  anchorInner: {
+    width: 14,
+    height: 14,
+    borderRadius: radius.full,
+    backgroundColor: colors.skeleton,
   },
   focusRing: {
     ...(Platform.OS === 'web'

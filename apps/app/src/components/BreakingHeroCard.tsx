@@ -9,22 +9,75 @@ import { ImageBottomFade } from './ImageBottomFade'
 
 const CARD_GAP = space.sm
 
+export type HeroCardSize = 'default' | 'primary' | 'secondary'
+
 type Props = {
   article: ArticleResponse
   index: number
   width: number
   onPress: (article: ArticleResponse) => void
   style?: ViewStyle
+  /**
+   * Visual weight within the shared media-forward card system.
+   * `default` — mobile carousel (dominant full-bleed).
+   * `primary` — desktop lead (~60% width).
+   * `secondary` — desktop stacked companions.
+   */
+  size?: HeroCardSize
 }
 
-export function BreakingHeroCard({ article, index, width, onPress, style }: Props) {
+function heroMetrics(size: HeroCardSize) {
+  switch (size) {
+    case 'primary':
+      return {
+        height: media.heroPrimaryHeight,
+        titleSize: typography.headline.fontSize,
+        titleLine: typography.headline.lineHeight,
+        titleWeight: '$bold' as const,
+        titleLines: 3,
+        fadePeak: 0.82,
+        fadeRatio: 0.65,
+      }
+    case 'secondary':
+      return {
+        height: media.heroSecondaryHeight,
+        titleSize: typography.meta.fontSize + 1,
+        titleLine: typography.summary.lineHeight - 2,
+        titleWeight: '$semibold' as const,
+        titleLines: 2,
+        fadePeak: 0.78,
+        fadeRatio: 0.7,
+      }
+    default:
+      return {
+        height: media.heroHeight,
+        titleSize: 19,
+        titleLine: 24,
+        titleWeight: '$bold' as const,
+        titleLines: 2,
+        fadePeak: 0.82,
+        fadeRatio: 0.62,
+      }
+  }
+}
+
+/** Media-forward card — image + gradient + badge + title. Same radius/badge as list cards. */
+export function BreakingHeroCard({
+  article,
+  index,
+  width,
+  onPress,
+  style,
+  size = 'default',
+}: Props) {
   const headline = article.headline ?? 'Untitled'
   const source = article.sourceName ?? 'Unknown source'
   const relative = formatRelativeTime(article.publishedAt)
   const category = article.category ?? 'Local'
   const imageUrl = article.imageUrl
-  /** Fade covers ~60% of card so gradient starts ~40% from top */
-  const fadeHeight = Math.round(media.heroHeight * 0.6)
+  const metrics = heroMetrics(size)
+  const fadeHeight = Math.round(metrics.height * metrics.fadeRatio)
+  const showMeta = size !== 'secondary'
 
   return (
     <MotiView
@@ -40,42 +93,56 @@ export function BreakingHeroCard({ article, index, width, onPress, style }: Prop
         style={({ pressed }) => [styles.shadowHost, shadows.card, pressed ? styles.pressed : null]}
       >
         <View style={styles.card}>
-          <View style={styles.imageWrap}>
+          <View style={[styles.imageWrap, { height: metrics.height }]}>
             {imageUrl ? (
               <Image
                 source={{ uri: imageUrl }}
                 alt=""
                 w="$full"
-                h={media.heroHeight}
+                h={metrics.height}
                 resizeMode="cover"
               />
             ) : (
               <View style={styles.imagePlaceholder} />
             )}
-            <ImageBottomFade height={fadeHeight} peakOpacity={0.75} />
+            <ImageBottomFade height={fadeHeight} peakOpacity={metrics.fadePeak} />
             <View style={styles.pillWrap}>
               <Badge label={category} variant="filled" />
             </View>
             <VStack style={styles.overlay} space="xs">
+              {showMeta ? (
+                <Text
+                  fontSize={typography.label.fontSize}
+                  lineHeight={typography.label.lineHeight}
+                  fontWeight="$medium"
+                  color={colors.textOnImageMuted}
+                  numberOfLines={1}
+                >
+                  {source}
+                  {relative ? `  ·  ${relative}` : ''}
+                </Text>
+              ) : null}
               <Text
-                fontSize={typography.label.fontSize}
-                lineHeight={typography.label.lineHeight}
-                fontWeight="$medium"
-                color={colors.textOnImageMuted}
-                numberOfLines={1}
-              >
-                {source}
-                {relative ? `  ·  ${relative}` : ''}
-              </Text>
-              <Text
-                fontSize={typography.headlineSm.fontSize}
-                lineHeight={typography.headlineSm.lineHeight}
-                fontWeight="$semibold"
+                fontSize={metrics.titleSize}
+                lineHeight={metrics.titleLine}
+                fontWeight={metrics.titleWeight}
                 color={colors.textOnImage}
-                numberOfLines={2}
+                numberOfLines={metrics.titleLines}
               >
                 {headline}
               </Text>
+              {!showMeta ? (
+                <Text
+                  fontSize={typography.label.fontSize - 1}
+                  lineHeight={typography.label.lineHeight}
+                  fontWeight="$medium"
+                  color={colors.textOnImageMuted}
+                  numberOfLines={1}
+                >
+                  {source}
+                  {relative ? ` · ${relative}` : ''}
+                </Text>
+              ) : null}
             </VStack>
           </View>
         </View>
@@ -86,11 +153,12 @@ export function BreakingHeroCard({ article, index, width, onPress, style }: Prop
 
 const styles = StyleSheet.create({
   shadowHost: {
-    borderRadius: radius.lg,
+    // Shared card radius with list `Card` primitive
+    borderRadius: radius.md,
     backgroundColor: colors.surface,
   },
   card: {
-    borderRadius: radius.lg,
+    borderRadius: radius.md,
     overflow: 'hidden',
     backgroundColor: colors.surface,
   },
@@ -99,13 +167,13 @@ const styles = StyleSheet.create({
   },
   imageWrap: {
     width: '100%',
-    height: media.heroHeight,
     position: 'relative',
     backgroundColor: colors.surfaceRaised,
   },
   imagePlaceholder: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: colors.skeleton,
+    // Mid tone so gradient + title still read as media-forward without a photo
+    backgroundColor: '#3A3D46',
   },
   pillWrap: {
     position: 'absolute',

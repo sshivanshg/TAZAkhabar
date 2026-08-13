@@ -4,11 +4,11 @@ import { colors, radius, space, typography } from '../../theme/tokens'
 
 type Props = {
   label: string
-  /** Solid accent on dark heroes vs soft wash on light cards */
+  /** Solid accent on dark heroes vs soft wash on light cards — same size either way */
   variant?: 'filled' | 'soft'
 }
 
-/** Small category label pill — hero and list cards. */
+/** Shared category pill — identical size/weight on hero and list cards. */
 export function Badge({ label, variant = 'filled' }: Props) {
   const filled = variant === 'filled'
   return (
@@ -21,6 +21,7 @@ export function Badge({ label, variant = 'filled' }: Props) {
         fontSize={typography.label.fontSize}
         lineHeight={typography.label.lineHeight}
         fontWeight="$medium"
+        letterSpacing={typography.label.letterSpacing}
         color={filled ? colors.textOnAccent : colors.accent}
         numberOfLines={1}
       >
@@ -34,7 +35,7 @@ const styles = StyleSheet.create({
   base: {
     alignSelf: 'flex-start',
     paddingHorizontal: space.xs + 2,
-    paddingVertical: space.xxs,
+    paddingVertical: 3,
     borderRadius: radius.full,
     maxWidth: '100%',
   },

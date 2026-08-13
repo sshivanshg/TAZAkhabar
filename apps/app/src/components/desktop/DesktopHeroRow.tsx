@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react'
 import { StyleSheet, useWindowDimensions, View, type LayoutChangeEvent } from 'react-native'
 import type { ArticleResponse } from '@newsfeed/shared-types'
-import { CONTENT_RAIL_MAX, SIDEBAR_WIDTH, space } from '../../theme/tokens'
+import { CONTENT_RAIL_MAX, media, SIDEBAR_WIDTH, space } from '../../theme/tokens'
 import { BreakingHeroCard } from '../BreakingHeroCard'
 
 type Props = {
@@ -9,23 +9,22 @@ type Props = {
   onPress: (article: ArticleResponse) => void
 }
 
-/** Rail width at which a third hero card fits comfortably. */
-const WIDE_ENOUGH = 640
+/** Always show up to 3: one lead + up to two secondaries. */
+const MAX_HERO = 3
 
 export function estimateDesktopRailWidth(windowWidth: number): number {
   return Math.min(CONTENT_RAIL_MAX, Math.max(0, windowWidth - SIDEBAR_WIDTH))
 }
 
-/** Visible hero cards for a given rail width (2 below 640, otherwise 3). */
-export function desktopHeroVisibleCount(railWidth: number): number {
-  return railWidth >= WIDE_ENOUGH ? 3 : 2
+/** Visible hero cards for a given rail width (always up to 3 in lead+secondary layout). */
+export function desktopHeroVisibleCount(_railWidth: number): number {
+  return MAX_HERO
 }
 
-function cardCount(articleCount: number, parentWidth: number): number {
-  return Math.min(desktopHeroVisibleCount(parentWidth), articleCount)
-}
-
-/** 2–3 breaking cards in a horizontal row. Does not wrap the mobile carousel. */
+/**
+ * Lead + secondary breaking layout — one dominant primary (~60%) with up to two
+ * stacked companions. Not an equal-weight 3-up grid.
+ */
 export function DesktopHeroRow({ articles, onPress }: Props) {
   const { width: windowWidth } = useWindowDimensions()
   const [measuredWidth, setMeasuredWidth] = useState<number | null>(null)
@@ -40,24 +39,55 @@ export function DesktopHeroRow({ articles, onPress }: Props) {
     return null
   }
 
-  const count = cardCount(articles.length, parentWidth)
-  const visible = articles.slice(0, count)
-  const gaps = space.sm * Math.max(0, count - 1)
-  const cardWidth = count > 0 ? Math.max(0, (parentWidth - gaps) / count) : 0
+  const lead = articles[0]!
+  const secondaries = articles.slice(1, MAX_HERO)
+  const hasSide = secondaries.length > 0
+  const gap = space.sm
+  const primaryWidth = hasSide
+    ? Math.max(0, Math.round(parentWidth * 0.6) - gap / 2)
+    : parentWidth
+  const sideWidth = hasSide ? Math.max(0, parentWidth - primaryWidth - gap) : 0
 
   return (
     <View style={styles.row} onLayout={onLayout}>
-      {visible.map((article, index) => (
-        <View key={String(article.id)} style={styles.cell}>
-          <BreakingHeroCard
-            article={article}
-            index={index}
-            width={cardWidth}
-            onPress={onPress}
-            style={styles.card}
-          />
+      <View style={[styles.lead, hasSide ? { width: primaryWidth } : styles.leadSolo]}>
+        <BreakingHeroCard
+          article={lead}
+          index={0}
+          width={primaryWidth}
+          size="primary"
+          onPress={onPress}
+          style={styles.cardFlush}
+        />
+      </View>
+      {hasSide ? (
+        <View style={[styles.side, { width: sideWidth }]}>
+          {secondaries.map((article, index) => (
+            <View
+              key={String(article.id)}
+              style={[
+                styles.sideSlot,
+                {
+                  // Keep stacked pair aligned to primary height
+                  height:
+                    secondaries.length === 1
+                      ? media.heroPrimaryHeight
+                      : media.heroSecondaryHeight,
+                },
+              ]}
+            >
+              <BreakingHeroCard
+                article={article}
+                index={index + 1}
+                width={sideWidth}
+                size={secondaries.length === 1 ? 'primary' : 'secondary'}
+                onPress={onPress}
+                style={styles.cardFlush}
+              />
+            </View>
+          ))}
         </View>
-      ))}
+      ) : null}
     </View>
   )
 }
@@ -65,13 +95,28 @@ export function DesktopHeroRow({ articles, onPress }: Props) {
 const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
+    alignItems: 'stretch',
     gap: space.sm,
   },
-  cell: {
-    flex: 1,
+  lead: {
+    flexShrink: 0,
     minWidth: 0,
   },
-  card: {
+  leadSolo: {
+    flex: 1,
+    width: '100%',
+  },
+  side: {
+    flexShrink: 0,
+    minWidth: 0,
+    justifyContent: 'flex-start',
+    gap: space.sm,
+  },
+  sideSlot: {
+    overflow: 'hidden',
+    borderRadius: 0,
+  },
+  cardFlush: {
     marginRight: 0,
     width: '100%',
   },

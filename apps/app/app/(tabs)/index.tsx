@@ -425,6 +425,7 @@ function HomeFeedBody() {
       <CompactArticleCard
         article={article}
         index={index}
+        density={desktop ? 'compact' : 'default'}
         onPress={openArticle}
         onLongPress={desktop ? openStoryActions : setActionArticle}
         onMorePress={desktop ? openStoryActions : setActionArticle}
@@ -563,7 +564,11 @@ function HomeFeedBody() {
           <Box pt="$2" px="$4">
             <Box h={media.heroHeight} bg={colors.skeleton} borderRadius={radius.lg} mb="$4" />
             {[0, 1, 2].map((i) => (
-              <CompactArticleCardSkeleton key={i} index={i} />
+              <CompactArticleCardSkeleton
+                key={i}
+                index={i}
+                density={desktop ? 'compact' : 'default'}
+              />
             ))}
           </Box>
         ) : null}
@@ -686,7 +691,10 @@ function HomeFeedBody() {
                 ListFooterComponent={
                   loadingMore ? (
                     <Box px="$4" py="$2">
-                      <CompactArticleCardSkeleton index={0} />
+                      <CompactArticleCardSkeleton
+                        index={0}
+                        density={desktop ? 'compact' : 'default'}
+                      />
                     </Box>
                   ) : null
                 }
@@ -756,20 +764,23 @@ function SectionHeader({
   actionLabel: string
   onAction: () => void
 }) {
+  // Quieter than hero/list titles so the lead story stays the dominant type above the fold.
   return (
     <HStack
       px="$4"
-      mb="$3"
+      mb="$2"
       alignItems="center"
       justifyContent="space-between"
-      minHeight={44}
+      minHeight={36}
     >
       <Text
-        fontSize={typography.section.fontSize}
-        lineHeight={typography.section.lineHeight}
-        fontWeight="$bold"
-        color={colors.text}
+        fontSize={typography.meta.fontSize}
+        lineHeight={typography.meta.lineHeight}
+        fontWeight="$semibold"
+        letterSpacing={0.6}
+        color={colors.textSecondary}
         flex={1}
+        textTransform="uppercase"
       >
         {title}
       </Text>
@@ -783,7 +794,12 @@ function SectionHeader({
           pressed ? { opacity: 0.7 } : null,
         ]}
       >
-        <Text fontSize={15} lineHeight={20} fontWeight="$semibold" color={colors.accent}>
+        <Text
+          fontSize={typography.label.fontSize}
+          lineHeight={typography.label.lineHeight}
+          fontWeight="$semibold"
+          color={colors.accent}
+        >
           {actionLabel}
         </Text>
       </Pressable>

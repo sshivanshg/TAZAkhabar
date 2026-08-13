@@ -10,8 +10,8 @@ type Props = {
 }
 
 /**
- * Raised surface used for list rows and grouped profile sections.
- * On web, prefers a hairline border when heavy shadows feel muddy.
+ * Shared raised surface for list rows and grouped sections.
+ * Radius matches media-forward hero cards (`radius.md`) so both card states share DNA.
  */
 export function Card({ children, style, clipped = false }: Props) {
   return (

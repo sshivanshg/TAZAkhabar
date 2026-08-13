@@ -68,19 +68,19 @@ const articles: ArticleResponse[] = [
 function renderRow(items: ArticleResponse[] = articles, width = 720) {
   render(<DesktopHeroRow articles={items} onPress={jest.fn()} />)
   fireEvent(screen.UNSAFE_getAllByType(View)[0], 'layout', {
-    nativeEvent: { layout: { x: 0, y: 0, width, height: 220 } },
+    nativeEvent: { layout: { x: 0, y: 0, width, height: 280 } },
   })
 }
 
 describe('desktopHeroVisibleCount', () => {
-  it('shows 3 cards at the 640 rail threshold and 2 below it', () => {
+  it('always allows up to 3 cards for the lead + secondary layout', () => {
     expect(desktopHeroVisibleCount(640)).toBe(3)
-    expect(desktopHeroVisibleCount(639)).toBe(2)
+    expect(desktopHeroVisibleCount(400)).toBe(3)
   })
 })
 
 describe('DesktopHeroRow', () => {
-  it('renders 3 headlines when given 3+ articles', () => {
+  it('renders lead + two secondary headlines (not a fourth)', () => {
     renderRow()
 
     expect(screen.getByText('First story')).toBeTruthy()
@@ -88,5 +88,10 @@ describe('DesktopHeroRow', () => {
     expect(screen.getByText('Third story')).toBeTruthy()
     expect(screen.queryByText('Fourth story')).toBeNull()
     expect(screen.queryByLabelText(/Breaking story \d+ of/)).toBeNull()
+  })
+
+  it('renders a single lead when only one article is available', () => {
+    renderRow([makeArticle(9, 'Solo lead')], 720)
+    expect(screen.getByText('Solo lead')).toBeTruthy()
   })
 })

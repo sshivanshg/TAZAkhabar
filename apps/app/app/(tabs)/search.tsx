@@ -418,7 +418,11 @@ function DiscoverBody() {
       {showSkeleton ? (
         <Box px="$4" pt="$2" style={{ flex: 1 }}>
           {[0, 1, 2].map((i) => (
-            <CompactArticleCardSkeleton key={i} index={i} />
+            <CompactArticleCardSkeleton
+              key={i}
+              index={i}
+              density={desktop ? 'compact' : 'default'}
+            />
           ))}
         </Box>
       ) : null}
@@ -462,6 +466,7 @@ function DiscoverBody() {
               <CompactArticleCard
                 article={item}
                 index={index}
+                density={desktop ? 'compact' : 'default'}
                 onPress={openArticle}
                 onLongPress={desktop ? openStoryActions : setActionArticle}
                 onMorePress={desktop ? openStoryActions : setActionArticle}

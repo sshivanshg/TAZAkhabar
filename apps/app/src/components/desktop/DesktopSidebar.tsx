@@ -49,11 +49,21 @@ export function DesktopSidebar() {
     <View
       accessibilityRole={'navigation' as AccessibilityRole}
       accessibilityLabel="Desktop navigation"
-      style={[styles.root, { paddingTop: Math.max(insets.top, space.xl) }]}
+      style={[
+        styles.root,
+        {
+          paddingTop: Math.max(insets.top, space.xl),
+          paddingBottom: Math.max(insets.bottom, space.md),
+        },
+      ]}
     >
-      <Text style={styles.brand} accessibilityRole="header">
-        NewsFeed
-      </Text>
+      <View style={styles.brandBlock}>
+        <Text style={styles.brand} accessibilityRole="header">
+          NewsFeed
+        </Text>
+        <View style={styles.brandRule} />
+      </View>
+
       <View style={styles.list}>
         {NAV_ITEMS.map((item) => {
           const selected = isNavActive(pathname, String(item.href))
@@ -87,6 +97,13 @@ export function DesktopSidebar() {
           )
         })}
       </View>
+
+      <View style={styles.footer} testID="sidebar-footer">
+        <View style={styles.footerRule} />
+        <Text style={styles.footerText} accessibilityLabel="NewsFeed version 0.1">
+          NewsFeed v0.1
+        </Text>
+      </View>
     </View>
   )
 }
@@ -98,18 +115,26 @@ const styles = StyleSheet.create({
     borderRightWidth: StyleSheet.hairlineWidth,
     borderRightColor: colors.border,
     paddingHorizontal: space.sm,
-    paddingBottom: space.md,
+  },
+  brandBlock: {
+    paddingHorizontal: space.sm,
+    marginBottom: space.xl,
+    gap: space.md,
   },
   brand: {
     fontSize: typography.section.fontSize,
     lineHeight: typography.section.lineHeight,
     fontWeight: typography.section.fontWeight,
     color: colors.text,
-    paddingHorizontal: space.sm,
-    marginBottom: space.lg,
+    letterSpacing: -0.3,
+  },
+  brandRule: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: colors.border,
   },
   list: {
     gap: space.xxs,
+    flexGrow: 0,
   },
   item: {
     minHeight: HIT_TARGET,
@@ -161,5 +186,22 @@ const styles = StyleSheet.create({
   },
   labelActive: {
     color: colors.accent,
+  },
+  footer: {
+    marginTop: 'auto',
+    paddingHorizontal: space.sm,
+    paddingTop: space.lg,
+    gap: space.sm,
+  },
+  footerRule: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: colors.border,
+  },
+  footerText: {
+    fontSize: typography.label.fontSize,
+    lineHeight: typography.label.lineHeight,
+    fontWeight: typography.label.fontWeight,
+    letterSpacing: typography.label.letterSpacing,
+    color: colors.textMuted,
   },
 })
