@@ -1,6 +1,6 @@
 # Design: PDF drop + AI organize, and city-wise scrape ingest
 
-- Status: Draft (awaiting user review)
+- Status: Approved
 - Date: 2026-08-13
 - Related: `docs/PRD.md` (FR-1, FR-2, FR-9, content sourcing), `docs/adr/006-internal-admin-spa.md`, `docs/superpowers/specs/2026-08-13-admin-editorial-phase1-design.md`, `docs/superpowers/specs/2026-08-13-jhansi-rss-ingest-design.md`
 
