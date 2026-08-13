@@ -32,6 +32,14 @@ services:
         sync: false
       - key: Admin__JwtSigningKey
         sync: false
+      - key: ArticleIntelligence__ApiKey
+        sync: false
+      - key: ArticleIntelligence__BaseUrl
+        value: "https://api.openai.com/v1"
+      - key: ArticleIntelligence__Model
+        value: "gpt-4o-mini"
+      - key: Upload__RootPath
+        sync: false
 
   - type: cron
     name: newsfeed-rss-ingest

@@ -58,6 +58,9 @@ try
     {
         client.Timeout = TimeSpan.FromSeconds(15);
         client.DefaultRequestHeaders.UserAgent.ParseAdd("NewsFeedIngest/0.1");
+    }).ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
+    {
+        AllowAutoRedirect = false,
     });
     builder.Services.AddHttpClient(OpenAiArticleIntelligence.HttpClientName, client =>
     {

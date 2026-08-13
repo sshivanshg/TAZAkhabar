@@ -14,6 +14,12 @@ public sealed class ScrapeHttpClient(IHttpClientFactory httpClientFactory) : ISc
 
         var client = httpClientFactory.CreateClient(HttpClientName);
         using var response = await client.GetAsync(safe, ct);
+        if ((int)response.StatusCode is >= 300 and < 400)
+        {
+            throw new HttpRequestException(
+                $"HTTP {(int)response.StatusCode} redirect from {safe} was not followed.");
+        }
+
         response.EnsureSuccessStatusCode();
         return await response.Content.ReadAsStringAsync(ct);
     }

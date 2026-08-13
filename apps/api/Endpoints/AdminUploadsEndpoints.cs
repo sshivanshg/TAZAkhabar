@@ -27,6 +27,7 @@ public static class AdminUploadsEndpoints
                 HttpRequest request,
                 ClaimsPrincipal user,
                 PdfIngestService ingest,
+                AppDbContext db,
                 IOptions<UploadOptions> uploadOptions,
                 CancellationToken cancellationToken) =>
             {
@@ -75,6 +76,16 @@ public static class AdminUploadsEndpoints
                         return Results.Problem(
                             title: "Invalid cityHintId",
                             detail: "cityHintId must be a positive integer.",
+                            statusCode: StatusCodes.Status400BadRequest);
+                    }
+
+                    var cityExists = await db.Cities.AsNoTracking()
+                        .AnyAsync(c => c.Id == parsed, cancellationToken);
+                    if (!cityExists)
+                    {
+                        return Results.Problem(
+                            title: "Unknown cityHintId",
+                            detail: $"No city found with id '{parsed}'.",
                             statusCode: StatusCodes.Status400BadRequest);
                     }
 

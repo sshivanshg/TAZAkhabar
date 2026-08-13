@@ -95,6 +95,20 @@ public sealed class AdminUploadsTests : IClassFixture<NewsFeedWebApplicationFact
     }
 
     [Fact]
+    public async Task Upload_UnknownCityHintId_Returns400()
+    {
+        var client = await AdminAuthTests.CreateAuthedClientAsync(_factory);
+        using var content = PdfMultipart("hello.pdf", cityHintId: 99999);
+
+        var response = await client.PostAsync("/api/admin/uploads", content);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var problem = await response.Content.ReadFromJsonAsync<ProblemDetails>(TestJson.Options);
+        Assert.NotNull(problem);
+        Assert.Equal("Unknown cityHintId", problem.Title);
+    }
+
+    [Fact]
     public async Task Uploads_WithoutBearer_Returns401()
     {
         var client = _factory.CreateSeededClient();

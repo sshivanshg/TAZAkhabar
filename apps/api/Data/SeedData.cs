@@ -124,7 +124,7 @@ public static class SeedData
             Type = SourceType.Scrape,
             Kind = SourceKind.CityEdition,
             Language = "hi",
-            IsActive = true,
+            IsActive = false,
         },
         new()
         {
@@ -146,7 +146,7 @@ public static class SeedData
             Type = SourceType.Scrape,
             Kind = SourceKind.CityEdition,
             Language = "hi",
-            IsActive = true,
+            IsActive = false,
         },
         new()
         {
@@ -168,7 +168,7 @@ public static class SeedData
             Type = SourceType.Scrape,
             Kind = SourceKind.CityEdition,
             Language = "hi",
-            IsActive = true,
+            IsActive = false,
         },
     ];
 
