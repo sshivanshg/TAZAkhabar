@@ -130,7 +130,7 @@ export function SourcesPage() {
       <div className="page-header">
         <div>
           <h1>Sources</h1>
-          <p>Trigger RSS or scrape runs and watch them stream in the live console.</p>
+          <p>Trigger RSS runs (or scrape via the Python extraction worker) and watch them in the live console.</p>
         </div>
       </div>
 

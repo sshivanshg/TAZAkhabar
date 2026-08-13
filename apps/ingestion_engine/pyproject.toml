@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ingestion-engine"
+version = "0.1.0"
+description = "NewsFeed Python multi-tier extraction worker"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "aiohttp>=3.9.0",
+  "beautifulsoup4>=4.12.0",
+  "lxml>=5.0.0",
+  "newspaper4k>=0.9.3",
+  "trafilatura>=1.12.0",
+  "playwright>=1.40.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0.0", "pytest-asyncio>=0.23.0"]
+
+[project.scripts]
+ingestion-engine = "ingestion_engine.main:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["ingestion_engine*"]
+
+[tool.setuptools.package-data]
+ingestion_engine = ["config/*.json"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]

@@ -34,6 +34,8 @@ try
     builder.Services.Configure<CorsOptions>(builder.Configuration.GetSection(CorsOptions.SectionName));
     builder.Services.Configure<RateLimitingOptions>(builder.Configuration.GetSection(RateLimitingOptions.SectionName));
     builder.Services.Configure<RssIngestOptions>(builder.Configuration.GetSection(RssIngestOptions.SectionName));
+    builder.Services.Configure<ExtractionWorkerOptions>(
+        builder.Configuration.GetSection(ExtractionWorkerOptions.SectionName));
     builder.Services.Configure<AdminOptions>(builder.Configuration.GetSection(AdminOptions.SectionName));
     builder.Services.Configure<ArticleIntelligenceOptions>(
         builder.Configuration.GetSection(ArticleIntelligenceOptions.SectionName));
@@ -75,16 +77,37 @@ try
         client.Timeout = TimeSpan.FromSeconds(90);
         client.DefaultRequestHeaders.UserAgent.ParseAdd("NewsFeedIngest/0.1");
     });
+    var extractionTimeoutSeconds = builder.Configuration.GetSection(ExtractionWorkerOptions.SectionName)
+        .GetValue("TimeoutSeconds", 600);
+    if (extractionTimeoutSeconds < 30)
+    {
+        extractionTimeoutSeconds = 30;
+    }
+
+    builder.Services.AddHttpClient(ExtractionWorkerClient.HttpClientName, (sp, client) =>
+    {
+        var opts = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<ExtractionWorkerOptions>>().Value;
+        if (!string.IsNullOrWhiteSpace(opts.BaseUrl)
+            && Uri.TryCreate(opts.BaseUrl.TrimEnd('/') + "/", UriKind.Absolute, out var baseUri))
+        {
+            client.BaseAddress = baseUri;
+        }
+
+        client.Timeout = TimeSpan.FromSeconds(extractionTimeoutSeconds);
+        client.DefaultRequestHeaders.UserAgent.ParseAdd("NewsFeedIngest/0.1");
+    });
     builder.Services.AddSingleton<IIngestionEventBus, IngestionEventBus>();
     builder.Services.AddSingleton<IRssFeedClient, RssFeedClient>();
     builder.Services.AddSingleton<IScrapeHttpClient, ScrapeHttpClient>();
     builder.Services.AddSingleton<IArticleImageHtmlClient, ArticleImageHtmlClient>();
     builder.Services.AddSingleton<IArticleIntelligence, ClaudeArticleIntelligence>();
+    builder.Services.AddSingleton<IExtractionWorkerClient, ExtractionWorkerClient>();
     builder.Services.AddSingleton<PdfProcessingQueue>();
     builder.Services.AddSingleton<ImageEnrichmentQueue>();
     builder.Services.AddScoped<RssIngestService>();
     builder.Services.AddScoped<PdfIngestService>();
     builder.Services.AddScoped<ScrapeIngestService>();
+    builder.Services.AddScoped<ExternalArticleIngestService>();
     builder.Services.AddScoped<ArticleImageEnrichmentService>();
     builder.Services.AddScoped<NewsFeed.Api.Services.IArticlePresentationService, NewsFeed.Api.Services.ArticlePresentationService>();
     builder.Services.AddHostedService<PdfProcessingWorker>();

@@ -215,10 +215,78 @@ public static class AdminSourcesEndpoints
                     try
                     {
                         await using var scope = scopeFactory.CreateAsyncScope();
+                        var dbScoped = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                        var eventsScoped = scope.ServiceProvider.GetRequiredService<IIngestionEventBus>();
                         if (sourceType == SourceType.Scrape)
                         {
-                            var scrape = scope.ServiceProvider.GetRequiredService<ScrapeIngestService>();
-                            await scrape.RunSourceAsync(id, CancellationToken.None, runId);
+                            var worker = scope.ServiceProvider.GetRequiredService<IExtractionWorkerClient>();
+                            if (!worker.IsConfigured)
+                            {
+                                var failed = await dbScoped.IngestionRuns.FirstOrDefaultAsync(r => r.Id == runId);
+                                if (failed is not null)
+                                {
+                                    failed.CompletedAt = DateTimeOffset.UtcNow;
+                                    failed.ErrorSummary = HtmlText.Truncate(
+                                        "ExtractionWorker:BaseUrl is not configured. Start apps/ingestion_engine.",
+                                        1000);
+                                    await dbScoped.SaveChangesAsync();
+                                }
+
+                                eventsScoped.Publish(
+                                    runId,
+                                    new IngestionEventDto(
+                                        "error",
+                                        "Extraction worker not configured. Set ExtractionWorker:BaseUrl and start the Python worker.",
+                                        DateTimeOffset.UtcNow));
+                                return;
+                            }
+
+                            IngestionEvents.Emit(
+                                eventsScoped,
+                                runId,
+                                "progress",
+                                "Calling Python extraction worker…");
+                            try
+                            {
+                                var summary = await worker.RunAsync(id, runId, CancellationToken.None);
+                                var completed = await dbScoped.IngestionRuns.FirstOrDefaultAsync(r => r.Id == runId);
+                                if (completed is not null)
+                                {
+                                    completed.CompletedAt = DateTimeOffset.UtcNow;
+                                    completed.ArticlesAdded = summary.Inserted;
+                                    completed.ArticlesSkipped = summary.Skipped;
+                                    completed.ArticlesFailed = summary.Failed;
+                                    completed.ArticlesFound = summary.Inserted + summary.Skipped + summary.Failed;
+                                    await dbScoped.SaveChangesAsync();
+                                }
+
+                                IngestionEvents.Emit(
+                                    eventsScoped,
+                                    runId,
+                                    "completed",
+                                    $"Done · +{summary.Inserted} added · {summary.Skipped} skipped · {summary.Failed} failed",
+                                    found: summary.Inserted + summary.Skipped + summary.Failed,
+                                    added: summary.Inserted,
+                                    skipped: summary.Skipped,
+                                    failed: summary.Failed);
+                            }
+                            catch (Exception ex)
+                            {
+                                var failed = await dbScoped.IngestionRuns.FirstOrDefaultAsync(r => r.Id == runId);
+                                if (failed is not null)
+                                {
+                                    failed.CompletedAt = DateTimeOffset.UtcNow;
+                                    failed.ErrorSummary = HtmlText.Truncate(ex.Message, 1000);
+                                    await dbScoped.SaveChangesAsync();
+                                }
+
+                                eventsScoped.Publish(
+                                    runId,
+                                    new IngestionEventDto(
+                                        "error",
+                                        HtmlText.Truncate(ex.Message, 500),
+                                        DateTimeOffset.UtcNow));
+                            }
                         }
                         else
                         {

@@ -38,9 +38,68 @@ public static class IngestEndpoints
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status429TooManyRequests);
 
-        api.MapPost("/ingest/scrape", async (
+        api.MapPost("/ingest/scrape", (
                 HttpContext http,
-                ScrapeIngestService ingest,
+                IOptions<RssIngestOptions> options) =>
+            {
+                if (!IngestKeyMatches(http.Request.Headers["X-Ingest-Key"].ToString(), options.Value.Secret))
+                {
+                    return Results.Problem(
+                        title: "Unauthorized",
+                        detail: "Invalid or missing ingest key.",
+                        statusCode: StatusCodes.Status401Unauthorized);
+                }
+
+                return Results.Problem(
+                    title: "Gone",
+                    detail: "In-process HTML scrape is retired. Start apps/ingestion_engine and use admin Sources → Run now (or the worker CLI).",
+                    statusCode: StatusCodes.Status410Gone);
+            })
+            .WithName("IngestScrape")
+            .WithOpenApi()
+            .ProducesProblem(StatusCodes.Status401Unauthorized)
+            .ProducesProblem(StatusCodes.Status410Gone)
+            .ProducesProblem(StatusCodes.Status429TooManyRequests);
+
+        api.MapGet("/ingest/sources", async (
+                HttpContext http,
+                ExternalArticleIngestService ingest,
+                IOptions<RssIngestOptions> options,
+                int? id,
+                string? type,
+                CancellationToken cancellationToken) =>
+            {
+                if (!IngestKeyMatches(http.Request.Headers["X-Ingest-Key"].ToString(), options.Value.Secret))
+                {
+                    return Results.Problem(
+                        title: "Unauthorized",
+                        detail: "Invalid or missing ingest key.",
+                        statusCode: StatusCodes.Status401Unauthorized);
+                }
+
+                if (!string.IsNullOrWhiteSpace(type)
+                    && !string.Equals(type, "scrape", StringComparison.OrdinalIgnoreCase))
+                {
+                    return Results.Problem(
+                        title: "Invalid type",
+                        detail: "Only type=scrape is supported.",
+                        statusCode: StatusCodes.Status400BadRequest);
+                }
+
+                var payload = await ingest.ListScrapeSourcesAsync(id, cancellationToken);
+                return Results.Ok(payload);
+            })
+            .WithName("IngestListSources")
+            .WithOpenApi()
+            .Produces<IngestSourcesResponse>(StatusCodes.Status200OK)
+            .ProducesProblem(StatusCodes.Status400BadRequest)
+            .ProducesProblem(StatusCodes.Status401Unauthorized)
+            .ProducesProblem(StatusCodes.Status429TooManyRequests);
+
+        api.MapPost("/ingest/articles", async (
+                HttpContext http,
+                IngestArticlesRequest? body,
+                ExternalArticleIngestService ingest,
                 IOptions<RssIngestOptions> options,
                 CancellationToken cancellationToken) =>
             {
@@ -52,16 +111,31 @@ public static class IngestEndpoints
                         statusCode: StatusCodes.Status401Unauthorized);
                 }
 
-                var result = await ingest.RunAllActiveAsync(cancellationToken);
-                return Results.Ok(new IngestRunResponse(
-                    result.FeedsAttempted,
-                    result.FeedsFailed,
-                    result.Inserted,
-                    result.Skipped));
+                if (body?.Articles is null)
+                {
+                    return Results.Problem(
+                        title: "Invalid body",
+                        detail: "Request body with articles[] is required.",
+                        statusCode: StatusCodes.Status400BadRequest);
+                }
+
+                try
+                {
+                    var result = await ingest.IngestAsync(body, cancellationToken);
+                    return Results.Ok(result);
+                }
+                catch (ArgumentException ex)
+                {
+                    return Results.Problem(
+                        title: "Invalid batch",
+                        detail: ex.Message,
+                        statusCode: StatusCodes.Status400BadRequest);
+                }
             })
-            .WithName("IngestScrape")
+            .WithName("IngestArticles")
             .WithOpenApi()
-            .Produces<IngestRunResponse>(StatusCodes.Status200OK)
+            .Produces<IngestArticlesResponse>(StatusCodes.Status200OK)
+            .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status429TooManyRequests);
 

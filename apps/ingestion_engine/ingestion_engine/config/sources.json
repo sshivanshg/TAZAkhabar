@@ -1,0 +1,20 @@
+{
+  "www.amarujala.com": {
+    "list_link_contains": ["/"],
+    "article_path_hints": ["/"],
+    "force_tier": null
+  },
+  "www.jagran.com": {
+    "list_link_contains": ["/"],
+    "article_path_hints": [".html"],
+    "force_tier": null
+  },
+  "www.bhaskar.com": {
+    "list_link_contains": ["/"],
+    "article_path_hints": ["/news/", "/local/"],
+    "force_tier": null
+  },
+  "news.google.com": {
+    "force_tier": 3
+  }
+}
