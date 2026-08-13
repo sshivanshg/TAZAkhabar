@@ -4,7 +4,7 @@ namespace NewsFeed.Api.Data;
 
 /// <summary>
 /// Shared seed rows for EF HasData and test factories.
-/// All copy is clearly marked [MOCK] — not real news.
+/// Seed articles are editorial mocks (`IsMock=true`); headlines have no `[MOCK]` prefix.
 /// </summary>
 public static class SeedData
 {
@@ -24,6 +24,54 @@ public static class SeedData
         State = "Test State",
         Slug = "emptyville",
     };
+
+    public static readonly Source[] Sources =
+    [
+        new()
+        {
+            Id = 1,
+            Name = "Amar Ujala",
+            FeedUrl = "https://www.amarujala.com/rss/jhansi.xml",
+            CityId = 2,
+            Type = SourceType.Rss,
+            Kind = SourceKind.CityEdition,
+            Language = "hi",
+            IsActive = true,
+        },
+        new()
+        {
+            Id = 2,
+            Name = "Amar Ujala",
+            FeedUrl = "https://www.amarujala.com/rss/lalitpur.xml",
+            CityId = 2,
+            Type = SourceType.Rss,
+            Kind = SourceKind.CityEdition,
+            Language = "hi",
+            IsActive = true,
+        },
+        new()
+        {
+            Id = 3,
+            Name = "Google News",
+            FeedUrl = "https://news.google.com/rss/search?q=Jhansi&hl=en-IN&gl=IN&ceid=IN:en",
+            CityId = 2,
+            Type = SourceType.Rss,
+            Kind = SourceKind.CityEdition,
+            Language = "en",
+            IsActive = true,
+        },
+        new()
+        {
+            Id = 4,
+            Name = "Amar Ujala",
+            FeedUrl = "https://www.amarujala.com/rss/uttar-pradesh.xml",
+            CityId = 2,
+            Type = SourceType.Rss,
+            Kind = SourceKind.Wider,
+            Language = "hi",
+            IsActive = true,
+        },
+    ];
 
     public static readonly Article[] Articles = BuildArticles();
 
@@ -46,13 +94,15 @@ public static class SeedData
             {
                 Id = id++,
                 CityId = cityId,
-                Headline = headline,
+                Headline = StripMockPrefix(headline),
                 Summary = summary,
                 SourceName = sourceName,
                 SourceUrl = $"https://example.com/mock/{id - 1}",
                 PublishedAt = baseTime.AddHours(-hoursAgo),
                 Category = category,
                 ImageUrl = imageUrl,
+                Status = ArticleStatus.Published,
+                IsMock = true,
             });
         }
 
@@ -241,5 +291,20 @@ public static class SeedData
             "UP News Desk Mock", "State", 5, "https://picsum.photos/seed/agra8/640/360");
 
         return list.ToArray();
+    }
+
+    private static string StripMockPrefix(string headline)
+    {
+        if (headline.StartsWith("[MOCK] ", StringComparison.Ordinal))
+        {
+            return headline["[MOCK] ".Length..];
+        }
+
+        if (headline.StartsWith("[MOCK]", StringComparison.Ordinal))
+        {
+            return headline["[MOCK]".Length..];
+        }
+
+        return headline;
     }
 }

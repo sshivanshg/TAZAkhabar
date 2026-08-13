@@ -8,4 +8,5 @@ public sealed class City
     public required string Slug { get; set; }
 
     public ICollection<Article> Articles { get; set; } = new List<Article>();
+    public ICollection<Source> Sources { get; set; } = new List<Source>();
 }
