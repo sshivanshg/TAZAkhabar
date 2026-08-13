@@ -8,6 +8,7 @@ export type {
   ArticleResponse,
   CityResponse,
   HealthResponse,
+  IngestRunResponse,
   PagedArticlesResponse,
   ProblemDetails,
 } from './generated'

@@ -35,6 +35,13 @@ export interface HealthResponse {
     database?: string | undefined;
 }
 
+export interface IngestRunResponse {
+    feedsAttempted?: number;
+    feedsFailed?: number;
+    inserted?: number;
+    skipped?: number;
+}
+
 export interface PagedArticlesResponse {
     items?: ArticleResponse[] | undefined;
     total?: number;
