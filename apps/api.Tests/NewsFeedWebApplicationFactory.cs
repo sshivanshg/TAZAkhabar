@@ -9,11 +9,14 @@ namespace NewsFeed.Api.Tests;
 
 public sealed class NewsFeedWebApplicationFactory : WebApplicationFactory<Program>
 {
+    public const string TestIngestKey = "test-ingest-key";
+
     private readonly string _databaseName = $"newsfeed-tests-{Guid.NewGuid():N}";
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Development");
+        builder.UseSetting("RssIngest:Secret", TestIngestKey);
 
         builder.ConfigureServices(services =>
         {

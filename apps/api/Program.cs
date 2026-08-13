@@ -2,6 +2,7 @@ using System.Threading.RateLimiting;
 using NewsFeed.Api.Data;
 using NewsFeed.Api.Dtos;
 using NewsFeed.Api.Endpoints;
+using NewsFeed.Api.Ingest;
 using NewsFeed.Api.Options;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.HttpOverrides;
@@ -30,6 +31,15 @@ try
 
     builder.Services.Configure<CorsOptions>(builder.Configuration.GetSection(CorsOptions.SectionName));
     builder.Services.Configure<RateLimitingOptions>(builder.Configuration.GetSection(RateLimitingOptions.SectionName));
+    builder.Services.Configure<RssIngestOptions>(builder.Configuration.GetSection(RssIngestOptions.SectionName));
+
+    builder.Services.AddHttpClient("rss", client =>
+    {
+        client.Timeout = TimeSpan.FromSeconds(15);
+        client.DefaultRequestHeaders.UserAgent.ParseAdd("NewsFeedIngest/0.1");
+    });
+    builder.Services.AddSingleton<IRssFeedClient, RssFeedClient>();
+    builder.Services.AddScoped<RssIngestService>();
 
     var corsOptions = builder.Configuration.GetSection(CorsOptions.SectionName).Get<CorsOptions>() ?? new CorsOptions();
     var rateLimitingOptions = builder.Configuration.GetSection(RateLimitingOptions.SectionName).Get<RateLimitingOptions>()
@@ -188,6 +198,7 @@ try
 
     api.MapCitiesEndpoints();
     api.MapArticlesEndpoints();
+    api.MapIngestEndpoints();
 
     app.MapHealthChecks("/healthz");
 
