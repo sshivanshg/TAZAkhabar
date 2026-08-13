@@ -256,4 +256,28 @@ public sealed class ArticlesEndpointTests : IClassFixture<NewsFeedWebApplication
         Assert.NotEmpty(payload!.Items);
         Assert.All(payload.Items, a => Assert.Contains("[MOCK]", a.Headline));
     }
+
+    [Fact]
+    public async Task GetArticles_Jhansi_HidesMocks_OnFilteredQuery_WhenRealRowExists()
+    {
+        var client = _factory.CreateSeededClient();
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            db.Articles.Add(new Article
+            {
+                CityId = 2,
+                Headline = "Ward sabha tonight",
+                Summary = "A ward sabha is scheduled this evening.",
+                SourceName = "Amar Ujala",
+                SourceUrl = "https://www.amarujala.com/jhansi/ward-sabha-filtered-query-task7",
+                PublishedAt = DateTimeOffset.UtcNow,
+                Category = "Local",
+            });
+            db.SaveChanges();
+        }
+
+        var payload = await client.GetFromJsonAsync<PagedArticlesResponse>("/api/articles?city=jhansi&q=budget");
+        Assert.DoesNotContain(payload!.Items, a => a.Headline.StartsWith("[MOCK]", StringComparison.Ordinal));
+    }
 }

@@ -79,7 +79,8 @@ public static class ArticlesEndpoints
 
                 if (cityEntity.Slug == "jhansi")
                 {
-                    var hasIngested = await query.AnyAsync(a => !a.Headline.StartsWith("[MOCK]"), cancellationToken);
+                    var hasIngested = await db.Articles.AsNoTracking()
+                        .AnyAsync(a => a.CityId == cityEntity.Id && !a.Headline.StartsWith("[MOCK]"), cancellationToken);
                     if (hasIngested)
                     {
                         query = query.Where(a => !a.Headline.StartsWith("[MOCK]"));
