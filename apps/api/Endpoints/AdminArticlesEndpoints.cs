@@ -325,7 +325,7 @@ public static class AdminArticlesEndpoints
             a.PublishedAt,
             a.Category,
             a.ImageUrl,
-            a.Status,
+            a.Status.ToString(),
             a.IsMock,
             a.IngestedAt,
             a.ReviewedBy,

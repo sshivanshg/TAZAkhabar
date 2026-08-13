@@ -33,12 +33,21 @@ public static class AdminSourcesEndpoints
                 AppDbContext db,
                 CancellationToken cancellationToken) =>
             {
+                if (!Enum.TryParse<SourceType>(request.Type, ignoreCase: true, out var sourceType)
+                    || !Enum.TryParse<SourceKind>(request.Kind, ignoreCase: true, out var sourceKind))
+                {
+                    return Results.Problem(
+                        title: "Invalid type or kind",
+                        detail: "type must be Rss|Manual; kind must be CityEdition|Wider.",
+                        statusCode: StatusCodes.Status400BadRequest);
+                }
+
                 var validation = await ValidateSourceAsync(
                     db,
                     request.Name,
                     request.FeedUrl,
                     request.City,
-                    request.Type,
+                    sourceType,
                     request.Language,
                     excludeId: null,
                     cancellationToken);
@@ -52,8 +61,8 @@ public static class AdminSourcesEndpoints
                     Name = validation.Name!,
                     FeedUrl = validation.FeedUrl,
                     CityId = validation.CityId,
-                    Type = request.Type,
-                    Kind = request.Kind,
+                    Type = sourceType,
+                    Kind = sourceKind,
                     Language = validation.Language!,
                     IsActive = request.IsActive,
                 };
@@ -99,11 +108,31 @@ public static class AdminSourcesEndpoints
                 var name = request.Name ?? source.Name;
                 var feedUrl = request.FeedUrl ?? source.FeedUrl;
                 var citySlug = request.City ?? source.City.Slug;
-                var type = request.Type ?? source.Type;
+                var typeName = request.Type ?? source.Type.ToString();
                 var language = request.Language ?? source.Language;
 
+                if (!Enum.TryParse<SourceType>(typeName, ignoreCase: true, out var sourceType))
+                {
+                    return Results.Problem(
+                        title: "Invalid type",
+                        detail: "type must be Rss or Manual.",
+                        statusCode: StatusCodes.Status400BadRequest);
+                }
+
+                SourceKind sourceKind = source.Kind;
+                if (request.Kind is not null)
+                {
+                    if (!Enum.TryParse<SourceKind>(request.Kind, ignoreCase: true, out sourceKind))
+                    {
+                        return Results.Problem(
+                            title: "Invalid kind",
+                            detail: "kind must be CityEdition or Wider.",
+                            statusCode: StatusCodes.Status400BadRequest);
+                    }
+                }
+
                 var validation = await ValidateSourceAsync(
-                    db, name, feedUrl, citySlug, type, language, id, cancellationToken);
+                    db, name, feedUrl, citySlug, sourceType, language, id, cancellationToken);
                 if (validation.Error is not null)
                 {
                     return validation.Error;
@@ -112,8 +141,8 @@ public static class AdminSourcesEndpoints
                 source.Name = validation.Name!;
                 source.FeedUrl = validation.FeedUrl;
                 source.CityId = validation.CityId;
-                source.Type = type;
-                if (request.Kind is not null) source.Kind = request.Kind.Value;
+                source.Type = sourceType;
+                source.Kind = sourceKind;
                 source.Language = validation.Language!;
                 if (request.IsActive is not null) source.IsActive = request.IsActive.Value;
 
@@ -282,12 +311,12 @@ public static class AdminSourcesEndpoints
             s.FeedUrl,
             s.CityId,
             s.City.Slug,
-            s.Type,
-            s.Kind,
+            s.Type.ToString(),
+            s.Kind.ToString(),
             s.Language,
             s.IsActive,
             s.LastFetchedAt,
-            s.LastFetchStatus,
+            s.LastFetchStatus?.ToString(),
             s.LastErrorMessage);
 
     private static IngestionRunResponseDto ToRunResponse(IngestionRun r) =>

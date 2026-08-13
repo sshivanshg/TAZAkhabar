@@ -47,7 +47,7 @@ public sealed class AdminArticlesTests : IClassFixture<NewsFeedWebApplicationFac
         var response = await client.PostAsync($"/api/admin/articles/{id}/publish", null);
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var body = await response.Content.ReadFromJsonAsync<AdminArticleResponse>(TestJson.Options);
-        Assert.Equal(ArticleStatus.Published, body!.Status);
+        Assert.Equal("Published", body!.Status);
         Assert.Equal("Editor One", body.ReviewedBy);
         Assert.NotNull(body.ReviewedAt);
         Assert.Equal(publishedAt, body.PublishedAt);
@@ -72,7 +72,7 @@ public sealed class AdminArticlesTests : IClassFixture<NewsFeedWebApplicationFac
         });
         Assert.Equal(HttpStatusCode.OK, create.StatusCode);
         var draft = await create.Content.ReadFromJsonAsync<AdminArticleResponse>(TestJson.Options);
-        Assert.Equal(ArticleStatus.Draft, draft!.Status);
+        Assert.Equal("Draft", draft!.Status);
 
         var publicBefore = await client.GetFromJsonAsync<PagedArticlesResponse>("/api/articles?city=jhansi");
         Assert.DoesNotContain(publicBefore!.Items, a => a.Id == draft.Id);
@@ -89,7 +89,7 @@ public sealed class AdminArticlesTests : IClassFixture<NewsFeedWebApplicationFac
         });
         Assert.Equal(HttpStatusCode.OK, publishNow.StatusCode);
         var live = await publishNow.Content.ReadFromJsonAsync<AdminArticleResponse>(TestJson.Options);
-        Assert.Equal(ArticleStatus.Published, live!.Status);
+        Assert.Equal("Published", live!.Status);
 
         var publicAfter = await client.GetFromJsonAsync<PagedArticlesResponse>("/api/articles?city=jhansi");
         Assert.Contains(publicAfter!.Items, a => a.Id == live.Id);

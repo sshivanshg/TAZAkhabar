@@ -955,7 +955,8 @@
             "nullable": true
           },
           "status": {
-            "$ref": "#/components/schemas/ArticleStatus"
+            "type": "string",
+            "nullable": true
           },
           "isMock": {
             "type": "boolean"
@@ -1034,10 +1035,12 @@
             "nullable": true
           },
           "type": {
-            "$ref": "#/components/schemas/SourceType"
+            "type": "string",
+            "nullable": true
           },
           "kind": {
-            "$ref": "#/components/schemas/SourceKind"
+            "type": "string",
+            "nullable": true
           },
           "language": {
             "type": "string",
@@ -1052,7 +1055,8 @@
             "nullable": true
           },
           "lastFetchStatus": {
-            "$ref": "#/components/schemas/FetchStatus"
+            "type": "string",
+            "nullable": true
           },
           "lastErrorMessage": {
             "type": "string",
@@ -1102,17 +1106,6 @@
           }
         },
         "additionalProperties": false
-      },
-      "ArticleStatus": {
-        "enum": [
-          0,
-          1,
-          2,
-          3,
-          4
-        ],
-        "type": "integer",
-        "format": "int32"
       },
       "CityResponse": {
         "type": "object",
@@ -1185,10 +1178,12 @@
             "nullable": true
           },
           "type": {
-            "$ref": "#/components/schemas/SourceType"
+            "type": "string",
+            "nullable": true
           },
           "kind": {
-            "$ref": "#/components/schemas/SourceKind"
+            "type": "string",
+            "nullable": true
           },
           "language": {
             "type": "string",
@@ -1199,14 +1194,6 @@
           }
         },
         "additionalProperties": false
-      },
-      "FetchStatus": {
-        "enum": [
-          0,
-          1
-        ],
-        "type": "integer",
-        "format": "int32"
       },
       "HealthResponse": {
         "type": "object",
@@ -1408,10 +1395,12 @@
             "nullable": true
           },
           "type": {
-            "$ref": "#/components/schemas/SourceType"
+            "type": "string",
+            "nullable": true
           },
           "kind": {
-            "$ref": "#/components/schemas/SourceKind"
+            "type": "string",
+            "nullable": true
           },
           "language": {
             "type": "string",
@@ -1450,22 +1439,6 @@
           }
         },
         "additionalProperties": {}
-      },
-      "SourceKind": {
-        "enum": [
-          0,
-          1
-        ],
-        "type": "integer",
-        "format": "int32"
-      },
-      "SourceType": {
-        "enum": [
-          0,
-          1
-        ],
-        "type": "integer",
-        "format": "int32"
       }
     }
   }

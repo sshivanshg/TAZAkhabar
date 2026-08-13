@@ -1,5 +1,3 @@
-using NewsFeed.Api.Data;
-
 namespace NewsFeed.Api.Dtos;
 
 public sealed record AdminLoginRequest(string? Password, string? DisplayName);
@@ -16,7 +14,7 @@ public sealed record AdminArticleResponse(
     DateTimeOffset PublishedAt,
     string Category,
     string? ImageUrl,
-    ArticleStatus Status,
+    string Status,
     bool IsMock,
     DateTimeOffset? IngestedAt,
     string? ReviewedBy,
@@ -50,20 +48,20 @@ public sealed record AdminSourceResponse(
     string? FeedUrl,
     int CityId,
     string CitySlug,
-    SourceType Type,
-    SourceKind Kind,
+    string Type,
+    string Kind,
     string Language,
     bool IsActive,
     DateTimeOffset? LastFetchedAt,
-    FetchStatus? LastFetchStatus,
+    string? LastFetchStatus,
     string? LastErrorMessage);
 
 public sealed record CreateAdminSourceRequest(
     string Name,
     string? FeedUrl,
     string City,
-    SourceType Type,
-    SourceKind Kind,
+    string Type,
+    string Kind,
     string Language,
     bool IsActive);
 
@@ -71,8 +69,8 @@ public sealed record PatchAdminSourceRequest(
     string? Name,
     string? FeedUrl,
     string? City,
-    SourceType? Type,
-    SourceKind? Kind,
+    string? Type,
+    string? Kind,
     string? Language,
     bool? IsActive);
 

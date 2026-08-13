@@ -19,7 +19,7 @@ export interface AdminArticleResponse {
     publishedAt?: string;
     category?: string | undefined;
     imageUrl?: string | undefined;
-    status?: ArticleStatus;
+    status?: string | undefined;
     isMock?: boolean;
     ingestedAt?: string | undefined;
     reviewedBy?: string | undefined;
@@ -43,12 +43,12 @@ export interface AdminSourceResponse {
     feedUrl?: string | undefined;
     cityId?: number;
     citySlug?: string | undefined;
-    type?: SourceType;
-    kind?: SourceKind;
+    type?: string | undefined;
+    kind?: string | undefined;
     language?: string | undefined;
     isActive?: boolean;
     lastFetchedAt?: string | undefined;
-    lastFetchStatus?: FetchStatus;
+    lastFetchStatus?: string | undefined;
     lastErrorMessage?: string | undefined;
 }
 
@@ -62,14 +62,6 @@ export interface ArticleResponse {
     publishedAt?: string;
     category?: string | undefined;
     imageUrl?: string | undefined;
-}
-
-export enum ArticleStatus {
-    _0 = 0,
-    _1 = 1,
-    _2 = 2,
-    _3 = 3,
-    _4 = 4,
 }
 
 export interface CityResponse {
@@ -93,15 +85,10 @@ export interface CreateAdminSourceRequest {
     name?: string | undefined;
     feedUrl?: string | undefined;
     city?: string | undefined;
-    type?: SourceType;
-    kind?: SourceKind;
+    type?: string | undefined;
+    kind?: string | undefined;
     language?: string | undefined;
     isActive?: boolean;
-}
-
-export enum FetchStatus {
-    _0 = 0,
-    _1 = 1,
 }
 
 export interface HealthResponse {
@@ -162,8 +149,8 @@ export interface PatchAdminSourceRequest {
     name?: string | undefined;
     feedUrl?: string | undefined;
     city?: string | undefined;
-    type?: SourceType;
-    kind?: SourceKind;
+    type?: string | undefined;
+    kind?: string | undefined;
     language?: string | undefined;
     isActive?: boolean | undefined;
 }
@@ -176,14 +163,4 @@ export interface ProblemDetails {
     instance?: string | undefined;
 
     [key: string]: any;
-}
-
-export enum SourceKind {
-    _0 = 0,
-    _1 = 1,
-}
-
-export enum SourceType {
-    _0 = 0,
-    _1 = 1,
 }
