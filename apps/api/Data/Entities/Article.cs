@@ -13,6 +13,7 @@ public sealed class Article
     public DateTimeOffset PublishedAt { get; set; }
     public required string Category { get; set; }
     public string? ImageUrl { get; set; }
+    public DateTimeOffset? ImageEnrichmentAttemptedAt { get; set; }
     public ArticleStatus Status { get; set; } = ArticleStatus.Published;
     public bool IsMock { get; set; }
     public DateTimeOffset? IngestedAt { get; set; }

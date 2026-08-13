@@ -211,6 +211,7 @@ public static class SeedData
                 PublishedAt = baseTime.AddHours(-hoursAgo),
                 Category = category,
                 ImageUrl = imageUrl,
+                ImageEnrichmentAttemptedAt = baseTime,
                 Status = ArticleStatus.Published,
                 IsMock = true,
             });

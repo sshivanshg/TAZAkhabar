@@ -62,6 +62,14 @@ try
     {
         AllowAutoRedirect = false,
     });
+    builder.Services.AddHttpClient(ArticleImageHtmlClient.HttpClientName, client =>
+    {
+        client.Timeout = TimeSpan.FromSeconds(15);
+        client.DefaultRequestHeaders.UserAgent.ParseAdd("NewsFeedIngest/0.1");
+    }).ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
+    {
+        AllowAutoRedirect = false,
+    });
     builder.Services.AddHttpClient(ClaudeArticleIntelligence.HttpClientName, client =>
     {
         client.Timeout = TimeSpan.FromSeconds(90);
@@ -70,12 +78,16 @@ try
     builder.Services.AddSingleton<IIngestionEventBus, IngestionEventBus>();
     builder.Services.AddSingleton<IRssFeedClient, RssFeedClient>();
     builder.Services.AddSingleton<IScrapeHttpClient, ScrapeHttpClient>();
+    builder.Services.AddSingleton<IArticleImageHtmlClient, ArticleImageHtmlClient>();
     builder.Services.AddSingleton<IArticleIntelligence, ClaudeArticleIntelligence>();
     builder.Services.AddSingleton<PdfProcessingQueue>();
+    builder.Services.AddSingleton<ImageEnrichmentQueue>();
     builder.Services.AddScoped<RssIngestService>();
     builder.Services.AddScoped<PdfIngestService>();
     builder.Services.AddScoped<ScrapeIngestService>();
+    builder.Services.AddScoped<ArticleImageEnrichmentService>();
     builder.Services.AddHostedService<PdfProcessingWorker>();
+    builder.Services.AddHostedService<ImageEnrichmentWorker>();
 
     var corsOptions = builder.Configuration.GetSection(CorsOptions.SectionName).Get<CorsOptions>() ?? new CorsOptions();
     var rateLimitingOptions = builder.Configuration.GetSection(RateLimitingOptions.SectionName).Get<RateLimitingOptions>()

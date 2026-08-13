@@ -120,6 +120,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             entity.Property(a => a.PublishedAt).HasColumnName("published_at");
             entity.Property(a => a.Category).HasColumnName("category").HasMaxLength(40).IsRequired();
             entity.Property(a => a.ImageUrl).HasColumnName("image_url").HasMaxLength(500);
+            entity.Property(a => a.ImageEnrichmentAttemptedAt).HasColumnName("image_enrichment_attempted_at");
             entity.Property(a => a.Status)
                 .HasColumnName("status")
                 .HasConversion<string>()
