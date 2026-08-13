@@ -86,4 +86,8 @@ export const apiClient = {
     }
     return request<PagedArticlesResponse>(`/api/articles?${search.toString()}`)
   },
+
+  getArticle(id: string): Promise<ArticleResponse> {
+    return request<ArticleResponse>(`/api/articles/${encodeURIComponent(id)}`)
+  },
 }
