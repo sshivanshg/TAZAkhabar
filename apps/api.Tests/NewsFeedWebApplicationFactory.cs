@@ -1,5 +1,6 @@
 using NewsFeed.Api.Data;
 using NewsFeed.Api.Data.Entities;
+using NewsFeed.Api.Ingest;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
@@ -36,6 +37,13 @@ public sealed class NewsFeedWebApplicationFactory : WebApplicationFactory<Progra
 
             services.AddDbContext<AppDbContext>(options =>
                 options.UseInMemoryDatabase(_databaseName));
+
+            foreach (var descriptor in services.Where(d => d.ServiceType == typeof(IArticleIntelligence)).ToList())
+            {
+                services.Remove(descriptor);
+            }
+
+            services.AddSingleton<IArticleIntelligence, FakeArticleIntelligence>();
         });
     }
 

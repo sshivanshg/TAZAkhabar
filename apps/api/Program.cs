@@ -35,13 +35,21 @@ try
     builder.Services.Configure<RateLimitingOptions>(builder.Configuration.GetSection(RateLimitingOptions.SectionName));
     builder.Services.Configure<RssIngestOptions>(builder.Configuration.GetSection(RssIngestOptions.SectionName));
     builder.Services.Configure<AdminOptions>(builder.Configuration.GetSection(AdminOptions.SectionName));
+    builder.Services.Configure<ArticleIntelligenceOptions>(
+        builder.Configuration.GetSection(ArticleIntelligenceOptions.SectionName));
 
     builder.Services.AddHttpClient("rss", client =>
     {
         client.Timeout = TimeSpan.FromSeconds(15);
         client.DefaultRequestHeaders.UserAgent.ParseAdd("NewsFeedIngest/0.1");
     });
+    builder.Services.AddHttpClient(OpenAiArticleIntelligence.HttpClientName, client =>
+    {
+        client.Timeout = TimeSpan.FromSeconds(90);
+        client.DefaultRequestHeaders.UserAgent.ParseAdd("NewsFeedIngest/0.1");
+    });
     builder.Services.AddSingleton<IRssFeedClient, RssFeedClient>();
+    builder.Services.AddSingleton<IArticleIntelligence, OpenAiArticleIntelligence>();
     builder.Services.AddScoped<RssIngestService>();
 
     var corsOptions = builder.Configuration.GetSection(CorsOptions.SectionName).Get<CorsOptions>() ?? new CorsOptions();
