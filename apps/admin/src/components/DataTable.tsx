@@ -7,6 +7,10 @@ const COLORS: Record<string, { bg: string; fg: string }> = {
   Rejected: { bg: '#FFEBEE', fg: theme.danger },
   Draft: { bg: '#F5F5F5', fg: theme.draft },
   Archived: { bg: '#EEEEEE', fg: theme.archived },
+  Queued: { bg: '#FFF8E1', fg: theme.warning },
+  Processing: { bg: '#EEF1FF', fg: theme.accent },
+  Ready: { bg: '#E8F5E9', fg: theme.success },
+  Failed: { bg: '#FFEBEE', fg: theme.danger },
 }
 
 export function StatusBadge({ status }: { status: string }) {

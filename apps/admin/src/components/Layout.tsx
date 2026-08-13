@@ -5,6 +5,7 @@ import { theme } from '../theme'
 const nav = [
   { to: '/', label: 'Dashboard', end: true },
   { to: '/review', label: 'Review Queue' },
+  { to: '/uploads', label: 'Uploads' },
   { to: '/sources', label: 'Sources' },
   { to: '/logs', label: 'Logs' },
 ]

@@ -8,6 +8,7 @@ import { IngestionLogsPage } from './pages/IngestionLogsPage'
 import { LoginPage } from './pages/LoginPage'
 import { ReviewQueuePage } from './pages/ReviewQueuePage'
 import { SourcesPage } from './pages/SourcesPage'
+import { UploadsPage } from './pages/UploadsPage'
 
 function RequireAuth({ children }: { children: ReactNode }) {
   if (!isAuthenticated()) return <Navigate to="/login" replace />
@@ -28,6 +29,7 @@ export default function App() {
       >
         <Route index element={<DashboardPage />} />
         <Route path="review" element={<ReviewQueuePage />} />
+        <Route path="uploads" element={<UploadsPage />} />
         <Route path="articles/new" element={<ArticleEditorPage />} />
         <Route path="articles/:id" element={<ArticleEditorPage />} />
         <Route path="sources" element={<SourcesPage />} />

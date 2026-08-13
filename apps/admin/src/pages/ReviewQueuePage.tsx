@@ -67,6 +67,18 @@ export function ReviewQueuePage() {
     }
   }
 
+  async function archive(id: number) {
+    setBusyId(id)
+    try {
+      await api.archiveArticle(id)
+      await load()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Archive failed')
+    } finally {
+      setBusyId(null)
+    }
+  }
+
   const cityName = (id: number) => cities.find((c) => c.id === id)?.name ?? String(id)
 
   const columns: Column<AdminArticle>[] = [
@@ -92,7 +104,7 @@ export function ReviewQueuePage() {
     {
       key: 'actions',
       header: 'Actions',
-      width: '200px',
+      width: '240px',
       render: (r) => (
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
           <button type="button" disabled={busyId === r.id} onClick={() => void approve(r.id)}>
@@ -101,6 +113,11 @@ export function ReviewQueuePage() {
           <button type="button" disabled={busyId === r.id} onClick={() => void reject(r.id)}>
             Reject
           </button>
+          {r.status === 'Published' && (
+            <button type="button" disabled={busyId === r.id} onClick={() => void archive(r.id)}>
+              Archive
+            </button>
+          )}
           <Link to={`/articles/${r.id}`}>Edit</Link>
         </div>
       ),

@@ -3,8 +3,10 @@ import type {
   AdminLoginResponse,
   AdminSourceResponse,
   CityResponse,
+  DocumentUploadResponseDto,
   IngestionRunResponseDto,
   PagedAdminArticlesResponse,
+  PagedDocumentUploadsResponse,
   PagedIngestionRunsResponse,
 } from '@newsfeed/shared-types'
 import { clearSession, getToken } from './auth'
@@ -25,7 +27,7 @@ async function request<T>(
   options: RequestInit & { auth?: boolean } = {},
 ): Promise<T> {
   const headers = new Headers(options.headers)
-  if (!headers.has('Content-Type') && options.body) {
+  if (!headers.has('Content-Type') && options.body && !(options.body instanceof FormData)) {
     headers.set('Content-Type', 'application/json')
   }
   if (options.auth !== false) {
@@ -114,6 +116,20 @@ export type City = {
   slug: string
 }
 
+export type DocumentUpload = {
+  id: number
+  originalFileName: string
+  contentType: string
+  byteSize: number
+  cityHintId?: number | null
+  status: string
+  errorSummary?: string | null
+  ingestionRunId?: number | null
+  createdAt: string
+  processedAt?: string | null
+  articlesCreated: number
+}
+
 function mapArticle(a: AdminArticleResponse): AdminArticle {
   return {
     id: a.id ?? 0,
@@ -165,6 +181,22 @@ function mapRun(r: IngestionRunResponseDto): IngestionRun {
   }
 }
 
+function mapUpload(u: DocumentUploadResponseDto): DocumentUpload {
+  return {
+    id: u.id ?? 0,
+    originalFileName: u.originalFileName ?? '',
+    contentType: u.contentType ?? '',
+    byteSize: u.byteSize ?? 0,
+    cityHintId: u.cityHintId,
+    status: u.status ?? '',
+    errorSummary: u.errorSummary,
+    ingestionRunId: u.ingestionRunId,
+    createdAt: u.createdAt ?? '',
+    processedAt: u.processedAt,
+    articlesCreated: u.articlesCreated ?? 0,
+  }
+}
+
 export const api = {
   login: async (password: string, displayName: string) => {
     const res = await request<AdminLoginResponse>('/api/admin/login', {
@@ -211,6 +243,33 @@ export const api = {
 
   rejectArticle: async (id: number) =>
     mapArticle(await request<AdminArticleResponse>(`/api/admin/articles/${id}/reject`, { method: 'POST' })),
+
+  archiveArticle: async (id: number) =>
+    mapArticle(await request<AdminArticleResponse>(`/api/admin/articles/${id}/archive`, { method: 'POST' })),
+
+  uploadDocument: async (file: File, cityHintId?: number) => {
+    const form = new FormData()
+    form.append('file', file)
+    if (cityHintId != null && cityHintId > 0) {
+      form.append('cityHintId', String(cityHintId))
+    }
+    return mapUpload(
+      await request<DocumentUploadResponseDto>('/api/admin/uploads', {
+        method: 'POST',
+        body: form,
+      }),
+    )
+  },
+
+  listUploads: async (page: number) => {
+    const data = await request<PagedDocumentUploadsResponse>(`/api/admin/uploads?page=${page}`)
+    return {
+      items: (data.items ?? []).map(mapUpload),
+      total: data.total ?? 0,
+      page: data.page,
+      limit: data.pageSize,
+    } satisfies Paged<DocumentUpload>
+  },
 
   getSources: async () => {
     const data = await request<AdminSourceResponse[]>('/api/admin/sources')
