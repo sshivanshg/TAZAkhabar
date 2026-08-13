@@ -31,11 +31,13 @@ export default function RootLayout() {
                 <Stack.Screen name="index" options={{ headerShown: false }} />
                 <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
                 <Stack.Screen name="feed" options={{ headerShown: false }} />
-                <Stack.Screen name="city" options={{ title: 'Choose your city' }} />
+                <Stack.Screen name="city" options={{ headerShown: false }} />
                 <Stack.Screen
                   name="article/[id]"
                   options={{
                     title: 'Story',
+                    headerBackTitle: 'Back',
+                    headerTintColor: colors.text,
                     animation: 'fade_from_bottom',
                     animationDuration: 280,
                   }}

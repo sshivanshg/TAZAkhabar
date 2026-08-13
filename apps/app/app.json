@@ -7,6 +7,11 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "scheme": "newsfeed",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#FAFAFA"
+    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "app.newsfeed.mobile"
@@ -19,7 +24,8 @@
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "package": "app.newsfeed.mobile",
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "usesCleartextTraffic": true
     },
     "web": {
       "bundler": "metro",
@@ -28,9 +34,9 @@
       "name": "NewsFeed",
       "shortName": "NewsFeed",
       "lang": "en",
-      "themeColor": "#000000",
-      "backgroundColor": "#ffffff",
-      "description": "Local news summaries for your city."
+      "themeColor": "#FAFAFA",
+      "backgroundColor": "#FAFAFA",
+      "description": "Local news summaries for your city. Light shell with a single blue accent."
     },
     "plugins": [
       "expo-font",

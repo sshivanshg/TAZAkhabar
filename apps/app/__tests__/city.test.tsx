@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native'
+import { SafeAreaProvider } from 'react-native-safe-area-context'
 import type { CityResponse } from '@newsfeed/shared-types'
 
 const mockReplace = jest.fn()
@@ -96,6 +97,19 @@ const cities: CityResponse[] = [
   { id: 3, name: 'Kanpur', state: 'Uttar Pradesh', slug: 'kanpur' },
 ]
 
+function renderCity() {
+  return render(
+    <SafeAreaProvider
+      initialMetrics={{
+        frame: { x: 0, y: 0, width: 390, height: 844 },
+        insets: { top: 0, left: 0, right: 0, bottom: 0 },
+      }}
+    >
+      <CityPickerScreen />
+    </SafeAreaProvider>,
+  )
+}
+
 describe('CityPickerScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks()
@@ -104,7 +118,7 @@ describe('CityPickerScreen', () => {
   })
 
   it('renders cities and persists selection then navigates to feed', async () => {
-    render(<CityPickerScreen />)
+    renderCity()
 
     expect(await screen.findByText('Jhansi')).toBeTruthy()
     expect(screen.getByText('Kanpur')).toBeTruthy()
@@ -122,7 +136,7 @@ describe('CityPickerScreen', () => {
 
   it('shows error state with retry when cities fail to load', async () => {
     mockGetCities.mockRejectedValueOnce(new Error('Network down'))
-    render(<CityPickerScreen />)
+    renderCity()
 
     expect(await screen.findByText('We could not load cities.')).toBeTruthy()
     expect(screen.getByText('Network down')).toBeTruthy()

@@ -8,6 +8,8 @@ public static class ArticlesEndpoints
 {
     private const int DefaultLimit = 20;
     private const int MaxLimit = 50;
+    private const int MaxQueryLength = 100;
+    private const string PublicCacheControl = "public, max-age=60";
 
     public static RouteGroupBuilder MapArticlesEndpoints(this RouteGroupBuilder api)
     {
@@ -18,6 +20,7 @@ public static class ArticlesEndpoints
                 int? offset,
                 int? limit,
                 AppDbContext db,
+                HttpContext httpContext,
                 CancellationToken cancellationToken) =>
             {
                 if (string.IsNullOrWhiteSpace(city))
@@ -25,6 +28,14 @@ public static class ArticlesEndpoints
                     return Results.Problem(
                         title: "Invalid city",
                         detail: "Query parameter 'city' (slug) is required.",
+                        statusCode: StatusCodes.Status400BadRequest);
+                }
+
+                if (q is { Length: > MaxQueryLength })
+                {
+                    return Results.Problem(
+                        title: "Invalid q",
+                        detail: $"Query parameter 'q' must be at most {MaxQueryLength} characters.",
                         statusCode: StatusCodes.Status400BadRequest);
                 }
 
@@ -84,12 +95,51 @@ public static class ArticlesEndpoints
                         a.ImageUrl))
                     .ToListAsync(cancellationToken);
 
+                httpContext.Response.Headers.CacheControl = PublicCacheControl;
                 return Results.Ok(new PagedArticlesResponse(items, total, pageOffset, pageLimit));
             })
             .WithName("GetArticles")
             .WithOpenApi()
             .Produces<PagedArticlesResponse>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status400BadRequest)
+            .ProducesProblem(StatusCodes.Status429TooManyRequests);
+
+        api.MapGet("/articles/{id:int}", async (
+                int id,
+                AppDbContext db,
+                HttpContext httpContext,
+                CancellationToken cancellationToken) =>
+            {
+                var article = await db.Articles
+                    .AsNoTracking()
+                    .Where(a => a.Id == id)
+                    .Select(a => new ArticleResponse(
+                        a.Id,
+                        a.CityId,
+                        a.Headline,
+                        a.Summary,
+                        a.SourceName,
+                        a.SourceUrl,
+                        a.PublishedAt,
+                        a.Category,
+                        a.ImageUrl))
+                    .FirstOrDefaultAsync(cancellationToken);
+
+                if (article is null)
+                {
+                    return Results.Problem(
+                        title: "Article not found",
+                        detail: $"No article found with id '{id}'.",
+                        statusCode: StatusCodes.Status404NotFound);
+                }
+
+                httpContext.Response.Headers.CacheControl = PublicCacheControl;
+                return Results.Ok(article);
+            })
+            .WithName("GetArticleById")
+            .WithOpenApi()
+            .Produces<ArticleResponse>(StatusCodes.Status200OK)
+            .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status429TooManyRequests);
 
         return api;

@@ -129,4 +129,70 @@ public sealed class ArticlesEndpointTests : IClassFixture<NewsFeedWebApplication
         Assert.NotEmpty(payload.Items);
         Assert.All(payload.Items, a => Assert.Contains("budget", a.Headline, StringComparison.OrdinalIgnoreCase));
     }
+
+    [Fact]
+    public async Task GetArticles_CategoryFilter_MatchesCategory()
+    {
+        var client = _factory.CreateSeededClient();
+        var response = await client.GetAsync("/api/articles?city=jhansi&category=Health");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var payload = await response.Content.ReadFromJsonAsync<PagedArticlesResponse>();
+        Assert.NotNull(payload);
+        Assert.NotEmpty(payload.Items);
+        Assert.All(payload.Items, a => Assert.Equal("Health", a.Category, ignoreCase: true));
+    }
+
+    [Fact]
+    public async Task GetArticles_SetsPublicCacheControl()
+    {
+        var client = _factory.CreateSeededClient();
+        var response = await client.GetAsync("/api/articles?city=jhansi");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("public, max-age=60", response.Headers.CacheControl?.ToString());
+    }
+
+    [Fact]
+    public async Task GetArticleById_ReturnsArticle()
+    {
+        var client = _factory.CreateSeededClient();
+        var list = await client.GetFromJsonAsync<PagedArticlesResponse>("/api/articles?city=jhansi&limit=1");
+        Assert.NotNull(list);
+        Assert.NotEmpty(list.Items);
+        var id = list.Items[0].Id;
+
+        var response = await client.GetAsync($"/api/articles/{id}");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("public, max-age=60", response.Headers.CacheControl?.ToString());
+
+        var article = await response.Content.ReadFromJsonAsync<ArticleResponse>();
+        Assert.NotNull(article);
+        Assert.Equal(id, article.Id);
+    }
+
+    [Fact]
+    public async Task GetArticleById_UnknownId_ReturnsNotFound()
+    {
+        var client = _factory.CreateSeededClient();
+        var response = await client.GetAsync("/api/articles/999999");
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+
+        var problem = await response.Content.ReadFromJsonAsync<ProblemDetails>();
+        Assert.NotNull(problem);
+        Assert.Equal(404, problem.Status);
+    }
+
+    [Fact]
+    public async Task GetArticles_QueryTooLong_ReturnsBadRequest()
+    {
+        var client = _factory.CreateSeededClient();
+        var q = new string('a', 101);
+        var response = await client.GetAsync($"/api/articles?city=jhansi&q={q}");
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
 }

@@ -4,6 +4,7 @@ using NewsFeed.Api.Dtos;
 using NewsFeed.Api.Endpoints;
 using NewsFeed.Api.Options;
 using Microsoft.AspNetCore.Diagnostics;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
@@ -30,6 +31,14 @@ try
     var corsOptions = builder.Configuration.GetSection(CorsOptions.SectionName).Get<CorsOptions>() ?? new CorsOptions();
     var rateLimitingOptions = builder.Configuration.GetSection(RateLimitingOptions.SectionName).Get<RateLimitingOptions>()
         ?? new RateLimitingOptions();
+
+    builder.Services.Configure<ForwardedHeadersOptions>(options =>
+    {
+        options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+        // Trust proxy headers from Cloudflare / Render (no fixed known-proxy list).
+        options.KnownNetworks.Clear();
+        options.KnownProxies.Clear();
+    });
 
     builder.Services.AddProblemDetails();
     builder.Services.AddEndpointsApiExplorer();
@@ -72,6 +81,7 @@ try
         options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
         options.OnRejected = async (context, token) =>
         {
+            context.HttpContext.Response.Headers.RetryAfter = rateLimitingOptions.WindowSeconds.ToString();
             context.HttpContext.Response.ContentType = "application/problem+json";
             var problem = Results.Problem(
                 title: "Too Many Requests",
@@ -80,15 +90,27 @@ try
             await problem.ExecuteAsync(context.HttpContext);
         };
 
-        options.AddFixedWindowLimiter("public", limiter =>
-        {
-            limiter.PermitLimit = rateLimitingOptions.PermitLimit;
-            limiter.Window = TimeSpan.FromSeconds(rateLimitingOptions.WindowSeconds);
-            limiter.QueueLimit = 0;
-        });
+        options.AddPolicy("public", httpContext =>
+            RateLimitPartition.GetFixedWindowLimiter(
+                partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+                factory: _ => new FixedWindowRateLimiterOptions
+                {
+                    PermitLimit = rateLimitingOptions.PermitLimit,
+                    Window = TimeSpan.FromSeconds(rateLimitingOptions.WindowSeconds),
+                    QueueLimit = 0,
+                }));
     });
 
     var app = builder.Build();
+
+    using (var scope = app.Services.CreateScope())
+    {
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        if (db.Database.IsRelational())
+        {
+            await db.Database.MigrateAsync();
+        }
+    }
 
     app.UseSerilogRequestLogging();
     app.UseExceptionHandler(errorApp =>
@@ -126,6 +148,15 @@ try
 
     // OpenAPI JSON is always available for shared-types generation (local + CI).
     app.MapSwagger("/openapi/{documentName}.json");
+
+    app.UseForwardedHeaders();
+
+    app.Use(async (context, next) =>
+    {
+        context.Response.Headers.XContentTypeOptions = "nosniff";
+        context.Response.Headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
+        await next();
+    });
 
     app.UseCors("Frontend");
     app.UseRateLimiter();

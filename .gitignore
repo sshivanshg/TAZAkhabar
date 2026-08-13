@@ -64,3 +64,6 @@ apps/app/.expo/
 .turbo/
 .cache/
 .tmp/
+
+# Expo local (root)
+.expo/

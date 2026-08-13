@@ -2,6 +2,8 @@
 
 Migrations for `NewsFeed.Api` are generated into this folder and compiled into the API assembly.
 
+When the API starts against a relational database, it applies pending migrations automatically (`Database.MigrateAsync`). You can also run `dotnet ef database update --project apps/api/NewsFeed.Api.csproj` manually.
+
 ## Add a new migration
 
 From the repo root:
