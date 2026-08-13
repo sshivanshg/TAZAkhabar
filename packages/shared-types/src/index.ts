@@ -9,6 +9,7 @@ export type {
   AdminLoginRequest,
   AdminLoginResponse,
   AdminSourceResponse,
+  ArticleDatesResponse,
   ArticleResponse,
   CityResponse,
   CreateAdminArticleRequest,

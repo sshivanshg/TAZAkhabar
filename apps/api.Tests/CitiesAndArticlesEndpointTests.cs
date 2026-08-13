@@ -166,6 +166,60 @@ public sealed class ArticlesEndpointTests : IClassFixture<NewsFeedWebApplication
     }
 
     [Fact]
+    public async Task GetArticles_DateFilter_UsesCityLocalCalendarDay()
+    {
+        var client = _factory.CreateSeededClient();
+        var day = new DateOnly(2026, 8, 14);
+        var (start, end) = NewsFeed.Api.Services.CityCalendar.UtcBoundsForLocalDate(day);
+        InsertJhansiArticles(
+            Published("On day early UTC", "https://example.com/date-early", start.AddHours(1)),
+            Published("On day late UTC", "https://example.com/date-late", end.AddMinutes(-30)),
+            Published("Previous local day", "https://example.com/date-prev", start.AddMinutes(-30)),
+            Published("Next local day", "https://example.com/date-next", end.AddMinutes(30)));
+
+        var response = await client.GetAsync("/api/articles?city=jhansi&date=2026-08-14");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var payload = await response.Content.ReadFromJsonAsync<PagedArticlesResponse>();
+        Assert.NotNull(payload);
+        Assert.Equal(2, payload.Total);
+        Assert.Equal(
+            ["On day late UTC", "On day early UTC"],
+            payload.Items.Select(a => a.Headline));
+    }
+
+    [Fact]
+    public async Task GetArticles_InvalidDate_ReturnsBadRequest()
+    {
+        var client = _factory.CreateSeededClient();
+        var response = await client.GetAsync("/api/articles?city=jhansi&date=08/14/2026");
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetArticleDates_ReturnsLocalDatesWithArticles()
+    {
+        var client = _factory.CreateSeededClient();
+        var today = NewsFeed.Api.Services.CityCalendar.TodayLocal();
+        var twoDaysAgo = today.AddDays(-2);
+        var (todayStart, todayEnd) = NewsFeed.Api.Services.CityCalendar.UtcBoundsForLocalDate(today);
+        var (olderStart, _) = NewsFeed.Api.Services.CityCalendar.UtcBoundsForLocalDate(twoDaysAgo);
+        InsertJhansiArticles(
+            Published("Today-ish", "https://example.com/dates-a", todayStart.AddHours(1)),
+            Published("Same local day", "https://example.com/dates-b", todayEnd.AddMinutes(-60)),
+            Published("Other day", "https://example.com/dates-c", olderStart.AddHours(12)));
+
+        var response = await client.GetAsync("/api/articles/dates?city=jhansi");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var payload = await response.Content.ReadFromJsonAsync<ArticleDatesResponse>();
+        Assert.NotNull(payload);
+        Assert.Contains(today.ToString("yyyy-MM-dd"), payload.Dates);
+        Assert.Contains(twoDaysAgo.ToString("yyyy-MM-dd"), payload.Dates);
+        Assert.Equal(payload.Dates, payload.Dates.OrderByDescending(d => d).ToList());
+    }
+
+    [Fact]
     public async Task GetArticles_SetsPublicCacheControl()
     {
         var client = _factory.CreateSeededClient();

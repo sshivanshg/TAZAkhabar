@@ -123,6 +123,18 @@ export interface IngestRunResponse {
     skipped?: number;
 }
 
+export interface IngestionEventDto {
+    type?: string;
+    message?: string;
+    at?: string;
+    found?: number | undefined;
+    added?: number | undefined;
+    skipped?: number | undefined;
+    failed?: number | undefined;
+
+    [key: string]: any;
+}
+
 export interface IngestionRunResponseDto {
     id?: number;
     sourceId?: number;
@@ -133,16 +145,6 @@ export interface IngestionRunResponseDto {
     articlesSkipped?: number;
     articlesFailed?: number;
     errorSummary?: string | undefined;
-}
-
-export interface IngestionEventDto {
-    type?: string;
-    message?: string;
-    at?: string;
-    found?: number | undefined;
-    added?: number | undefined;
-    skipped?: number | undefined;
-    failed?: number | undefined;
 }
 
 export interface PagedAdminArticlesResponse {
@@ -199,6 +201,10 @@ export interface ProblemDetails {
     instance?: string | undefined;
 
     [key: string]: any;
+}
+
+export interface ArticleDatesResponse {
+    dates?: string[] | undefined;
 }
 
 export interface FileParameter {

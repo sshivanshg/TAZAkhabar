@@ -19,6 +19,7 @@ import {
 } from '../../src/components/ui/BottomSheet'
 import { BreakingNewsCarousel } from '../../src/components/BreakingNewsCarousel'
 import { CategoryChipRow } from '../../src/components/CategoryChips'
+import { DateStrip } from '../../src/components/DateStrip'
 import {
   CompactArticleCard,
   CompactArticleCardSkeleton,
@@ -66,6 +67,7 @@ import {
 import { useTabBarClearance } from '../../src/theme/useTabBarClearance'
 import { isDesktopLayout, useBreakpoint } from '../../src/hooks/useBreakpoint'
 import { articleRouteParams } from '../../src/utils/articleRouteParams'
+import { todayCityIso } from '../../src/utils/cityCalendar'
 import { shareArticleToWhatsApp } from '../../src/utils/shareToWhatsApp'
 
 type ListRow =
@@ -143,6 +145,9 @@ function HomeFeedBody() {
   const [category, setCategory] = useState<FeedCategory>(() =>
     isFeedCategory(params.category) ? params.category : 'All',
   )
+  /** Session-only edition date (city-local YYYY-MM-DD). Fresh launch always starts on today. */
+  const [selectedDate, setSelectedDate] = useState(() => todayCityIso())
+  const [availableDates, setAvailableDates] = useState<string[]>([])
   const [articles, setArticles] = useState<ArticleResponse[]>([])
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
@@ -227,6 +232,33 @@ function HomeFeedBody() {
     }
   }, [citySlug])
 
+  useEffect(() => {
+    if (!citySlug) {
+      return
+    }
+    let cancelled = false
+    apiClient
+      .getArticleDates({
+        city: citySlug,
+        category: category === 'All' ? undefined : category,
+      })
+      .then((res) => {
+        if (!cancelled) {
+          setAvailableDates(res.dates ?? [])
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setAvailableDates([])
+        }
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [citySlug, category])
+
+  const viewingToday = selectedDate === todayCityIso()
+
   const loadPage = useCallback(
     async (mode: 'replace' | 'append' | 'refresh') => {
       if (!citySlug) {
@@ -254,10 +286,13 @@ function HomeFeedBody() {
 
       try {
         const offset = mode === 'append' ? offsetRef.current : 0
+        const isToday = selectedDate === todayCityIso()
         const result = await apiClient.getArticles({
           city: citySlug,
           category: category === 'All' ? undefined : category,
           lang: preferredLanguage,
+          // Past editions filter by city-local day; "Today" keeps newest-first default.
+          date: isToday ? undefined : selectedDate,
           offset,
           limit: PAGE_SIZE,
         })
@@ -289,14 +324,14 @@ function HomeFeedBody() {
         }
       }
     },
-    [citySlug, category, preferredLanguage],
+    [citySlug, category, preferredLanguage, selectedDate],
   )
 
   useEffect(() => {
     if (citySlug && languageReady) {
       void loadPage('replace')
     }
-  }, [citySlug, category, preferredLanguage, languageReady, loadPage])
+  }, [citySlug, category, preferredLanguage, languageReady, selectedDate, loadPage])
 
   const cityTitle = cityMeta?.name ?? citySlug ?? 'Your city'
   const visibleArticles = useMemo(
@@ -313,12 +348,14 @@ function HomeFeedBody() {
   )
 
   const breaking = useMemo(
-    () => visibleArticles.slice(0, BREAKING_NEWS_COUNT),
-    [visibleArticles],
+    () => (viewingToday ? visibleArticles.slice(0, BREAKING_NEWS_COUNT) : []),
+    [visibleArticles, viewingToday],
   )
-  const listStart = desktop
-    ? desktopHeroVisibleCount(estimateDesktopRailWidth(windowWidth))
-    : BREAKING_NEWS_COUNT
+  const listStart = viewingToday
+    ? desktop
+      ? desktopHeroVisibleCount(estimateDesktopRailWidth(windowWidth))
+      : BREAKING_NEWS_COUNT
+    : 0
   const recommendations = useMemo(
     () => visibleArticles.slice(listStart),
     [visibleArticles, listStart],
@@ -562,6 +599,11 @@ function HomeFeedBody() {
             }
           }}
         />
+        <DateStrip
+          selectedDate={selectedDate}
+          availableDates={availableDates}
+          onSelectDate={setSelectedDate}
+        />
 
         {(loading && !showContent) || !prefs.ready ? (
           <Box pt="$2" px="$4">
@@ -622,7 +664,7 @@ function HomeFeedBody() {
                     return (
                       <View style={styles.sectionPad}>
                         <SectionHeader
-                          title="Latest for you"
+                          title={viewingToday ? 'Latest for you' : 'Stories that day'}
                           actionLabel="View all"
                           onAction={goDiscover}
                         />
@@ -640,7 +682,11 @@ function HomeFeedBody() {
                           fontWeight="$semibold"
                           color={colors.text}
                         >
-                          {filteredAway ? 'Stories hidden by your filters' : 'No stories yet'}
+                          {filteredAway
+                            ? 'Stories hidden by your filters'
+                            : viewingToday
+                              ? 'No stories yet'
+                              : `No stories for this date in ${cityTitle}`}
                         </Text>
                         <Text
                           fontSize={typography.summary.fontSize}
@@ -651,14 +697,20 @@ function HomeFeedBody() {
                         >
                           {filteredAway
                             ? 'Unblock sources or categories in Profile, or pull down to refresh.'
-                            : `We do not have articles for ${cityTitle}${
-                                category !== 'All' ? ` in ${category}` : ''
-                              } right now. Pull down to refresh, or browse Discover.`}
+                            : viewingToday
+                              ? `We do not have articles for ${cityTitle}${
+                                  category !== 'All' ? ` in ${category}` : ''
+                                } right now. Pull down to refresh, or browse Discover.`
+                              : `Try another date, or switch category. Pull down to refresh.`}
                         </Text>
                         <PrimaryButton
-                          label="Browse Discover"
-                          onPress={goDiscover}
-                          accessibilityLabel="Browse Discover"
+                          label={viewingToday ? 'Browse Discover' : 'Back to today'}
+                          onPress={
+                            viewingToday ? goDiscover : () => setSelectedDate(todayCityIso())
+                          }
+                          accessibilityLabel={
+                            viewingToday ? 'Browse Discover' : 'Back to today'
+                          }
                         />
                       </View>
                     )
