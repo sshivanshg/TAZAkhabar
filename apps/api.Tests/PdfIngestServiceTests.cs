@@ -202,6 +202,7 @@ public sealed class PdfIngestServiceTests
             db,
             new PdfProcessingQueue(),
             fake,
+            new IngestionEventBus(),
             Microsoft.Extensions.Options.Options.Create(new UploadOptions { RootPath = root, MaxBytes = 26_214_400, MaxPages = 40 }),
             NullLogger<PdfIngestService>.Instance);
 

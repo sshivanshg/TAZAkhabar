@@ -4,9 +4,9 @@ public sealed class ArticleIntelligenceOptions
 {
     public const string SectionName = "ArticleIntelligence";
 
-    public string BaseUrl { get; set; } = "https://api.openai.com/v1";
+    public string BaseUrl { get; set; } = "https://api.anthropic.com";
 
     public string ApiKey { get; set; } = "";
 
-    public string Model { get; set; } = "gpt-4o-mini";
+    public string Model { get; set; } = "claude-sonnet-4-5";
 }

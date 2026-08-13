@@ -3,13 +3,13 @@ using NewsFeed.Api.Options;
 
 namespace NewsFeed.Api.Tests;
 
-public sealed class OpenAiArticleIntelligenceTests
+public sealed class ClaudeArticleIntelligenceTests
 {
     [Fact]
     public void ParseStoriesJson_ReadsArray()
     {
         var json = """{"stories":[{"headline":"H","summary":"S","category":"Local","citySlug":"jhansi","language":"hi"}]}""";
-        var stories = OpenAiArticleIntelligence.ParseStoriesJson(json);
+        var stories = ClaudeArticleIntelligence.ParseStoriesJson(json);
         Assert.Single(stories);
         Assert.Equal("jhansi", stories[0].CitySlug);
     }
@@ -18,7 +18,7 @@ public sealed class OpenAiArticleIntelligenceTests
     public void ParseStoriesJson_CoercesUnknownCategoryToLocal()
     {
         var json = """{"stories":[{"headline":"H","summary":"S","category":"Politics","citySlug":"kanpur","language":"en"}]}""";
-        var stories = OpenAiArticleIntelligence.ParseStoriesJson(json);
+        var stories = ClaudeArticleIntelligence.ParseStoriesJson(json);
         Assert.Equal("Local", Assert.Single(stories).Category);
     }
 
@@ -26,7 +26,7 @@ public sealed class OpenAiArticleIntelligenceTests
     public void ParseStoriesJson_CanonicalizesCategoryCase()
     {
         var json = """{"stories":[{"headline":"H","summary":"S","category":"sports","citySlug":null,"language":"en"}]}""";
-        var stories = OpenAiArticleIntelligence.ParseStoriesJson(json);
+        var stories = ClaudeArticleIntelligence.ParseStoriesJson(json);
         Assert.Equal("Sports", Assert.Single(stories).Category);
     }
 
@@ -35,20 +35,20 @@ public sealed class OpenAiArticleIntelligenceTests
     {
         var summary = new string('x', 1200);
         var json = $$"""{"stories":[{"headline":"H","summary":"{{summary}}","category":"Health","citySlug":"lucknow","language":"en"}]}""";
-        var stories = OpenAiArticleIntelligence.ParseStoriesJson(json);
+        var stories = ClaudeArticleIntelligence.ParseStoriesJson(json);
         Assert.Equal(1000, Assert.Single(stories).Summary.Length);
     }
 
     [Fact]
     public void ParseStoriesJson_MalformedJson_ReturnsEmpty()
     {
-        Assert.Empty(OpenAiArticleIntelligence.ParseStoriesJson("{not-json"));
+        Assert.Empty(ClaudeArticleIntelligence.ParseStoriesJson("{not-json"));
     }
 
     [Fact]
     public void ParseSummaryJson_ReadsSummary()
     {
-        var summary = OpenAiArticleIntelligence.ParseSummaryJson("""{"summary":"Two-line original wrap-up."}""");
+        var summary = ClaudeArticleIntelligence.ParseSummaryJson("""{"summary":"Two-line original wrap-up."}""");
         Assert.Equal("Two-line original wrap-up.", summary);
     }
 
@@ -77,40 +77,50 @@ public sealed class OpenAiArticleIntelligenceTests
     }
 
     [Fact]
-    public async Task ExtractStoriesFromImageAsync_SendsDataUrlAndParsesStories()
+    public async Task ExtractStoriesFromImageAsync_SendsAnthropicImageAndParsesStories()
     {
         string? capturedBody = null;
+        string? apiKeyHeader = null;
+        string? versionHeader = null;
         var handler = new StubHandler(async request =>
         {
             capturedBody = await request.Content!.ReadAsStringAsync();
+            apiKeyHeader = request.Headers.TryGetValues("x-api-key", out var keys) ? keys.FirstOrDefault() : null;
+            versionHeader = request.Headers.TryGetValues("anthropic-version", out var versions)
+                ? versions.FirstOrDefault()
+                : null;
             return """
-                {"choices":[{"message":{"content":"{\"stories\":[{\"headline\":\"From image\",\"summary\":\"Vision summary.\",\"category\":\"Local\",\"citySlug\":\"jhansi\",\"language\":\"en\"}]}"}}]}
+                {"content":[{"type":"text","text":"{\"stories\":[{\"headline\":\"From image\",\"summary\":\"Vision summary.\",\"category\":\"Local\",\"citySlug\":\"jhansi\",\"language\":\"en\"}]}"}]}
                 """;
         });
-        var intelligence = new OpenAiArticleIntelligence(
-            new NamedHttpClientFactory(OpenAiArticleIntelligence.HttpClientName, new HttpClient(handler)),
+        var intelligence = new ClaudeArticleIntelligence(
+            new NamedHttpClientFactory(ClaudeArticleIntelligence.HttpClientName, new HttpClient(handler)),
             Microsoft.Extensions.Options.Options.Create(new ArticleIntelligenceOptions
             {
                 ApiKey = "test-key",
-                BaseUrl = "https://api.openai.com/v1",
+                BaseUrl = "https://api.anthropic.com",
+                Model = "claude-sonnet-4-5",
             }),
-            Microsoft.Extensions.Logging.Abstractions.NullLogger<OpenAiArticleIntelligence>.Instance);
+            Microsoft.Extensions.Logging.Abstractions.NullLogger<ClaudeArticleIntelligence>.Instance);
 
         var stories = await intelligence.ExtractStoriesFromImageAsync(
             [0x01, 0x02], "image/png", "jhansi", CancellationToken.None);
 
         var story = Assert.Single(stories);
         Assert.Equal("From image", story.Headline);
-        Assert.Contains("\"image_url\"", capturedBody, StringComparison.Ordinal);
-        Assert.Contains("data:image/png;base64,", capturedBody, StringComparison.Ordinal);
+        Assert.Equal("test-key", apiKeyHeader);
+        Assert.Equal(ClaudeArticleIntelligence.AnthropicVersion, versionHeader);
+        Assert.Contains("\"type\":\"image\"", capturedBody, StringComparison.Ordinal);
+        Assert.Contains("\"media_type\":\"image/png\"", capturedBody, StringComparison.Ordinal);
         Assert.Contains("IMAGE_UPLOAD", capturedBody, StringComparison.Ordinal);
+        Assert.Contains("/v1/messages", handler.LastRequestUri, StringComparison.Ordinal);
     }
 
-    private static OpenAiArticleIntelligence CreateSut(string apiKey) =>
+    private static ClaudeArticleIntelligence CreateSut(string apiKey) =>
         new(
             new UnusedHttpClientFactory(),
             Microsoft.Extensions.Options.Options.Create(new ArticleIntelligenceOptions { ApiKey = apiKey }),
-            Microsoft.Extensions.Logging.Abstractions.NullLogger<OpenAiArticleIntelligence>.Instance);
+            Microsoft.Extensions.Logging.Abstractions.NullLogger<ClaudeArticleIntelligence>.Instance);
 
     private sealed class UnusedHttpClientFactory : IHttpClientFactory
     {
@@ -129,9 +139,12 @@ public sealed class OpenAiArticleIntelligenceTests
 
     private sealed class StubHandler(Func<HttpRequestMessage, Task<string>> responder) : HttpMessageHandler
     {
+        public string LastRequestUri { get; private set; } = "";
+
         protected override async Task<HttpResponseMessage> SendAsync(
             HttpRequestMessage request, CancellationToken cancellationToken)
         {
+            LastRequestUri = request.RequestUri?.ToString() ?? "";
             var body = await responder(request);
             return new HttpResponseMessage(System.Net.HttpStatusCode.OK)
             {

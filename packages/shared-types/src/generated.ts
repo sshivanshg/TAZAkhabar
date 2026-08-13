@@ -131,6 +131,16 @@ export interface IngestionRunResponseDto {
     errorSummary?: string | undefined;
 }
 
+export interface IngestionEventDto {
+    type?: string;
+    message?: string;
+    at?: string;
+    found?: number | undefined;
+    added?: number | undefined;
+    skipped?: number | undefined;
+    failed?: number | undefined;
+}
+
 export interface PagedAdminArticlesResponse {
     items?: AdminArticleResponse[] | undefined;
     total?: number;

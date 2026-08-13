@@ -12,6 +12,7 @@ public sealed class PdfIngestService(
     AppDbContext db,
     PdfProcessingQueue queue,
     IArticleIntelligence intelligence,
+    IIngestionEventBus events,
     IOptions<UploadOptions> options,
     ILogger<PdfIngestService> logger)
 {
@@ -121,10 +122,17 @@ public sealed class PdfIngestService(
             upload.IngestionRunId = run.Id;
             await db.SaveChangesAsync(ct);
 
+            IngestionEvents.Emit(
+                events,
+                run.Id,
+                "started",
+                $"PDF run started · {upload.OriginalFileName}");
+
             var hintCity = upload.CityHintId is int hintId
                 ? await db.Cities.AsNoTracking().FirstOrDefaultAsync(c => c.Id == hintId, ct)
                 : null;
 
+            IngestionEvents.Emit(events, run.Id, "progress", "Extracting stories from upload");
             var stories = await ExtractStoriesAsync(upload, hintCity?.Slug, ct);
             if (stories is null)
             {
@@ -132,6 +140,13 @@ public sealed class PdfIngestService(
             }
 
             run.ArticlesFound = stories.Count;
+            IngestionEvents.Emit(
+                events,
+                run.Id,
+                "found",
+                $"Extracted {stories.Count} stor{(stories.Count == 1 ? "y" : "ies")}",
+                found: stories.Count);
+
             var inserted = 0;
             var skipped = 0;
             foreach (var story in stories)
@@ -139,10 +154,26 @@ public sealed class PdfIngestService(
                 if (await TryInsertAsync(upload, source, story, hintCity, source.CityId, ct))
                 {
                     inserted++;
+                    IngestionEvents.Emit(
+                        events,
+                        run.Id,
+                        "article_added",
+                        $"Added · {HtmlText.Truncate(story.Headline ?? "", 100)}",
+                        found: stories.Count,
+                        added: inserted,
+                        skipped: skipped);
                 }
                 else
                 {
                     skipped++;
+                    IngestionEvents.Emit(
+                        events,
+                        run.Id,
+                        "skipped",
+                        $"Skipped · {HtmlText.Truncate(story.Headline ?? "", 80)}",
+                        found: stories.Count,
+                        added: inserted,
+                        skipped: skipped);
                 }
             }
 
@@ -327,6 +358,15 @@ public sealed class PdfIngestService(
             }
 
             run.CompletedAt = DateTimeOffset.UtcNow;
+            IngestionEvents.Emit(
+                events,
+                run.Id,
+                "error",
+                summary,
+                found: run.ArticlesFound,
+                added: run.ArticlesAdded,
+                skipped: run.ArticlesSkipped,
+                failed: run.ArticlesFailed);
         }
 
         await db.SaveChangesAsync(ct);
@@ -344,6 +384,31 @@ public sealed class PdfIngestService(
         source.LastFetchStatus = status;
         source.LastErrorMessage = error;
         await db.SaveChangesAsync(cancellationToken);
+
+        if (status == FetchStatus.Error)
+        {
+            IngestionEvents.Emit(
+                events,
+                run.Id,
+                "error",
+                error ?? "PDF run failed",
+                found: run.ArticlesFound,
+                added: run.ArticlesAdded,
+                skipped: run.ArticlesSkipped,
+                failed: run.ArticlesFailed);
+        }
+        else
+        {
+            IngestionEvents.Emit(
+                events,
+                run.Id,
+                "completed",
+                $"Done · +{run.ArticlesAdded} added · {run.ArticlesSkipped} skipped",
+                found: run.ArticlesFound,
+                added: run.ArticlesAdded,
+                skipped: run.ArticlesSkipped,
+                failed: run.ArticlesFailed);
+        }
     }
 
     private static async Task<long> CopyWithLimitAsync(

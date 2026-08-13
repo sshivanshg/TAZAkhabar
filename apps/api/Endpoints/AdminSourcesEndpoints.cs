@@ -172,8 +172,8 @@ public static class AdminSourcesEndpoints
         admin.MapPost("/sources/{id:int}/trigger", async (
                 int id,
                 AppDbContext db,
-                RssIngestService ingest,
-                ScrapeIngestService scrapeIngest,
+                IIngestionEventBus events,
+                IServiceScopeFactory scopeFactory,
                 CancellationToken cancellationToken) =>
             {
                 var source = await db.Sources.AsNoTracking()
@@ -194,15 +194,95 @@ public static class AdminSourcesEndpoints
                         statusCode: StatusCodes.Status400BadRequest);
                 }
 
-                var run = source.Type == SourceType.Scrape
-                    ? await scrapeIngest.RunSourceAsync(id, cancellationToken)
-                    : await ingest.RunSourceAsync(id, cancellationToken);
-                return Results.Ok(ToRunResponse(run));
+                var run = new IngestionRun
+                {
+                    SourceId = source.Id,
+                    StartedAt = DateTimeOffset.UtcNow,
+                };
+                db.IngestionRuns.Add(run);
+                await db.SaveChangesAsync(cancellationToken);
+
+                IngestionEvents.Emit(
+                    events,
+                    run.Id,
+                    "started",
+                    $"{source.Type} run queued · {source.Name}");
+
+                var runId = run.Id;
+                var sourceType = source.Type;
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        await using var scope = scopeFactory.CreateAsyncScope();
+                        if (sourceType == SourceType.Scrape)
+                        {
+                            var scrape = scope.ServiceProvider.GetRequiredService<ScrapeIngestService>();
+                            await scrape.RunSourceAsync(id, CancellationToken.None, runId);
+                        }
+                        else
+                        {
+                            var rss = scope.ServiceProvider.GetRequiredService<RssIngestService>();
+                            await rss.RunSourceAsync(id, CancellationToken.None, runId);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        events.Publish(
+                            runId,
+                            new IngestionEventDto(
+                                "error",
+                                HtmlText.Truncate(ex.Message, 500),
+                                DateTimeOffset.UtcNow));
+                    }
+                });
+
+                return Results.Json(ToRunResponse(run), statusCode: StatusCodes.Status202Accepted);
             })
             .WithName("AdminTriggerSource")
             .WithOpenApi()
-            .Produces<IngestionRunResponseDto>(StatusCodes.Status200OK)
+            .Produces<IngestionRunResponseDto>(StatusCodes.Status202Accepted)
             .ProducesProblem(StatusCodes.Status400BadRequest)
+            .ProducesProblem(StatusCodes.Status401Unauthorized)
+            .ProducesProblem(StatusCodes.Status404NotFound);
+
+        admin.MapGet("/ingestion-runs/{id:int}/events", async (
+                int id,
+                HttpContext http,
+                AppDbContext db,
+                IIngestionEventBus events,
+                CancellationToken cancellationToken) =>
+            {
+                var exists = await db.IngestionRuns.AsNoTracking()
+                    .AnyAsync(r => r.Id == id, cancellationToken);
+                if (!exists)
+                {
+                    return Results.Problem(
+                        title: "Run not found",
+                        detail: $"No ingestion run found with id '{id}'.",
+                        statusCode: StatusCodes.Status404NotFound);
+                }
+
+                http.Response.Headers.ContentType = "text/event-stream";
+                http.Response.Headers.CacheControl = "no-cache";
+                http.Response.Headers.Connection = "keep-alive";
+                http.Response.Headers["X-Accel-Buffering"] = "no";
+
+                await foreach (var evt in events.Subscribe(id, cancellationToken))
+                {
+                    var payload = System.Text.Json.JsonSerializer.Serialize(evt, new System.Text.Json.JsonSerializerOptions
+                    {
+                        PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase,
+                    });
+                    await http.Response.WriteAsync($"event: ingest\ndata: {payload}\n\n", cancellationToken);
+                    await http.Response.Body.FlushAsync(cancellationToken);
+                }
+
+                return Results.Empty;
+            })
+            .WithName("AdminStreamIngestionEvents")
+            .WithOpenApi()
+            .Produces(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status404NotFound);
 

@@ -138,11 +138,27 @@ public sealed class AdminSourcesTests : IClassFixture<NewsFeedWebApplicationFact
         }
 
         var response = await client.PostAsync($"/api/admin/sources/{sourceId}/trigger", null);
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
         var run = await response.Content.ReadFromJsonAsync<IngestionRunResponseDto>(TestJson.Options);
         Assert.Equal(sourceId, run!.SourceId);
-        Assert.True(run.ArticlesAdded >= 1);
-        Assert.NotNull(run.CompletedAt);
+        Assert.Null(run.CompletedAt);
+
+        IngestionRunResponseDto? completed = null;
+        for (var i = 0; i < 40; i++)
+        {
+            await Task.Delay(50);
+            var page = await client.GetFromJsonAsync<PagedIngestionRunsResponse>(
+                $"/api/admin/ingestion-runs?sourceId={sourceId}&page=1",
+                TestJson.Options);
+            completed = page!.Items.FirstOrDefault(r => r.Id == run.Id);
+            if (completed?.CompletedAt is not null)
+            {
+                break;
+            }
+        }
+
+        Assert.NotNull(completed?.CompletedAt);
+        Assert.True(completed!.ArticlesAdded >= 1);
 
         var runs = await client.GetFromJsonAsync<PagedIngestionRunsResponse>(
             $"/api/admin/ingestion-runs?sourceId={sourceId}&page=1",

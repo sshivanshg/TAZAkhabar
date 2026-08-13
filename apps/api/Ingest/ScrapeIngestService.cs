@@ -11,6 +11,7 @@ public sealed class ScrapeIngestService
     private readonly AppDbContext _db;
     private readonly IScrapeHttpClient _http;
     private readonly IArticleIntelligence _intelligence;
+    private readonly IIngestionEventBus _events;
     private readonly ILogger<ScrapeIngestService> _logger;
     private readonly TimeSpan _delay;
 
@@ -18,8 +19,9 @@ public sealed class ScrapeIngestService
         AppDbContext db,
         IScrapeHttpClient http,
         IArticleIntelligence intelligence,
+        IIngestionEventBus events,
         ILogger<ScrapeIngestService> logger)
-        : this(db, http, intelligence, logger, TimeSpan.FromMilliseconds(300))
+        : this(db, http, intelligence, events, logger, TimeSpan.FromMilliseconds(300))
     {
     }
 
@@ -27,12 +29,14 @@ public sealed class ScrapeIngestService
         AppDbContext db,
         IScrapeHttpClient http,
         IArticleIntelligence intelligence,
+        IIngestionEventBus events,
         ILogger<ScrapeIngestService> logger,
         TimeSpan delayBetweenRequests)
     {
         _db = db;
         _http = http;
         _intelligence = intelligence;
+        _events = events;
         _logger = logger;
         _delay = delayBetweenRequests;
     }
@@ -65,18 +69,31 @@ public sealed class ScrapeIngestService
         return new IngestRunResult(attempted, failed, inserted, skipped);
     }
 
-    public async Task<IngestionRun> RunSourceAsync(int sourceId, CancellationToken ct)
+    public async Task<IngestionRun> RunSourceAsync(
+        int sourceId,
+        CancellationToken ct,
+        int? existingRunId = null)
     {
         var source = await _db.Sources.FirstOrDefaultAsync(s => s.Id == sourceId, ct)
             ?? throw new InvalidOperationException($"Source {sourceId} not found.");
 
-        var run = new IngestionRun
+        IngestionRun run;
+        if (existingRunId is int runId)
         {
-            SourceId = source.Id,
-            StartedAt = DateTimeOffset.UtcNow,
-        };
-        _db.IngestionRuns.Add(run);
-        await _db.SaveChangesAsync(ct);
+            run = await _db.IngestionRuns.FirstOrDefaultAsync(r => r.Id == runId && r.SourceId == sourceId, ct)
+                ?? throw new InvalidOperationException($"Ingestion run {runId} not found for source {sourceId}.");
+        }
+        else
+        {
+            run = new IngestionRun
+            {
+                SourceId = source.Id,
+                StartedAt = DateTimeOffset.UtcNow,
+            };
+            _db.IngestionRuns.Add(run);
+            await _db.SaveChangesAsync(ct);
+            IngestionEvents.Emit(_events, run.Id, "started", $"Scrape run started · {source.Name}");
+        }
 
         try
         {
@@ -97,6 +114,7 @@ public sealed class ScrapeIngestService
                 return run;
             }
 
+            IngestionEvents.Emit(_events, run.Id, "fetch", $"Fetching list page {source.FeedUrl}");
             string listHtml;
             try
             {
@@ -117,6 +135,13 @@ public sealed class ScrapeIngestService
 
             var links = HtmlArticleExtractor.ExtractArticleLinks(listHtml, listUri, MaxArticleLinks);
             run.ArticlesFound = links.Count;
+            IngestionEvents.Emit(
+                _events,
+                run.Id,
+                "found",
+                $"Found {links.Count} article link{(links.Count == 1 ? "" : "s")}",
+                found: links.Count);
+
             if (links.Count == 0)
             {
                 run.ArticlesFailed = 1;
@@ -150,6 +175,15 @@ public sealed class ScrapeIngestService
                 if (await _db.Articles.AnyAsync(a => a.SourceUrl == sourceUrl, ct))
                 {
                     skipped++;
+                    IngestionEvents.Emit(
+                        _events,
+                        run.Id,
+                        "skipped",
+                        $"Already have · {HtmlText.Truncate(sourceUrl, 90)}",
+                        found: links.Count,
+                        added: inserted,
+                        skipped: skipped,
+                        failed: failed);
                     continue;
                 }
 
@@ -159,6 +193,7 @@ public sealed class ScrapeIngestService
                 }
 
                 fetchedAny = true;
+                IngestionEvents.Emit(_events, run.Id, "fetch", $"Fetching article · {HtmlText.Truncate(sourceUrl, 90)}");
                 try
                 {
                     var articleHtml = await _http.GetStringAsync(link, ct);
@@ -167,12 +202,22 @@ public sealed class ScrapeIngestService
                     if (string.IsNullOrWhiteSpace(headline))
                     {
                         skipped++;
+                        IngestionEvents.Emit(
+                            _events,
+                            run.Id,
+                            "skipped",
+                            "Empty headline after extract",
+                            found: links.Count,
+                            added: inserted,
+                            skipped: skipped,
+                            failed: failed);
                         continue;
                     }
 
                     string summary;
                     try
                     {
+                        IngestionEvents.Emit(_events, run.Id, "progress", $"Summarizing · {HtmlText.Truncate(headline, 80)}");
                         summary = await _intelligence.SummarizeArticleAsync(headline, snippet, city.Slug, ct);
                     }
                     catch (OperationCanceledException) when (ct.IsCancellationRequested)
@@ -183,6 +228,15 @@ public sealed class ScrapeIngestService
                     {
                         _logger.LogWarning(ex, "Summarize failed for {SourceUrl}", sourceUrl);
                         failed++;
+                        IngestionEvents.Emit(
+                            _events,
+                            run.Id,
+                            "failed",
+                            $"Summarize failed · {HtmlText.Truncate(headline, 80)}",
+                            found: links.Count,
+                            added: inserted,
+                            skipped: skipped,
+                            failed: failed);
                         continue;
                     }
 
@@ -199,10 +253,28 @@ public sealed class ScrapeIngestService
                     if (await TryInsertAsync(city.Id, source, headline, summary, sourceUrl, publishedAt, ct))
                     {
                         inserted++;
+                        IngestionEvents.Emit(
+                            _events,
+                            run.Id,
+                            "article_added",
+                            $"Added · {HtmlText.Truncate(headline, 100)}",
+                            found: links.Count,
+                            added: inserted,
+                            skipped: skipped,
+                            failed: failed);
                     }
                     else
                     {
                         skipped++;
+                        IngestionEvents.Emit(
+                            _events,
+                            run.Id,
+                            "skipped",
+                            $"Duplicate on insert · {HtmlText.Truncate(headline, 80)}",
+                            found: links.Count,
+                            added: inserted,
+                            skipped: skipped,
+                            failed: failed);
                     }
                 }
                 catch (OperationCanceledException) when (ct.IsCancellationRequested)
@@ -213,6 +285,15 @@ public sealed class ScrapeIngestService
                 {
                     failed++;
                     _logger.LogWarning(ex, "Scrape article fetch failed for {SourceUrl}", sourceUrl);
+                    IngestionEvents.Emit(
+                        _events,
+                        run.Id,
+                        "failed",
+                        $"Fetch failed · {HtmlText.Truncate(sourceUrl, 90)}",
+                        found: links.Count,
+                        added: inserted,
+                        skipped: skipped,
+                        failed: failed);
                 }
             }
 
@@ -252,6 +333,31 @@ public sealed class ScrapeIngestService
         source.LastFetchStatus = status;
         source.LastErrorMessage = error;
         await _db.SaveChangesAsync(cancellationToken);
+
+        if (status == FetchStatus.Error)
+        {
+            IngestionEvents.Emit(
+                _events,
+                run.Id,
+                "error",
+                error ?? "Scrape run failed",
+                found: run.ArticlesFound,
+                added: run.ArticlesAdded,
+                skipped: run.ArticlesSkipped,
+                failed: run.ArticlesFailed);
+        }
+        else
+        {
+            IngestionEvents.Emit(
+                _events,
+                run.Id,
+                "completed",
+                $"Done · +{run.ArticlesAdded} added · {run.ArticlesSkipped} skipped · {run.ArticlesFailed} failed",
+                found: run.ArticlesFound,
+                added: run.ArticlesAdded,
+                skipped: run.ArticlesSkipped,
+                failed: run.ArticlesFailed);
+        }
     }
 
     private async Task<bool> TryInsertAsync(
@@ -276,7 +382,7 @@ public sealed class ScrapeIngestService
             Summary = HtmlText.Truncate(summary.Trim(), 1000),
             SourceName = HtmlText.Truncate(source.Name, 120),
             SourceUrl = sourceUrl,
-            PublishedAt = publishedAt ?? now,
+            PublishedAt = ToUtc(publishedAt ?? now),
             Category = "Local",
             Status = ArticleStatus.Published,
             IsMock = false,
@@ -290,10 +396,14 @@ public sealed class ScrapeIngestService
             await _db.SaveChangesAsync(cancellationToken);
             return true;
         }
-        catch (DbUpdateException)
+        catch (DbUpdateException ex)
         {
+            _logger.LogWarning(ex, "Article insert failed for {SourceUrl}", sourceUrl);
             _db.Entry(article).State = EntityState.Detached;
             return false;
         }
     }
+
+    private static DateTimeOffset ToUtc(DateTimeOffset value) =>
+        value.Offset == TimeSpan.Zero ? value : value.ToUniversalTime();
 }

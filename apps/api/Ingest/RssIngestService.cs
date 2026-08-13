@@ -7,6 +7,7 @@ namespace NewsFeed.Api.Ingest;
 public sealed class RssIngestService(
     AppDbContext db,
     IRssFeedClient feedClient,
+    IIngestionEventBus events,
     ILogger<RssIngestService> logger)
 {
     public async Task<IngestRunResult> RunAsync(CancellationToken cancellationToken)
@@ -37,18 +38,31 @@ public sealed class RssIngestService(
         return new IngestRunResult(attempted, failed, inserted, skipped);
     }
 
-    public async Task<IngestionRun> RunSourceAsync(int sourceId, CancellationToken cancellationToken)
+    public async Task<IngestionRun> RunSourceAsync(
+        int sourceId,
+        CancellationToken cancellationToken,
+        int? existingRunId = null)
     {
         var source = await db.Sources.FirstOrDefaultAsync(s => s.Id == sourceId, cancellationToken)
             ?? throw new InvalidOperationException($"Source {sourceId} not found.");
 
-        var run = new IngestionRun
+        IngestionRun run;
+        if (existingRunId is int runId)
         {
-            SourceId = source.Id,
-            StartedAt = DateTimeOffset.UtcNow,
-        };
-        db.IngestionRuns.Add(run);
-        await db.SaveChangesAsync(cancellationToken);
+            run = await db.IngestionRuns.FirstOrDefaultAsync(r => r.Id == runId && r.SourceId == sourceId, cancellationToken)
+                ?? throw new InvalidOperationException($"Ingestion run {runId} not found for source {sourceId}.");
+        }
+        else
+        {
+            run = new IngestionRun
+            {
+                SourceId = source.Id,
+                StartedAt = DateTimeOffset.UtcNow,
+            };
+            db.IngestionRuns.Add(run);
+            await db.SaveChangesAsync(cancellationToken);
+            IngestionEvents.Emit(events, run.Id, "started", $"RSS run started · {source.Name}");
+        }
 
         try
         {
@@ -60,6 +74,7 @@ public sealed class RssIngestService(
                 return run;
             }
 
+            IngestionEvents.Emit(events, run.Id, "fetch", $"Fetching feed {source.FeedUrl}");
             var xml = await feedClient.FetchXmlAsync(source.FeedUrl, cancellationToken);
             if (xml is null)
             {
@@ -72,6 +87,12 @@ public sealed class RssIngestService(
 
             var items = RssFeedParser.Parse(xml);
             run.ArticlesFound = items.Count;
+            IngestionEvents.Emit(
+                events,
+                run.Id,
+                "found",
+                $"Parsed {items.Count} feed item{(items.Count == 1 ? "" : "s")}",
+                found: items.Count);
 
             var city = await db.Cities
                 .AsNoTracking()
@@ -95,16 +116,40 @@ public sealed class RssIngestService(
                     && !PlaceNameMatcher.MatchesJhansiEdition(item.Title, item.Snippet))
                 {
                     skipped++;
+                    IngestionEvents.Emit(
+                        events,
+                        run.Id,
+                        "skipped",
+                        $"Skipped (wider filter) · {HtmlText.Truncate(item.Title, 80)}",
+                        found: items.Count,
+                        added: inserted,
+                        skipped: skipped);
                     continue;
                 }
 
                 if (await TryInsertAsync(city.Id, source, item, cancellationToken))
                 {
                     inserted++;
+                    IngestionEvents.Emit(
+                        events,
+                        run.Id,
+                        "article_added",
+                        $"Added · {HtmlText.Truncate(item.Title, 100)}",
+                        found: items.Count,
+                        added: inserted,
+                        skipped: skipped);
                 }
                 else
                 {
                     skipped++;
+                    IngestionEvents.Emit(
+                        events,
+                        run.Id,
+                        "skipped",
+                        $"Duplicate/skip · {HtmlText.Truncate(item.Title, 80)}",
+                        found: items.Count,
+                        added: inserted,
+                        skipped: skipped);
                 }
             }
 
@@ -143,6 +188,31 @@ public sealed class RssIngestService(
         source.LastFetchStatus = status;
         source.LastErrorMessage = error;
         await db.SaveChangesAsync(cancellationToken);
+
+        if (status == FetchStatus.Error)
+        {
+            IngestionEvents.Emit(
+                events,
+                run.Id,
+                "error",
+                error ?? "RSS run failed",
+                found: run.ArticlesFound,
+                added: run.ArticlesAdded,
+                skipped: run.ArticlesSkipped,
+                failed: run.ArticlesFailed);
+        }
+        else
+        {
+            IngestionEvents.Emit(
+                events,
+                run.Id,
+                "completed",
+                $"Done · +{run.ArticlesAdded} added · {run.ArticlesSkipped} skipped",
+                found: run.ArticlesFound,
+                added: run.ArticlesAdded,
+                skipped: run.ArticlesSkipped,
+                failed: run.ArticlesFailed);
+        }
     }
 
     private async Task<bool> TryInsertAsync(
@@ -178,7 +248,7 @@ public sealed class RssIngestService(
             Summary = summary,
             SourceName = sourceName,
             SourceUrl = sourceUrl,
-            PublishedAt = item.PublishedAt ?? now,
+            PublishedAt = ToUtc(item.PublishedAt ?? now),
             Category = "Local",
             ImageUrl = NormalizeImageUrl(item.ImageUrl),
             Status = ArticleStatus.PendingReview,
@@ -199,6 +269,9 @@ public sealed class RssIngestService(
             return false;
         }
     }
+
+    private static DateTimeOffset ToUtc(DateTimeOffset value) =>
+        value.Offset == TimeSpan.Zero ? value : value.ToUniversalTime();
 
     private static string? NormalizeImageUrl(string? url)
     {

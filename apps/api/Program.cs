@@ -62,14 +62,15 @@ try
     {
         AllowAutoRedirect = false,
     });
-    builder.Services.AddHttpClient(OpenAiArticleIntelligence.HttpClientName, client =>
+    builder.Services.AddHttpClient(ClaudeArticleIntelligence.HttpClientName, client =>
     {
         client.Timeout = TimeSpan.FromSeconds(90);
         client.DefaultRequestHeaders.UserAgent.ParseAdd("NewsFeedIngest/0.1");
     });
+    builder.Services.AddSingleton<IIngestionEventBus, IngestionEventBus>();
     builder.Services.AddSingleton<IRssFeedClient, RssFeedClient>();
     builder.Services.AddSingleton<IScrapeHttpClient, ScrapeHttpClient>();
-    builder.Services.AddSingleton<IArticleIntelligence, OpenAiArticleIntelligence>();
+    builder.Services.AddSingleton<IArticleIntelligence, ClaudeArticleIntelligence>();
     builder.Services.AddSingleton<PdfProcessingQueue>();
     builder.Services.AddScoped<RssIngestService>();
     builder.Services.AddScoped<PdfIngestService>();

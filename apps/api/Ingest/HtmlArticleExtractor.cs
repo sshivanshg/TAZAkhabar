@@ -1,8 +1,9 @@
+using System.Text.RegularExpressions;
 using AngleSharp.Html.Parser;
 
 namespace NewsFeed.Api.Ingest;
 
-public static class HtmlArticleExtractor
+public static partial class HtmlArticleExtractor
 {
     private const int MaxHeadlineChars = 300;
     private const int MaxSnippetChars = 400;
@@ -15,8 +16,8 @@ public static class HtmlArticleExtractor
         }
 
         var document = new HtmlParser().ParseDocument(listHtml);
+        var candidates = new List<Uri>();
         var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        var links = new List<Uri>();
 
         foreach (var anchor in document.QuerySelectorAll("a[href]"))
         {
@@ -45,12 +46,42 @@ public static class HtmlArticleExtractor
                 continue;
             }
 
-            if (!seen.Add(safe.AbsoluteUri))
+            // Drop tracking query noise for dedupe; keep absolute URI for fetch.
+            var dedupeKey = safe.GetLeftPart(UriPartial.Path);
+            if (!seen.Add(dedupeKey))
             {
                 continue;
             }
 
-            links.Add(safe);
+            candidates.Add(safe);
+        }
+
+        var preferred = candidates.Where(LooksLikeArticleLink).ToList();
+        var pool = preferred.Count > 0 ? preferred : candidates.Where(u => !LooksLikeNavLink(u)).ToList();
+        if (pool.Count == 0)
+        {
+            pool = candidates;
+        }
+
+        // Prefer text/news URLs over video twins that share the same story id.
+        pool = pool
+            .Select((uri, index) => (uri, index))
+            .OrderBy(x => x.uri.AbsolutePath.Contains("/video/", StringComparison.OrdinalIgnoreCase) ? 1 : 0)
+            .ThenBy(x => x.index)
+            .Select(x => x.uri)
+            .ToList();
+
+        var links = new List<Uri>();
+        var storyIds = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var link in pool)
+        {
+            var storyId = TryStoryId(link);
+            if (storyId is not null && !storyIds.Add(storyId))
+            {
+                continue;
+            }
+
+            links.Add(link);
             if (links.Count >= maxLinks)
             {
                 break;
@@ -88,6 +119,42 @@ public static class HtmlArticleExtractor
             publishedAt);
     }
 
+    internal static bool LooksLikeArticleLink(Uri uri)
+    {
+        var path = uri.AbsolutePath;
+        if (path.EndsWith(".html", StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        if (path.Contains("/news/", StringComparison.OrdinalIgnoreCase)
+            || path.Contains("/story", StringComparison.OrdinalIgnoreCase)
+            || path.Contains("/article", StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        // Amar Ujala city list cards: /city/story-1
+        if (CityStoryPath().IsMatch(path))
+        {
+            return true;
+        }
+
+        return StoryIdPattern().IsMatch(path);
+    }
+
+    internal static bool LooksLikeNavLink(Uri uri)
+    {
+        var segments = uri.AbsolutePath.Trim('/').Split('/', StringSplitOptions.RemoveEmptyEntries);
+        return segments.Length <= 1;
+    }
+
+    private static string? TryStoryId(Uri uri)
+    {
+        var match = StoryIdPattern().Match(uri.AbsolutePath);
+        return match.Success ? match.Groups[1].Value : null;
+    }
+
     private static string FirstText(params string?[] candidates)
     {
         foreach (var candidate in candidates)
@@ -101,4 +168,10 @@ public static class HtmlArticleExtractor
 
         return "";
     }
+
+    [GeneratedRegex(@"(\d{6,})(?:\.html)?/?$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    private static partial Regex StoryIdPattern();
+
+    [GeneratedRegex(@"/city/[^/]+", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    private static partial Regex CityStoryPath();
 }

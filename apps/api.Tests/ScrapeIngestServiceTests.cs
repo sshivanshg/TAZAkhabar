@@ -51,7 +51,7 @@ public sealed class ScrapeIngestServiceTests
         Assert.False(stored.IsMock);
         Assert.Equal(source.Id, stored.SourceId);
         Assert.NotNull(stored.IngestedAt);
-        Assert.Equal(new DateTimeOffset(2026, 8, 13, 10, 0, 0, TimeSpan.FromHours(5.5)), stored.PublishedAt);
+        Assert.Equal(new DateTimeOffset(2026, 8, 13, 4, 30, 0, TimeSpan.Zero), stored.PublishedAt);
 
         await db.Entry(source).ReloadAsync();
         Assert.Equal(FetchStatus.Success, source.LastFetchStatus);
@@ -204,7 +204,7 @@ public sealed class ScrapeIngestServiceTests
     }
 
     private static ScrapeIngestService CreateService(AppDbContext db, FakeScrapeHttpClient http) =>
-        new(db, http, new FakeArticleIntelligence(), NullLogger<ScrapeIngestService>.Instance, TimeSpan.Zero);
+        new(db, http, new FakeArticleIntelligence(), new IngestionEventBus(), NullLogger<ScrapeIngestService>.Instance, TimeSpan.Zero);
 
     private static string FixturePath(string fileName) =>
         Path.Combine(AppContext.BaseDirectory, "Fixtures", fileName);

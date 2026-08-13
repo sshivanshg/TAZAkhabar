@@ -25,6 +25,34 @@ public sealed class HtmlArticleExtractorTests
     }
 
     [Fact]
+    public void ExtractArticleLinks_PrefersBhaskarNewsOverNavAndVideoDupes()
+    {
+        const string html = """
+            <html><body>
+              <a href="/videos">Videos</a>
+              <a href="/search">Search</a>
+              <a href="/local/uttar-pradesh/jhansi/news/jhansi-rain-138712904.html">Rain</a>
+              <a href="/local/uttar-pradesh/jhansi/video/jhansi-rain-138712904.html?type=video">Rain video</a>
+              <a href="/local/uttar-pradesh/jhansi/news/jhansi-teacher-138716713.html">Teacher</a>
+              <a href="/national/">National</a>
+            </body></html>
+            """;
+        var baseUri = new Uri("https://www.bhaskar.com/local/uttar-pradesh/jhansi/");
+
+        var links = HtmlArticleExtractor.ExtractArticleLinks(html, baseUri, maxLinks: 20);
+
+        Assert.Equal(2, links.Count);
+        Assert.Equal(
+            "https://www.bhaskar.com/local/uttar-pradesh/jhansi/news/jhansi-rain-138712904.html",
+            links[0].AbsoluteUri);
+        Assert.Equal(
+            "https://www.bhaskar.com/local/uttar-pradesh/jhansi/news/jhansi-teacher-138716713.html",
+            links[1].AbsoluteUri);
+        Assert.DoesNotContain(links, u => u.AbsolutePath.Contains("/video/", StringComparison.Ordinal));
+        Assert.DoesNotContain(links, u => u.AbsolutePath is "/videos" or "/search");
+    }
+
+    [Fact]
     public void ExtractArticle_ReadsHeadlineAndSnippetFromH1AndP()
     {
         var html = File.ReadAllText(FixturePath("scrape-article.html"));

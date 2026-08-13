@@ -7,15 +7,17 @@ using NewsFeed.Api.Options;
 
 namespace NewsFeed.Api.Ingest;
 
-public sealed class OpenAiArticleIntelligence(
+public sealed class ClaudeArticleIntelligence(
     IHttpClientFactory httpClientFactory,
     IOptions<ArticleIntelligenceOptions> options,
-    ILogger<OpenAiArticleIntelligence> logger) : IArticleIntelligence
+    ILogger<ClaudeArticleIntelligence> logger) : IArticleIntelligence
 {
     public const string HttpClientName = "article-intelligence";
+    public const string AnthropicVersion = "2023-06-01";
 
     private const int MaxInputChars = 24_000;
     private const int MaxSummaryChars = 1000;
+    private const int MaxTokens = 4096;
 
     private static readonly string[] AllowedCategories =
         ["Local", "State", "National", "Business", "Health", "Sports"];
@@ -151,11 +153,9 @@ public sealed class OpenAiArticleIntelligence(
         string userContent,
         CancellationToken cancellationToken)
     {
-        return SendCompletionAsync(
-            [
-                new ChatMessage("system", systemPrompt),
-                new ChatMessage("user", userContent),
-            ],
+        return SendMessagesAsync(
+            systemPrompt,
+            [new UserContentBlock("text", userContent, null)],
             cancellationToken);
     }
 
@@ -166,29 +166,35 @@ public sealed class OpenAiArticleIntelligence(
         string mime,
         CancellationToken cancellationToken)
     {
-        var dataUrl = $"data:{mime};base64,{Convert.ToBase64String(imageBytes)}";
-        return SendCompletionAsync(
+        return SendMessagesAsync(
+            systemPrompt,
             [
-                new ChatMessage("system", systemPrompt),
-                new ChatMessage("user", new object[]
-                {
-                    new VisionPart("text", userText, null),
-                    new VisionPart("image_url", null, new VisionImageUrl(dataUrl)),
-                }),
+                new UserContentBlock(
+                    "image",
+                    null,
+                    new ImageSource("base64", mime, Convert.ToBase64String(imageBytes))),
+                new UserContentBlock("text", userText, null),
             ],
             cancellationToken);
     }
 
-    private async Task<string> SendCompletionAsync(
-        IReadOnlyList<ChatMessage> messages,
+    private async Task<string> SendMessagesAsync(
+        string systemPrompt,
+        IReadOnlyList<UserContentBlock> userBlocks,
         CancellationToken cancellationToken)
     {
         var settings = options.Value;
-        var url = $"{settings.BaseUrl.TrimEnd('/')}/chat/completions";
-        var payload = new ChatCompletionRequest(settings.Model, messages, new ResponseFormat("json_object"));
+        var url = $"{settings.BaseUrl.TrimEnd('/')}/v1/messages";
+        var payload = new MessagesRequest(
+            settings.Model,
+            MaxTokens,
+            systemPrompt,
+            [new Message("user", userBlocks)]);
 
         using var request = new HttpRequestMessage(HttpMethod.Post, url);
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", settings.ApiKey);
+        request.Headers.TryAddWithoutValidation("x-api-key", settings.ApiKey);
+        request.Headers.TryAddWithoutValidation("anthropic-version", AnthropicVersion);
+        request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
         request.Content = new StringContent(
             JsonSerializer.Serialize(payload, JsonOptions),
             Encoding.UTF8,
@@ -206,7 +212,7 @@ public sealed class OpenAiArticleIntelligence(
                 $"Article intelligence request failed with status {(int)response.StatusCode}.");
         }
 
-        return ReadMessageContent(body);
+        return ReadMessageText(body);
     }
 
     private static string NormalizeImageMime(string? contentType)
@@ -220,22 +226,27 @@ public sealed class OpenAiArticleIntelligence(
         };
     }
 
-    private static string ReadMessageContent(string body)
+    private static string ReadMessageText(string body)
     {
         try
         {
             using var doc = JsonDocument.Parse(body);
-            var content = doc.RootElement
-                .GetProperty("choices")[0]
-                .GetProperty("message")
-                .GetProperty("content")
-                .GetString();
+            var content = doc.RootElement.GetProperty("content");
+            foreach (var block in content.EnumerateArray())
+            {
+                if (block.TryGetProperty("type", out var type)
+                    && type.GetString() == "text"
+                    && block.TryGetProperty("text", out var text))
+                {
+                    return text.GetString() ?? "";
+                }
+            }
 
-            return content ?? "";
+            throw new InvalidOperationException("Article intelligence response had no text block.");
         }
-        catch (Exception ex) when (ex is JsonException or InvalidOperationException or KeyNotFoundException or IndexOutOfRangeException)
+        catch (Exception ex) when (ex is JsonException or InvalidOperationException or KeyNotFoundException)
         {
-            throw new InvalidOperationException("Article intelligence response was missing chat content.", ex);
+            throw new InvalidOperationException("Article intelligence response was missing Claude message text.", ex);
         }
     }
 
@@ -244,7 +255,7 @@ public sealed class OpenAiArticleIntelligence(
         if (string.IsNullOrWhiteSpace(options.Value.ApiKey))
         {
             throw new InvalidOperationException(
-                "ArticleIntelligence:ApiKey is missing. Set ArticleIntelligence__ApiKey to enable PDF and scrape intelligence.");
+                "ArticleIntelligence:ApiKey is missing. Set ArticleIntelligence__ApiKey to your Claude (Anthropic) API key.");
         }
     }
 
@@ -307,19 +318,21 @@ public sealed class OpenAiArticleIntelligence(
 
     private sealed record SummaryEnvelope(string? Summary);
 
-    private sealed record ChatCompletionRequest(
+    private sealed record MessagesRequest(
         string Model,
-        IReadOnlyList<ChatMessage> Messages,
-        [property: JsonPropertyName("response_format")] ResponseFormat ResponseFormat);
+        [property: JsonPropertyName("max_tokens")] int MaxTokens,
+        string System,
+        IReadOnlyList<Message> Messages);
 
-    private sealed record ChatMessage(string Role, object Content);
+    private sealed record Message(string Role, IReadOnlyList<UserContentBlock> Content);
 
-    private sealed record VisionPart(
+    private sealed record UserContentBlock(
         string Type,
         string? Text,
-        [property: JsonPropertyName("image_url")] VisionImageUrl? ImageUrl);
+        ImageSource? Source);
 
-    private sealed record VisionImageUrl(string Url);
-
-    private sealed record ResponseFormat(string Type);
+    private sealed record ImageSource(
+        string Type,
+        [property: JsonPropertyName("media_type")] string MediaType,
+        string Data);
 }

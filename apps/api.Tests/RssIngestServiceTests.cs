@@ -221,7 +221,7 @@ public sealed class RssIngestServiceTests
     }
 
     private static RssIngestService CreateService(AppDbContext db, FakeRssFeedClient client) =>
-        new(db, client, NullLogger<RssIngestService>.Instance);
+        new(db, client, new IngestionEventBus(), NullLogger<RssIngestService>.Instance);
 
     private static string CityEditionXml(string itemUrl, string title, string description) => $"""
         <?xml version="1.0"?><rss version="2.0"><channel>

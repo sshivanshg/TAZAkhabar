@@ -170,6 +170,17 @@ public static class SeedData
             Language = "hi",
             IsActive = false,
         },
+        new()
+        {
+            Id = 14,
+            Name = "Dainik Bhaskar",
+            FeedUrl = "https://www.bhaskar.com/local/uttar-pradesh/jhansi/",
+            CityId = 2,
+            Type = SourceType.Scrape,
+            Kind = SourceKind.CityEdition,
+            Language = "hi",
+            IsActive = true,
+        },
     ];
 
     public static readonly Article[] Articles = BuildArticles();
