@@ -27,5 +27,7 @@ public sealed class Article
     public City City { get; set; } = null!;
     public Source? Source { get; set; }
     public DocumentUpload? DocumentUpload { get; set; }
+    public ArticleContent? Content { get; set; }
     public ICollection<ArticleTranslation> Translations { get; set; } = new List<ArticleTranslation>();
+    public ICollection<ArticleView> Views { get; set; } = new List<ArticleView>();
 }
