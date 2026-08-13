@@ -144,3 +144,14 @@ export const BREAKING_NEWS_COUNT = 5
 export const TAB_BAR_HEIGHT = 64
 /** Breathing room above the floating tab bar for the last list item */
 export const TAB_BAR_CONTENT_GAP = 20
+
+export const breakpoints = {
+  mobile: 0,
+  tablet: 768,
+  desktop: 1024,
+  wide: 1440,
+} as const
+
+export const SIDEBAR_WIDTH = 240
+export const CONTENT_RAIL_MAX = 720
+export const ERROR_COLUMN_MAX = 400
