@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 import logging
 from typing import Any
 from urllib.parse import urljoin, urlparse
@@ -68,10 +69,29 @@ async def fetch_text(session: aiohttp.ClientSession, url: str) -> str:
         return await resp.text()
 
 
+_BLOCK_PATH_TOKENS = (
+    "/video/", "/videos/", "/live-blog", "/topic/", "/tag/", "/search",
+    "/web-stories", "/subscription", "/epaper", "/photos/", "/gallery/",
+    "/login", "/signup",
+)
+
+_STORY_ID_RE = re.compile(r"(\d{6,})(?:\.html)?/?$", re.I)
+
+
+def _looks_like_article(path: str) -> bool:
+    lowered = path.lower()
+    if lowered.endswith(".html"):
+        return True
+    if any(x in lowered for x in ("/news/", "/story", "/article", "/city/")):
+        return True
+    return bool(_STORY_ID_RE.search(lowered))
+
+
 def discover_article_links(list_html: str, base_url: str, limit: int = 20) -> list[str]:
     soup = BeautifulSoup(list_html, "lxml")
     seen: set[str] = set()
-    links: list[str] = []
+    preferred: list[str] = []
+    fallback: list[str] = []
     base_host = urlparse(base_url).netloc.lower()
 
     for a in soup.find_all("a", href=True):
@@ -82,22 +102,28 @@ def discover_article_links(list_html: str, base_url: str, limit: int = 20) -> li
         parsed = urlparse(absolute)
         if parsed.scheme not in {"http", "https"}:
             continue
-        if parsed.netloc.lower() != base_host and "news.google.com" not in base_host:
-            # allow same registrable host soft match via endswith
-            if not parsed.netloc.lower().endswith(base_host.split(".", 1)[-1]):
-                continue
+        host = parsed.netloc.lower()
+        if host != base_host and not host.endswith(base_host.removeprefix("www.")):
+            continue
         path = parsed.path or ""
         if path in {"", "/"}:
             continue
-        # Prefer URLs that look like articles
+        segments = [s for s in path.split("/") if s]
+        if len(segments) <= 1:
+            continue
         lowered = absolute.lower()
-        if any(x in lowered for x in ("/video/", "/videos/", "/live-blog", "/topic/", "/tag/")):
+        if any(x in lowered for x in _BLOCK_PATH_TOKENS):
             continue
         key = parsed._replace(query="", fragment="").geturl().rstrip("/")
         if key in seen:
             continue
         seen.add(key)
-        links.append(key)
-        if len(links) >= limit:
+        if _looks_like_article(path):
+            preferred.append(key)
+        else:
+            fallback.append(key)
+        if len(preferred) >= limit:
             break
-    return links
+
+    links = preferred if preferred else fallback
+    return links[:limit]
