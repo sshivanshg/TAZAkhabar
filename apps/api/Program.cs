@@ -1,14 +1,16 @@
+using System.Text;
 using System.Threading.RateLimiting;
 using NewsFeed.Api.Data;
 using NewsFeed.Api.Dtos;
 using NewsFeed.Api.Endpoints;
 using NewsFeed.Api.Ingest;
 using NewsFeed.Api.Options;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.HttpOverrides;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using Serilog;
 
 Log.Logger = new LoggerConfiguration()
@@ -32,6 +34,7 @@ try
     builder.Services.Configure<CorsOptions>(builder.Configuration.GetSection(CorsOptions.SectionName));
     builder.Services.Configure<RateLimitingOptions>(builder.Configuration.GetSection(RateLimitingOptions.SectionName));
     builder.Services.Configure<RssIngestOptions>(builder.Configuration.GetSection(RssIngestOptions.SectionName));
+    builder.Services.Configure<AdminOptions>(builder.Configuration.GetSection(AdminOptions.SectionName));
 
     builder.Services.AddHttpClient("rss", client =>
     {
@@ -44,16 +47,22 @@ try
     var corsOptions = builder.Configuration.GetSection(CorsOptions.SectionName).Get<CorsOptions>() ?? new CorsOptions();
     var rateLimitingOptions = builder.Configuration.GetSection(RateLimitingOptions.SectionName).Get<RateLimitingOptions>()
         ?? new RateLimitingOptions();
+    var adminOptions = builder.Configuration.GetSection(AdminOptions.SectionName).Get<AdminOptions>() ?? new AdminOptions();
 
     builder.Services.Configure<ForwardedHeadersOptions>(options =>
     {
         options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
-        // Trust proxy headers from Cloudflare / Render (no fixed known-proxy list).
         options.KnownNetworks.Clear();
         options.KnownProxies.Clear();
     });
 
     builder.Services.AddProblemDetails();
+    builder.Services.ConfigureHttpJsonOptions(options =>
+    {
+        options.SerializerOptions.Converters.Add(
+            new System.Text.Json.Serialization.JsonStringEnumConverter(
+                System.Text.Json.JsonNamingPolicy.CamelCase));
+    });
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddSwaggerGen(options =>
     {
@@ -89,6 +98,30 @@ try
         });
     });
 
+    if (!string.IsNullOrEmpty(adminOptions.JwtSigningKey))
+    {
+        builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+            .AddJwtBearer(options =>
+            {
+                options.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuer = false,
+                    ValidateAudience = false,
+                    ValidateIssuerSigningKey = true,
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(adminOptions.JwtSigningKey)),
+                    ValidateLifetime = true,
+                    ClockSkew = TimeSpan.FromMinutes(1),
+                    NameClaimType = System.Security.Claims.ClaimTypes.Name,
+                };
+            });
+    }
+    else
+    {
+        builder.Services.AddAuthentication();
+    }
+
+    builder.Services.AddAuthorization();
+
     builder.Services.AddRateLimiter(options =>
     {
         options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
@@ -110,6 +143,16 @@ try
                 {
                     PermitLimit = rateLimitingOptions.PermitLimit,
                     Window = TimeSpan.FromSeconds(rateLimitingOptions.WindowSeconds),
+                    QueueLimit = 0,
+                }));
+
+        options.AddPolicy("admin-login", httpContext =>
+            RateLimitPartition.GetFixedWindowLimiter(
+                partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+                factory: _ => new FixedWindowRateLimiterOptions
+                {
+                    PermitLimit = 5,
+                    Window = TimeSpan.FromMinutes(1),
                     QueueLimit = 0,
                 }));
     });
@@ -159,7 +202,6 @@ try
         app.UseSwaggerUI();
     }
 
-    // OpenAPI JSON is always available for shared-types generation (local + CI).
     app.MapSwagger("/openapi/{documentName}.json");
 
     app.UseForwardedHeaders();
@@ -172,6 +214,8 @@ try
     });
 
     app.UseCors("Frontend");
+    app.UseAuthentication();
+    app.UseAuthorization();
     app.UseRateLimiter();
 
     var api = app.MapGroup("/api")
@@ -199,6 +243,14 @@ try
     api.MapCitiesEndpoints();
     api.MapArticlesEndpoints();
     api.MapIngestEndpoints();
+
+    var admin = api.MapGroup("/admin");
+    admin.MapAdminAuthEndpoints();
+
+    var adminSecure = admin.MapGroup("")
+        .RequireAuthorization();
+    adminSecure.MapAdminArticlesEndpoints();
+    adminSecure.MapAdminSourcesEndpoints();
 
     app.MapHealthChecks("/healthz");
 

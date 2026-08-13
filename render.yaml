@@ -1,5 +1,5 @@
 # Render Blueprint — NewsFeed API (ADR-004)
-# Secrets (ConnectionStrings__Database, Cors origins) are set in the Render dashboard (sync: false).
+# Secrets (ConnectionStrings__Database, Cors origins, Admin, ingest) are set in the Render dashboard (sync: false).
 
 services:
   - type: web
@@ -26,5 +26,22 @@ services:
         value: "60"
       - key: RateLimiting__WindowSeconds
         value: "60"
+      - key: RssIngest__Secret
+        sync: false
+      - key: Admin__Password
+        sync: false
+      - key: Admin__JwtSigningKey
+        sync: false
+
+  - type: cron
+    name: newsfeed-rss-ingest
+    runtime: python
+    plan: starter
+    schedule: "*/45 * * * *"
+    buildCommand: "pip install requests"
+    startCommand: "python -c \"import os,requests; r=requests.post(os.environ['INGEST_URL'].rstrip('/')+'/api/ingest/rss', headers={'X-Ingest-Key': os.environ['RssIngest__Secret']}, timeout=120); r.raise_for_status()\""
+    envVars:
+      - key: INGEST_URL
+        sync: false
       - key: RssIngest__Secret
         sync: false

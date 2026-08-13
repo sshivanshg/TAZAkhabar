@@ -10,6 +10,8 @@ namespace NewsFeed.Api.Tests;
 public sealed class NewsFeedWebApplicationFactory : WebApplicationFactory<Program>
 {
     public const string TestIngestKey = "test-ingest-key";
+    public const string TestAdminPassword = "test-admin-password";
+    public const string TestAdminJwtSigningKey = "test-admin-jwt-signing-key-min-32-chars!!";
 
     private readonly string _databaseName = $"newsfeed-tests-{Guid.NewGuid():N}";
 
@@ -17,6 +19,8 @@ public sealed class NewsFeedWebApplicationFactory : WebApplicationFactory<Progra
     {
         builder.UseEnvironment("Development");
         builder.UseSetting("RssIngest:Secret", TestIngestKey);
+        builder.UseSetting("Admin:Password", TestAdminPassword);
+        builder.UseSetting("Admin:JwtSigningKey", TestAdminJwtSigningKey);
 
         builder.ConfigureServices(services =>
         {

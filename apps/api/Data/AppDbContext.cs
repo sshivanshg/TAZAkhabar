@@ -86,9 +86,8 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
                 .HasColumnName("status")
                 .HasConversion<string>()
                 .HasMaxLength(32)
-                .IsRequired()
-                .HasDefaultValue(ArticleStatus.Published);
-            entity.Property(a => a.IsMock).HasColumnName("is_mock").HasDefaultValue(false);
+                .IsRequired();
+            entity.Property(a => a.IsMock).HasColumnName("is_mock");
             entity.Property(a => a.IngestedAt).HasColumnName("ingested_at");
             entity.Property(a => a.ReviewedBy).HasColumnName("reviewed_by").HasMaxLength(80);
             entity.Property(a => a.ReviewedAt).HasColumnName("reviewed_at");
