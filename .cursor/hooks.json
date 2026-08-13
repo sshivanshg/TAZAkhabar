@@ -23,18 +23,6 @@
         "command": ".cursor/hooks/session-store.py",
         "timeout": 10
       }
-    ],
-    "beforeShellExecution": [
-      {
-        "command": ".cursor/hooks/guard-migrations.sh",
-        "matcher": "dotnet\\s+ef|Remove-Migration|migrations"
-      }
-    ],
-    "afterFileEdit": [
-      {
-        "command": ".cursor/hooks/remind-shared-types.sh",
-        "matcher": "Write|TabWrite"
-      }
     ]
   }
 }
