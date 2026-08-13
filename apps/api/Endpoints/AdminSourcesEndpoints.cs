@@ -38,7 +38,7 @@ public static class AdminSourcesEndpoints
                 {
                     return Results.Problem(
                         title: "Invalid type or kind",
-                        detail: "type must be Rss|Manual; kind must be CityEdition|Wider.",
+                        detail: "type must be Rss|Manual|Scrape; kind must be CityEdition|Wider.",
                         statusCode: StatusCodes.Status400BadRequest);
                 }
 
@@ -115,7 +115,7 @@ public static class AdminSourcesEndpoints
                 {
                     return Results.Problem(
                         title: "Invalid type",
-                        detail: "type must be Rss or Manual.",
+                        detail: "type must be Rss, Manual, or Scrape.",
                         statusCode: StatusCodes.Status400BadRequest);
                 }
 
@@ -173,6 +173,7 @@ public static class AdminSourcesEndpoints
                 int id,
                 AppDbContext db,
                 RssIngestService ingest,
+                ScrapeIngestService scrapeIngest,
                 CancellationToken cancellationToken) =>
             {
                 var source = await db.Sources.AsNoTracking()
@@ -185,15 +186,17 @@ public static class AdminSourcesEndpoints
                         statusCode: StatusCodes.Status404NotFound);
                 }
 
-                if (!source.IsActive || source.Type != SourceType.Rss)
+                if (!source.IsActive || (source.Type != SourceType.Rss && source.Type != SourceType.Scrape))
                 {
                     return Results.Problem(
                         title: "Invalid source",
-                        detail: "Only active RSS sources can be triggered.",
+                        detail: "Only active RSS or Scrape sources can be triggered.",
                         statusCode: StatusCodes.Status400BadRequest);
                 }
 
-                var run = await ingest.RunSourceAsync(id, cancellationToken);
+                var run = source.Type == SourceType.Scrape
+                    ? await scrapeIngest.RunSourceAsync(id, cancellationToken)
+                    : await ingest.RunSourceAsync(id, cancellationToken);
                 return Results.Ok(ToRunResponse(run));
             })
             .WithName("AdminTriggerSource")
@@ -272,28 +275,33 @@ public static class AdminSourcesEndpoints
         }
 
         string? normalizedFeed = null;
-        if (type == SourceType.Rss)
+        if (type is SourceType.Rss or SourceType.Scrape)
         {
             if (string.IsNullOrWhiteSpace(feedUrl))
             {
                 return (Results.Problem(
                     title: "Invalid feedUrl",
-                    detail: "feedUrl is required for RSS sources.",
+                    detail: type == SourceType.Rss
+                        ? "feedUrl is required for RSS sources."
+                        : "feedUrl is required for Scrape sources.",
                     statusCode: StatusCodes.Status400BadRequest), null, null, 0, null, null);
             }
 
             normalizedFeed = HtmlText.Truncate(feedUrl.Trim(), 500);
-            var duplicate = await db.Sources.AsNoTracking().AnyAsync(
-                s => s.Type == SourceType.Rss
-                    && s.FeedUrl == normalizedFeed
-                    && (excludeId == null || s.Id != excludeId),
-                cancellationToken);
-            if (duplicate)
+            if (type == SourceType.Rss)
             {
-                return (Results.Problem(
-                    title: "Duplicate feed URL",
-                    detail: "An RSS source with this feedUrl already exists.",
-                    statusCode: StatusCodes.Status409Conflict), null, null, 0, null, null);
+                var duplicate = await db.Sources.AsNoTracking().AnyAsync(
+                    s => s.Type == SourceType.Rss
+                        && s.FeedUrl == normalizedFeed
+                        && (excludeId == null || s.Id != excludeId),
+                    cancellationToken);
+                if (duplicate)
+                {
+                    return (Results.Problem(
+                        title: "Duplicate feed URL",
+                        detail: "An RSS source with this feedUrl already exists.",
+                        statusCode: StatusCodes.Status409Conflict), null, null, 0, null, null);
+                }
             }
         }
         else if (!string.IsNullOrWhiteSpace(feedUrl))

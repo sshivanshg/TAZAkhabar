@@ -104,6 +104,72 @@ public static class SeedData
             Language = "hi",
             IsActive = false,
         },
+        new()
+        {
+            Id = 8,
+            Name = "Amar Ujala",
+            FeedUrl = "https://www.amarujala.com/uttar-pradesh/jhansi",
+            CityId = 2,
+            Type = SourceType.Scrape,
+            Kind = SourceKind.CityEdition,
+            Language = "hi",
+            IsActive = true,
+        },
+        new()
+        {
+            Id = 9,
+            Name = "Google News",
+            FeedUrl = "https://news.google.com/search?q=Jhansi&hl=hi-IN&gl=IN&ceid=IN:hi",
+            CityId = 2,
+            Type = SourceType.Scrape,
+            Kind = SourceKind.CityEdition,
+            Language = "hi",
+            IsActive = true,
+        },
+        new()
+        {
+            Id = 10,
+            Name = "Amar Ujala",
+            FeedUrl = "https://www.amarujala.com/uttar-pradesh/kanpur",
+            CityId = 3,
+            Type = SourceType.Scrape,
+            Kind = SourceKind.CityEdition,
+            Language = "hi",
+            IsActive = true,
+        },
+        new()
+        {
+            Id = 11,
+            Name = "Google News",
+            FeedUrl = "https://news.google.com/search?q=Kanpur&hl=hi-IN&gl=IN&ceid=IN:hi",
+            CityId = 3,
+            Type = SourceType.Scrape,
+            Kind = SourceKind.CityEdition,
+            Language = "hi",
+            IsActive = true,
+        },
+        new()
+        {
+            Id = 12,
+            Name = "Amar Ujala",
+            FeedUrl = "https://www.amarujala.com/uttar-pradesh/lucknow",
+            CityId = 4,
+            Type = SourceType.Scrape,
+            Kind = SourceKind.CityEdition,
+            Language = "hi",
+            IsActive = true,
+        },
+        new()
+        {
+            Id = 13,
+            Name = "Google News",
+            FeedUrl = "https://news.google.com/search?q=Lucknow&hl=hi-IN&gl=IN&ceid=IN:hi",
+            CityId = 4,
+            Type = SourceType.Scrape,
+            Kind = SourceKind.CityEdition,
+            Language = "hi",
+            IsActive = true,
+        },
     ];
 
     public static readonly Article[] Articles = BuildArticles();

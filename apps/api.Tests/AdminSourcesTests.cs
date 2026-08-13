@@ -28,6 +28,29 @@ public sealed class AdminSourcesTests : IClassFixture<NewsFeedWebApplicationFact
     }
 
     [Fact]
+    public async Task CreateScrape_ReturnsOk()
+    {
+        var client = await AdminAuthTests.CreateAuthedClientAsync(_factory);
+        var feedUrl = "https://www.amarujala.com/uttar-pradesh/jhansi-admin-create";
+        var response = await client.PostAsJsonAsync("/api/admin/sources", new
+        {
+            name = "Amar Ujala Scrape",
+            feedUrl,
+            city = "jhansi",
+            type = "Scrape",
+            kind = "CityEdition",
+            language = "hi",
+            isActive = true,
+        });
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var created = await response.Content.ReadFromJsonAsync<AdminSourceResponse>(TestJson.Options);
+        Assert.Equal("Scrape", created!.Type);
+        Assert.Equal(feedUrl, created.FeedUrl);
+        Assert.Equal("jhansi", created.CitySlug);
+        Assert.True(created.IsActive);
+    }
+
+    [Fact]
     public async Task CreateRss_And_DuplicateFeedUrl_Returns409()
     {
         var client = await AdminAuthTests.CreateAuthedClientAsync(_factory);
