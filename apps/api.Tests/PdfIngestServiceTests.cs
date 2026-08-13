@@ -258,6 +258,14 @@ public sealed class RecordingFakeIntelligence : IArticleIntelligence
         string headline, string bodyOrSnippet, string citySlug, CancellationToken cancellationToken)
         => Task.FromResult("Short original summary for " + headline);
 
+    public Task<(string Headline, string Summary)?> TranslateArticleAsync(
+        string headline,
+        string summary,
+        string sourceLanguage,
+        string targetLanguage,
+        CancellationToken cancellationToken)
+        => Task.FromResult<(string, string)?>(($"[{targetLanguage}] {headline}", $"[{targetLanguage}] {summary}"));
+
     private IReadOnlyList<ExtractedStory> ApplyHint(string? cityHintSlug) =>
         Stories.Select(s => s with { CitySlug = cityHintSlug ?? s.CitySlug }).ToList();
 }

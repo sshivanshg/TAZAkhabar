@@ -121,6 +121,13 @@
               "type": "integer",
               "format": "int32"
             }
+          },
+          {
+            "name": "lang",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -171,6 +178,13 @@
             "schema": {
               "type": "integer",
               "format": "int32"
+            }
+          },
+          {
+            "name": "lang",
+            "in": "query",
+            "schema": {
+              "type": "string"
             }
           }
         ],
@@ -1264,6 +1278,10 @@
             "type": "integer",
             "format": "int32",
             "nullable": true
+          },
+          "detectedLanguage": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -1388,6 +1406,14 @@
           "imageUrl": {
             "type": "string",
             "nullable": true
+          },
+          "detectedLanguage": {
+            "type": "string",
+            "nullable": true
+          },
+          "displayLanguage": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -1443,6 +1469,10 @@
           },
           "publishNow": {
             "type": "boolean"
+          },
+          "detectedLanguage": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -1773,6 +1803,10 @@
           "city": {
             "type": "string",
             "nullable": true
+          },
+          "detectedLanguage": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -1836,7 +1870,7 @@
             "nullable": true
           }
         },
-        "additionalProperties": { }
+        "additionalProperties": {}
       }
     }
   }

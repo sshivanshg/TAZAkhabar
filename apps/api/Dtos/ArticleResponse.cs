@@ -9,4 +9,6 @@ public sealed record ArticleResponse(
     string SourceUrl,
     DateTimeOffset PublishedAt,
     string Category,
-    string? ImageUrl);
+    string? ImageUrl,
+    string DetectedLanguage,
+    string DisplayLanguage);

@@ -1,4 +1,5 @@
 using NewsFeed.Api.Data.Entities;
+using NewsFeed.Api.Ingest;
 
 namespace NewsFeed.Api.Data;
 
@@ -214,6 +215,7 @@ public static class SeedData
                 ImageEnrichmentAttemptedAt = baseTime,
                 Status = ArticleStatus.Published,
                 IsMock = true,
+                DetectedLanguage = ArticleLanguageDetector.Detect(StripMockPrefix(headline), summary),
             });
         }
 

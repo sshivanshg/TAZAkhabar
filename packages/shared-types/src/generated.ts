@@ -25,6 +25,7 @@ export interface AdminArticleResponse {
     reviewedBy?: string | undefined;
     reviewedAt?: string | undefined;
     sourceId?: number | undefined;
+    detectedLanguage?: string | undefined;
 }
 
 export interface AdminLoginRequest {
@@ -62,6 +63,8 @@ export interface ArticleResponse {
     publishedAt?: string;
     category?: string | undefined;
     imageUrl?: string | undefined;
+    detectedLanguage?: string | undefined;
+    displayLanguage?: string | undefined;
 }
 
 export interface CityResponse {
@@ -79,6 +82,7 @@ export interface CreateAdminArticleRequest {
     sourceName?: string | undefined;
     sourceUrl?: string | undefined;
     publishNow?: boolean;
+    detectedLanguage?: string | undefined;
 }
 
 export interface CreateAdminSourceRequest {
@@ -174,6 +178,7 @@ export interface PatchAdminArticleRequest {
     summary?: string | undefined;
     category?: string | undefined;
     city?: string | undefined;
+    detectedLanguage?: string | undefined;
 }
 
 export interface PatchAdminSourceRequest {

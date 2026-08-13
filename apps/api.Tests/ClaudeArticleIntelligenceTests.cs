@@ -53,6 +53,16 @@ public sealed class ClaudeArticleIntelligenceTests
     }
 
     [Fact]
+    public void ParseTranslationJson_ReadsHeadlineAndSummary()
+    {
+        var parsed = ClaudeArticleIntelligence.ParseTranslationJson(
+            """{"headline":"Budget passed","summary":"The corporation approved funds."}""");
+        Assert.NotNull(parsed);
+        Assert.Equal("Budget passed", parsed.Value.Headline);
+        Assert.Equal("The corporation approved funds.", parsed.Value.Summary);
+    }
+
+    [Fact]
     public async Task ExtractStoriesAsync_MissingApiKey_Throws()
     {
         var intelligence = CreateSut(apiKey: "");

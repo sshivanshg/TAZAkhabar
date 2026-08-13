@@ -72,6 +72,7 @@ export type AdminArticle = {
   reviewedBy?: string | null
   reviewedAt?: string | null
   sourceId?: number | null
+  detectedLanguage?: string | null
 }
 
 export type Paged<T> = {
@@ -157,6 +158,7 @@ function mapArticle(a: AdminArticleResponse): AdminArticle {
     reviewedBy: a.reviewedBy,
     reviewedAt: a.reviewedAt,
     sourceId: a.sourceId,
+    detectedLanguage: a.detectedLanguage,
   }
 }
 

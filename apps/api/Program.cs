@@ -86,6 +86,7 @@ try
     builder.Services.AddScoped<PdfIngestService>();
     builder.Services.AddScoped<ScrapeIngestService>();
     builder.Services.AddScoped<ArticleImageEnrichmentService>();
+    builder.Services.AddScoped<NewsFeed.Api.Services.IArticlePresentationService, NewsFeed.Api.Services.ArticlePresentationService>();
     builder.Services.AddHostedService<PdfProcessingWorker>();
     builder.Services.AddHostedService<ImageEnrichmentWorker>();
 

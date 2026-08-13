@@ -10,6 +10,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     public DbSet<Source> Sources => Set<Source>();
     public DbSet<IngestionRun> IngestionRuns => Set<IngestionRun>();
     public DbSet<DocumentUpload> DocumentUploads => Set<DocumentUpload>();
+    public DbSet<ArticleTranslation> ArticleTranslations => Set<ArticleTranslation>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -133,6 +134,11 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             entity.Property(a => a.ReviewedAt).HasColumnName("reviewed_at");
             entity.Property(a => a.SourceId).HasColumnName("source_id");
             entity.Property(a => a.DocumentUploadId).HasColumnName("document_upload_id");
+            entity.Property(a => a.DetectedLanguage)
+                .HasColumnName("detected_language")
+                .HasMaxLength(8)
+                .IsRequired()
+                .HasDefaultValue("en");
             entity.HasIndex(a => new { a.CityId, a.PublishedAt });
             entity.HasIndex(a => a.SourceUrl).IsUnique();
             entity.HasIndex(a => new { a.Status, a.CityId });
@@ -151,6 +157,28 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
                 .HasForeignKey(a => a.DocumentUploadId)
                 .OnDelete(DeleteBehavior.SetNull);
             entity.HasData(SeedData.Articles);
+        });
+
+        modelBuilder.Entity<ArticleTranslation>(entity =>
+        {
+            entity.ToTable("article_translations");
+            entity.HasKey(t => t.Id);
+            entity.Property(t => t.Id).HasColumnName("id");
+            entity.Property(t => t.ArticleId).HasColumnName("article_id");
+            entity.Property(t => t.TargetLanguage).HasColumnName("target_language").HasMaxLength(8).IsRequired();
+            entity.Property(t => t.TranslatedHeadline).HasColumnName("translated_headline").HasMaxLength(300).IsRequired();
+            entity.Property(t => t.TranslatedSummary).HasColumnName("translated_summary").HasMaxLength(1000).IsRequired();
+            entity.Property(t => t.TranslatedAt).HasColumnName("translated_at");
+            entity.Property(t => t.Status)
+                .HasColumnName("status")
+                .HasConversion<string>()
+                .HasMaxLength(32)
+                .IsRequired();
+            entity.HasIndex(t => new { t.ArticleId, t.TargetLanguage }).IsUnique();
+            entity.HasOne(t => t.Article)
+                .WithMany(a => a.Translations)
+                .HasForeignKey(t => t.ArticleId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }

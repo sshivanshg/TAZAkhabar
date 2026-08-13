@@ -21,8 +21,11 @@ public sealed class Article
     public DateTimeOffset? ReviewedAt { get; set; }
     public int? SourceId { get; set; }
     public int? DocumentUploadId { get; set; }
+    /// <summary>ISO 639-1 (or short) code detected at ingest, e.g. hi / en.</summary>
+    public required string DetectedLanguage { get; set; }
 
     public City City { get; set; } = null!;
     public Source? Source { get; set; }
     public DocumentUpload? DocumentUpload { get; set; }
+    public ICollection<ArticleTranslation> Translations { get; set; } = new List<ArticleTranslation>();
 }
