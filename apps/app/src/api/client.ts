@@ -1,4 +1,5 @@
 import type {
+  ArticleDatesResponse,
   ArticleResponse,
   CityResponse,
   HealthResponse,
@@ -82,8 +83,16 @@ export type GetArticlesParams = {
   category?: string
   q?: string
   lang?: string
+  /** City-local calendar day YYYY-MM-DD; omit for newest-first (default). */
+  date?: string
   offset?: number
   limit?: number
+}
+
+export type GetArticleDatesParams = {
+  city: string
+  category?: string
+  days?: number
 }
 
 /** Single typed API client — screens must not call fetch directly. */
@@ -109,6 +118,9 @@ export const apiClient = {
     if (params.lang) {
       search.set('lang', params.lang)
     }
+    if (params.date) {
+      search.set('date', params.date)
+    }
     if (params.offset != null) {
       search.set('offset', String(params.offset))
     }
@@ -116,6 +128,18 @@ export const apiClient = {
       search.set('limit', String(params.limit))
     }
     return request<PagedArticlesResponse>(`/api/articles?${search.toString()}`)
+  },
+
+  getArticleDates(params: GetArticleDatesParams): Promise<ArticleDatesResponse> {
+    const search = new URLSearchParams()
+    search.set('city', params.city)
+    if (params.category) {
+      search.set('category', params.category)
+    }
+    if (params.days != null) {
+      search.set('days', String(params.days))
+    }
+    return request<ArticleDatesResponse>(`/api/articles/dates?${search.toString()}`)
   },
 
   getArticle(id: string, lang?: string): Promise<ArticleResponse> {
