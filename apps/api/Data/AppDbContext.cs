@@ -7,7 +7,6 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 {
     public DbSet<City> Cities => Set<City>();
     public DbSet<Article> Articles => Set<Article>();
-    public DbSet<ArticleContent> ArticleContents => Set<ArticleContent>();
     public DbSet<Source> Sources => Set<Source>();
     public DbSet<IngestionRun> IngestionRuns => Set<IngestionRun>();
     public DbSet<DocumentUpload> DocumentUploads => Set<DocumentUpload>();
@@ -159,19 +158,6 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
                 .HasForeignKey(a => a.DocumentUploadId)
                 .OnDelete(DeleteBehavior.SetNull);
             entity.HasData(SeedData.Articles);
-        });
-
-        modelBuilder.Entity<ArticleContent>(entity =>
-        {
-            entity.ToTable("article_contents");
-            entity.HasKey(c => c.ArticleId);
-            entity.Property(c => c.ArticleId).HasColumnName("article_id");
-            entity.Property(c => c.CleanText).HasColumnName("clean_text").IsRequired();
-            entity.Property(c => c.ExtractionTier).HasColumnName("extraction_tier").HasMaxLength(64);
-            entity.HasOne(c => c.Article)
-                .WithOne(a => a.Content)
-                .HasForeignKey<ArticleContent>(c => c.ArticleId)
-                .OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<ArticleTranslation>(entity =>
