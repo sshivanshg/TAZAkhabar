@@ -3,7 +3,6 @@ using Microsoft.Extensions.Logging.Abstractions;
 using NewsFeed.Api.Data;
 using NewsFeed.Api.Data.Entities;
 using NewsFeed.Api.Ingest;
-using NewsFeed.Api.Options;
 
 namespace NewsFeed.Api.Tests;
 
@@ -18,9 +17,10 @@ public sealed class RssIngestServiceTests
     private const string LucknowItemUrl = "https://example.com/lucknow-story";
 
     [Fact]
-    public async Task Inserts_CityEdition_And_Skips_DuplicateUrl()
+    public async Task Inserts_CityEdition_AsPendingReview_And_Skips_DuplicateUrl()
     {
         await using var db = CreateDb();
+        var source = await AddSourceAsync(db, "Amar Ujala", CityFeedUrl, SourceKind.CityEdition);
         var client = new FakeRssFeedClient
         {
             Responses =
@@ -28,7 +28,7 @@ public sealed class RssIngestServiceTests
                 [CityFeedUrl] = CityEditionXml(CityItemUrl, "Jhansi municipal budget", "Nagar nigam session"),
             },
         };
-        var service = CreateService(db, client, CityEditionFeed(CityFeedUrl));
+        var service = CreateService(db, client);
 
         var first = await service.RunAsync(CancellationToken.None);
         Assert.Equal(1, first.Inserted);
@@ -44,12 +44,19 @@ public sealed class RssIngestServiceTests
         Assert.Equal(CityItemUrl, stored.SourceUrl);
         Assert.Equal("Local", stored.Category);
         Assert.Equal("Amar Ujala", stored.SourceName);
+        Assert.Equal(ArticleStatus.PendingReview, stored.Status);
+        Assert.NotNull(stored.IngestedAt);
+        Assert.Equal(source.Id, stored.SourceId);
+        Assert.False(stored.IsMock);
+
+        Assert.Equal(2, await db.IngestionRuns.CountAsync(r => r.SourceId == source.Id));
     }
 
     [Fact]
     public async Task WiderFeed_KeepsOrchha_DropsLucknowOnly()
     {
         await using var db = CreateDb();
+        await AddSourceAsync(db, "Amar Ujala", WiderFeedUrl, SourceKind.Wider);
         var client = new FakeRssFeedClient
         {
             Responses =
@@ -57,14 +64,7 @@ public sealed class RssIngestServiceTests
                 [WiderFeedUrl] = WiderFeedXml(),
             },
         };
-        var service = CreateService(db, client, new RssFeedConfig
-        {
-            SourceName = "Amar Ujala",
-            Url = WiderFeedUrl,
-            Language = "hi",
-            Kind = RssFeedKind.Wider,
-            CitySlug = "jhansi",
-        });
+        var service = CreateService(db, client);
 
         var result = await service.RunAsync(CancellationToken.None);
         Assert.Equal(1, result.Inserted);
@@ -79,9 +79,11 @@ public sealed class RssIngestServiceTests
     }
 
     [Fact]
-    public async Task FailedFeed_DoesNotBlock_HealthyFeed()
+    public async Task FailedFeed_DoesNotBlock_HealthyFeed_And_WritesErrorRun()
     {
         await using var db = CreateDb();
+        var dead = await AddSourceAsync(db, "Dead", DeadFeedUrl, SourceKind.CityEdition);
+        var healthy = await AddSourceAsync(db, "Healthy", HealthyFeedUrl, SourceKind.CityEdition);
         var client = new FakeRssFeedClient
         {
             Responses =
@@ -90,11 +92,7 @@ public sealed class RssIngestServiceTests
                 [HealthyFeedUrl] = CityEditionXml(CityItemUrl, "Jhansi municipal budget", "Nagar nigam session"),
             },
         };
-        var service = CreateService(
-            db,
-            client,
-            CityEditionFeed(DeadFeedUrl),
-            CityEditionFeed(HealthyFeedUrl));
+        var service = CreateService(db, client);
 
         var result = await service.RunAsync(CancellationToken.None);
 
@@ -102,12 +100,23 @@ public sealed class RssIngestServiceTests
         Assert.Equal(1, result.FeedsFailed);
         Assert.Equal(1, result.Inserted);
         Assert.Equal(CityItemUrl, Assert.Single(await db.Articles.ToListAsync()).SourceUrl);
+
+        var deadRun = Assert.Single(await db.IngestionRuns.Where(r => r.SourceId == dead.Id).ToListAsync());
+        Assert.True(deadRun.ArticlesFailed >= 1);
+        Assert.False(string.IsNullOrEmpty(deadRun.ErrorSummary));
+        Assert.NotNull(deadRun.CompletedAt);
+
+        await db.Entry(dead).ReloadAsync();
+        Assert.Equal(FetchStatus.Error, dead.LastFetchStatus);
+
+        Assert.Single(await db.IngestionRuns.Where(r => r.SourceId == healthy.Id).ToListAsync());
     }
 
     [Fact]
     public async Task CancelledRun_DoesNotCountAsFeedsFailed()
     {
         await using var db = CreateDb();
+        await AddSourceAsync(db, "Amar Ujala", CityFeedUrl, SourceKind.CityEdition);
         var client = new FakeRssFeedClient
         {
             Responses =
@@ -115,7 +124,7 @@ public sealed class RssIngestServiceTests
                 [CityFeedUrl] = CityEditionXml(CityItemUrl, "Jhansi municipal budget", "Nagar nigam session"),
             },
         };
-        var service = CreateService(db, client, CityEditionFeed(CityFeedUrl));
+        var service = CreateService(db, client);
         using var cts = new CancellationTokenSource();
         cts.Cancel();
 
@@ -128,6 +137,7 @@ public sealed class RssIngestServiceTests
     public async Task InvalidArticleUrl_IsNotStored()
     {
         await using var db = CreateDb();
+        await AddSourceAsync(db, "Amar Ujala", CityFeedUrl, SourceKind.CityEdition);
         var client = new FakeRssFeedClient
         {
             Responses =
@@ -142,13 +152,33 @@ public sealed class RssIngestServiceTests
                     """,
             },
         };
-        var service = CreateService(db, client, CityEditionFeed(CityFeedUrl));
+        var service = CreateService(db, client);
 
         var result = await service.RunAsync(CancellationToken.None);
 
         Assert.Equal(0, result.Inserted);
         Assert.Equal(0, result.FeedsFailed);
         Assert.Empty(await db.Articles.ToListAsync());
+    }
+
+    [Fact]
+    public async Task IgnoresInactiveSources()
+    {
+        await using var db = CreateDb();
+        var inactive = await AddSourceAsync(db, "Off", CityFeedUrl, SourceKind.CityEdition, isActive: false);
+        var client = new FakeRssFeedClient
+        {
+            Responses =
+            {
+                [CityFeedUrl] = CityEditionXml(CityItemUrl, "Jhansi municipal budget", "Nagar nigam session"),
+            },
+        };
+        var service = CreateService(db, client);
+
+        var result = await service.RunAsync(CancellationToken.None);
+        Assert.Equal(0, result.FeedsAttempted);
+        Assert.Empty(await db.Articles.ToListAsync());
+        Assert.Empty(await db.IngestionRuns.Where(r => r.SourceId == inactive.Id).ToListAsync());
     }
 
     private static AppDbContext CreateDb()
@@ -168,27 +198,30 @@ public sealed class RssIngestServiceTests
         return db;
     }
 
-    private static RssIngestService CreateService(
+    private static async Task<Source> AddSourceAsync(
         AppDbContext db,
-        FakeRssFeedClient client,
-        params RssFeedConfig[] feeds)
+        string name,
+        string feedUrl,
+        SourceKind kind,
+        bool isActive = true)
     {
-        var options = Microsoft.Extensions.Options.Options.Create(new RssIngestOptions
+        var source = new Source
         {
-            Secret = "test-ingest-key",
-            Feeds = [.. feeds],
-        });
-        return new RssIngestService(db, options, client, NullLogger<RssIngestService>.Instance);
+            Name = name,
+            FeedUrl = feedUrl,
+            CityId = 2,
+            Type = SourceType.Rss,
+            Kind = kind,
+            Language = "hi",
+            IsActive = isActive,
+        };
+        db.Sources.Add(source);
+        await db.SaveChangesAsync();
+        return source;
     }
 
-    private static RssFeedConfig CityEditionFeed(string url) => new()
-    {
-        SourceName = "Amar Ujala",
-        Url = url,
-        Language = "hi",
-        Kind = RssFeedKind.CityEdition,
-        CitySlug = "jhansi",
-    };
+    private static RssIngestService CreateService(AppDbContext db, FakeRssFeedClient client) =>
+        new(db, client, NullLogger<RssIngestService>.Instance);
 
     private static string CityEditionXml(string itemUrl, string title, string description) => $"""
         <?xml version="1.0"?><rss version="2.0"><channel>

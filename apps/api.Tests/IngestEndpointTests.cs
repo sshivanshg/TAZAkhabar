@@ -6,7 +6,6 @@ using Microsoft.Extensions.DependencyInjection;
 using NewsFeed.Api.Data;
 using NewsFeed.Api.Dtos;
 using NewsFeed.Api.Ingest;
-using NewsFeed.Api.Options;
 
 namespace NewsFeed.Api.Tests;
 
@@ -83,20 +82,6 @@ public sealed class IngestEndpointTests : IClassFixture<NewsFeedWebApplicationFa
                 }
 
                 services.AddSingleton<IRssFeedClient>(fake);
-                services.Configure<RssIngestOptions>(options =>
-                {
-                    options.Feeds =
-                    [
-                        new RssFeedConfig
-                        {
-                            SourceName = "Amar Ujala",
-                            Url = FeedUrl,
-                            Language = "hi",
-                            Kind = RssFeedKind.CityEdition,
-                            CitySlug = "jhansi",
-                        },
-                    ];
-                });
             });
         });
 
@@ -106,6 +91,19 @@ public sealed class IngestEndpointTests : IClassFixture<NewsFeedWebApplicationFa
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             db.Database.EnsureDeleted();
             db.Database.EnsureCreated();
+            // Replace seed sources with a single test feed URL the fake client serves.
+            db.Sources.RemoveRange(db.Sources);
+            db.Sources.Add(new NewsFeed.Api.Data.Entities.Source
+            {
+                Name = "Amar Ujala",
+                FeedUrl = FeedUrl,
+                CityId = 2,
+                Type = SourceType.Rss,
+                Kind = SourceKind.CityEdition,
+                Language = "hi",
+                IsActive = true,
+            });
+            db.SaveChanges();
         }
 
         client.DefaultRequestHeaders.Add("X-Ingest-Key", NewsFeedWebApplicationFactory.TestIngestKey);
