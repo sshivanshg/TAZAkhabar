@@ -37,6 +37,17 @@ try
     builder.Services.Configure<AdminOptions>(builder.Configuration.GetSection(AdminOptions.SectionName));
     builder.Services.Configure<ArticleIntelligenceOptions>(
         builder.Configuration.GetSection(ArticleIntelligenceOptions.SectionName));
+    builder.Services.Configure<UploadOptions>(builder.Configuration.GetSection(UploadOptions.SectionName));
+    if (builder.Environment.IsDevelopment())
+    {
+        builder.Services.PostConfigure<UploadOptions>(upload =>
+        {
+            if (string.IsNullOrWhiteSpace(upload.RootPath))
+            {
+                upload.RootPath = Path.Combine(Path.GetTempPath(), "newsfeed-uploads");
+            }
+        });
+    }
 
     builder.Services.AddHttpClient("rss", client =>
     {
@@ -50,7 +61,10 @@ try
     });
     builder.Services.AddSingleton<IRssFeedClient, RssFeedClient>();
     builder.Services.AddSingleton<IArticleIntelligence, OpenAiArticleIntelligence>();
+    builder.Services.AddSingleton<PdfProcessingQueue>();
     builder.Services.AddScoped<RssIngestService>();
+    builder.Services.AddScoped<PdfIngestService>();
+    builder.Services.AddHostedService<PdfProcessingWorker>();
 
     var corsOptions = builder.Configuration.GetSection(CorsOptions.SectionName).Get<CorsOptions>() ?? new CorsOptions();
     var rateLimitingOptions = builder.Configuration.GetSection(RateLimitingOptions.SectionName).Get<RateLimitingOptions>()

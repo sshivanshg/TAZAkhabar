@@ -68,6 +68,44 @@ public sealed class OpenAiArticleIntelligenceTests
             intelligence.SummarizeArticleAsync("Headline", "Body", "jhansi", CancellationToken.None));
     }
 
+    [Fact]
+    public async Task ExtractStoriesFromImageAsync_MissingApiKey_Throws()
+    {
+        var intelligence = CreateSut(apiKey: "");
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            intelligence.ExtractStoriesFromImageAsync([0xFF, 0xD8, 0xFF, 0xD9], "image/jpeg", "jhansi", CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task ExtractStoriesFromImageAsync_SendsDataUrlAndParsesStories()
+    {
+        string? capturedBody = null;
+        var handler = new StubHandler(async request =>
+        {
+            capturedBody = await request.Content!.ReadAsStringAsync();
+            return """
+                {"choices":[{"message":{"content":"{\"stories\":[{\"headline\":\"From image\",\"summary\":\"Vision summary.\",\"category\":\"Local\",\"citySlug\":\"jhansi\",\"language\":\"en\"}]}"}}]}
+                """;
+        });
+        var intelligence = new OpenAiArticleIntelligence(
+            new NamedHttpClientFactory(OpenAiArticleIntelligence.HttpClientName, new HttpClient(handler)),
+            Microsoft.Extensions.Options.Options.Create(new ArticleIntelligenceOptions
+            {
+                ApiKey = "test-key",
+                BaseUrl = "https://api.openai.com/v1",
+            }),
+            Microsoft.Extensions.Logging.Abstractions.NullLogger<OpenAiArticleIntelligence>.Instance);
+
+        var stories = await intelligence.ExtractStoriesFromImageAsync(
+            [0x01, 0x02], "image/png", "jhansi", CancellationToken.None);
+
+        var story = Assert.Single(stories);
+        Assert.Equal("From image", story.Headline);
+        Assert.Contains("\"image_url\"", capturedBody, StringComparison.Ordinal);
+        Assert.Contains("data:image/png;base64,", capturedBody, StringComparison.Ordinal);
+        Assert.Contains("IMAGE_UPLOAD", capturedBody, StringComparison.Ordinal);
+    }
+
     private static OpenAiArticleIntelligence CreateSut(string apiKey) =>
         new(
             new UnusedHttpClientFactory(),
@@ -78,5 +116,27 @@ public sealed class OpenAiArticleIntelligenceTests
     {
         public HttpClient CreateClient(string name) =>
             throw new InvalidOperationException("HTTP should not be used when the API key is missing.");
+    }
+
+    private sealed class NamedHttpClientFactory(string expectedName, HttpClient client) : IHttpClientFactory
+    {
+        public HttpClient CreateClient(string name)
+        {
+            Assert.Equal(expectedName, name);
+            return client;
+        }
+    }
+
+    private sealed class StubHandler(Func<HttpRequestMessage, Task<string>> responder) : HttpMessageHandler
+    {
+        protected override async Task<HttpResponseMessage> SendAsync(
+            HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            var body = await responder(request);
+            return new HttpResponseMessage(System.Net.HttpStatusCode.OK)
+            {
+                Content = new StringContent(body, System.Text.Encoding.UTF8, "application/json"),
+            };
+        }
     }
 }

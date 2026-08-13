@@ -7,6 +7,12 @@ public interface IArticleIntelligence
         string? cityHintSlug,
         CancellationToken cancellationToken);
 
+    Task<IReadOnlyList<ExtractedStory>> ExtractStoriesFromImageAsync(
+        byte[] imageBytes,
+        string contentType,
+        string? cityHintSlug,
+        CancellationToken cancellationToken);
+
     Task<string> SummarizeArticleAsync(
         string headline,
         string bodyOrSnippet,

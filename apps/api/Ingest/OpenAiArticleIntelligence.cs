@@ -60,6 +60,22 @@ public sealed class OpenAiArticleIntelligence(
         return ParseStoriesJson(content);
     }
 
+    public async Task<IReadOnlyList<ExtractedStory>> ExtractStoriesFromImageAsync(
+        byte[] imageBytes,
+        string contentType,
+        string? cityHintSlug,
+        CancellationToken cancellationToken)
+    {
+        EnsureApiKey();
+
+        var hint = string.IsNullOrWhiteSpace(cityHintSlug) ? "(none)" : cityHintSlug.Trim();
+        var userText = $"City hint slug: {hint}\nIMAGE_UPLOAD";
+        var mime = NormalizeImageMime(contentType);
+        var content = await CompleteVisionJsonAsync(
+            ExtractStoriesSystemPrompt, userText, imageBytes, mime, cancellationToken);
+        return ParseStoriesJson(content);
+    }
+
     public async Task<string> SummarizeArticleAsync(
         string headline,
         string bodyOrSnippet,
@@ -130,20 +146,46 @@ public sealed class OpenAiArticleIntelligence(
         }
     }
 
-    private async Task<string> CompleteJsonAsync(
+    private Task<string> CompleteJsonAsync(
         string systemPrompt,
         string userContent,
         CancellationToken cancellationToken)
     {
-        var settings = options.Value;
-        var url = $"{settings.BaseUrl.TrimEnd('/')}/chat/completions";
-        var payload = new ChatCompletionRequest(
-            settings.Model,
+        return SendCompletionAsync(
             [
                 new ChatMessage("system", systemPrompt),
                 new ChatMessage("user", userContent),
             ],
-            new ResponseFormat("json_object"));
+            cancellationToken);
+    }
+
+    private Task<string> CompleteVisionJsonAsync(
+        string systemPrompt,
+        string userText,
+        byte[] imageBytes,
+        string mime,
+        CancellationToken cancellationToken)
+    {
+        var dataUrl = $"data:{mime};base64,{Convert.ToBase64String(imageBytes)}";
+        return SendCompletionAsync(
+            [
+                new ChatMessage("system", systemPrompt),
+                new ChatMessage("user", new object[]
+                {
+                    new VisionPart("text", userText, null),
+                    new VisionPart("image_url", null, new VisionImageUrl(dataUrl)),
+                }),
+            ],
+            cancellationToken);
+    }
+
+    private async Task<string> SendCompletionAsync(
+        IReadOnlyList<ChatMessage> messages,
+        CancellationToken cancellationToken)
+    {
+        var settings = options.Value;
+        var url = $"{settings.BaseUrl.TrimEnd('/')}/chat/completions";
+        var payload = new ChatCompletionRequest(settings.Model, messages, new ResponseFormat("json_object"));
 
         using var request = new HttpRequestMessage(HttpMethod.Post, url);
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", settings.ApiKey);
@@ -165,6 +207,17 @@ public sealed class OpenAiArticleIntelligence(
         }
 
         return ReadMessageContent(body);
+    }
+
+    private static string NormalizeImageMime(string? contentType)
+    {
+        var mime = (contentType ?? "").Split(';')[0].Trim().ToLowerInvariant();
+        return mime switch
+        {
+            "image/jpg" => "image/jpeg",
+            "image/jpeg" or "image/png" or "image/webp" => mime,
+            _ => "image/jpeg",
+        };
     }
 
     private static string ReadMessageContent(string body)
@@ -259,7 +312,14 @@ public sealed class OpenAiArticleIntelligence(
         IReadOnlyList<ChatMessage> Messages,
         [property: JsonPropertyName("response_format")] ResponseFormat ResponseFormat);
 
-    private sealed record ChatMessage(string Role, string Content);
+    private sealed record ChatMessage(string Role, object Content);
+
+    private sealed record VisionPart(
+        string Type,
+        string? Text,
+        [property: JsonPropertyName("image_url")] VisionImageUrl? ImageUrl);
+
+    private sealed record VisionImageUrl(string Url);
 
     private sealed record ResponseFormat(string Type);
 }
