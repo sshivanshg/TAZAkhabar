@@ -26,6 +26,11 @@ import {
 import { ConfirmModal } from '../../src/components/ConfirmModal'
 import { AddToHomeBanner } from '../../src/components/AddToHomeBanner'
 import { DesktopHeroRow } from '../../src/components/desktop/DesktopHeroRow'
+import {
+  StoryOptionsPopover,
+  captureMoreButtonAnchor,
+  type StoryOptionsAnchor,
+} from '../../src/components/desktop/StoryOptionsPopover'
 import { DesktopTopBar } from '../../src/components/desktop/DesktopTopBar'
 import { HomeTopBar } from '../../src/components/HomeTopBar'
 import { ScreenErrorBoundary } from '../../src/components/ScreenErrorBoundary'
@@ -93,6 +98,8 @@ function HomeFeedBody() {
   const [error, setError] = useState<string | null>(null)
   const [showContent, setShowContent] = useState(false)
   const [actionArticle, setActionArticle] = useState<ArticleResponse | null>(null)
+  const [popoverAnchor, setPopoverAnchor] = useState<StoryOptionsAnchor | null>(null)
+  const cardHosts = useRef(new Map<string, View | null>())
   const [blockSourceName, setBlockSourceName] = useState<string | null>(null)
   const [blockCategoryName, setBlockCategoryName] = useState<string | null>(null)
   const [bookmarkedIds, setBookmarkedIds] = useState<Set<number>>(new Set())
@@ -307,6 +314,17 @@ function HomeFeedBody() {
   }, [router, category])
 
   const shareLabel = Platform.OS === 'web' ? 'Share on WhatsApp' : 'Share'
+
+  const openStoryActions = useCallback((article: ArticleResponse) => {
+    setActionArticle(article)
+    const key = article.id != null ? String(article.id) : ''
+    captureMoreButtonAnchor(cardHosts.current.get(key) ?? null, setPopoverAnchor)
+  }, [])
+
+  const closeStoryActions = useCallback(() => {
+    setActionArticle(null)
+    setPopoverAnchor(null)
+  }, [])
 
   const storySections: BottomSheetSection[] = useMemo(() => {
     if (!actionArticle) {
@@ -527,13 +545,31 @@ function HomeFeedBody() {
                     )
                   }
                   return (
-                    <View style={styles.cardPad}>
+                    <View
+                      style={styles.cardPad}
+                      collapsable={desktop ? false : undefined}
+                      ref={
+                        desktop
+                          ? (node) => {
+                              const key =
+                                item.article.id != null
+                                  ? String(item.article.id)
+                                  : item.key
+                              if (node) {
+                                cardHosts.current.set(key, node)
+                              } else {
+                                cardHosts.current.delete(key)
+                              }
+                            }
+                          : undefined
+                      }
+                    >
                       <CompactArticleCard
                         article={item.article}
                         index={item.index}
                         onPress={openArticle}
-                        onLongPress={setActionArticle}
-                        onMorePress={setActionArticle}
+                        onLongPress={desktop ? openStoryActions : setActionArticle}
+                        onMorePress={desktop ? openStoryActions : setActionArticle}
                       />
                     </View>
                   )
@@ -565,12 +601,22 @@ function HomeFeedBody() {
         ) : null}
       </Box>
 
-      <BottomSheet
-        visible={actionArticle != null}
-        title="Story options"
-        sections={storySections}
-        onClose={() => setActionArticle(null)}
-      />
+      {desktop ? (
+        <StoryOptionsPopover
+          visible={actionArticle != null}
+          anchor={popoverAnchor}
+          title="Story options"
+          sections={storySections}
+          onClose={closeStoryActions}
+        />
+      ) : (
+        <BottomSheet
+          visible={actionArticle != null}
+          title="Story options"
+          sections={storySections}
+          onClose={() => setActionArticle(null)}
+        />
+      )}
 
       <ConfirmModal
         visible={blockSourceName != null}

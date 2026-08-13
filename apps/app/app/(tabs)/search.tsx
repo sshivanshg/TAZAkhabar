@@ -27,6 +27,11 @@ import {
   CompactArticleCardSkeleton,
 } from '../../src/components/CompactArticleCard'
 import { ConfirmModal } from '../../src/components/ConfirmModal'
+import {
+  StoryOptionsPopover,
+  captureMoreButtonAnchor,
+  type StoryOptionsAnchor,
+} from '../../src/components/desktop/StoryOptionsPopover'
 import { ScreenErrorBoundary } from '../../src/components/ScreenErrorBoundary'
 import { TabScreenShell } from '../../src/components/TabScreenShell'
 import { ErrorState } from '../../src/components/ui/ErrorState'
@@ -49,6 +54,7 @@ import {
   space,
 } from '../../src/theme/tokens'
 import { useTabBarClearance } from '../../src/theme/useTabBarClearance'
+import { isDesktopLayout, useBreakpoint } from '../../src/hooks/useBreakpoint'
 import { articleRouteParams } from '../../src/utils/articleRouteParams'
 import { shareArticleToWhatsApp } from '../../src/utils/shareToWhatsApp'
 
@@ -68,6 +74,7 @@ function DiscoverBody() {
   const params = useLocalSearchParams<{ category?: string; from?: string; q?: string }>()
   const prefs = useFeedPreferences()
   const tabClearance = useTabBarClearance()
+  const desktop = isDesktopLayout(useBreakpoint())
   const [citySlug, setCitySlug] = useState<string | null>(null)
   const [cityMeta, setCityMeta] = useState<CityResponse | null>(null)
   const [query, setQuery] = useState('')
@@ -80,6 +87,8 @@ function DiscoverBody() {
   const [refreshing, setRefreshing] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [actionArticle, setActionArticle] = useState<ArticleResponse | null>(null)
+  const [popoverAnchor, setPopoverAnchor] = useState<StoryOptionsAnchor | null>(null)
+  const cardHosts = useRef(new Map<string, View | null>())
   const [blockSourceName, setBlockSourceName] = useState<string | null>(null)
   const [blockCategoryName, setBlockCategoryName] = useState<string | null>(null)
   const [filterOpen, setFilterOpen] = useState(false)
@@ -221,6 +230,17 @@ function DiscoverBody() {
     },
     [router],
   )
+
+  const openStoryActions = useCallback((article: ArticleResponse) => {
+    setActionArticle(article)
+    const key = article.id != null ? String(article.id) : ''
+    captureMoreButtonAnchor(cardHosts.current.get(key) ?? null, setPopoverAnchor)
+  }, [])
+
+  const closeStoryActions = useCallback(() => {
+    setActionArticle(null)
+    setPopoverAnchor(null)
+  }, [])
 
   const sheetSections: BottomSheetSection[] = useMemo(() => {
     if (!actionArticle) {
@@ -430,15 +450,35 @@ function DiscoverBody() {
               }
             />
           }
-          renderItem={({ item, index }) => (
-            <CompactArticleCard
-              article={item}
-              index={index}
-              onPress={openArticle}
-              onLongPress={setActionArticle}
-              onMorePress={setActionArticle}
-            />
-          )}
+          renderItem={({ item, index }) => {
+            const card = (
+              <CompactArticleCard
+                article={item}
+                index={index}
+                onPress={openArticle}
+                onLongPress={desktop ? openStoryActions : setActionArticle}
+                onMorePress={desktop ? openStoryActions : setActionArticle}
+              />
+            )
+            if (!desktop) {
+              return card
+            }
+            return (
+              <View
+                collapsable={false}
+                ref={(node) => {
+                  const key = item.id != null ? String(item.id) : String(index)
+                  if (node) {
+                    cardHosts.current.set(key, node)
+                  } else {
+                    cardHosts.current.delete(key)
+                  }
+                }}
+              >
+                {card}
+              </View>
+            )
+          }}
           ListEmptyComponent={
             <VStack py="$10" space="sm">
               <Text fontSize={18} lineHeight={28} fontWeight="$bold" color={colors.text}>
@@ -463,12 +503,22 @@ function DiscoverBody() {
         onClose={() => setFilterOpen(false)}
       />
 
-      <BottomSheet
-        visible={actionArticle != null}
-        title="Story options"
-        sections={sheetSections}
-        onClose={() => setActionArticle(null)}
-      />
+      {desktop ? (
+        <StoryOptionsPopover
+          visible={actionArticle != null}
+          anchor={popoverAnchor}
+          title="Story options"
+          sections={sheetSections}
+          onClose={closeStoryActions}
+        />
+      ) : (
+        <BottomSheet
+          visible={actionArticle != null}
+          title="Story options"
+          sections={sheetSections}
+          onClose={() => setActionArticle(null)}
+        />
+      )}
 
       <ConfirmModal
         visible={blockSourceName != null}

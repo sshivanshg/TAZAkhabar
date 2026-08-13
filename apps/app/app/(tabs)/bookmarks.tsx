@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import { FlatList, Pressable, StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useFocusEffect, useRouter } from 'expo-router'
@@ -6,8 +6,14 @@ import { Text, VStack } from '@gluestack-ui/themed'
 import { Bookmark } from 'lucide-react-native'
 import { MotiView } from 'moti'
 import { CompactArticleCard } from '../../src/components/CompactArticleCard'
+import {
+  StoryOptionsPopover,
+  captureMoreButtonAnchor,
+  type StoryOptionsAnchor,
+} from '../../src/components/desktop/StoryOptionsPopover'
 import { ScreenErrorBoundary } from '../../src/components/ScreenErrorBoundary'
 import { TabScreenShell } from '../../src/components/TabScreenShell'
+import type { BottomSheetSection } from '../../src/components/ui/BottomSheet'
 import {
   type BookmarkSnapshot,
   getBookmarks,
@@ -15,6 +21,7 @@ import {
 } from '../../src/storage/bookmarks'
 import { colors, radius, space, typography } from '../../src/theme/tokens'
 import { useTabBarClearance } from '../../src/theme/useTabBarClearance'
+import { isDesktopLayout, useBreakpoint } from '../../src/hooks/useBreakpoint'
 import { iconStroke } from '../../src/theme/categoryIcons'
 import { articleRouteParams } from '../../src/utils/articleRouteParams'
 
@@ -32,8 +39,12 @@ function BookmarksBody() {
   const router = useRouter()
   const insets = useSafeAreaInsets()
   const tabClearance = useTabBarClearance()
+  const desktop = isDesktopLayout(useBreakpoint())
   const [bookmarks, setBookmarks] = useState<BookmarkSnapshot[]>([])
   const [ready, setReady] = useState(false)
+  const [actionItem, setActionItem] = useState<BookmarkSnapshot | null>(null)
+  const [popoverAnchor, setPopoverAnchor] = useState<StoryOptionsAnchor | null>(null)
+  const cardHosts = useRef(new Map<string, View | null>())
 
   const reload = useCallback(async () => {
     const list = await getBookmarks()
@@ -68,6 +79,33 @@ function BookmarksBody() {
     },
     [reload],
   )
+
+  const closeStoryActions = useCallback(() => {
+    setActionItem(null)
+    setPopoverAnchor(null)
+  }, [])
+
+  const bookmarkSections: BottomSheetSection[] = useMemo(() => {
+    if (!actionItem) {
+      return []
+    }
+    return [
+      {
+        key: 'danger',
+        items: [
+          {
+            key: 'remove',
+            label: 'Remove bookmark',
+            destructive: true,
+            Icon: Bookmark,
+            onPress: () => {
+              void onRemove(actionItem.id)
+            },
+          },
+        ],
+      },
+    ]
+  }, [actionItem, onRemove])
 
   return (
     <MotiView
@@ -129,30 +167,67 @@ function BookmarksBody() {
           data={bookmarks}
           keyExtractor={(item) => String(item.id)}
           contentContainerStyle={[styles.list, { paddingBottom: tabClearance }]}
-          renderItem={({ item, index }) => (
-            <View>
-              <CompactArticleCard
-                article={item}
-                index={index}
-                onPress={() => openArticle(item)}
-              />
-              <Pressable
-                onPress={() => void onRemove(item.id)}
-                accessibilityRole="button"
-                accessibilityLabel={`Remove bookmark ${item.headline}`}
-                style={({ pressed }) => [
-                  styles.removeBtn,
-                  pressed ? styles.removePressed : null,
-                ]}
+          renderItem={({ item, index }) =>
+            desktop ? (
+              <View
+                collapsable={false}
+                ref={(node) => {
+                  const key = String(item.id)
+                  if (node) {
+                    cardHosts.current.set(key, node)
+                  } else {
+                    cardHosts.current.delete(key)
+                  }
+                }}
               >
-                <Text fontSize={15} lineHeight={20} fontWeight="$semibold" color={colors.textSecondary}>
-                  Remove
-                </Text>
-              </Pressable>
-            </View>
-          )}
+                <CompactArticleCard
+                  article={item}
+                  index={index}
+                  onPress={() => openArticle(item)}
+                  onMorePress={() => {
+                    setActionItem(item)
+                    captureMoreButtonAnchor(
+                      cardHosts.current.get(String(item.id)) ?? null,
+                      setPopoverAnchor,
+                    )
+                  }}
+                />
+              </View>
+            ) : (
+              <View>
+                <CompactArticleCard
+                  article={item}
+                  index={index}
+                  onPress={() => openArticle(item)}
+                />
+                <Pressable
+                  onPress={() => void onRemove(item.id)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Remove bookmark ${item.headline}`}
+                  style={({ pressed }) => [
+                    styles.removeBtn,
+                    pressed ? styles.removePressed : null,
+                  ]}
+                >
+                  <Text fontSize={15} lineHeight={20} fontWeight="$semibold" color={colors.textSecondary}>
+                    Remove
+                  </Text>
+                </Pressable>
+              </View>
+            )
+          }
         />
       )}
+
+      {desktop ? (
+        <StoryOptionsPopover
+          visible={actionItem != null}
+          anchor={popoverAnchor}
+          title="Story options"
+          sections={bookmarkSections}
+          onClose={closeStoryActions}
+        />
+      ) : null}
     </MotiView>
   )
 }
