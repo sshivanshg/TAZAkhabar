@@ -91,6 +91,20 @@ export interface CreateAdminSourceRequest {
     isActive?: boolean;
 }
 
+export interface DocumentUploadResponseDto {
+    id?: number;
+    originalFileName?: string | undefined;
+    contentType?: string | undefined;
+    byteSize?: number;
+    cityHintId?: number | undefined;
+    status?: string | undefined;
+    errorSummary?: string | undefined;
+    ingestionRunId?: number | undefined;
+    createdAt?: string;
+    processedAt?: string | undefined;
+    articlesCreated?: number;
+}
+
 export interface HealthResponse {
     status?: string | undefined;
     service?: string | undefined;
@@ -131,6 +145,13 @@ export interface PagedArticlesResponse {
     limit?: number;
 }
 
+export interface PagedDocumentUploadsResponse {
+    items?: DocumentUploadResponseDto[] | undefined;
+    total?: number;
+    page?: number;
+    pageSize?: number;
+}
+
 export interface PagedIngestionRunsResponse {
     items?: IngestionRunResponseDto[] | undefined;
     total?: number;
@@ -163,4 +184,9 @@ export interface ProblemDetails {
     instance?: string | undefined;
 
     [key: string]: any;
+}
+
+export interface FileParameter {
+    data: any;
+    fileName: string;
 }

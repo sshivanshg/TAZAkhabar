@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
@@ -7,6 +8,8 @@ namespace NewsFeed.Api.Tests;
 
 public sealed class AdminAuthTests : IClassFixture<NewsFeedWebApplicationFactory>
 {
+    private static readonly ConcurrentDictionary<(NewsFeedWebApplicationFactory Factory, string Name), string> Tokens = new();
+
     private readonly NewsFeedWebApplicationFactory _factory;
 
     public AdminAuthTests(NewsFeedWebApplicationFactory factory)
@@ -88,14 +91,21 @@ public sealed class AdminAuthTests : IClassFixture<NewsFeedWebApplicationFactory
         string displayName = "Ada")
     {
         var client = factory.CreateSeededClient();
-        var login = await client.PostAsJsonAsync("/api/admin/login", new
+        var cacheKey = (factory, displayName);
+        if (!Tokens.TryGetValue(cacheKey, out var token))
         {
-            password = NewsFeedWebApplicationFactory.TestAdminPassword,
-            displayName,
-        });
-        login.EnsureSuccessStatusCode();
-        var body = await login.Content.ReadFromJsonAsync<AdminLoginResponse>();
-        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", body!.Token);
+            var login = await client.PostAsJsonAsync("/api/admin/login", new
+            {
+                password = NewsFeedWebApplicationFactory.TestAdminPassword,
+                displayName,
+            });
+            login.EnsureSuccessStatusCode();
+            var body = await login.Content.ReadFromJsonAsync<AdminLoginResponse>();
+            token = body!.Token;
+            Tokens[cacheKey] = token;
+        }
+
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
         return client;
     }
 }

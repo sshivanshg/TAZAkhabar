@@ -185,6 +185,50 @@ public static class AdminArticlesEndpoints
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict);
 
+        admin.MapPost("/articles/{id:int}/archive", async (
+                int id,
+                ClaimsPrincipal user,
+                AppDbContext db,
+                CancellationToken cancellationToken) =>
+            {
+                var article = await db.Articles.FirstOrDefaultAsync(a => a.Id == id, cancellationToken);
+                if (article is null)
+                {
+                    return Results.Problem(
+                        title: "Article not found",
+                        detail: $"No article found with id '{id}'.",
+                        statusCode: StatusCodes.Status404NotFound);
+                }
+
+                if (article.Status == ArticleStatus.Archived)
+                {
+                    return Results.Problem(
+                        title: "Conflict",
+                        detail: "Article is already archived.",
+                        statusCode: StatusCodes.Status409Conflict);
+                }
+
+                if (article.Status != ArticleStatus.Published)
+                {
+                    return Results.Problem(
+                        title: "Conflict",
+                        detail: $"Cannot archive article from status '{article.Status}'.",
+                        statusCode: StatusCodes.Status409Conflict);
+                }
+
+                article.Status = ArticleStatus.Archived;
+                article.ReviewedBy = EditorName(user);
+                article.ReviewedAt = DateTimeOffset.UtcNow;
+                await db.SaveChangesAsync(cancellationToken);
+                return Results.Ok(ToResponse(article));
+            })
+            .WithName("AdminArchiveArticle")
+            .WithOpenApi()
+            .Produces<AdminArticleResponse>(StatusCodes.Status200OK)
+            .ProducesProblem(StatusCodes.Status401Unauthorized)
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status409Conflict);
+
         admin.MapPost("/articles", async (
                 CreateAdminArticleRequest request,
                 ClaimsPrincipal user,

@@ -273,6 +273,7 @@ try
         .RequireAuthorization();
     adminSecure.MapAdminArticlesEndpoints();
     adminSecure.MapAdminSourcesEndpoints();
+    adminSecure.MapAdminUploadsEndpoints();
 
     app.MapHealthChecks("/healthz");
 

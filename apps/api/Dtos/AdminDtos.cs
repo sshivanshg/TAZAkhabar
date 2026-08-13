@@ -90,3 +90,22 @@ public sealed record PagedIngestionRunsResponse(
     int Total,
     int Page,
     int Limit);
+
+public sealed record DocumentUploadResponseDto(
+    int Id,
+    string OriginalFileName,
+    string ContentType,
+    long ByteSize,
+    int? CityHintId,
+    string Status,
+    string? ErrorSummary,
+    int? IngestionRunId,
+    DateTimeOffset CreatedAt,
+    DateTimeOffset? ProcessedAt,
+    int ArticlesCreated);
+
+public sealed record PagedDocumentUploadsResponse(
+    IReadOnlyList<DocumentUploadResponseDto> Items,
+    int Total,
+    int Page,
+    int PageSize);

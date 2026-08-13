@@ -22,6 +22,7 @@ public sealed class NewsFeedWebApplicationFactory : WebApplicationFactory<Progra
         builder.UseSetting("RssIngest:Secret", TestIngestKey);
         builder.UseSetting("Admin:Password", TestAdminPassword);
         builder.UseSetting("Admin:JwtSigningKey", TestAdminJwtSigningKey);
+        builder.UseSetting("Upload:MaxBytes", "8192");
 
         builder.ConfigureServices(services =>
         {

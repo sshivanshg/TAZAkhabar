@@ -166,4 +166,68 @@ public sealed class AdminArticlesTests : IClassFixture<NewsFeedWebApplicationFac
         var response = await client.PostAsync($"/api/admin/articles/{id}/publish", null);
         Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
     }
+
+    [Fact]
+    public async Task ArchivePublished_HidesFromPublicFeed()
+    {
+        var client = await AdminAuthTests.CreateAuthedClientAsync(_factory, "Editor One");
+        var create = await client.PostAsJsonAsync("/api/admin/articles", new
+        {
+            headline = "Live then archived",
+            summary = "Will leave the feed",
+            city = "jhansi",
+            category = "Local",
+            sourceName = "Desk",
+            sourceUrl = "https://example.com/live-then-archived",
+            publishNow = true,
+        });
+        Assert.Equal(HttpStatusCode.OK, create.StatusCode);
+        var live = await create.Content.ReadFromJsonAsync<AdminArticleResponse>(TestJson.Options);
+        Assert.Equal("Published", live!.Status);
+
+        var publicBefore = await client.GetFromJsonAsync<PagedArticlesResponse>("/api/articles?city=jhansi");
+        Assert.Contains(publicBefore!.Items, a => a.Id == live.Id);
+
+        var archive = await client.PostAsync($"/api/admin/articles/{live.Id}/archive", null);
+        Assert.Equal(HttpStatusCode.OK, archive.StatusCode);
+        var archived = await archive.Content.ReadFromJsonAsync<AdminArticleResponse>(TestJson.Options);
+        Assert.Equal("Archived", archived!.Status);
+        Assert.Equal("Editor One", archived.ReviewedBy);
+        Assert.NotNull(archived.ReviewedAt);
+
+        var publicAfter = await client.GetFromJsonAsync<PagedArticlesResponse>("/api/articles?city=jhansi");
+        Assert.DoesNotContain(publicAfter!.Items, a => a.Id == live.Id);
+
+        var byId = await client.GetAsync($"/api/articles/{live.Id}");
+        Assert.Equal(HttpStatusCode.NotFound, byId.StatusCode);
+    }
+
+    [Fact]
+    public async Task ArchiveAlreadyArchived_Returns409()
+    {
+        var client = await AdminAuthTests.CreateAuthedClientAsync(_factory);
+        int id;
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var article = new Article
+            {
+                CityId = 2,
+                Headline = "Already archived",
+                Summary = "s",
+                SourceName = "A",
+                SourceUrl = "https://example.com/already-archived",
+                PublishedAt = DateTimeOffset.UtcNow,
+                Category = "Local",
+                Status = ArticleStatus.Archived,
+                IsMock = false,
+            };
+            db.Articles.Add(article);
+            db.SaveChanges();
+            id = article.Id;
+        }
+
+        var response = await client.PostAsync($"/api/admin/articles/{id}/archive", null);
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+    }
 }
