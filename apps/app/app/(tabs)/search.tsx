@@ -43,7 +43,7 @@ export default function DiscoverScreen() {
 function DiscoverBody() {
   const router = useRouter()
   const insets = useSafeAreaInsets()
-  const params = useLocalSearchParams<{ category?: string }>()
+  const params = useLocalSearchParams<{ category?: string; from?: string; q?: string }>()
   const prefs = useFeedPreferences()
   const tabClearance = useTabBarClearance()
   const [citySlug, setCitySlug] = useState<string | null>(null)
@@ -66,6 +66,12 @@ function DiscoverBody() {
       setCategory(params.category)
     }
   }, [params.category, category])
+
+  useEffect(() => {
+    if (typeof params.q === 'string' && params.q.length > 0) {
+      setQuery(params.q)
+    }
+  }, [params.q])
 
   useEffect(() => {
     void getStoredCitySlug().then((slug) => {

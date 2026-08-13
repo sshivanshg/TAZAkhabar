@@ -14,6 +14,7 @@ import {
 } from '../../src/components/CompactArticleCard'
 import { ConfirmModal } from '../../src/components/ConfirmModal'
 import { FeedRefreshIndicator } from '../../src/components/FeedRefreshIndicator'
+import { DesktopTopBar } from '../../src/components/desktop/DesktopTopBar'
 import { HomeTopBar } from '../../src/components/HomeTopBar'
 import { ScreenErrorBoundary } from '../../src/components/ScreenErrorBoundary'
 import { TabScreenShell } from '../../src/components/TabScreenShell'
@@ -32,6 +33,7 @@ import {
   typography,
 } from '../../src/theme/tokens'
 import { useTabBarClearance } from '../../src/theme/useTabBarClearance'
+import { isDesktopLayout, useBreakpoint } from '../../src/hooks/useBreakpoint'
 
 type ListRow =
   | { kind: 'breaking'; key: 'breaking' }
@@ -54,6 +56,8 @@ function HomeFeedBody() {
   const params = useLocalSearchParams<{ city?: string; category?: string }>()
   const prefs = useFeedPreferences()
   const tabClearance = useTabBarClearance()
+  const bp = useBreakpoint()
+  const desktop = isDesktopLayout(bp)
   const [citySlug, setCitySlug] = useState<string | null>(params.city ?? null)
   const [cityMeta, setCityMeta] = useState<CityResponse | null>(null)
   const [category, setCategory] = useState<FeedCategory>(() =>
@@ -329,11 +333,18 @@ function HomeFeedBody() {
       style={{ flex: 1, backgroundColor: colors.background }}
     >
       <Box flex={1} bg={colors.background}>
-        <HomeTopBar
-          onMenuPress={() => setMenuOpen(true)}
-          onSearchPress={goDiscover}
-          onNotificationPress={() => undefined}
-        />
+        {desktop ? (
+          <DesktopTopBar
+            cityTitle={cityTitle}
+            onCityPress={() => router.push('/city')}
+          />
+        ) : (
+          <HomeTopBar
+            onMenuPress={() => setMenuOpen(true)}
+            onSearchPress={goDiscover}
+            onNotificationPress={() => undefined}
+          />
+        )}
         <CategoryChipRow
           selected={category}
           onSelect={setCategory}
