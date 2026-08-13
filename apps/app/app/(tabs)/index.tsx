@@ -14,6 +14,7 @@ import {
 } from '../../src/components/CompactArticleCard'
 import { ConfirmModal } from '../../src/components/ConfirmModal'
 import { FeedRefreshIndicator } from '../../src/components/FeedRefreshIndicator'
+import { DesktopHeroRow } from '../../src/components/desktop/DesktopHeroRow'
 import { DesktopTopBar } from '../../src/components/desktop/DesktopTopBar'
 import { HomeTopBar } from '../../src/components/HomeTopBar'
 import { ScreenErrorBoundary } from '../../src/components/ScreenErrorBoundary'
@@ -410,7 +411,11 @@ function HomeFeedBody() {
                           actionLabel="View all"
                           onAction={goDiscover}
                         />
-                        <BreakingNewsCarousel articles={breaking} onPress={openArticle} />
+                        {desktop ? (
+                          <DesktopHeroRow articles={breaking} onPress={openArticle} />
+                        ) : (
+                          <BreakingNewsCarousel articles={breaking} onPress={openArticle} />
+                        )}
                       </View>
                     )
                   }
