@@ -10,8 +10,11 @@ export function SourcesPage() {
   const [name, setName] = useState('')
   const [feedUrl, setFeedUrl] = useState('')
   const [city, setCity] = useState('jhansi')
+  const [sourceType, setSourceType] = useState('Rss')
   const [kind, setKind] = useState('CityEdition')
   const [language, setLanguage] = useState('hi')
+
+  const isTriggerable = (type: string) => type === 'Rss' || type === 'Scrape'
 
   async function load() {
     try {
@@ -54,7 +57,7 @@ export function SourcesPage() {
         name,
         feedUrl,
         city,
-        type: 'Rss',
+        type: sourceType,
         kind,
         language,
         isActive: true,
@@ -71,10 +74,11 @@ export function SourcesPage() {
 
   const columns: Column<AdminSource>[] = [
     { key: 'name', header: 'Name', render: (r) => r.name },
+    { key: 'type', header: 'Type', render: (r) => r.type, width: '72px' },
     { key: 'city', header: 'City', render: (r) => cityName(r.cityId) },
     {
       key: 'url',
-      header: 'Feed URL',
+      header: 'URL',
       render: (r) => <span style={{ fontSize: 12, wordBreak: 'break-all' }}>{r.feedUrl ?? '—'}</span>,
     },
     {
@@ -100,7 +104,7 @@ export function SourcesPage() {
       key: 'run',
       header: '',
       render: (r) => (
-        <button type="button" disabled={!r.isActive || r.type !== 'Rss'} onClick={() => void runNow(r.id)}>
+        <button type="button" disabled={!r.isActive || !isTriggerable(r.type)} onClick={() => void runNow(r.id)}>
           Run now
         </button>
       ),
@@ -116,7 +120,16 @@ export function SourcesPage() {
       <h2 style={{ fontSize: 16, marginTop: 28 }}>Add source</h2>
       <form onSubmit={(e) => void onAdd(e)} style={{ display: 'grid', gap: 10, maxWidth: 480 }}>
         <input placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} required />
-        <input placeholder="Feed URL" value={feedUrl} onChange={(e) => setFeedUrl(e.target.value)} required />
+        <select value={sourceType} onChange={(e) => setSourceType(e.target.value)}>
+          <option value="Rss">RSS</option>
+          <option value="Scrape">Scrape</option>
+        </select>
+        <input
+          placeholder={sourceType === 'Scrape' ? 'Scrape URL (page to crawl)' : 'Feed URL'}
+          value={feedUrl}
+          onChange={(e) => setFeedUrl(e.target.value)}
+          required
+        />
         <select value={city} onChange={(e) => setCity(e.target.value)}>
           {cities.map((c) => (
             <option key={c.slug} value={c.slug}>
@@ -130,7 +143,7 @@ export function SourcesPage() {
         </select>
         <input placeholder="Language" value={language} onChange={(e) => setLanguage(e.target.value)} required maxLength={8} />
         <button type="submit" style={{ background: theme.accent, color: '#fff', border: 'none', padding: 10, borderRadius: 6 }}>
-          Add RSS source
+          Add {sourceType === 'Scrape' ? 'scrape' : 'RSS'} source
         </button>
       </form>
     </div>
