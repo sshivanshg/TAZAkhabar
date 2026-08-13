@@ -22,6 +22,8 @@ services:
         sync: false
       - key: Cors__AllowedOrigins__0
         sync: false
+      - key: Cors__AllowedOrigins__1
+        sync: false
       - key: RateLimiting__PermitLimit
         value: "60"
       - key: RateLimiting__WindowSeconds
