@@ -54,16 +54,23 @@ try
         client.Timeout = TimeSpan.FromSeconds(15);
         client.DefaultRequestHeaders.UserAgent.ParseAdd("NewsFeedIngest/0.1");
     });
+    builder.Services.AddHttpClient(ScrapeHttpClient.HttpClientName, client =>
+    {
+        client.Timeout = TimeSpan.FromSeconds(15);
+        client.DefaultRequestHeaders.UserAgent.ParseAdd("NewsFeedIngest/0.1");
+    });
     builder.Services.AddHttpClient(OpenAiArticleIntelligence.HttpClientName, client =>
     {
         client.Timeout = TimeSpan.FromSeconds(90);
         client.DefaultRequestHeaders.UserAgent.ParseAdd("NewsFeedIngest/0.1");
     });
     builder.Services.AddSingleton<IRssFeedClient, RssFeedClient>();
+    builder.Services.AddSingleton<IScrapeHttpClient, ScrapeHttpClient>();
     builder.Services.AddSingleton<IArticleIntelligence, OpenAiArticleIntelligence>();
     builder.Services.AddSingleton<PdfProcessingQueue>();
     builder.Services.AddScoped<RssIngestService>();
     builder.Services.AddScoped<PdfIngestService>();
+    builder.Services.AddScoped<ScrapeIngestService>();
     builder.Services.AddHostedService<PdfProcessingWorker>();
 
     var corsOptions = builder.Configuration.GetSection(CorsOptions.SectionName).Get<CorsOptions>() ?? new CorsOptions();
