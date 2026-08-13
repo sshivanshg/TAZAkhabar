@@ -1,7 +1,9 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native'
+import { StyleSheet } from 'react-native'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import type { ArticleResponse, CityResponse, PagedArticlesResponse } from '@newsfeed/shared-types'
 import { FeedPreferencesProvider } from '../src/preferences/FeedPreferencesContext'
+import { ERROR_COLUMN_MAX } from '../src/theme/tokens'
 
 const mockPush = jest.fn()
 const mockReplace = jest.fn()
@@ -107,6 +109,11 @@ jest.mock('@gluestack-ui/themed', () => {
   }
 })
 
+jest.mock('../src/hooks/useBreakpoint', () => ({
+  useBreakpoint: jest.fn(() => 'mobile'),
+  isDesktopLayout: (bp: string) => bp === 'desktop' || bp === 'wide',
+}))
+
 jest.mock('react-native-svg', () => {
   const React = require('react')
   const { View } = require('react-native')
@@ -125,6 +132,10 @@ jest.mock('react-native-svg', () => {
 })
 
 import FeedScreen from '../app/(tabs)/index'
+
+const { useBreakpoint } = require('../src/hooks/useBreakpoint') as {
+  useBreakpoint: jest.Mock
+}
 
 const sampleArticle: ArticleResponse = {
   id: 1,
@@ -174,6 +185,7 @@ function renderFeed() {
 describe('FeedScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks()
+    useBreakpoint.mockReturnValue('mobile')
     mockGetCities.mockResolvedValue(cities)
     // Need more than BREAKING_NEWS_COUNT so recommendation list has the sample headline
     mockGetArticles.mockResolvedValue(paged(makeArticles(6)))
@@ -188,6 +200,7 @@ describe('FeedScreen', () => {
     expect(screen.getByText('Breaking News')).toBeTruthy()
     expect(screen.getByText('Latest for you')).toBeTruthy()
     expect(screen.getByLabelText(/Change city/)).toBeTruthy()
+    expect(screen.queryByTestId('article-row')).toBeNull()
   })
 
   it('shows empty state when there are no articles', async () => {
@@ -204,6 +217,7 @@ describe('FeedScreen', () => {
 
     expect(await screen.findByText('Something went wrong')).toBeTruthy()
     expect(screen.getByText('Server unavailable')).toBeTruthy()
+    expect(screen.queryByTestId('error-column')).toBeNull()
 
     mockGetArticles.mockResolvedValueOnce(paged(makeArticles(6)))
     fireEvent.press(screen.getByLabelText('Retry loading articles'))
@@ -213,6 +227,37 @@ describe('FeedScreen', () => {
         screen.getByText('[MOCK] Local municipal budget approved for FY26'),
       ).toBeTruthy()
     })
+  })
+
+  it('pairs recommendation articles into a 2-column row on tablet', async () => {
+    useBreakpoint.mockReturnValue('tablet')
+    mockGetArticles.mockResolvedValue(paged(makeArticles(7)))
+    renderFeed()
+
+    expect(await screen.findByText('[MOCK] Story 6')).toBeTruthy()
+    expect(screen.getByText('[MOCK] Story 7')).toBeTruthy()
+    expect(screen.getByTestId('article-row')).toBeTruthy()
+    expect(screen.queryByTestId('error-column')).toBeNull()
+  })
+
+  it('keeps a single-column article list on desktop', async () => {
+    useBreakpoint.mockReturnValue('desktop')
+    mockGetArticles.mockResolvedValue(paged(makeArticles(7)))
+    renderFeed()
+
+    expect(await screen.findByText('[MOCK] Story 6')).toBeTruthy()
+    expect(screen.getByText('[MOCK] Story 7')).toBeTruthy()
+    expect(screen.queryByTestId('article-row')).toBeNull()
+  })
+
+  it('centers the error column at ERROR_COLUMN_MAX on desktop', async () => {
+    useBreakpoint.mockReturnValue('desktop')
+    mockGetArticles.mockRejectedValueOnce(new Error('Server unavailable'))
+    renderFeed()
+
+    expect(await screen.findByText('Something went wrong')).toBeTruthy()
+    const column = screen.getByTestId('error-column')
+    expect(StyleSheet.flatten(column.props.style).maxWidth).toBe(ERROR_COLUMN_MAX)
   })
 
   it('opens city picker from city pill', async () => {

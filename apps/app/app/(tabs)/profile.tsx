@@ -17,6 +17,7 @@ import { getStoredCitySlug } from '../../src/storage/cityPreference'
 import { colors, HIT_TARGET, space, typography } from '../../src/theme/tokens'
 import { iconStroke } from '../../src/theme/categoryIcons'
 import { useTabBarClearance } from '../../src/theme/useTabBarClearance'
+import { isDesktopLayout, useBreakpoint } from '../../src/hooks/useBreakpoint'
 
 export default function ProfileScreen() {
   return (
@@ -33,6 +34,7 @@ function ProfileBody() {
   const insets = useSafeAreaInsets()
   const prefs = useFeedPreferences()
   const tabClearance = useTabBarClearance()
+  const desktop = isDesktopLayout(useBreakpoint())
   const [cityMeta, setCityMeta] = useState<CityResponse | null>(null)
   const [citySlug, setCitySlug] = useState<string | null>(null)
 
@@ -72,8 +74,12 @@ function ProfileBody() {
         contentContainerStyle={[
           styles.content,
           {
-            paddingTop: Math.max(insets.top, space.xs) + space.md,
-            paddingBottom: tabClearance + Math.max(insets.bottom, 0),
+            paddingTop: desktop
+              ? space.md
+              : Math.max(insets.top, space.xs) + space.md,
+            paddingBottom: desktop
+              ? space.xl
+              : tabClearance + Math.max(insets.bottom, 0),
           },
         ]}
       >

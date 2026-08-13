@@ -49,6 +49,7 @@ import {
   type FeedCategory,
   PAGE_SIZE,
   colors,
+  ERROR_COLUMN_MAX,
   isFeedCategory,
   radius,
   space,
@@ -422,15 +423,20 @@ function DiscoverBody() {
       ) : null}
 
       {!showSkeleton && error ? (
-        <ErrorState
-          title="Something went wrong"
-          message={error}
-          onRetry={() => void load('replace')}
-          retryLabel="Try again"
-          retryAccessibilityLabel="Retry loading stories"
-          onSecondary={() => router.replace('/(tabs)')}
-          secondaryLabel="Back to feed"
-        />
+        <View
+          testID={desktop ? 'error-column' : undefined}
+          style={desktop ? styles.errorColumn : undefined}
+        >
+          <ErrorState
+            title="Something went wrong"
+            message={error}
+            onRetry={() => void load('replace')}
+            retryLabel="Try again"
+            retryAccessibilityLabel="Retry loading stories"
+            onSecondary={() => router.replace('/(tabs)')}
+            secondaryLabel="Back to feed"
+          />
+        </View>
       ) : null}
 
       {!showSkeleton && !error ? (
@@ -613,5 +619,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.screen,
     paddingTop: space.xs,
     flexGrow: 1,
+  },
+  errorColumn: {
+    flex: 1,
+    width: '100%',
+    maxWidth: ERROR_COLUMN_MAX,
+    alignSelf: 'center',
   },
 })

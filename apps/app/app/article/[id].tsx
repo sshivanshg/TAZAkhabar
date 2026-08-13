@@ -102,6 +102,7 @@ function ArticleBody() {
   const scrollY = useRef(new Animated.Value(0)).current
   const [contentHeight, setContentHeight] = useState(1)
   const [layoutHeight, setLayoutHeight] = useState(1)
+  const [trackWidth, setTrackWidth] = useState(windowWidth)
 
   const loadArticle = useCallback(async (signal?: { cancelled: boolean }) => {
     if (!id) {
@@ -181,10 +182,10 @@ function ArticleBody() {
     const maxScroll = Math.max(contentHeight - layoutHeight, 1)
     return scrollY.interpolate({
       inputRange: [0, maxScroll],
-      outputRange: [0, windowWidth],
+      outputRange: [0, trackWidth],
       extrapolate: 'clamp',
     })
-  }, [scrollY, contentHeight, layoutHeight, windowWidth])
+  }, [scrollY, contentHeight, layoutHeight, trackWidth])
 
   const onScroll = useMemo(
     () =>
@@ -281,7 +282,11 @@ function ArticleBody() {
 
   return (
     <View style={styles.root}>
-      <View style={styles.progressTrack} accessibilityLabel="Reading progress">
+      <View
+        style={styles.progressTrack}
+        accessibilityLabel="Reading progress"
+        onLayout={(e) => setTrackWidth(e.nativeEvent.layout.width)}
+      >
         <Animated.View style={[styles.progressFill, { width: progressWidth }]} />
       </View>
 

@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { FlatList, Platform, Pressable, RefreshControl, StyleSheet, View } from 'react-native'
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { FlatList, Platform, Pressable, RefreshControl, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native'
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router'
 import { Box, HStack, Text } from '@gluestack-ui/themed'
 import { MotiView } from 'moti'
@@ -51,6 +51,7 @@ import {
   type FeedCategory,
   PAGE_SIZE,
   colors,
+  ERROR_COLUMN_MAX,
   isFeedCategory,
   media,
   radius,
@@ -67,6 +68,50 @@ type ListRow =
   | { kind: 'section'; key: 'section' }
   | { kind: 'empty'; key: 'empty' }
   | { kind: 'article'; key: string; article: ArticleResponse; index: number }
+  | {
+      kind: 'article-row'
+      key: string
+      left: ArticleResponse
+      right?: ArticleResponse
+      index: number
+    }
+
+type WebHoverHandlers = {
+  onMouseEnter?: () => void
+  onMouseLeave?: () => void
+}
+
+function ArticleCardSlot({
+  desktop,
+  padStyle,
+  hostRef,
+  children,
+}: {
+  desktop: boolean
+  padStyle: StyleProp<ViewStyle>
+  hostRef?: (node: View | null) => void
+  children: ReactNode
+}) {
+  const [hovered, setHovered] = useState(false)
+  const webHover: WebHoverHandlers =
+    desktop && Platform.OS === 'web'
+      ? {
+          onMouseEnter: () => setHovered(true),
+          onMouseLeave: () => setHovered(false),
+        }
+      : {}
+
+  return (
+    <View
+      ref={hostRef}
+      collapsable={desktop ? false : undefined}
+      style={[padStyle, desktop && hovered ? styles.cardHover : null]}
+      {...webHover}
+    >
+      {children}
+    </View>
+  )
+}
 
 export default function HomeFeedScreen() {
   return (
@@ -85,6 +130,7 @@ function HomeFeedBody() {
   const tabClearance = useTabBarClearance()
   const bp = useBreakpoint()
   const desktop = isDesktopLayout(bp)
+  const tablet = bp === 'tablet'
   const [citySlug, setCitySlug] = useState<string | null>(params.city ?? null)
   const [cityMeta, setCityMeta] = useState<CityResponse | null>(null)
   const [category, setCategory] = useState<FeedCategory>(() =>
@@ -275,19 +321,36 @@ function HomeFeedBody() {
     }
     if (recommendations.length > 0) {
       rows.push({ kind: 'section', key: 'section' })
-      for (const [index, article] of recommendations.entries()) {
-        rows.push({
-          kind: 'article',
-          key: String(article.id),
-          article,
-          index,
-        })
+      if (tablet) {
+        for (let i = 0; i < recommendations.length; i += 2) {
+          const left = recommendations[i]
+          if (!left) {
+            continue
+          }
+          const right = recommendations[i + 1]
+          rows.push({
+            kind: 'article-row',
+            key: `row-${left.id ?? i}-${right?.id ?? 'end'}`,
+            left,
+            right,
+            index: i,
+          })
+        }
+      } else {
+        for (const [index, article] of recommendations.entries()) {
+          rows.push({
+            kind: 'article',
+            key: String(article.id),
+            article,
+            index,
+          })
+        }
       }
     } else if (!loading && breaking.length === 0) {
       rows.push({ kind: 'empty', key: 'empty' })
     }
     return rows
-  }, [breaking, recommendations, loading])
+  }, [breaking, recommendations, loading, tablet])
 
   const openArticle = useCallback(
     (article: ArticleResponse) => {
@@ -325,6 +388,41 @@ function HomeFeedBody() {
     setActionArticle(null)
     setPopoverAnchor(null)
   }, [])
+
+  const bindCardHost = useCallback(
+    (article: ArticleResponse, fallbackKey: string) =>
+      desktop
+        ? (node: View | null) => {
+            const key = article.id != null ? String(article.id) : fallbackKey
+            if (node) {
+              cardHosts.current.set(key, node)
+            } else {
+              cardHosts.current.delete(key)
+            }
+          }
+        : undefined,
+    [desktop],
+  )
+
+  const renderArticleCard = (
+    article: ArticleResponse,
+    index: number,
+    padStyle: StyleProp<ViewStyle>,
+  ) => (
+    <ArticleCardSlot
+      desktop={desktop}
+      padStyle={padStyle}
+      hostRef={bindCardHost(article, String(article.id ?? index))}
+    >
+      <CompactArticleCard
+        article={article}
+        index={index}
+        onPress={openArticle}
+        onLongPress={desktop ? openStoryActions : setActionArticle}
+        onMorePress={desktop ? openStoryActions : setActionArticle}
+      />
+    </ArticleCardSlot>
+  )
 
   const storySections: BottomSheetSection[] = useMemo(() => {
     if (!actionArticle) {
@@ -470,12 +568,17 @@ function HomeFeedBody() {
             style={{ flex: 1 }}
           >
             {error && articles.length === 0 ? (
-              <ErrorState
-                title="Something went wrong"
-                message={error}
-                onRetry={() => void loadPage('replace')}
-                retryLabel="Try again"
-              />
+              <View
+                testID={desktop ? 'error-column' : undefined}
+                style={desktop ? styles.errorColumn : undefined}
+              >
+                <ErrorState
+                  title="Something went wrong"
+                  message={error}
+                  onRetry={() => void loadPage('replace')}
+                  retryLabel="Try again"
+                />
+              </View>
             ) : (
             <FlatList
               style={styles.listFlex}
@@ -544,35 +647,19 @@ function HomeFeedBody() {
                       </View>
                     )
                   }
-                  return (
-                    <View
-                      style={styles.cardPad}
-                      collapsable={desktop ? false : undefined}
-                      ref={
-                        desktop
-                          ? (node) => {
-                              const key =
-                                item.article.id != null
-                                  ? String(item.article.id)
-                                  : item.key
-                              if (node) {
-                                cardHosts.current.set(key, node)
-                              } else {
-                                cardHosts.current.delete(key)
-                              }
-                            }
-                          : undefined
-                      }
-                    >
-                      <CompactArticleCard
-                        article={item.article}
-                        index={item.index}
-                        onPress={openArticle}
-                        onLongPress={desktop ? openStoryActions : setActionArticle}
-                        onMorePress={desktop ? openStoryActions : setActionArticle}
-                      />
-                    </View>
-                  )
+                  if (item.kind === 'article-row') {
+                    return (
+                      <View testID="article-row" style={styles.articleRow}>
+                        {renderArticleCard(item.left, item.index, styles.articleCell)}
+                        {item.right ? (
+                          renderArticleCard(item.right, item.index + 1, styles.articleCell)
+                        ) : (
+                          <View style={styles.articleCell} />
+                        )}
+                      </View>
+                    )
+                  }
+                  return renderArticleCard(item.article, item.index, styles.cardPad)
                 }}
                 refreshControl={
                   <RefreshControl
@@ -712,6 +799,28 @@ const styles = StyleSheet.create({
   },
   cardPad: {
     paddingHorizontal: space.screen,
+  },
+  articleRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    paddingHorizontal: space.screen,
+    gap: space.sm,
+  },
+  articleCell: {
+    flex: 1,
+    minWidth: 0,
+  },
+  cardHover: {
+    padding: 4,
+    margin: -4,
+    borderRadius: radius.md,
+    backgroundColor: colors.accentSoft,
+  },
+  errorColumn: {
+    flex: 1,
+    width: '100%',
+    maxWidth: ERROR_COLUMN_MAX,
+    alignSelf: 'center',
   },
   emptyBlock: {
     paddingHorizontal: space.screen,
