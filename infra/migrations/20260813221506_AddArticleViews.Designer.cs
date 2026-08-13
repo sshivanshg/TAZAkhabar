@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace NewsFeed.Api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260813221028_AddArticleViews")]
+    [Migration("20260813221506_AddArticleViews")]
     partial class AddArticleViews
     {
         /// <inheritdoc />

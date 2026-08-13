@@ -13,7 +13,7 @@ namespace NewsFeed.Api.Migrations
     [DbContext(typeof(AppDbContext))]
     partial class AppDbContextModelSnapshot : ModelSnapshot
     {
-                protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1075,37 +1075,6 @@ namespace NewsFeed.Api.Migrations
                     b.ToTable("article_translations", (string)null);
                 });
 
-            modelBuilder.Entity("NewsFeed.Api.Data.Entities.ArticleView", b =>
-                {
-                    b.Property<long>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint")
-                        .HasColumnName("id");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
-
-                    b.Property<int>("ArticleId")
-                        .HasColumnType("integer")
-                        .HasColumnName("article_id");
-
-                    b.Property<string>("SessionKey")
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)")
-                        .HasColumnName("session_key");
-
-                    b.Property<DateTimeOffset>("ViewedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("viewed_at");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ArticleId", "ViewedAt");
-
-                    b.HasIndex("ArticleId", "SessionKey", "ViewedAt");
-
-                    b.ToTable("article_views", (string)null);
-                });
-
             modelBuilder.Entity("NewsFeed.Api.Data.Entities.City", b =>
                 {
                     b.Property<int>("Id")
@@ -1634,17 +1603,6 @@ namespace NewsFeed.Api.Migrations
                     b.Navigation("Article");
                 });
 
-            modelBuilder.Entity("NewsFeed.Api.Data.Entities.ArticleView", b =>
-                {
-                    b.HasOne("NewsFeed.Api.Data.Entities.Article", "Article")
-                        .WithMany("Views")
-                        .HasForeignKey("ArticleId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Article");
-                });
-
             modelBuilder.Entity("NewsFeed.Api.Data.Entities.DocumentUpload", b =>
                 {
                     b.HasOne("NewsFeed.Api.Data.Entities.City", "CityHint")
@@ -1694,8 +1652,6 @@ namespace NewsFeed.Api.Migrations
             modelBuilder.Entity("NewsFeed.Api.Data.Entities.Article", b =>
                 {
                     b.Navigation("Translations");
-
-                    b.Navigation("Views");
                 });
 
             modelBuilder.Entity("NewsFeed.Api.Data.Entities.City", b =>
