@@ -12,6 +12,7 @@ public sealed class ScrapeIngestService
     private readonly IScrapeHttpClient _http;
     private readonly IArticleIntelligence _intelligence;
     private readonly IIngestionEventBus _events;
+    private readonly ImageEnrichmentQueue _imageEnrichmentQueue;
     private readonly ILogger<ScrapeIngestService> _logger;
     private readonly TimeSpan _delay;
 
@@ -20,8 +21,9 @@ public sealed class ScrapeIngestService
         IScrapeHttpClient http,
         IArticleIntelligence intelligence,
         IIngestionEventBus events,
+        ImageEnrichmentQueue imageEnrichmentQueue,
         ILogger<ScrapeIngestService> logger)
-        : this(db, http, intelligence, events, logger, TimeSpan.FromMilliseconds(300))
+        : this(db, http, intelligence, events, imageEnrichmentQueue, logger, TimeSpan.FromMilliseconds(300))
     {
     }
 
@@ -30,6 +32,7 @@ public sealed class ScrapeIngestService
         IScrapeHttpClient http,
         IArticleIntelligence intelligence,
         IIngestionEventBus events,
+        ImageEnrichmentQueue imageEnrichmentQueue,
         ILogger<ScrapeIngestService> logger,
         TimeSpan delayBetweenRequests)
     {
@@ -37,6 +40,7 @@ public sealed class ScrapeIngestService
         _http = http;
         _intelligence = intelligence;
         _events = events;
+        _imageEnrichmentQueue = imageEnrichmentQueue;
         _logger = logger;
         _delay = delayBetweenRequests;
     }
@@ -394,6 +398,11 @@ public sealed class ScrapeIngestService
         try
         {
             await _db.SaveChangesAsync(cancellationToken);
+            if (ArticleImageEnrichmentService.IsEligible(article))
+            {
+                await _imageEnrichmentQueue.EnqueueAsync(article.Id, cancellationToken);
+            }
+
             return true;
         }
         catch (DbUpdateException ex)

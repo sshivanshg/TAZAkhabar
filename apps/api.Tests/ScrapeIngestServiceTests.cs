@@ -204,7 +204,7 @@ public sealed class ScrapeIngestServiceTests
     }
 
     private static ScrapeIngestService CreateService(AppDbContext db, FakeScrapeHttpClient http) =>
-        new(db, http, new FakeArticleIntelligence(), new IngestionEventBus(), NullLogger<ScrapeIngestService>.Instance, TimeSpan.Zero);
+        new(db, http, new FakeArticleIntelligence(), new IngestionEventBus(), new ImageEnrichmentQueue(), NullLogger<ScrapeIngestService>.Instance, TimeSpan.Zero);
 
     private static string FixturePath(string fileName) =>
         Path.Combine(AppContext.BaseDirectory, "Fixtures", fileName);

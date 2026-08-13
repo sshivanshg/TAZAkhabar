@@ -201,6 +201,7 @@ public sealed class PdfIngestServiceTests
         var service = new PdfIngestService(
             db,
             new PdfProcessingQueue(),
+            new ImageEnrichmentQueue(),
             fake,
             new IngestionEventBus(),
             Microsoft.Extensions.Options.Options.Create(new UploadOptions { RootPath = root, MaxBytes = 26_214_400, MaxPages = 40 }),

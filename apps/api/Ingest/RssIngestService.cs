@@ -8,6 +8,7 @@ public sealed class RssIngestService(
     AppDbContext db,
     IRssFeedClient feedClient,
     IIngestionEventBus events,
+    ImageEnrichmentQueue imageEnrichmentQueue,
     ILogger<RssIngestService> logger)
 {
     public async Task<IngestRunResult> RunAsync(CancellationToken cancellationToken)
@@ -261,6 +262,11 @@ public sealed class RssIngestService(
         try
         {
             await db.SaveChangesAsync(cancellationToken);
+            if (ArticleImageEnrichmentService.IsEligible(article))
+            {
+                await imageEnrichmentQueue.EnqueueAsync(article.Id, cancellationToken);
+            }
+
             return true;
         }
         catch (DbUpdateException)

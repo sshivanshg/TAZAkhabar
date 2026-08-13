@@ -11,6 +11,7 @@ namespace NewsFeed.Api.Ingest;
 public sealed class PdfIngestService(
     AppDbContext db,
     PdfProcessingQueue queue,
+    ImageEnrichmentQueue imageEnrichmentQueue,
     IArticleIntelligence intelligence,
     IIngestionEventBus events,
     IOptions<UploadOptions> options,
@@ -301,6 +302,11 @@ public sealed class PdfIngestService(
         try
         {
             await db.SaveChangesAsync(ct);
+            if (ArticleImageEnrichmentService.IsEligible(article))
+            {
+                await imageEnrichmentQueue.EnqueueAsync(article.Id, ct);
+            }
+
             return true;
         }
         catch (DbUpdateException)
