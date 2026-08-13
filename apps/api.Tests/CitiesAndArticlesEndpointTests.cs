@@ -27,13 +27,14 @@ public sealed class CitiesEndpointTests : IClassFixture<NewsFeedWebApplicationFa
 
         var cities = await response.Content.ReadFromJsonAsync<List<CityResponse>>();
         Assert.NotNull(cities);
-        Assert.True(cities.Count >= 4);
+        Assert.True(cities.Count >= 5);
 
         var slugs = cities.Select(c => c.Slug).ToHashSet();
         Assert.Contains("jhansi", slugs);
         Assert.Contains("kanpur", slugs);
         Assert.Contains("lucknow", slugs);
         Assert.Contains("agra", slugs);
+        Assert.Contains("delhi", slugs);
 
         Assert.Equal(cities.OrderBy(c => c.Name).Select(c => c.Slug), cities.Select(c => c.Slug));
     }

@@ -7,6 +7,16 @@ public static class PlaceNameMatcher
         ["jhansi"] = ["Jhansi", "झांसी", "Orchha", "ओरछा", "Lalitpur", "ललितपुर", "Datia", "दतिया", "Babina", "बबीना"],
         ["kanpur"] = ["Kanpur", "कानपुर", "Kanpur Nagar", "Kanpur Dehat"],
         ["lucknow"] = ["Lucknow", "लखनऊ", "Gomti Nagar", "गोमती नगर"],
+        // Delhi picker covers Gurugram / Noida / broader NCR under one feed.
+        ["delhi"] =
+        [
+            "Delhi", "New Delhi", "दिल्ली", "नई दिल्ली",
+            "Gurugram", "Gurgaon", "गुरुग्राम", "गुड़गांव",
+            "Noida", "नोएडा", "Greater Noida", "ग्रेटर नोएडा",
+            "Faridabad", "फरीदाबाद",
+            "Ghaziabad", "गाजियाबाद",
+            "NCR", "एनसीआर",
+        ],
     };
 
     public static bool MatchesCity(string citySlug, string? title, string? snippet)
@@ -21,7 +31,7 @@ public static class PlaceNameMatcher
 
     public static string? DetectCitySlug(string? title, string? snippet)
     {
-        foreach (var slug in new[] { "jhansi", "kanpur", "lucknow" })
+        foreach (var slug in new[] { "jhansi", "kanpur", "lucknow", "delhi" })
         {
             if (MatchesCity(slug, title, snippet)) return slug;
         }

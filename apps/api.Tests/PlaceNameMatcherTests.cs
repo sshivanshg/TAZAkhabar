@@ -39,4 +39,22 @@ public sealed class PlaceNameMatcherTests
     {
         Assert.True(PlaceNameMatcher.MatchesJhansiEdition("Orchha fort", ""));
     }
+
+    [Fact]
+    public void MatchesCity_Delhi_IncludesGurugram()
+    {
+        Assert.True(PlaceNameMatcher.MatchesCity("delhi", "Metro extension opens in Gurugram", ""));
+    }
+
+    [Fact]
+    public void MatchesCity_Delhi_IncludesNoidaHindi()
+    {
+        Assert.True(PlaceNameMatcher.MatchesCity("delhi", "नोएडा में ट्रैफिक जाम", ""));
+    }
+
+    [Fact]
+    public void DetectCitySlug_ReturnsDelhiForNcr()
+    {
+        Assert.Equal("delhi", PlaceNameMatcher.DetectCitySlug("NCR air quality advisory", null));
+    }
 }

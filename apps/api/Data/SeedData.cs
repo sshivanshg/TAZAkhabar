@@ -15,6 +15,8 @@ public static class SeedData
         new() { Id = 2, Name = "Jhansi", State = "Uttar Pradesh", Slug = "jhansi" },
         new() { Id = 3, Name = "Kanpur", State = "Uttar Pradesh", Slug = "kanpur" },
         new() { Id = 4, Name = "Lucknow", State = "Uttar Pradesh", Slug = "lucknow" },
+        // Single picker city; Gurugram / Noida / NCR places match into this feed via PlaceNameMatcher.
+        new() { Id = 5, Name = "Delhi", State = "Delhi", Slug = "delhi" },
     ];
 
     /// <summary>City with no articles — used only in integration tests for empty-feed cases.</summary>
@@ -177,6 +179,72 @@ public static class SeedData
             Name = "Dainik Bhaskar",
             FeedUrl = "https://www.bhaskar.com/local/uttar-pradesh/jhansi/",
             CityId = 2,
+            Type = SourceType.Scrape,
+            Kind = SourceKind.CityEdition,
+            Language = "hi",
+            IsActive = true,
+        },
+        new()
+        {
+            Id = 15,
+            Name = "Amar Ujala",
+            FeedUrl = "https://www.amarujala.com/rss/delhi.xml",
+            CityId = 5,
+            Type = SourceType.Rss,
+            Kind = SourceKind.CityEdition,
+            Language = "hi",
+            IsActive = true,
+        },
+        new()
+        {
+            Id = 16,
+            Name = "Google News",
+            FeedUrl = "https://news.google.com/rss/search?q=Delhi%20OR%20Gurugram%20OR%20Noida%20OR%20NCR&hl=en-IN&gl=IN&ceid=IN:en",
+            CityId = 5,
+            Type = SourceType.Rss,
+            Kind = SourceKind.CityEdition,
+            Language = "en",
+            IsActive = true,
+        },
+        new()
+        {
+            Id = 17,
+            Name = "PDF uploads",
+            FeedUrl = null,
+            CityId = 5,
+            Type = SourceType.PdfUpload,
+            Kind = SourceKind.CityEdition,
+            Language = "hi",
+            IsActive = false,
+        },
+        new()
+        {
+            Id = 18,
+            Name = "Amar Ujala",
+            FeedUrl = "https://www.amarujala.com/delhi",
+            CityId = 5,
+            Type = SourceType.Scrape,
+            Kind = SourceKind.CityEdition,
+            Language = "hi",
+            IsActive = true,
+        },
+        new()
+        {
+            Id = 19,
+            Name = "Google News",
+            FeedUrl = "https://news.google.com/search?q=Delhi%20OR%20Gurugram%20OR%20Noida&hl=hi-IN&gl=IN&ceid=IN:hi",
+            CityId = 5,
+            Type = SourceType.Scrape,
+            Kind = SourceKind.CityEdition,
+            Language = "hi",
+            IsActive = false,
+        },
+        new()
+        {
+            Id = 20,
+            Name = "Dainik Bhaskar",
+            FeedUrl = "https://www.bhaskar.com/local/new-delhi/",
+            CityId = 5,
             Type = SourceType.Scrape,
             Kind = SourceKind.CityEdition,
             Language = "hi",
