@@ -11,6 +11,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     public DbSet<IngestionRun> IngestionRuns => Set<IngestionRun>();
     public DbSet<DocumentUpload> DocumentUploads => Set<DocumentUpload>();
     public DbSet<ArticleTranslation> ArticleTranslations => Set<ArticleTranslation>();
+    public DbSet<ArticleView> ArticleViews => Set<ArticleView>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -178,6 +179,22 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             entity.HasOne(t => t.Article)
                 .WithMany(a => a.Translations)
                 .HasForeignKey(t => t.ArticleId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<ArticleView>(entity =>
+        {
+            entity.ToTable("article_views");
+            entity.HasKey(v => v.Id);
+            entity.Property(v => v.Id).HasColumnName("id");
+            entity.Property(v => v.ArticleId).HasColumnName("article_id");
+            entity.Property(v => v.ViewedAt).HasColumnName("viewed_at");
+            entity.Property(v => v.SessionKey).HasColumnName("session_key").HasMaxLength(64);
+            entity.HasIndex(v => new { v.ArticleId, v.ViewedAt });
+            entity.HasIndex(v => new { v.ArticleId, v.SessionKey, v.ViewedAt });
+            entity.HasOne(v => v.Article)
+                .WithMany(a => a.Views)
+                .HasForeignKey(v => v.ArticleId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
     }

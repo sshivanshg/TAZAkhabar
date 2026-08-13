@@ -18,6 +18,7 @@ jest.mock('expo-router', () => ({
 jest.mock('../src/api/client', () => ({
   apiClient: {
     getArticle: (...args: unknown[]) => mockGetArticle(...args),
+    recordArticleView: jest.fn(async () => undefined),
   },
 }))
 

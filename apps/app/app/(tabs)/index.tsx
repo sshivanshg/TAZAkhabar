@@ -72,6 +72,7 @@ import { shareArticleToWhatsApp } from '../../src/utils/shareToWhatsApp'
 
 type ListRow =
   | { kind: 'breaking'; key: 'breaking' }
+  | { kind: 'trending'; key: 'trending' }
   | { kind: 'section'; key: 'section' }
   | { kind: 'empty'; key: 'empty' }
   | { kind: 'article'; key: string; article: ArticleResponse; index: number }
@@ -148,6 +149,8 @@ function HomeFeedBody() {
   /** Session-only edition date (city-local YYYY-MM-DD). Fresh launch always starts on today. */
   const [selectedDate, setSelectedDate] = useState(() => todayCityIso())
   const [availableDates, setAvailableDates] = useState<string[]>([])
+  const [trending, setTrending] = useState<ArticleResponse[]>([])
+  const [trendingEpoch, setTrendingEpoch] = useState(0)
   const [articles, setArticles] = useState<ArticleResponse[]>([])
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
@@ -259,6 +262,33 @@ function HomeFeedBody() {
 
   const viewingToday = selectedDate === todayCityIso()
 
+  useEffect(() => {
+    if (!citySlug || !languageReady || !viewingToday) {
+      setTrending([])
+      return
+    }
+    let cancelled = false
+    apiClient
+      .getTrendingArticles({
+        city: citySlug,
+        lang: preferredLanguage,
+        limit: 5,
+      })
+      .then((res) => {
+        if (!cancelled) {
+          setTrending(res.items ?? [])
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setTrending([])
+        }
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [citySlug, preferredLanguage, languageReady, viewingToday, selectedDate, trendingEpoch])
+
   const loadPage = useCallback(
     async (mode: 'replace' | 'append' | 'refresh') => {
       if (!citySlug) {
@@ -304,6 +334,9 @@ function HomeFeedBody() {
         setArticles((prev) => (mode === 'append' ? [...prev, ...items] : items))
         offsetRef.current = offset + items.length
         setError(null)
+        if (mode === 'replace' || mode === 'refresh') {
+          setTrendingEpoch((n) => n + 1)
+        }
         requestAnimationFrame(() => setShowContent(true))
       } catch (err) {
         if (gen !== loadGenRef.current) {
@@ -338,6 +371,14 @@ function HomeFeedBody() {
     () => prefs.filterArticles(articles),
     [articles, prefs],
   )
+  const visibleTrending = useMemo(
+    () => (viewingToday ? prefs.filterArticles(trending) : []),
+    [trending, prefs, viewingToday],
+  )
+  const trendingIds = useMemo(
+    () => new Set(visibleTrending.map((a) => a.id).filter((id): id is number => id != null)),
+    [visibleTrending],
+  )
 
   const visibleCategories = useMemo(
     () =>
@@ -357,8 +398,11 @@ function HomeFeedBody() {
       : BREAKING_NEWS_COUNT
     : 0
   const recommendations = useMemo(
-    () => visibleArticles.slice(listStart),
-    [visibleArticles, listStart],
+    () =>
+      visibleArticles
+        .slice(listStart)
+        .filter((a) => a.id == null || !trendingIds.has(a.id)),
+    [visibleArticles, listStart, trendingIds],
   )
   const hasMore = articles.length < total
 
@@ -366,6 +410,9 @@ function HomeFeedBody() {
     const rows: ListRow[] = []
     if (breaking.length > 0) {
       rows.push({ kind: 'breaking', key: 'breaking' })
+    }
+    if (visibleTrending.length > 0) {
+      rows.push({ kind: 'trending', key: 'trending' })
     }
     if (recommendations.length > 0) {
       rows.push({ kind: 'section', key: 'section' })
@@ -394,11 +441,11 @@ function HomeFeedBody() {
           })
         }
       }
-    } else if (!loading && breaking.length === 0) {
+    } else if (!loading && breaking.length === 0 && visibleTrending.length === 0) {
       rows.push({ kind: 'empty', key: 'empty' })
     }
     return rows
-  }, [breaking, recommendations, loading, tablet])
+  }, [breaking, recommendations, loading, tablet, visibleTrending])
 
   const openArticle = useCallback(
     (article: ArticleResponse) => {
@@ -660,6 +707,30 @@ function HomeFeedBody() {
                       </View>
                     )
                   }
+                  if (item.kind === 'trending') {
+                    return (
+                      <View style={styles.sectionBlock}>
+                        <SectionHeader title={`Trending in ${cityTitle}`} />
+                        {visibleTrending.map((article, index) => (
+                          <View key={String(article.id ?? index)} style={styles.trendingRow}>
+                            <Text
+                              fontSize={typography.meta.fontSize}
+                              lineHeight={typography.meta.lineHeight}
+                              fontWeight="$semibold"
+                              color={colors.textMuted}
+                              style={styles.trendingRank}
+                              accessibilityLabel={`Rank ${index + 1}`}
+                            >
+                              {index + 1}
+                            </Text>
+                            <View style={styles.trendingCard}>
+                              {renderArticleCard(article, index, styles.trendingCardPad)}
+                            </View>
+                          </View>
+                        ))}
+                      </View>
+                    )
+                  }
                   if (item.kind === 'section') {
                     return (
                       <View style={styles.sectionPad}>
@@ -816,8 +887,8 @@ function SectionHeader({
   onAction,
 }: {
   title: string
-  actionLabel: string
-  onAction: () => void
+  actionLabel?: string
+  onAction?: () => void
 }) {
   // Quieter than hero/list titles so the lead story stays the dominant type above the fold.
   return (
@@ -839,25 +910,27 @@ function SectionHeader({
       >
         {title}
       </Text>
-      <Pressable
-        onPress={onAction}
-        accessibilityRole="button"
-        accessibilityLabel={actionLabel}
-        hitSlop={8}
-        style={({ pressed }) => [
-          styles.sectionAction,
-          pressed ? { opacity: 0.7 } : null,
-        ]}
-      >
-        <Text
-          fontSize={typography.label.fontSize}
-          lineHeight={typography.label.lineHeight}
-          fontWeight="$semibold"
-          color={colors.accent}
+      {actionLabel && onAction ? (
+        <Pressable
+          onPress={onAction}
+          accessibilityRole="button"
+          accessibilityLabel={actionLabel}
+          hitSlop={8}
+          style={({ pressed }) => [
+            styles.sectionAction,
+            pressed ? { opacity: 0.7 } : null,
+          ]}
         >
-          {actionLabel}
-        </Text>
-      </Pressable>
+          <Text
+            fontSize={typography.label.fontSize}
+            lineHeight={typography.label.lineHeight}
+            fontWeight="$semibold"
+            color={colors.accent}
+          >
+            {actionLabel}
+          </Text>
+        </Pressable>
+      ) : null}
     </HStack>
   )
 }
@@ -904,6 +977,24 @@ const styles = StyleSheet.create({
   emptyBlock: {
     paddingHorizontal: space.screen,
     paddingVertical: space.xl,
+  },
+  trendingRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    paddingLeft: space.screen,
+  },
+  trendingRank: {
+    width: 22,
+    marginTop: space.md,
+    textAlign: 'center',
+  },
+  trendingCard: {
+    flex: 1,
+    minWidth: 0,
+  },
+  trendingCardPad: {
+    paddingRight: space.screen,
+    paddingLeft: space.xs,
   },
   sectionAction: {
     minHeight: 44,

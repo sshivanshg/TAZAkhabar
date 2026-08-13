@@ -207,6 +207,14 @@ export interface ArticleDatesResponse {
     dates?: string[] | undefined;
 }
 
+export interface TrendingArticlesResponse {
+    items?: ArticleResponse[] | undefined;
+}
+
+export interface RecordArticleViewRequest {
+    sessionId?: string | undefined;
+}
+
 export interface FileParameter {
     data: any;
     fileName: string;

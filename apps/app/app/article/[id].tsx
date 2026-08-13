@@ -22,6 +22,7 @@ import {
   isBookmarked,
   removeBookmark,
 } from '../../src/storage/bookmarks'
+import { getViewSessionId } from '../../src/storage/viewSession'
 import {
   colors,
   media,
@@ -163,6 +164,23 @@ function ArticleBody() {
       signal.cancelled = true
     }
   }, [id, initialFromParams, loadArticle])
+
+  useEffect(() => {
+    if (!id) {
+      return
+    }
+    let cancelled = false
+    void (async () => {
+      const sessionId = await getViewSessionId()
+      if (cancelled) {
+        return
+      }
+      await apiClient.recordArticleView(id, sessionId)
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [id])
 
   useEffect(() => {
     const articleId = article?.id ?? id

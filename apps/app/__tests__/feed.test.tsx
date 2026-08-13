@@ -34,6 +34,7 @@ jest.mock('../src/api/client', () => ({
     getArticles: (...args: unknown[]) => mockGetArticles(...args),
     getCities: (...args: unknown[]) => mockGetCities(...args),
     getArticleDates: (...args: unknown[]) => mockGetArticleDates(...args),
+    getTrendingArticles: jest.fn(async () => ({ items: [] })),
   },
 }))
 
