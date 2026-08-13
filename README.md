@@ -96,10 +96,11 @@ Per `docs/adr/004-render-cloudflare-neon-hosting.md`:
 
 - **API** → Render (Docker Web Service; auto-deploy from `main`)
 - **Web** → Cloudflare Pages from `expo export -p web` → `apps/app/dist`
+- **Admin** → Cloudflare Pages from Vite build → `apps/admin/dist` (separate origin)
 - **DB** → Neon
 - **Native** → EAS Build when you are ready (same `apps/app`)
 
-Secrets / vars: Render + Cloudflare credentials, and `EXPO_PUBLIC_API_BASE_URL` for the web build.
+Secrets / vars: Render + Cloudflare credentials, `EXPO_PUBLIC_API_BASE_URL` for the reader web build, and `VITE_API_BASE_URL` for admin. Render must allowlist both Pages origins in `Cors__AllowedOrigins__*`.
 
 PWA layout notes: Expo copies `apps/app/public/` into `dist` on export (manifest, `_headers`, icons). See `apps/app/README.md`.
 

@@ -91,3 +91,8 @@ jobs:
         env:
           EXPO_PUBLIC_API_BASE_URL: https://api.example.com
           EXPO_PUBLIC_APP_ENV: ci
+
+      - name: Build admin (Cloudflare Pages artifact)
+        run: pnpm --filter @newsfeed/admin build
+        env:
+          VITE_API_BASE_URL: https://api.example.com
