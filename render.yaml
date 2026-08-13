@@ -16,6 +16,8 @@ services:
         value: http://0.0.0.0:8080
       - key: ASPNETCORE_ENVIRONMENT
         value: Production
+      - key: DOTNET_HOSTBUILDER__RELOADCONFIGONCHANGE
+        value: "false"
       - key: ConnectionStrings__Database
         sync: false
       - key: Cors__AllowedOrigins__0

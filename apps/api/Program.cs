@@ -16,6 +16,9 @@ Log.Logger = new LoggerConfiguration()
 
 try
 {
+    // Render Free/shared kernels cap inotify at 128; JSON file watchers blow that at boot.
+    Environment.SetEnvironmentVariable("DOTNET_HOSTBUILDER__RELOADCONFIGONCHANGE", "false");
+
     var builder = WebApplication.CreateBuilder(args);
 
     builder.Host.UseSerilog((context, services, configuration) => configuration
