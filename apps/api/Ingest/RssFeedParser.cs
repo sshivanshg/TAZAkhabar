@@ -54,13 +54,19 @@ public static class RssFeedParser
     private static string GetSourceUrl(XElement item)
     {
         var link = item.Element("link")?.Value?.Trim();
-        if (!string.IsNullOrWhiteSpace(link))
+        if (IsHttpOrHttpsUrl(link))
         {
-            return link;
+            return link!;
         }
 
-        return item.Element("guid")?.Value?.Trim() ?? "";
+        var guid = item.Element("guid")?.Value?.Trim();
+        return IsHttpOrHttpsUrl(guid) ? guid! : "";
     }
+
+    private static bool IsHttpOrHttpsUrl(string? value) =>
+        !string.IsNullOrWhiteSpace(value)
+        && Uri.TryCreate(value, UriKind.Absolute, out var uri)
+        && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps);
 
     private static DateTimeOffset? ParsePubDate(string? pubDate)
     {

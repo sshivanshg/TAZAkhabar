@@ -37,4 +37,29 @@ public sealed class RssFeedParserTests
     {
         Assert.Empty(RssFeedParser.Parse("<not-rss"));
     }
+
+    [Fact]
+    public void Parse_Skips_NonHttpArticleUrl()
+    {
+        const string feed = """
+            <?xml version="1.0"?><rss version="2.0"><channel>
+              <item>
+                <title>Guid is not a url</title>
+                <guid isPermaLink="false">abc-not-a-url</guid>
+              </item>
+              <item>
+                <title>Ftp link</title>
+                <link>ftp://example.com/file</link>
+              </item>
+              <item>
+                <title>Valid story</title>
+                <link>https://example.com/story</link>
+              </item>
+            </channel></rss>
+            """;
+
+        var items = RssFeedParser.Parse(feed);
+        var item = Assert.Single(items);
+        Assert.Equal("https://example.com/story", item.SourceUrl);
+    }
 }

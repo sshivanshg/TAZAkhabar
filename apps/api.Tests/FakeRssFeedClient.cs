@@ -8,6 +8,7 @@ public sealed class FakeRssFeedClient : IRssFeedClient
 
     public Task<string?> FetchXmlAsync(string url, CancellationToken cancellationToken)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         Responses.TryGetValue(url, out var xml);
         return Task.FromResult(xml);
     }

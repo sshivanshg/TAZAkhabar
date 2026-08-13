@@ -37,6 +37,10 @@ public sealed class RssIngestService(
                 inserted += feedInserted;
                 skipped += feedSkipped;
             }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
+            }
             catch (Exception ex)
             {
                 failed++;

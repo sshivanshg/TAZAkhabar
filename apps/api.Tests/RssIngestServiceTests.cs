@@ -104,6 +104,53 @@ public sealed class RssIngestServiceTests
         Assert.Equal(CityItemUrl, Assert.Single(await db.Articles.ToListAsync()).SourceUrl);
     }
 
+    [Fact]
+    public async Task CancelledRun_DoesNotCountAsFeedsFailed()
+    {
+        await using var db = CreateDb();
+        var client = new FakeRssFeedClient
+        {
+            Responses =
+            {
+                [CityFeedUrl] = CityEditionXml(CityItemUrl, "Jhansi municipal budget", "Nagar nigam session"),
+            },
+        };
+        var service = CreateService(db, client, CityEditionFeed(CityFeedUrl));
+        using var cts = new CancellationTokenSource();
+        cts.Cancel();
+
+        await Assert.ThrowsAsync<OperationCanceledException>(() => service.RunAsync(cts.Token));
+
+        Assert.Empty(await db.Articles.ToListAsync());
+    }
+
+    [Fact]
+    public async Task InvalidArticleUrl_IsNotStored()
+    {
+        await using var db = CreateDb();
+        var client = new FakeRssFeedClient
+        {
+            Responses =
+            {
+                [CityFeedUrl] = """
+                    <?xml version="1.0"?><rss version="2.0"><channel>
+                      <item>
+                        <title>Guid is not a url</title>
+                        <guid isPermaLink="false">abc-not-a-url</guid>
+                      </item>
+                    </channel></rss>
+                    """,
+            },
+        };
+        var service = CreateService(db, client, CityEditionFeed(CityFeedUrl));
+
+        var result = await service.RunAsync(CancellationToken.None);
+
+        Assert.Equal(0, result.Inserted);
+        Assert.Equal(0, result.FeedsFailed);
+        Assert.Empty(await db.Articles.ToListAsync());
+    }
+
     private static AppDbContext CreateDb()
     {
         var options = new DbContextOptionsBuilder<AppDbContext>()
