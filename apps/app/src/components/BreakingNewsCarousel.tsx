@@ -1,19 +1,19 @@
 import { useCallback, useRef, useState } from 'react'
 import {
-  Dimensions,
   FlatList,
   type NativeScrollEvent,
   type NativeSyntheticEvent,
   Pressable,
   StyleSheet,
+  useWindowDimensions,
   View,
 } from 'react-native'
 import { Image, Text, VStack } from '@gluestack-ui/themed'
 import { MotiView } from 'moti'
 import type { ArticleResponse } from '@newsfeed/shared-types'
-import { colors, media, radius, shadows, space, typography } from '../theme/tokens'
+import { colors, HIT_TARGET, media, radius, shadows, space, typography } from '../theme/tokens'
 import { formatRelativeTime } from '../utils/relativeTime'
-import { CategoryPill } from './CategoryPill'
+import { Badge } from './ui/Badge'
 import { ImageBottomFade } from './ImageBottomFade'
 
 type Props = {
@@ -21,20 +21,34 @@ type Props = {
   onPress: (article: ArticleResponse) => void
 }
 
-const SCREEN_WIDTH = Dimensions.get('window').width
 const CARD_GAP = space.sm
 const SIDE_PAD = space.screen
-const CARD_WIDTH = SCREEN_WIDTH - SIDE_PAD * 2
+const DOT_INACTIVE = 5
+const DOT_ACTIVE_W = 16
+const DOT_H = 5
 
 export function BreakingNewsCarousel({ articles, onPress }: Props) {
+  const { width: screenWidth } = useWindowDimensions()
+  const cardWidth = screenWidth - SIDE_PAD * 2
+  const pageWidth = cardWidth + CARD_GAP
   const [page, setPage] = useState(0)
   const listRef = useRef<FlatList<ArticleResponse>>(null)
 
-  const onScrollEnd = useCallback((event: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const x = event.nativeEvent.contentOffset.x
-    const next = Math.round(x / (CARD_WIDTH + CARD_GAP))
-    setPage(Math.max(0, Math.min(next, articles.length - 1)))
-  }, [articles.length])
+  const updatePageFromOffset = useCallback(
+    (x: number) => {
+      const next = Math.round(x / pageWidth)
+      const clamped = Math.max(0, Math.min(next, articles.length - 1))
+      setPage((prev) => (prev === clamped ? prev : clamped))
+    },
+    [articles.length, pageWidth],
+  )
+
+  const onScroll = useCallback(
+    (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+      updatePageFromOffset(event.nativeEvent.contentOffset.x)
+    },
+    [updatePageFromOffset],
+  )
 
   if (articles.length === 0) {
     return null
@@ -48,34 +62,50 @@ export function BreakingNewsCarousel({ articles, onPress }: Props) {
         keyExtractor={(item) => String(item.id)}
         horizontal
         pagingEnabled={false}
-        snapToInterval={CARD_WIDTH + CARD_GAP}
+        snapToInterval={pageWidth}
         snapToAlignment="start"
         decelerationRate="fast"
+        disableIntervalMomentum
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.list}
-        onMomentumScrollEnd={onScrollEnd}
+        onScroll={onScroll}
+        scrollEventThrottle={16}
+        onScrollEndDrag={onScroll}
+        onMomentumScrollEnd={onScroll}
         renderItem={({ item, index }) => (
-          <HeroCard
-            article={item}
-            index={index}
-            width={CARD_WIDTH}
-            onPress={onPress}
-          />
+          <HeroCard article={item} index={index} width={cardWidth} onPress={onPress} />
         )}
       />
       {articles.length > 1 ? (
-        <View style={styles.dots} accessibilityRole="adjustable">
-          {articles.map((item, index) => (
-            <MotiView
-              key={String(item.id)}
-              animate={{
-                width: page === index ? 18 : 7,
-                opacity: page === index ? 1 : 0.35,
-              }}
-              transition={{ type: 'timing', duration: 180 }}
-              style={[styles.dot, page === index ? styles.dotActive : null]}
-            />
-          ))}
+        <View style={styles.dots} accessibilityRole="tablist">
+          {articles.map((item, index) => {
+            const active = page === index
+            return (
+              <Pressable
+                key={String(item.id)}
+                onPress={() => {
+                  listRef.current?.scrollToOffset({
+                    offset: index * pageWidth,
+                    animated: true,
+                  })
+                  setPage(index)
+                }}
+                accessibilityRole="tab"
+                accessibilityState={{ selected: active }}
+                accessibilityLabel={`Breaking story ${index + 1} of ${articles.length}`}
+                hitSlop={8}
+                style={styles.dotHit}
+              >
+                <MotiView
+                  animate={{
+                    width: active ? DOT_ACTIVE_W : DOT_INACTIVE,
+                  }}
+                  transition={{ type: 'timing', duration: 200 }}
+                  style={[styles.dot, active ? styles.dotActive : styles.dotInactive]}
+                />
+              </Pressable>
+            )
+          })}
         </View>
       ) : null}
     </View>
@@ -98,6 +128,8 @@ function HeroCard({
   const relative = formatRelativeTime(article.publishedAt)
   const category = article.category ?? 'Local'
   const imageUrl = article.imageUrl
+  /** Fade covers ~60% of card so gradient starts ~40% from top */
+  const fadeHeight = Math.round(media.heroHeight * 0.6)
 
   return (
     <MotiView
@@ -125,27 +157,27 @@ function HeroCard({
             ) : (
               <View style={styles.imagePlaceholder} />
             )}
-            <ImageBottomFade height={120} />
+            <ImageBottomFade height={fadeHeight} peakOpacity={0.75} />
             <View style={styles.pillWrap}>
-              <CategoryPill label={category} variant="filled" />
+              <Badge label={category} variant="filled" />
             </View>
             <VStack style={styles.overlay} space="xs">
               <Text
-                fontSize={typography.meta.fontSize}
-                lineHeight={typography.meta.lineHeight}
+                fontSize={typography.label.fontSize}
+                lineHeight={typography.label.lineHeight}
                 fontWeight="$medium"
-                color="rgba(255,255,255,0.85)"
+                color={colors.textOnImageMuted}
                 numberOfLines={1}
               >
                 {source}
                 {relative ? `  ·  ${relative}` : ''}
               </Text>
               <Text
-                fontSize={typography.section.fontSize}
-                lineHeight={typography.section.lineHeight}
-                fontWeight="$bold"
-                color="#FFFFFF"
-                numberOfLines={3}
+                fontSize={typography.headlineSm.fontSize}
+                lineHeight={typography.headlineSm.lineHeight}
+                fontWeight="$semibold"
+                color={colors.textOnImage}
+                numberOfLines={2}
               >
                 {headline}
               </Text>
@@ -185,29 +217,37 @@ const styles = StyleSheet.create({
   },
   pillWrap: {
     position: 'absolute',
-    top: space.sm + 2,
-    left: space.sm + 2,
+    top: space.sm,
+    left: space.sm,
     zIndex: 2,
   },
   overlay: {
     position: 'absolute',
-    left: space.sm + 2,
-    right: space.sm + 2,
-    bottom: space.sm + 2,
+    left: space.sm,
+    right: space.sm,
+    bottom: space.sm,
     zIndex: 2,
   },
   dots: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    gap: 6,
-    marginTop: space.sm + 2,
+    gap: space.xxs,
+    marginTop: space.sm,
     marginBottom: space.xxs,
   },
+  dotHit: {
+    minHeight: HIT_TARGET,
+    minWidth: HIT_TARGET,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   dot: {
-    height: 7,
+    height: DOT_H,
     borderRadius: radius.full,
-    backgroundColor: colors.textMuted,
+  },
+  dotInactive: {
+    backgroundColor: colors.border,
   },
   dotActive: {
     backgroundColor: colors.accent,
