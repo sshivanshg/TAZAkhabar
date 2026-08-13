@@ -3,3 +3,7 @@
 ### Health
 GET {{host}}/api/health
 Accept: application/json
+
+### Ingest Jhansi RSS feeds
+POST {{host}}/api/ingest/rss
+X-Ingest-Key: dev-ingest-key

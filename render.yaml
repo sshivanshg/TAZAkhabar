@@ -26,3 +26,5 @@ services:
         value: "60"
       - key: RateLimiting__WindowSeconds
         value: "60"
+      - key: RssIngest__Secret
+        sync: false
