@@ -2,7 +2,6 @@ import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api, type AdminArticle, type AdminSource, type City } from '../api'
 import { DataTable, StatusBadge, type Column } from '../components/DataTable'
-import { theme } from '../theme'
 
 export function ReviewQueuePage() {
   const [rows, setRows] = useState<AdminArticle[]>([])
@@ -87,8 +86,8 @@ export function ReviewQueuePage() {
       header: 'Headline',
       render: (r) => (
         <div>
-          <div style={{ fontWeight: 500 }}>{r.headline}</div>
-          <div style={{ color: theme.textMuted, fontSize: 12 }}>{r.sourceName}</div>
+          <div style={{ fontWeight: 600, letterSpacing: '-0.01em' }}>{r.headline}</div>
+          <div style={{ color: 'var(--text-muted)', fontSize: 12 }}>{r.sourceName}</div>
         </div>
       ),
     },
@@ -98,16 +97,18 @@ export function ReviewQueuePage() {
       key: 'ingested',
       header: 'Ingested',
       width: '140px',
-      render: (r) => (r.ingestedAt ? new Date(r.ingestedAt).toLocaleString() : '—'),
+      render: (r) => (
+        <span className="num">{r.ingestedAt ? new Date(r.ingestedAt).toLocaleString() : '—'}</span>
+      ),
     },
     { key: 'status', header: 'Status', width: '120px', render: (r) => <StatusBadge status={r.status} /> },
     {
       key: 'actions',
       header: 'Actions',
-      width: '240px',
+      width: '260px',
       render: (r) => (
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-          <button type="button" disabled={busyId === r.id} onClick={() => void approve(r.id)}>
+          <button type="button" className="btn-primary" disabled={busyId === r.id} onClick={() => void approve(r.id)}>
             Approve
           </button>
           <button type="button" disabled={busyId === r.id} onClick={() => void reject(r.id)}>
@@ -125,11 +126,17 @@ export function ReviewQueuePage() {
   ]
 
   return (
-    <div>
-      <h1 style={{ marginTop: 0, fontSize: 22 }}>Review queue</h1>
-      <div style={{ display: 'flex', gap: 12, marginBottom: 16, flexWrap: 'wrap' }}>
-        <label>
-          Status{' '}
+    <div className="page">
+      <div className="page-header">
+        <div>
+          <h1>Review queue</h1>
+          <p>Approve, reject, or edit pending stories.</p>
+        </div>
+      </div>
+
+      <div className="toolbar">
+        <label className="field">
+          Status
           <select value={status} onChange={(e) => { setPage(1); setStatus(e.target.value) }}>
             <option value="">All</option>
             <option value="PendingReview">PendingReview</option>
@@ -139,8 +146,8 @@ export function ReviewQueuePage() {
             <option value="Archived">Archived</option>
           </select>
         </label>
-        <label>
-          City{' '}
+        <label className="field">
+          City
           <select value={city} onChange={(e) => { setPage(1); setCity(e.target.value) }}>
             <option value="">All</option>
             {cities.map((c) => (
@@ -150,8 +157,8 @@ export function ReviewQueuePage() {
             ))}
           </select>
         </label>
-        <label>
-          Source{' '}
+        <label className="field">
+          Source
           <select value={source} onChange={(e) => { setPage(1); setSource(e.target.value) }}>
             <option value="">All</option>
             {sources.map((s) => (
@@ -162,7 +169,8 @@ export function ReviewQueuePage() {
           </select>
         </label>
       </div>
-      {error && <p style={{ color: theme.danger }}>{error}</p>}
+
+      {error && <div className="error-banner">{error}</div>}
       <DataTable columns={columns} rows={rows} page={page} pageSize={20} total={total} onPageChange={setPage} />
     </div>
   )

@@ -1,7 +1,6 @@
-import { useEffect, useState, type CSSProperties, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { api, type City } from '../api'
-import { theme } from '../theme'
 
 const CATEGORIES = ['Local', 'State', 'National', 'Business', 'Health', 'Sports']
 
@@ -30,14 +29,8 @@ export function ArticleEditorPage() {
   useEffect(() => {
     if (isNew) return
     const articleId = Number(id)
-    void api.getArticles({ page: 1 }).then(async () => {
-      // Fetch via list filter isn't ideal; load by scanning admin list or use dedicated get.
-      // Prefer loading from review queue context — fetch page and find, else patch endpoints need GET by id.
-      // Use articles list with high page scan — better: call PATCH after load from a helper.
-    })
     void (async () => {
       try {
-        // Admin GET by id isn't in spec — load pending/all pages until found, or use list with no status.
         let found = null as Awaited<ReturnType<typeof api.getArticles>>['items'][0] | null
         for (let page = 1; page <= 20 && !found; page++) {
           const batch = await api.getArticles({ page })
@@ -130,23 +123,25 @@ export function ArticleEditorPage() {
     }
   }
 
-  const field: CSSProperties = { display: 'flex', flexDirection: 'column', gap: 4, fontSize: 13 }
-
   return (
-    <div style={{ maxWidth: 720 }}>
-      <h1 style={{ marginTop: 0, fontSize: 22 }}>{isNew ? 'New article' : 'Edit article'}</h1>
-      {status && <p style={{ color: theme.textSecondary }}>Status: {status}</p>}
-      {error && <p style={{ color: theme.danger }}>{error}</p>}
-      <form onSubmit={(e) => void saveDraft(e)} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-        <label style={field}>
+    <div className="page" style={{ maxWidth: 720 }}>
+      <div className="page-header">
+        <div>
+          <h1>{isNew ? 'New article' : 'Edit article'}</h1>
+          {status && <p>Status: {status}</p>}
+        </div>
+      </div>
+      {error && <div className="error-banner">{error}</div>}
+      <form onSubmit={(e) => void saveDraft(e)} className="panel" style={{ display: 'flex', flexDirection: 'column', gap: 12, padding: 18 }}>
+        <label className="field">
           Headline
           <input value={headline} onChange={(e) => setHeadline(e.target.value)} required maxLength={300} />
         </label>
-        <label style={field}>
+        <label className="field">
           Summary
           <textarea value={summary} onChange={(e) => setSummary(e.target.value)} required maxLength={1000} rows={5} />
         </label>
-        <label style={field}>
+        <label className="field">
           Category
           <select value={category} onChange={(e) => setCategory(e.target.value)}>
             {CATEGORIES.map((c) => (
@@ -156,7 +151,7 @@ export function ArticleEditorPage() {
             ))}
           </select>
         </label>
-        <label style={field}>
+        <label className="field">
           City
           <select value={citySlug} onChange={(e) => setCitySlug(e.target.value)}>
             {cities.map((c) => (
@@ -166,11 +161,11 @@ export function ArticleEditorPage() {
             ))}
           </select>
         </label>
-        <label style={field}>
+        <label className="field">
           Source name
           <input value={sourceName} onChange={(e) => setSourceName(e.target.value)} required={isNew} disabled={!isNew} />
         </label>
-        <label style={field}>
+        <label className="field">
           Source URL
           <input value={sourceUrl} onChange={(e) => setSourceUrl(e.target.value)} required={isNew} disabled={!isNew} />
         </label>
@@ -178,12 +173,7 @@ export function ArticleEditorPage() {
           <button type="submit" disabled={busy}>
             Save as draft
           </button>
-          <button
-            type="button"
-            disabled={busy}
-            onClick={() => void publish()}
-            style={{ background: theme.accent, color: '#fff', border: 'none', padding: '8px 12px', borderRadius: 4 }}
-          >
+          <button type="button" className="btn-primary" disabled={busy} onClick={() => void publish()}>
             Publish
           </button>
           {!isNew && (

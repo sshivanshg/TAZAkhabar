@@ -116,6 +116,16 @@ export type City = {
   slug: string
 }
 
+export type IngestionEvent = {
+  type: string
+  message: string
+  at: string
+  found?: number | null
+  added?: number | null
+  skipped?: number | null
+  failed?: number | null
+}
+
 export type DocumentUpload = {
   id: number
   originalFileName: string
@@ -292,8 +302,89 @@ export const api = {
       }),
     ),
 
-  triggerSource: async (id: number) =>
-    mapRun(await request<IngestionRunResponseDto>(`/api/admin/sources/${id}/trigger`, { method: 'POST' })),
+  triggerSource: async (id: number) => {
+    const headers = new Headers()
+    const token = getToken()
+    if (!token) throw new ApiError(401, 'Not authenticated')
+    headers.set('Authorization', `Bearer ${token}`)
+    const res = await fetch(`${API_BASE}/api/admin/sources/${id}/trigger`, {
+      method: 'POST',
+      headers,
+    })
+    if (res.status === 401) {
+      clearSession()
+      window.location.assign('/login')
+      throw new ApiError(401, 'Unauthorized')
+    }
+    if (!res.ok && res.status !== 202) {
+      let detail = res.statusText
+      try {
+        const problem = (await res.json()) as { detail?: string; title?: string }
+        detail = problem.detail ?? problem.title ?? detail
+      } catch {
+        /* ignore */
+      }
+      throw new ApiError(res.status, detail)
+    }
+    return mapRun(await res.json())
+  },
+
+  streamIngestionEvents: async function* (
+    runId: number,
+    signal?: AbortSignal,
+  ): AsyncGenerator<IngestionEvent> {
+    const token = getToken()
+    if (!token) throw new ApiError(401, 'Not authenticated')
+    const res = await fetch(`${API_BASE}/api/admin/ingestion-runs/${runId}/events`, {
+      headers: { Authorization: `Bearer ${token}`, Accept: 'text/event-stream' },
+      signal,
+    })
+    if (res.status === 401) {
+      clearSession()
+      window.location.assign('/login')
+      throw new ApiError(401, 'Unauthorized')
+    }
+    if (!res.ok || !res.body) {
+      throw new ApiError(res.status, 'Failed to open event stream')
+    }
+
+    const reader = res.body.getReader()
+    const decoder = new TextDecoder()
+    let buffer = ''
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+      buffer += decoder.decode(value, { stream: true })
+      const chunks = buffer.split('\n\n')
+      buffer = chunks.pop() ?? ''
+      for (const chunk of chunks) {
+        const dataLine = chunk
+          .split('\n')
+          .find((l) => l.startsWith('data:'))
+        if (!dataLine) continue
+        const json = dataLine.slice(5).trim()
+        if (!json) continue
+        const raw = JSON.parse(json) as {
+          type?: string
+          message?: string
+          at?: string
+          found?: number | null
+          added?: number | null
+          skipped?: number | null
+          failed?: number | null
+        }
+        yield {
+          type: raw.type ?? 'progress',
+          message: raw.message ?? '',
+          at: raw.at ?? new Date().toISOString(),
+          found: raw.found,
+          added: raw.added,
+          skipped: raw.skipped,
+          failed: raw.failed,
+        }
+      }
+    }
+  },
 
   getIngestionRuns: async (q: Record<string, string | number | undefined>) => {
     const params = new URLSearchParams()

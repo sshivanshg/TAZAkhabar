@@ -1,10 +1,11 @@
 import { NavLink, Outlet } from 'react-router-dom'
 import { clearSession, getDisplayName } from '../auth'
-import { theme } from '../theme'
+import { LiveRunProvider } from '../live/LiveRunContext'
+import { LiveRunDock } from './LiveRunDock'
 
 const nav = [
   { to: '/', label: 'Dashboard', end: true },
-  { to: '/review', label: 'Review Queue' },
+  { to: '/review', label: 'Review' },
   { to: '/uploads', label: 'Uploads' },
   { to: '/sources', label: 'Sources' },
   { to: '/logs', label: 'Logs' },
@@ -12,55 +13,43 @@ const nav = [
 
 export function Layout() {
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', background: theme.background, color: theme.text, fontFamily: 'system-ui, sans-serif' }}>
-      <aside
-        style={{
-          width: 200,
-          flexShrink: 0,
-          background: theme.surface,
-          borderRight: `1px solid ${theme.border}`,
-          padding: '16px 12px',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 4,
-        }}
-      >
-        <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 16, padding: '0 8px' }}>NewsFeed Admin</div>
-        {nav.map((item) => (
-          <NavLink
-            key={item.to}
-            to={item.to}
-            end={item.end}
-            style={({ isActive }) => ({
-              padding: '8px 10px',
-              borderRadius: 4,
-              textDecoration: 'none',
-              color: isActive ? theme.accent : theme.text,
-              background: isActive ? '#EEF1FF' : 'transparent',
-              fontWeight: isActive ? 600 : 400,
-              fontSize: 14,
-            })}
-          >
-            {item.label}
-          </NavLink>
-        ))}
-        <div style={{ marginTop: 'auto', padding: 8, fontSize: 12, color: theme.textMuted }}>
-          <div>{getDisplayName()}</div>
-          <button
-            type="button"
-            style={{ marginTop: 8, fontSize: 12 }}
-            onClick={() => {
-              clearSession()
-              window.location.assign('/login')
-            }}
-          >
-            Log out
-          </button>
-        </div>
-      </aside>
-      <main style={{ flex: 1, padding: 24, overflow: 'auto' }}>
-        <Outlet />
-      </main>
-    </div>
+    <LiveRunProvider>
+      <div className="shell">
+        <aside className="shell-nav">
+          <div className="shell-brand">
+            NewsFeed
+            <span>Admin</span>
+          </div>
+          {nav.map((item) => (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              end={item.end}
+              className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}
+            >
+              {item.label}
+            </NavLink>
+          ))}
+          <div className="shell-user">
+            <div>{getDisplayName()}</div>
+            <button
+              type="button"
+              className="btn-ghost"
+              style={{ marginTop: 8, fontSize: 12, padding: '4px 0' }}
+              onClick={() => {
+                clearSession()
+                window.location.assign('/login')
+              }}
+            >
+              Log out
+            </button>
+          </div>
+        </aside>
+        <main className="shell-main">
+          <Outlet />
+        </main>
+        <LiveRunDock />
+      </div>
+    </LiveRunProvider>
   )
 }

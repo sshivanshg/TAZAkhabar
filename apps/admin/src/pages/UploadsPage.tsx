@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState, type DragEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { api, type City, type DocumentUpload } from '../api'
 import { DataTable, StatusBadge, type Column } from '../components/DataTable'
-import { theme } from '../theme'
+import { useLiveRun } from '../live/LiveRunContext'
 
 const ACCEPT = 'application/pdf,image/jpeg,image/png,image/webp'
 const IN_FLIGHT = new Set(['Queued', 'Processing'])
@@ -23,16 +23,24 @@ export function UploadsPage() {
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [dragging, setDragging] = useState(false)
+  const watchedRuns = useRef(new Set<number>())
+  const { watchRun } = useLiveRun()
 
   const load = useCallback(async () => {
     try {
       const data = await api.listUploads(page)
       setRows(data.items)
       setTotal(data.total)
+      for (const row of data.items) {
+        if (row.ingestionRunId && IN_FLIGHT.has(row.status) && !watchedRuns.current.has(row.ingestionRunId)) {
+          watchedRuns.current.add(row.ingestionRunId)
+          watchRun(row.ingestionRunId, row.originalFileName)
+        }
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to load')
     }
-  }, [page])
+  }, [page, watchRun])
 
   useEffect(() => {
     void load()
@@ -47,7 +55,7 @@ export function UploadsPage() {
     if (!polling) return
     const id = window.setInterval(() => {
       void load()
-    }, 3000)
+    }, 1500)
     return () => window.clearInterval(id)
   }, [polling, load])
 
@@ -82,8 +90,8 @@ export function UploadsPage() {
       header: 'File',
       render: (r) => (
         <div>
-          <div style={{ fontWeight: 500 }}>{r.originalFileName}</div>
-          <div style={{ color: theme.textMuted, fontSize: 12 }}>
+          <div style={{ fontWeight: 600 }}>{r.originalFileName}</div>
+          <div style={{ color: 'var(--text-muted)', fontSize: 12 }} className="num">
             {formatBytes(r.byteSize)} · {r.contentType}
           </div>
         </div>
@@ -91,18 +99,18 @@ export function UploadsPage() {
     },
     { key: 'city', header: 'City hint', render: (r) => cityName(r.cityHintId), width: '110px' },
     { key: 'status', header: 'Status', width: '110px', render: (r) => <StatusBadge status={r.status} /> },
-    { key: 'articles', header: 'Articles', width: '80px', render: (r) => r.articlesCreated },
+    { key: 'articles', header: 'Articles', width: '80px', render: (r) => <span className="num">{r.articlesCreated}</span> },
     {
       key: 'created',
       header: 'Created',
       width: '160px',
-      render: (r) => new Date(r.createdAt).toLocaleString(),
+      render: (r) => <span className="num">{new Date(r.createdAt).toLocaleString()}</span>,
     },
     {
       key: 'error',
       header: 'Error',
       render: (r) => (
-        <span style={{ color: r.errorSummary ? theme.danger : theme.textMuted, fontSize: 12 }}>
+        <span style={{ color: r.errorSummary ? 'var(--danger)' : 'var(--text-muted)', fontSize: 12 }}>
           {r.errorSummary ?? '—'}
         </span>
       ),
@@ -115,31 +123,40 @@ export function UploadsPage() {
         r.articlesCreated > 0 ? (
           <Link to="/review">Review</Link>
         ) : (
-          <span style={{ color: theme.textMuted }}>—</span>
+          <span style={{ color: 'var(--text-muted)' }}>—</span>
         ),
     },
   ]
 
   return (
-    <div>
-      <h1 style={{ marginTop: 0, fontSize: 22 }}>Uploads</h1>
-      {error && <p style={{ color: theme.danger }}>{error}</p>}
+    <div className="page">
+      <div className="page-header">
+        <div>
+          <h1>Uploads</h1>
+          <p>PDF and image ingest — live console opens when processing starts.</p>
+        </div>
+      </div>
 
-      <label style={{ display: 'block', marginBottom: 12 }}>
-        City hint{' '}
-        <select value={cityHintId} onChange={(e) => setCityHintId(e.target.value)}>
-          <option value="">None</option>
-          {cities.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.name}
-            </option>
-          ))}
-        </select>
-      </label>
+      {error && <div className="error-banner">{error}</div>}
+
+      <div className="toolbar">
+        <label className="field">
+          City hint
+          <select value={cityHintId} onChange={(e) => setCityHintId(e.target.value)}>
+            <option value="">None</option>
+            {cities.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
 
       <div
         role="button"
         tabIndex={0}
+        className={`dropzone${dragging ? ' active' : ''}`}
         onClick={() => inputRef.current?.click()}
         onKeyDown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') {
@@ -153,16 +170,7 @@ export function UploadsPage() {
         }}
         onDragLeave={() => setDragging(false)}
         onDrop={onDrop}
-        style={{
-          border: `2px dashed ${dragging ? theme.accent : theme.border}`,
-          borderRadius: 8,
-          padding: 32,
-          textAlign: 'center',
-          background: dragging ? '#EEF1FF' : theme.surface,
-          cursor: busy ? 'wait' : 'pointer',
-          marginBottom: 24,
-          color: theme.textSecondary,
-        }}
+        style={{ marginBottom: 24, cursor: busy ? 'wait' : 'pointer' }}
       >
         <input
           ref={inputRef}

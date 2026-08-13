@@ -2,7 +2,6 @@ import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api, ApiError } from '../api'
 import { setSession } from '../auth'
-import { theme } from '../theme'
 
 export function LoginPage() {
   const navigate = useNavigate()
@@ -27,30 +26,11 @@ export function LoginPage() {
   }
 
   return (
-    <div
-      style={{
-        minHeight: '100vh',
-        display: 'grid',
-        placeItems: 'center',
-        background: theme.background,
-        fontFamily: 'system-ui, sans-serif',
-      }}
-    >
-      <form
-        onSubmit={onSubmit}
-        style={{
-          width: 360,
-          background: theme.surface,
-          border: `1px solid ${theme.border}`,
-          borderRadius: 8,
-          padding: 24,
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 12,
-        }}
-      >
-        <h1 style={{ margin: 0, fontSize: 20 }}>Admin login</h1>
-        <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 13 }}>
+    <div className="login-screen">
+      <form className="login-card" onSubmit={onSubmit}>
+        <h1>NewsFeed Admin</h1>
+        <p className="sub">Sign in to review stories and watch ingest runs.</p>
+        <label className="field">
           Display name
           <input
             value={displayName}
@@ -60,7 +40,7 @@ export function LoginPage() {
             autoComplete="username"
           />
         </label>
-        <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 13 }}>
+        <label className="field">
           Password
           <input
             type="password"
@@ -70,20 +50,8 @@ export function LoginPage() {
             autoComplete="current-password"
           />
         </label>
-        {error && <div style={{ color: theme.danger, fontSize: 13 }}>{error}</div>}
-        <button
-          type="submit"
-          disabled={busy}
-          style={{
-            background: theme.accent,
-            color: '#fff',
-            border: 'none',
-            padding: '10px 14px',
-            borderRadius: 6,
-            fontWeight: 600,
-            cursor: 'pointer',
-          }}
-        >
+        {error && <div className="error-banner" style={{ marginBottom: 0 }}>{error}</div>}
+        <button type="submit" className="btn-primary" disabled={busy} style={{ marginTop: 4 }}>
           {busy ? 'Signing in…' : 'Sign in'}
         </button>
       </form>

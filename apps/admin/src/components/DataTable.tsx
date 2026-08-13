@@ -1,33 +1,23 @@
 import type { ReactNode } from 'react'
-import { theme } from '../theme'
 
 const COLORS: Record<string, { bg: string; fg: string }> = {
-  PendingReview: { bg: '#FFF8E1', fg: theme.warning },
-  Published: { bg: '#E8F5E9', fg: theme.success },
-  Rejected: { bg: '#FFEBEE', fg: theme.danger },
-  Draft: { bg: '#F5F5F5', fg: theme.draft },
-  Archived: { bg: '#EEEEEE', fg: theme.archived },
-  Queued: { bg: '#FFF8E1', fg: theme.warning },
-  Processing: { bg: '#EEF1FF', fg: theme.accent },
-  Ready: { bg: '#E8F5E9', fg: theme.success },
-  Failed: { bg: '#FFEBEE', fg: theme.danger },
+  PendingReview: { bg: 'var(--warning-soft)', fg: 'var(--warning)' },
+  Published: { bg: 'var(--success-soft)', fg: 'var(--success)' },
+  Rejected: { bg: 'var(--danger-soft)', fg: 'var(--danger)' },
+  Draft: { bg: 'var(--surface-hover)', fg: 'var(--text-muted)' },
+  Archived: { bg: 'var(--surface-hover)', fg: 'var(--text-muted)' },
+  Queued: { bg: 'var(--warning-soft)', fg: 'var(--warning)' },
+  Processing: { bg: 'var(--accent-soft)', fg: 'var(--accent)' },
+  Ready: { bg: 'var(--success-soft)', fg: 'var(--success)' },
+  Failed: { bg: 'var(--danger-soft)', fg: 'var(--danger)' },
+  Success: { bg: 'var(--success-soft)', fg: 'var(--success)' },
+  Error: { bg: 'var(--danger-soft)', fg: 'var(--danger)' },
 }
 
 export function StatusBadge({ status }: { status: string }) {
-  const c = COLORS[status] ?? { bg: '#F5F5F5', fg: theme.textMuted }
+  const c = COLORS[status] ?? { bg: 'var(--surface-hover)', fg: 'var(--text-muted)' }
   return (
-    <span
-      style={{
-        display: 'inline-block',
-        padding: '2px 8px',
-        borderRadius: 4,
-        fontSize: 12,
-        fontWeight: 600,
-        background: c.bg,
-        color: c.fg,
-        whiteSpace: 'nowrap',
-      }}
-    >
+    <span className="badge" style={{ background: c.bg, color: c.fg }}>
       {status}
     </span>
   )
@@ -62,21 +52,12 @@ export function DataTable<T extends { id: number | string }>({
   const pages = Math.max(1, Math.ceil(total / pageSize))
   return (
     <div>
-      <div style={{ overflowX: 'auto', border: `1px solid ${theme.border}`, borderRadius: 6, background: theme.surface }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
+      <div className="table-wrap">
+        <table className="data-table">
           <thead>
-            <tr style={{ background: theme.background, textAlign: 'left' }}>
+            <tr>
               {columns.map((col) => (
-                <th
-                  key={col.key}
-                  style={{
-                    padding: '10px 12px',
-                    borderBottom: `1px solid ${theme.border}`,
-                    color: theme.textSecondary,
-                    fontWeight: 600,
-                    width: col.width,
-                  }}
-                >
+                <th key={col.key} style={{ width: col.width }}>
                   {col.header}
                 </th>
               ))}
@@ -85,17 +66,15 @@ export function DataTable<T extends { id: number | string }>({
           <tbody>
             {rows.length === 0 ? (
               <tr>
-                <td colSpan={columns.length} style={{ padding: 24, color: theme.textMuted, textAlign: 'center' }}>
+                <td colSpan={columns.length} style={{ padding: 28, color: 'var(--text-muted)', textAlign: 'center' }}>
                   {emptyMessage}
                 </td>
               </tr>
             ) : (
               rows.map((row) => (
-                <tr key={row.id} style={{ borderBottom: `1px solid ${theme.border}` }}>
+                <tr key={row.id}>
                   {columns.map((col) => (
-                    <td key={col.key} style={{ padding: '10px 12px', verticalAlign: 'top' }}>
-                      {col.render(row)}
-                    </td>
+                    <td key={col.key}>{col.render(row)}</td>
                   ))}
                 </tr>
               ))
@@ -103,8 +82,17 @@ export function DataTable<T extends { id: number | string }>({
           </tbody>
         </table>
       </div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 12, fontSize: 13, color: theme.textSecondary }}>
-        <span>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginTop: 12,
+          fontSize: 13,
+          color: 'var(--text-secondary)',
+        }}
+      >
+        <span className="num">
           {total} total · page {page} / {pages}
         </span>
         <div style={{ display: 'flex', gap: 8 }}>

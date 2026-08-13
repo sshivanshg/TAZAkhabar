@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { api, type AdminSource, type IngestionRun } from '../api'
 import { DataTable, type Column } from '../components/DataTable'
-import { theme } from '../theme'
+import { useLiveRun } from '../live/LiveRunContext'
 
 export function IngestionLogsPage() {
   const [rows, setRows] = useState<IngestionRun[]>([])
@@ -10,6 +10,7 @@ export function IngestionLogsPage() {
   const [sourceId, setSourceId] = useState('')
   const [sources, setSources] = useState<AdminSource[]>([])
   const [error, setError] = useState<string | null>(null)
+  const { watchRun } = useLiveRun()
 
   const load = useCallback(async () => {
     try {
@@ -32,52 +33,88 @@ export function IngestionLogsPage() {
     void api.getSources().then(setSources)
   }, [])
 
+  useEffect(() => {
+    const hasRunning = rows.some((r) => !r.completedAt)
+    if (!hasRunning) return
+    const id = window.setInterval(() => void load(), 2000)
+    return () => window.clearInterval(id)
+  }, [rows, load])
+
   const sourceName = (id: number) => sources.find((s) => s.id === id)?.name ?? String(id)
 
   const columns: Column<IngestionRun>[] = [
-    { key: 'id', header: 'ID', render: (r) => r.id, width: '60px' },
+    { key: 'id', header: 'ID', render: (r) => <span className="num">{r.id}</span>, width: '64px' },
     { key: 'source', header: 'Source', render: (r) => sourceName(r.sourceId) },
     {
       key: 'started',
       header: 'Started',
-      render: (r) => new Date(r.startedAt).toLocaleString(),
+      render: (r) => <span className="num">{new Date(r.startedAt).toLocaleString()}</span>,
     },
-    { key: 'found', header: 'Found', render: (r) => r.articlesFound, width: '70px' },
-    { key: 'added', header: 'Added', render: (r) => r.articlesAdded, width: '70px' },
-    { key: 'skipped', header: 'Skipped', render: (r) => r.articlesSkipped, width: '70px' },
-    { key: 'failed', header: 'Failed', render: (r) => r.articlesFailed, width: '70px' },
+    {
+      key: 'state',
+      header: 'State',
+      width: '90px',
+      render: (r) => (
+        <span style={{ color: r.completedAt ? 'var(--text-secondary)' : 'var(--success)', fontWeight: 600, fontSize: 12 }}>
+          {r.completedAt ? 'Done' : 'Live'}
+        </span>
+      ),
+    },
+    { key: 'found', header: 'Found', render: (r) => <span className="num">{r.articlesFound}</span>, width: '70px' },
+    { key: 'added', header: 'Added', render: (r) => <span className="num">{r.articlesAdded}</span>, width: '70px' },
+    { key: 'skipped', header: 'Skipped', render: (r) => <span className="num">{r.articlesSkipped}</span>, width: '70px' },
+    { key: 'failed', header: 'Failed', render: (r) => <span className="num">{r.articlesFailed}</span>, width: '70px' },
     {
       key: 'error',
       header: 'Error',
       render: (r) => (
-        <span style={{ color: r.errorSummary ? theme.danger : theme.textMuted, fontSize: 12 }}>
+        <span style={{ color: r.errorSummary ? 'var(--danger)' : 'var(--text-muted)', fontSize: 12 }}>
           {r.errorSummary ?? '—'}
         </span>
+      ),
+    },
+    {
+      key: 'watch',
+      header: '',
+      width: '88px',
+      render: (r) => (
+        <button type="button" onClick={() => watchRun(r.id, sourceName(r.sourceId))}>
+          Watch
+        </button>
       ),
     },
   ]
 
   return (
-    <div>
-      <h1 style={{ marginTop: 0, fontSize: 22 }}>Ingestion logs</h1>
-      <label style={{ display: 'block', marginBottom: 12 }}>
-        Source{' '}
-        <select
-          value={sourceId}
-          onChange={(e) => {
-            setPage(1)
-            setSourceId(e.target.value)
-          }}
-        >
-          <option value="">All</option>
-          {sources.map((s) => (
-            <option key={s.id} value={s.id}>
-              {s.name} ({s.id})
-            </option>
-          ))}
-        </select>
-      </label>
-      {error && <p style={{ color: theme.danger }}>{error}</p>}
+    <div className="page">
+      <div className="page-header">
+        <div>
+          <h1>Ingestion logs</h1>
+          <p>Run history — Watch opens the live terminal (replay while events remain in memory).</p>
+        </div>
+      </div>
+
+      <div className="toolbar">
+        <label className="field">
+          Source
+          <select
+            value={sourceId}
+            onChange={(e) => {
+              setPage(1)
+              setSourceId(e.target.value)
+            }}
+          >
+            <option value="">All</option>
+            {sources.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name} ({s.id})
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+
+      {error && <div className="error-banner">{error}</div>}
       <DataTable columns={columns} rows={rows} page={page} pageSize={20} total={total} onPageChange={setPage} />
     </div>
   )

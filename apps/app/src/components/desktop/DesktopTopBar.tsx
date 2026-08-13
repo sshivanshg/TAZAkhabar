@@ -32,9 +32,8 @@ const SEARCH_COLLAPSED_WIDTH = 36
 /** Fixed expanded width; grows left from the right-aligned icon, does not reflow the rail. */
 const SEARCH_EXPANDED_WIDTH = 340
 const MOTION_MS = 200
-const ANCHOR_SIZE = 36
 
-/** Desktop home header — city pill + search morph + right-side visual anchor. */
+/** Desktop home header — city pill + morphing search. */
 export function DesktopTopBar({ cityTitle, onCityPress }: Props) {
   const router = useRouter()
   const inputRef = useRef<TextInput>(null)
@@ -218,18 +217,6 @@ export function DesktopTopBar({ cityTitle, onCityPress }: Props) {
             </MotiView>
           </View>
         </MotiView>
-
-        <View style={styles.divider} accessibilityElementsHidden importantForAccessibility="no" />
-
-        {/* Visual balance only — not wired to account / notifications. */}
-        <View
-          style={styles.anchor}
-          accessibilityElementsHidden
-          importantForAccessibility="no"
-          testID="desktop-topbar-anchor"
-        >
-          <View style={styles.anchorInner} />
-        </View>
       </View>
     </View>
   )
@@ -333,27 +320,6 @@ const styles = StyleSheet.create({
           appearance: 'none',
         } as object)
       : null),
-  },
-  divider: {
-    width: StyleSheet.hairlineWidth,
-    height: 20,
-    backgroundColor: colors.border,
-  },
-  anchor: {
-    width: ANCHOR_SIZE,
-    height: ANCHOR_SIZE,
-    borderRadius: radius.full,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  anchorInner: {
-    width: 14,
-    height: 14,
-    borderRadius: radius.full,
-    backgroundColor: colors.skeleton,
   },
   focusRing: {
     ...(Platform.OS === 'web'
