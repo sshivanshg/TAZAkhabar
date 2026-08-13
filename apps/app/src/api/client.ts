@@ -5,6 +5,7 @@ import type {
   HealthResponse,
   PagedArticlesResponse,
   ProblemDetails,
+  TrendingArticlesResponse,
 } from '@newsfeed/shared-types'
 
 const API_BASE_URL = (process.env.EXPO_PUBLIC_API_BASE_URL ?? '').replace(/\/$/, '')
@@ -151,5 +152,40 @@ export const apiClient = {
     return request<ArticleResponse>(
       `/api/articles/${encodeURIComponent(id)}${qs ? `?${qs}` : ''}`,
     )
+  },
+
+  getTrendingArticles(params: {
+    city: string
+    lang?: string
+    limit?: number
+  }): Promise<TrendingArticlesResponse> {
+    const search = new URLSearchParams()
+    search.set('city', params.city)
+    if (params.lang) {
+      search.set('lang', params.lang)
+    }
+    if (params.limit != null) {
+      search.set('limit', String(params.limit))
+    }
+    return request<TrendingArticlesResponse>(`/api/articles/trending?${search.toString()}`)
+  },
+
+  async recordArticleView(id: number | string, sessionId?: string): Promise<void> {
+    if (!API_BASE_URL) {
+      throw new Error('EXPO_PUBLIC_API_BASE_URL is not configured')
+    }
+    try {
+      await fetch(`${API_BASE_URL}/api/articles/${encodeURIComponent(String(id))}/view`, {
+        method: 'POST',
+        signal: createTimeoutSignal(REQUEST_TIMEOUT_MS),
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ sessionId: sessionId ?? null }),
+      })
+    } catch {
+      // Fire-and-forget: view tracking must never block reading.
+    }
   },
 }

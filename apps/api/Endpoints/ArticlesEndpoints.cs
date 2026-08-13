@@ -198,6 +198,146 @@ public static class ArticlesEndpoints
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status429TooManyRequests);
 
+        api.MapGet("/articles/trending", async (
+                string? city,
+                string? lang,
+                int? limit,
+                AppDbContext db,
+                IArticlePresentationService presentation,
+                HttpContext httpContext,
+                CancellationToken cancellationToken) =>
+            {
+                if (string.IsNullOrWhiteSpace(city))
+                {
+                    return Results.Problem(
+                        title: "Invalid city",
+                        detail: "Query parameter 'city' (slug) is required.",
+                        statusCode: StatusCodes.Status400BadRequest);
+                }
+
+                var pageLimit = limit ?? TrendingDefaults.DefaultLimit;
+                if (pageLimit < 1)
+                {
+                    pageLimit = TrendingDefaults.DefaultLimit;
+                }
+
+                pageLimit = Math.Min(pageLimit, TrendingDefaults.MaxLimit);
+
+                var slug = city.Trim().ToLowerInvariant();
+                var cityEntity = await db.Cities
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(c => c.Slug == slug, cancellationToken);
+
+                if (cityEntity is null)
+                {
+                    return Results.Problem(
+                        title: "Unknown city",
+                        detail: $"No city found with slug '{slug}'.",
+                        statusCode: StatusCodes.Status400BadRequest);
+                }
+
+                var now = DateTimeOffset.UtcNow;
+                var viewSince = now - TrendingDefaults.ViewWindow;
+                var publishedSince = now - TrendingDefaults.PublishCeiling;
+
+                var rankedIds = await db.ArticleViews
+                    .AsNoTracking()
+                    .Where(v => v.ViewedAt >= viewSince)
+                    .Where(v => v.Article.CityId == cityEntity.Id
+                        && v.Article.Status == ArticleStatus.Published
+                        && !v.Article.IsMock
+                        && v.Article.PublishedAt >= publishedSince)
+                    .GroupBy(v => v.ArticleId)
+                    .Select(g => new { ArticleId = g.Key, Views = g.Count() })
+                    .OrderByDescending(x => x.Views)
+                    .ThenByDescending(x => x.ArticleId)
+                    .Take(pageLimit)
+                    .ToListAsync(cancellationToken);
+
+                if (rankedIds.Count == 0)
+                {
+                    httpContext.Response.Headers.CacheControl = PublicCacheControl;
+                    return Results.Ok(new TrendingArticlesResponse([]));
+                }
+
+                var idOrder = rankedIds.Select(x => x.ArticleId).ToList();
+                var entities = await db.Articles
+                    .AsNoTracking()
+                    .Where(a => idOrder.Contains(a.Id))
+                    .ToListAsync(cancellationToken);
+
+                var byId = entities.ToDictionary(a => a.Id);
+                var ordered = idOrder
+                    .Where(id => byId.ContainsKey(id))
+                    .Select(id => byId[id])
+                    .ToList();
+
+                var items = await presentation.PresentManyAsync(ordered, lang, cancellationToken);
+
+                httpContext.Response.Headers.CacheControl = PublicCacheControl;
+                return Results.Ok(new TrendingArticlesResponse(items));
+            })
+            .WithName("GetTrendingArticles")
+            .WithOpenApi()
+            .Produces<TrendingArticlesResponse>(StatusCodes.Status200OK)
+            .ProducesProblem(StatusCodes.Status400BadRequest)
+            .ProducesProblem(StatusCodes.Status429TooManyRequests);
+
+        api.MapPost("/articles/{id:int}/view", async (
+                int id,
+                RecordArticleViewRequest? body,
+                AppDbContext db,
+                CancellationToken cancellationToken) =>
+            {
+                var exists = await db.Articles
+                    .AsNoTracking()
+                    .AnyAsync(
+                        a => a.Id == id
+                            && a.Status == ArticleStatus.Published
+                            && !a.IsMock,
+                        cancellationToken);
+
+                if (!exists)
+                {
+                    return Results.Problem(
+                        title: "Article not found",
+                        detail: $"No article found with id '{id}'.",
+                        statusCode: StatusCodes.Status404NotFound);
+                }
+
+                var sessionKey = NormalizeSessionKey(body?.SessionId);
+                var now = DateTimeOffset.UtcNow;
+
+                if (sessionKey is not null)
+                {
+                    var dedupSince = now - TrendingDefaults.DedupWindow;
+                    var recent = await db.ArticleViews
+                        .AnyAsync(
+                            v => v.ArticleId == id
+                                && v.SessionKey == sessionKey
+                                && v.ViewedAt >= dedupSince,
+                            cancellationToken);
+                    if (recent)
+                    {
+                        return Results.NoContent();
+                    }
+                }
+
+                db.ArticleViews.Add(new Data.Entities.ArticleView
+                {
+                    ArticleId = id,
+                    ViewedAt = now,
+                    SessionKey = sessionKey,
+                });
+                await db.SaveChangesAsync(cancellationToken);
+                return Results.NoContent();
+            })
+            .WithName("RecordArticleView")
+            .WithOpenApi()
+            .Produces(StatusCodes.Status204NoContent)
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status429TooManyRequests);
+
         api.MapGet("/articles/{id:int}", async (
                 int id,
                 string? lang,
@@ -235,4 +375,30 @@ public static class ArticlesEndpoints
 
         return api;
     }
+
+    private static string? NormalizeSessionKey(string? raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw))
+        {
+            return null;
+        }
+
+        var trimmed = raw.Trim();
+        if (trimmed.Length > TrendingDefaults.MaxSessionKeyLength)
+        {
+            trimmed = trimmed[..TrendingDefaults.MaxSessionKeyLength];
+        }
+
+        return trimmed;
+    }
+}
+
+internal static class TrendingDefaults
+{
+    public static readonly TimeSpan ViewWindow = TimeSpan.FromHours(24);
+    public static readonly TimeSpan PublishCeiling = TimeSpan.FromDays(7);
+    public static readonly TimeSpan DedupWindow = TimeSpan.FromMinutes(30);
+    public const int DefaultLimit = 5;
+    public const int MaxLimit = 20;
+    public const int MaxSessionKeyLength = 64;
 }

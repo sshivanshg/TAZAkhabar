@@ -26,4 +26,6 @@ export type {
   PatchAdminArticleRequest,
   PatchAdminSourceRequest,
   ProblemDetails,
+  RecordArticleViewRequest,
+  TrendingArticlesResponse,
 } from './generated'
