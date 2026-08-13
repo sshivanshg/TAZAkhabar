@@ -1,13 +1,26 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
-import { FlatList, Pressable, StyleSheet, TextInput, View } from 'react-native'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import {
+  FlatList,
+  Platform,
+  Pressable,
+  RefreshControl,
+  StyleSheet,
+  TextInput,
+  View,
+} from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { useLocalSearchParams, useRouter } from 'expo-router'
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router'
 import { Box, Text, VStack } from '@gluestack-ui/themed'
-import { ArrowLeft, Search, SlidersHorizontal } from 'lucide-react-native'
+import { ArrowLeft, Ban, Bookmark, EyeOff, MessageCircle, Search, SlidersHorizontal, ThumbsDown, ThumbsUp } from 'lucide-react-native'
 import { MotiView } from 'moti'
 import type { ArticleResponse, CityResponse } from '@newsfeed/shared-types'
 import { apiClient } from '../../src/api/client'
-import { ActionSheet, type ActionSheetItem } from '../../src/components/ActionSheet'
+import {
+  ActionSheet,
+  BottomSheet,
+  type ActionSheetItem,
+  type BottomSheetSection,
+} from '../../src/components/ui/BottomSheet'
 import { CategoryChipRow } from '../../src/components/CategoryChips'
 import {
   CompactArticleCard,
@@ -16,7 +29,14 @@ import {
 import { ConfirmModal } from '../../src/components/ConfirmModal'
 import { ScreenErrorBoundary } from '../../src/components/ScreenErrorBoundary'
 import { TabScreenShell } from '../../src/components/TabScreenShell'
+import { ErrorState } from '../../src/components/ui/ErrorState'
 import { useFeedPreferences } from '../../src/preferences/FeedPreferencesContext'
+import {
+  addBookmark,
+  articleToBookmark,
+  getBookmarks,
+  removeBookmark,
+} from '../../src/storage/bookmarks'
 import { getStoredCitySlug } from '../../src/storage/cityPreference'
 import { iconStroke } from '../../src/theme/categoryIcons'
 import {
@@ -29,6 +49,8 @@ import {
   space,
 } from '../../src/theme/tokens'
 import { useTabBarClearance } from '../../src/theme/useTabBarClearance'
+import { articleRouteParams } from '../../src/utils/articleRouteParams'
+import { shareArticleToWhatsApp } from '../../src/utils/shareToWhatsApp'
 
 export default function DiscoverScreen() {
   return (
@@ -55,11 +77,28 @@ function DiscoverBody() {
   )
   const [articles, setArticles] = useState<ArticleResponse[]>([])
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [actionArticle, setActionArticle] = useState<ArticleResponse | null>(null)
   const [blockSourceName, setBlockSourceName] = useState<string | null>(null)
   const [blockCategoryName, setBlockCategoryName] = useState<string | null>(null)
   const [filterOpen, setFilterOpen] = useState(false)
+  const [bookmarkedIds, setBookmarkedIds] = useState<Set<number>>(new Set())
+  const loadGenRef = useRef(0)
+  // Only show back when Discover was opened from Home (not as the tab root).
+  const showBack = params.from === 'home'
+  const shareLabel = Platform.OS === 'web' ? 'Share on WhatsApp' : 'Share'
+
+  const refreshBookmarks = useCallback(async () => {
+    const list = await getBookmarks()
+    setBookmarkedIds(new Set(list.map((b) => b.id)))
+  }, [])
+
+  useFocusEffect(
+    useCallback(() => {
+      void refreshBookmarks()
+    }, [refreshBookmarks]),
+  )
 
   useEffect(() => {
     if (isFeedCategory(params.category) && params.category !== category) {
@@ -110,31 +149,51 @@ function DiscoverBody() {
     return () => clearTimeout(handle)
   }, [query])
 
-  const load = useCallback(async () => {
-    if (!citySlug) {
-      return
-    }
-    setLoading(true)
-    setError(null)
-    try {
-      const result = await apiClient.getArticles({
-        city: citySlug,
-        q: debounced || undefined,
-        category: category === 'All' ? undefined : category,
-        limit: PAGE_SIZE,
-        offset: 0,
-      })
-      setArticles(result.items ?? [])
-    } catch (err) {
-      setArticles([])
-      setError(err instanceof Error ? err.message : 'Could not load stories')
-    } finally {
-      setLoading(false)
-    }
-  }, [citySlug, debounced, category])
+  const load = useCallback(
+    async (mode: 'replace' | 'refresh' = 'replace') => {
+      if (!citySlug) {
+        return
+      }
+      const gen = ++loadGenRef.current
+      if (mode === 'refresh') {
+        setRefreshing(true)
+      } else {
+        setLoading(true)
+      }
+      setError(null)
+      try {
+        const result = await apiClient.getArticles({
+          city: citySlug,
+          q: debounced || undefined,
+          category: category === 'All' ? undefined : category,
+          limit: PAGE_SIZE,
+          offset: 0,
+        })
+        if (gen !== loadGenRef.current) {
+          return
+        }
+        setArticles(result.items ?? [])
+      } catch (err) {
+        if (gen !== loadGenRef.current) {
+          return
+        }
+        // Keep prior results on refresh failure so pull-to-refresh does not wipe the list.
+        if (mode === 'replace') {
+          setArticles([])
+        }
+        setError(err instanceof Error ? err.message : 'Could not load stories')
+      } finally {
+        if (gen === loadGenRef.current) {
+          setLoading(false)
+          setRefreshing(false)
+        }
+      }
+    },
+    [citySlug, debounced, category],
+  )
 
   useEffect(() => {
-    void load()
+    void load('replace')
   }, [load])
 
   const visibleCategories = useMemo(
@@ -147,60 +206,110 @@ function DiscoverBody() {
 
   const visible = useMemo(() => prefs.filterArticles(articles), [articles, prefs])
   const cityTitle = cityMeta?.name ?? citySlug ?? 'your city'
+  const showSkeleton = (loading && !refreshing) || !prefs.ready
 
   const openArticle = useCallback(
     (article: ArticleResponse) => {
+      const params = articleRouteParams(article)
+      if (!params) {
+        return
+      }
       router.push({
         pathname: '/article/[id]',
-        params: {
-          id: String(article.id),
-          headline: article.headline ?? '',
-          summary: article.summary ?? '',
-          sourceName: article.sourceName ?? '',
-          sourceUrl: article.sourceUrl ?? '',
-          imageUrl: article.imageUrl ?? '',
-          publishedAt: article.publishedAt ?? '',
-          category: article.category ?? '',
-        },
+        params,
       })
     },
     [router],
   )
 
-  const sheetItems: ActionSheetItem[] = useMemo(() => {
+  const sheetSections: BottomSheetSection[] = useMemo(() => {
     if (!actionArticle) {
       return []
     }
     const cat = actionArticle.category ?? ''
     const source = actionArticle.sourceName ?? 'this source'
+    const saved =
+      actionArticle.id != null && bookmarkedIds.has(actionArticle.id)
     return [
       {
-        key: 'more',
-        label: 'Show more like this',
-        onPress: () => prefs.showMoreLikeThis(cat),
+        key: 'share',
+        items: [
+          {
+            key: 'share',
+            label: shareLabel,
+            Icon: MessageCircle,
+            onPress: () => {
+              void shareArticleToWhatsApp({
+                headline: actionArticle.headline,
+                summary: actionArticle.summary,
+                sourceUrl: actionArticle.sourceUrl,
+              })
+            },
+          },
+        ],
       },
       {
-        key: 'less',
-        label: 'Show less like this',
-        onPress: () => prefs.showLessLikeThis(cat),
+        key: 'save',
+        items: [
+          {
+            key: 'bookmark',
+            label: saved ? 'Remove bookmark' : 'Save',
+            Icon: Bookmark,
+            onPress: () => {
+              void (async () => {
+                if (actionArticle.id == null) {
+                  return
+                }
+                if (saved) {
+                  await removeBookmark(actionArticle.id)
+                } else {
+                  const snap = articleToBookmark(actionArticle, citySlug ?? undefined)
+                  if (snap) {
+                    await addBookmark(snap)
+                  }
+                }
+                await refreshBookmarks()
+              })()
+            },
+          },
+          {
+            key: 'more',
+            label: 'Show more like this',
+            Icon: ThumbsUp,
+            onPress: () => prefs.showMoreLikeThis(cat),
+          },
+          {
+            key: 'less',
+            label: 'Show less like this',
+            Icon: ThumbsDown,
+            onPress: () => prefs.showLessLikeThis(cat),
+          },
+          {
+            key: 'hide',
+            label: 'Hide this story',
+            Icon: EyeOff,
+            onPress: () => {
+              if (actionArticle.id != null) {
+                prefs.hideStory(actionArticle.id)
+              }
+            },
+          },
+        ],
       },
       {
-        key: 'hide',
-        label: 'Hide this story',
-        onPress: () => {
-          if (actionArticle.id != null) {
-            prefs.hideStory(actionArticle.id)
-          }
-        },
-      },
-      {
-        key: 'block',
-        label: 'Block this source',
-        destructive: true,
-        onPress: () => setBlockSourceName(source),
+        key: 'danger',
+        items: [
+          {
+            key: 'block',
+            label: 'Block this source',
+            Icon: Ban,
+            destructive: true,
+            onPress: () => setBlockSourceName(source),
+          },
+        ],
       },
     ]
-  }, [actionArticle, prefs])
+  }, [actionArticle, bookmarkedIds, citySlug, prefs, refreshBookmarks, shareLabel])
 
   const filterItems: ActionSheetItem[] = useMemo(
     () => [
@@ -228,22 +337,18 @@ function DiscoverBody() {
       style={styles.root}
     >
       <View style={[styles.header, { paddingTop: Math.max(insets.top, 8) }]}>
-        <Pressable
-          onPress={() => {
-            if (router.canGoBack()) {
-              router.back()
-            } else {
-              router.navigate('/(tabs)')
-            }
-          }}
-          accessibilityRole="button"
-          accessibilityLabel="Go back"
-          hitSlop={8}
-          style={({ pressed }) => [styles.backBtn, pressed ? styles.pressed : null]}
-        >
-          <ArrowLeft size={22} strokeWidth={iconStroke} color={colors.text} />
-        </Pressable>
-        <VStack flex={1} pl="$1">
+        {showBack ? (
+          <Pressable
+            onPress={() => router.back()}
+            accessibilityRole="button"
+            accessibilityLabel="Go back"
+            hitSlop={8}
+            style={({ pressed }) => [styles.backBtn, pressed ? styles.pressed : null]}
+          >
+            <ArrowLeft size={22} strokeWidth={iconStroke} color={colors.text} />
+          </Pressable>
+        ) : null}
+        <VStack flex={1} pl={showBack ? '$1' : '$2'} pr="$2">
           <Text fontSize={28} lineHeight={36} fontWeight="$bold" color={colors.text}>
             Discover
           </Text>
@@ -270,7 +375,7 @@ function DiscoverBody() {
           onPress={() => setFilterOpen(true)}
           accessibilityRole="button"
           accessibilityLabel="Filter options"
-          hitSlop={8}
+          hitSlop={4}
           style={({ pressed }) => [styles.filterBtn, pressed ? styles.pressed : null]}
         >
           <SlidersHorizontal size={20} strokeWidth={iconStroke} color={colors.text} />
@@ -288,7 +393,7 @@ function DiscoverBody() {
         categories={visibleCategories}
       />
 
-      {loading ? (
+      {showSkeleton ? (
         <Box px="$4" pt="$2" style={{ flex: 1 }}>
           {[0, 1, 2].map((i) => (
             <CompactArticleCardSkeleton key={i} index={i} />
@@ -296,29 +401,42 @@ function DiscoverBody() {
         </Box>
       ) : null}
 
-      {!loading && error ? (
-        <VStack px="$4" py="$8" space="sm" style={{ flex: 1 }}>
-          <Text fontSize={18} lineHeight={28} fontWeight="$bold" color={colors.text}>
-            Something went wrong
-          </Text>
-          <Text fontSize={16} lineHeight={24} color={colors.textSecondary}>
-            {error}
-          </Text>
-        </VStack>
+      {!showSkeleton && error ? (
+        <ErrorState
+          title="Something went wrong"
+          message={error}
+          onRetry={() => void load('replace')}
+          retryLabel="Try again"
+          retryAccessibilityLabel="Retry loading stories"
+          onSecondary={() => router.replace('/(tabs)')}
+          secondaryLabel="Back to feed"
+        />
       ) : null}
 
-      {!loading && !error ? (
+      {!showSkeleton && !error ? (
         <FlatList
           style={styles.listFlex}
           data={visible}
           keyExtractor={(item) => String(item.id)}
           contentContainerStyle={[styles.list, { paddingBottom: tabClearance }]}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={() => void load('refresh')}
+              tintColor={colors.accent}
+              colors={[colors.accent]}
+              progressBackgroundColor={
+                Platform.OS === 'android' ? colors.surface : undefined
+              }
+            />
+          }
           renderItem={({ item, index }) => (
             <CompactArticleCard
               article={item}
               index={index}
               onPress={openArticle}
               onLongPress={setActionArticle}
+              onMorePress={setActionArticle}
             />
           )}
           ListEmptyComponent={
@@ -345,10 +463,10 @@ function DiscoverBody() {
         onClose={() => setFilterOpen(false)}
       />
 
-      <ActionSheet
+      <BottomSheet
         visible={actionArticle != null}
         title="Story options"
-        items={sheetItems}
+        sections={sheetSections}
         onClose={() => setActionArticle(null)}
       />
 
@@ -429,8 +547,8 @@ const styles = StyleSheet.create({
     height: 48,
   },
   filterBtn: {
-    width: 36,
-    height: 36,
+    width: 44,
+    height: 44,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: radius.full,

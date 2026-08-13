@@ -1,7 +1,7 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react'
-import { Pressable, StyleSheet, View } from 'react-native'
-import { Text } from '@gluestack-ui/themed'
-import { colors, radius, space, typography } from '../theme/tokens'
+import { StyleSheet, View } from 'react-native'
+import { colors } from '../theme/tokens'
+import { ErrorState } from './ui/ErrorState'
 
 type Props = {
   children: ReactNode
@@ -9,6 +9,7 @@ type Props = {
   name?: string
   fallbackTitle?: string
   fallbackMessage?: string
+  onBackToFeed?: () => void
 }
 
 type State = {
@@ -28,8 +29,11 @@ export class ScreenErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, info: ErrorInfo) {
     if (__DEV__) {
-      // Surfaced in the Metro / browser console for diagnosis
-      console.error(`[ScreenErrorBoundary${this.props.name ? `:${this.props.name}` : ''}]`, error, info.componentStack)
+      console.error(
+        `[ScreenErrorBoundary${this.props.name ? `:${this.props.name}` : ''}]`,
+        error,
+        info.componentStack,
+      )
     }
   }
 
@@ -49,39 +53,15 @@ export class ScreenErrorBoundary extends Component<Props, State> {
       'This section hit an unexpected error. You can try again without leaving the app.'
 
     return (
-      <View style={styles.root} accessibilityRole="alert">
-        <Text
-          fontSize={typography.section.fontSize}
-          lineHeight={typography.section.lineHeight}
-          fontWeight="$bold"
-          color={colors.text}
-          mb="$2"
-        >
-          {title}
-        </Text>
-        <Text
-          fontSize={typography.summary.fontSize}
-          lineHeight={typography.summary.lineHeight}
-          color={colors.textSecondary}
-          mb="$5"
-        >
-          {message}
-        </Text>
-        <Pressable
-          onPress={this.reset}
-          accessibilityRole="button"
-          accessibilityLabel="Try again"
-          style={({ pressed }) => [styles.button, pressed ? styles.pressed : null]}
-        >
-          <Text
-            fontSize={typography.button.fontSize}
-            lineHeight={typography.button.lineHeight}
-            fontWeight="$semibold"
-            color={colors.textOnAccent}
-          >
-            Try again
-          </Text>
-        </Pressable>
+      <View style={styles.root}>
+        <ErrorState
+          title={title}
+          message={message}
+          onRetry={this.reset}
+          retryLabel="Try again"
+          onSecondary={this.props.onBackToFeed}
+          secondaryLabel="Back to feed"
+        />
       </View>
     )
   }
@@ -90,20 +70,6 @@ export class ScreenErrorBoundary extends Component<Props, State> {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    justifyContent: 'center',
-    paddingHorizontal: space.xl,
-    paddingVertical: space.xxl,
     backgroundColor: colors.background,
-  },
-  button: {
-    alignSelf: 'flex-start',
-    backgroundColor: colors.accent,
-    borderRadius: radius.full,
-    minHeight: 48,
-    paddingHorizontal: space.lg,
-    justifyContent: 'center',
-  },
-  pressed: {
-    backgroundColor: colors.accentPressed,
   },
 })

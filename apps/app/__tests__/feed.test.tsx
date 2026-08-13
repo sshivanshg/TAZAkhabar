@@ -8,13 +8,22 @@ const mockReplace = jest.fn()
 const mockGetArticles = jest.fn()
 const mockGetCities = jest.fn()
 
-jest.mock('expo-router', () => ({
-  useRouter: () => ({
-    push: mockPush,
-    replace: mockReplace,
-  }),
-  useLocalSearchParams: () => ({ city: 'jhansi' }),
-}))
+jest.mock('expo-router', () => {
+  const React = require('react')
+  return {
+    useRouter: () => ({
+      push: mockPush,
+      replace: mockReplace,
+    }),
+    useLocalSearchParams: () => ({ city: 'jhansi' }),
+    useFocusEffect: (effect: () => void | (() => void)) => {
+      React.useEffect(() => {
+        const cleanup = effect()
+        return typeof cleanup === 'function' ? cleanup : undefined
+      }, [effect])
+    },
+  }
+})
 
 jest.mock('../src/api/client', () => ({
   apiClient: {
@@ -111,23 +120,7 @@ jest.mock('react-native-svg', () => {
     LinearGradient: Mock,
     Rect: Mock,
     Stop: Mock,
-  }
-})
-
-jest.mock('lucide-react-native', () => {
-  const React = require('react')
-  const { View } = require('react-native')
-  const Icon = (props: Record<string, unknown>) => React.createElement(View, props)
-  return {
-    Bell: Icon,
-    Menu: Icon,
-    Search: Icon,
-    ArrowLeft: Icon,
-    SlidersHorizontal: Icon,
-    Bookmark: Icon,
-    Globe: Icon,
-    Home: Icon,
-    User: Icon,
+    Path: Mock,
   }
 })
 
@@ -193,8 +186,8 @@ describe('FeedScreen', () => {
       await screen.findByText('[MOCK] Local municipal budget approved for FY26'),
     ).toBeTruthy()
     expect(screen.getByText('Breaking News')).toBeTruthy()
-    expect(screen.getByText('Recommendation')).toBeTruthy()
-    expect(screen.getByLabelText('Open menu')).toBeTruthy()
+    expect(screen.getByText('Latest for you')).toBeTruthy()
+    expect(screen.getByLabelText(/Change city/)).toBeTruthy()
   })
 
   it('shows empty state when there are no articles', async () => {
@@ -222,25 +215,27 @@ describe('FeedScreen', () => {
     })
   })
 
-  it('opens menu with change city', async () => {
+  it('opens city picker from city pill', async () => {
     renderFeed()
 
     await screen.findByText('Breaking News')
-    fireEvent.press(screen.getByLabelText('Open menu'))
+    fireEvent.press(screen.getByLabelText(/Change city/))
 
-    expect(await screen.findByText('Change city')).toBeTruthy()
-    expect(screen.getByText('Profile')).toBeTruthy()
+    expect(mockPush).toHaveBeenCalledWith('/city')
   })
 
   it('opens story actions on long press of a recommendation card', async () => {
     renderFeed()
 
     const card = await screen.findByLabelText(
-      /Story 6.*Long press for options/,
+      /Story 6.*Open options for more actions/,
     )
     fireEvent(card, 'onLongPress')
 
-    expect(await screen.findByText('Show more like this')).toBeTruthy()
+    // Native share label is "Share"; web uses "Share on WhatsApp".
+    expect(await screen.findByText('Share')).toBeTruthy()
+    expect(screen.getByText('Save')).toBeTruthy()
+    expect(screen.getByText('Show more like this')).toBeTruthy()
     expect(screen.getByText('Block this source')).toBeTruthy()
   })
 })

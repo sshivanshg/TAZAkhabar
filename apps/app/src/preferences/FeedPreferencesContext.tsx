@@ -179,9 +179,26 @@ export function FeedPreferencesProvider({ children }: { children: ReactNode }) {
     [state.blockedCategories],
   )
 
+  const preferenceScore = useCallback(
+    (category: string | undefined) => {
+      const cat = (category ?? '').trim().toLowerCase()
+      if (!cat) {
+        return 0
+      }
+      if (state.preferMoreCategories.some((c) => c.toLowerCase() === cat)) {
+        return -1
+      }
+      if (state.preferLessCategories.some((c) => c.toLowerCase() === cat)) {
+        return 1
+      }
+      return 0
+    },
+    [state.preferLessCategories, state.preferMoreCategories],
+  )
+
   const filterArticles = useCallback(
-    (articles: ArticleResponse[]) =>
-      articles.filter((article) => {
+    (articles: ArticleResponse[]) => {
+      const filtered = articles.filter((article) => {
         if (article.id != null && state.hiddenStoryIds.includes(article.id)) {
           return false
         }
@@ -194,8 +211,23 @@ export function FeedPreferencesProvider({ children }: { children: ReactNode }) {
           return false
         }
         return true
-      }),
-    [isCategoryBlocked, isSourceBlocked, state.hiddenStoryIds],
+      })
+      // Prefer-more categories first, prefer-less last; stable otherwise.
+      return filtered
+        .map((article, index) => ({ article, index }))
+        .sort((a, b) => {
+          const diff =
+            preferenceScore(a.article.category) - preferenceScore(b.article.category)
+          return diff !== 0 ? diff : a.index - b.index
+        })
+        .map(({ article }) => article)
+    },
+    [
+      isCategoryBlocked,
+      isSourceBlocked,
+      preferenceScore,
+      state.hiddenStoryIds,
+    ],
   )
 
   const value = useMemo<FeedPreferencesContextValue>(

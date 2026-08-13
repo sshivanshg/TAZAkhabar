@@ -1,11 +1,22 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { FlatList, Platform, Pressable, RefreshControl, StyleSheet, View } from 'react-native'
-import { useLocalSearchParams, useRouter } from 'expo-router'
-import { Box, Button, ButtonText, HStack, Text, VStack } from '@gluestack-ui/themed'
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router'
+import { Box, HStack, Text } from '@gluestack-ui/themed'
 import { MotiView } from 'moti'
+import {
+  Bookmark,
+  EyeOff,
+  MessageCircle,
+  Ban,
+  ThumbsDown,
+  ThumbsUp,
+} from 'lucide-react-native'
 import type { ArticleResponse, CityResponse } from '@newsfeed/shared-types'
 import { apiClient } from '../../src/api/client'
-import { ActionSheet, type ActionSheetItem } from '../../src/components/ActionSheet'
+import {
+  BottomSheet,
+  type BottomSheetSection,
+} from '../../src/components/ui/BottomSheet'
 import { BreakingNewsCarousel } from '../../src/components/BreakingNewsCarousel'
 import { CategoryChipRow } from '../../src/components/CategoryChips'
 import {
@@ -13,13 +24,21 @@ import {
   CompactArticleCardSkeleton,
 } from '../../src/components/CompactArticleCard'
 import { ConfirmModal } from '../../src/components/ConfirmModal'
-import { FeedRefreshIndicator } from '../../src/components/FeedRefreshIndicator'
+import { AddToHomeBanner } from '../../src/components/AddToHomeBanner'
 import { DesktopHeroRow } from '../../src/components/desktop/DesktopHeroRow'
 import { DesktopTopBar } from '../../src/components/desktop/DesktopTopBar'
 import { HomeTopBar } from '../../src/components/HomeTopBar'
 import { ScreenErrorBoundary } from '../../src/components/ScreenErrorBoundary'
 import { TabScreenShell } from '../../src/components/TabScreenShell'
+import { ErrorState } from '../../src/components/ui/ErrorState'
+import { PrimaryButton } from '../../src/components/ui/PrimaryButton'
 import { useFeedPreferences } from '../../src/preferences/FeedPreferencesContext'
+import {
+  articleToBookmark,
+  getBookmarks,
+  removeBookmark,
+  addBookmark,
+} from '../../src/storage/bookmarks'
 import { getStoredCitySlug, setStoredCitySlug } from '../../src/storage/cityPreference'
 import {
   BREAKING_NEWS_COUNT,
@@ -35,6 +54,8 @@ import {
 } from '../../src/theme/tokens'
 import { useTabBarClearance } from '../../src/theme/useTabBarClearance'
 import { isDesktopLayout, useBreakpoint } from '../../src/hooks/useBreakpoint'
+import { articleRouteParams } from '../../src/utils/articleRouteParams'
+import { shareArticleToWhatsApp } from '../../src/utils/shareToWhatsApp'
 
 type ListRow =
   | { kind: 'breaking'; key: 'breaking' }
@@ -71,12 +92,24 @@ function HomeFeedBody() {
   const [loadingMore, setLoadingMore] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showContent, setShowContent] = useState(false)
-  const [menuOpen, setMenuOpen] = useState(false)
   const [actionArticle, setActionArticle] = useState<ArticleResponse | null>(null)
   const [blockSourceName, setBlockSourceName] = useState<string | null>(null)
   const [blockCategoryName, setBlockCategoryName] = useState<string | null>(null)
+  const [bookmarkedIds, setBookmarkedIds] = useState<Set<number>>(new Set())
   const offsetRef = useRef(0)
   const loadingMoreLock = useRef(false)
+  const loadGenRef = useRef(0)
+
+  const refreshBookmarks = useCallback(async () => {
+    const list = await getBookmarks()
+    setBookmarkedIds(new Set(list.map((b) => b.id)))
+  }, [])
+
+  useFocusEffect(
+    useCallback(() => {
+      void refreshBookmarks()
+    }, [refreshBookmarks]),
+  )
 
   useEffect(() => {
     if (isFeedCategory(params.category) && params.category !== category) {
@@ -140,6 +173,8 @@ function HomeFeedBody() {
         return
       }
 
+      const gen = mode === 'append' ? loadGenRef.current : ++loadGenRef.current
+
       if (mode === 'replace') {
         setLoading(true)
         setShowContent(false)
@@ -165,6 +200,9 @@ function HomeFeedBody() {
           offset,
           limit: PAGE_SIZE,
         })
+        if (gen !== loadGenRef.current) {
+          return
+        }
         const items = result.items ?? []
         setTotal(result.total ?? items.length)
         setArticles((prev) => (mode === 'append' ? [...prev, ...items] : items))
@@ -172,16 +210,22 @@ function HomeFeedBody() {
         setError(null)
         requestAnimationFrame(() => setShowContent(true))
       } catch (err) {
+        if (gen !== loadGenRef.current) {
+          return
+        }
         setError(err instanceof Error ? err.message : 'Could not load articles')
-        if (mode !== 'append') {
+        // Keep prior items on refresh/append failure; only clear on initial replace.
+        if (mode === 'replace') {
           setArticles([])
           setShowContent(true)
         }
       } finally {
-        setLoading(false)
-        setRefreshing(false)
-        setLoadingMore(false)
-        loadingMoreLock.current = false
+        if (gen === loadGenRef.current || mode === 'append') {
+          setLoading(false)
+          setRefreshing(false)
+          setLoadingMore(false)
+          loadingMoreLock.current = false
+        }
       }
     },
     [citySlug, category],
@@ -222,10 +266,8 @@ function HomeFeedBody() {
     if (breaking.length > 0) {
       rows.push({ kind: 'breaking', key: 'breaking' })
     }
-    rows.push({ kind: 'section', key: 'section' })
-    if (recommendations.length === 0 && !loading && breaking.length === 0) {
-      rows.push({ kind: 'empty', key: 'empty' })
-    } else {
+    if (recommendations.length > 0) {
+      rows.push({ kind: 'section', key: 'section' })
       for (const [index, article] of recommendations.entries()) {
         rows.push({
           kind: 'article',
@@ -234,24 +276,21 @@ function HomeFeedBody() {
           index,
         })
       }
+    } else if (!loading && breaking.length === 0) {
+      rows.push({ kind: 'empty', key: 'empty' })
     }
     return rows
   }, [breaking, recommendations, loading])
 
   const openArticle = useCallback(
     (article: ArticleResponse) => {
+      const params = articleRouteParams(article)
+      if (!params) {
+        return
+      }
       router.push({
         pathname: '/article/[id]',
-        params: {
-          id: String(article.id),
-          headline: article.headline ?? '',
-          summary: article.summary ?? '',
-          sourceName: article.sourceName ?? '',
-          sourceUrl: article.sourceUrl ?? '',
-          imageUrl: article.imageUrl ?? '',
-          publishedAt: article.publishedAt ?? '',
-          category: article.category ?? '',
-        },
+        params,
       })
     },
     [router],
@@ -260,65 +299,103 @@ function HomeFeedBody() {
   const goDiscover = useCallback(() => {
     router.push({
       pathname: '/(tabs)/search',
-      params: category === 'All' ? {} : { category },
+      params: {
+        from: 'home',
+        ...(category === 'All' ? {} : { category }),
+      },
     })
   }, [router, category])
 
-  const menuItems: ActionSheetItem[] = useMemo(
-    () => [
-      {
-        key: 'city',
-        label: 'Change city',
-        onPress: () => router.push('/city'),
-      },
-      {
-        key: 'profile',
-        label: 'Profile',
-        onPress: () => router.push('/(tabs)/profile'),
-      },
-      {
-        key: 'discover',
-        label: 'Discover',
-        onPress: goDiscover,
-      },
-    ],
-    [router, goDiscover],
-  )
+  const shareLabel = Platform.OS === 'web' ? 'Share on WhatsApp' : 'Share'
 
-  const sheetItems: ActionSheetItem[] = useMemo(() => {
+  const storySections: BottomSheetSection[] = useMemo(() => {
     if (!actionArticle) {
       return []
     }
     const cat = actionArticle.category ?? ''
     const source = actionArticle.sourceName ?? 'this source'
+    const saved =
+      actionArticle.id != null && bookmarkedIds.has(actionArticle.id)
     return [
       {
-        key: 'more',
-        label: 'Show more like this',
-        onPress: () => prefs.showMoreLikeThis(cat),
+        key: 'share',
+        items: [
+          {
+            key: 'share',
+            label: shareLabel,
+            Icon: MessageCircle,
+            onPress: () => {
+              void shareArticleToWhatsApp({
+                headline: actionArticle.headline,
+                summary: actionArticle.summary,
+                sourceUrl: actionArticle.sourceUrl,
+              })
+            },
+          },
+        ],
       },
       {
-        key: 'less',
-        label: 'Show less like this',
-        onPress: () => prefs.showLessLikeThis(cat),
+        key: 'save',
+        items: [
+          {
+            key: 'bookmark',
+            label: saved ? 'Remove bookmark' : 'Save',
+            Icon: Bookmark,
+            onPress: () => {
+              void (async () => {
+                if (actionArticle.id == null) {
+                  return
+                }
+                if (saved) {
+                  await removeBookmark(actionArticle.id)
+                } else {
+                  const snap = articleToBookmark(actionArticle, citySlug ?? undefined)
+                  if (snap) {
+                    await addBookmark(snap)
+                  }
+                }
+                await refreshBookmarks()
+              })()
+            },
+          },
+          {
+            key: 'more',
+            label: 'Show more like this',
+            Icon: ThumbsUp,
+            onPress: () => prefs.showMoreLikeThis(cat),
+          },
+          {
+            key: 'less',
+            label: 'Show less like this',
+            Icon: ThumbsDown,
+            onPress: () => prefs.showLessLikeThis(cat),
+          },
+          {
+            key: 'hide',
+            label: 'Hide this story',
+            Icon: EyeOff,
+            onPress: () => {
+              if (actionArticle.id != null) {
+                prefs.hideStory(actionArticle.id)
+              }
+            },
+          },
+        ],
       },
       {
-        key: 'hide',
-        label: 'Hide this story',
-        onPress: () => {
-          if (actionArticle.id != null) {
-            prefs.hideStory(actionArticle.id)
-          }
-        },
-      },
-      {
-        key: 'block',
-        label: 'Block this source',
-        destructive: true,
-        onPress: () => setBlockSourceName(source),
+        key: 'danger',
+        items: [
+          {
+            key: 'block',
+            label: 'Block this source',
+            Icon: Ban,
+            destructive: true,
+            onPress: () => setBlockSourceName(source),
+          },
+        ],
       },
     ]
-  }, [actionArticle, prefs])
+  }, [actionArticle, bookmarkedIds, citySlug, prefs, refreshBookmarks, shareLabel])
 
   const onEndReached = () => {
     if (!loading && !refreshing && !loadingMore && hasMore) {
@@ -341,11 +418,12 @@ function HomeFeedBody() {
           />
         ) : (
           <HomeTopBar
-            onMenuPress={() => setMenuOpen(true)}
+            cityTitle={cityTitle}
+            onCityPress={() => router.push('/city')}
             onSearchPress={goDiscover}
-            onNotificationPress={() => undefined}
           />
         )}
+        {Platform.OS === 'web' ? <AddToHomeBanner /> : null}
         <CategoryChipRow
           selected={category}
           onSelect={setCategory}
@@ -356,9 +434,8 @@ function HomeFeedBody() {
             }
           }}
         />
-        <FeedRefreshIndicator visible={refreshing} />
 
-        {loading && !showContent ? (
+        {(loading && !showContent) || !prefs.ready ? (
           <Box pt="$2" px="$4">
             <Box h={media.heroHeight} bg={colors.skeleton} borderRadius={radius.lg} mb="$4" />
             {[0, 1, 2].map((i) => (
@@ -367,7 +444,7 @@ function HomeFeedBody() {
           </Box>
         ) : null}
 
-        {showContent ? (
+        {showContent && prefs.ready ? (
           <MotiView
             from={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -375,27 +452,12 @@ function HomeFeedBody() {
             style={{ flex: 1 }}
           >
             {error && articles.length === 0 ? (
-              <VStack px="$4" py="$8" space="md">
-                <Text fontSize={18} lineHeight={28} fontWeight="$bold" color={colors.text}>
-                  Something went wrong
-                </Text>
-                <Text fontSize={16} lineHeight={24} color={colors.textSecondary}>
-                  {error}
-                </Text>
-                <Button
-                  onPress={() => void loadPage('replace')}
-                  bg={colors.accent}
-                  minHeight={48}
-                  alignSelf="flex-start"
-                  px="$5"
-                  borderRadius={radius.full}
-                  accessibilityLabel="Retry loading articles"
-                >
-                  <ButtonText color={colors.textOnAccent} fontSize={16}>
-                    Try again
-                  </ButtonText>
-                </Button>
-              </VStack>
+              <ErrorState
+                title="Something went wrong"
+                message={error}
+                onRetry={() => void loadPage('replace')}
+                retryLabel="Try again"
+              />
             ) : (
             <FlatList
               style={styles.listFlex}
@@ -423,7 +485,7 @@ function HomeFeedBody() {
                     return (
                       <View style={styles.sectionPad}>
                         <SectionHeader
-                          title="Recommendation"
+                          title="Latest for you"
                           actionLabel="View all"
                           onAction={goDiscover}
                         />
@@ -431,22 +493,37 @@ function HomeFeedBody() {
                     )
                   }
                   if (item.kind === 'empty') {
+                    const filteredAway =
+                      articles.length > 0 && visibleArticles.length === 0
                     return (
-                      <Box py="$8" px="$4">
-                        <Text fontSize={18} lineHeight={28} fontWeight="$bold" color={colors.text}>
-                          No stories yet
+                      <View style={styles.emptyBlock}>
+                        <Text
+                          fontSize={typography.headlineSm.fontSize}
+                          lineHeight={typography.headlineSm.lineHeight}
+                          fontWeight="$semibold"
+                          color={colors.text}
+                        >
+                          {filteredAway ? 'Stories hidden by your filters' : 'No stories yet'}
                         </Text>
                         <Text
-                          fontSize={16}
-                          lineHeight={26}
+                          fontSize={typography.summary.fontSize}
+                          lineHeight={typography.summary.lineHeight}
                           color={colors.textSecondary}
                           mt="$2"
+                          mb="$4"
                         >
-                          We do not have articles for {cityTitle}
-                          {category !== 'All' ? ` in ${category}` : ''} right now. Pull down to
-                          refresh, or browse Discover.
+                          {filteredAway
+                            ? 'Unblock sources or categories in Profile, or pull down to refresh.'
+                            : `We do not have articles for ${cityTitle}${
+                                category !== 'All' ? ` in ${category}` : ''
+                              } right now. Pull down to refresh, or browse Discover.`}
                         </Text>
-                      </Box>
+                        <PrimaryButton
+                          label="Browse Discover"
+                          onPress={goDiscover}
+                          accessibilityLabel="Browse Discover"
+                        />
+                      </View>
                     )
                   }
                   return (
@@ -456,6 +533,7 @@ function HomeFeedBody() {
                         index={item.index}
                         onPress={openArticle}
                         onLongPress={setActionArticle}
+                        onMorePress={setActionArticle}
                       />
                     </View>
                   )
@@ -487,17 +565,10 @@ function HomeFeedBody() {
         ) : null}
       </Box>
 
-      <ActionSheet
-        visible={menuOpen}
-        title="Menu"
-        items={menuItems}
-        onClose={() => setMenuOpen(false)}
-      />
-
-      <ActionSheet
+      <BottomSheet
         visible={actionArticle != null}
         title="Story options"
-        items={sheetItems}
+        sections={storySections}
         onClose={() => setActionArticle(null)}
       />
 
@@ -550,13 +621,14 @@ function SectionHeader({
       mb="$3"
       alignItems="center"
       justifyContent="space-between"
-      minHeight={36}
+      minHeight={44}
     >
       <Text
         fontSize={typography.section.fontSize}
         lineHeight={typography.section.lineHeight}
         fontWeight="$bold"
         color={colors.text}
+        flex={1}
       >
         {title}
       </Text>
@@ -565,7 +637,10 @@ function SectionHeader({
         accessibilityRole="button"
         accessibilityLabel={actionLabel}
         hitSlop={8}
-        style={({ pressed }) => (pressed ? { opacity: 0.7 } : null)}
+        style={({ pressed }) => [
+          styles.sectionAction,
+          pressed ? { opacity: 0.7 } : null,
+        ]}
       >
         <Text fontSize={15} lineHeight={20} fontWeight="$semibold" color={colors.accent}>
           {actionLabel}
@@ -591,5 +666,16 @@ const styles = StyleSheet.create({
   },
   cardPad: {
     paddingHorizontal: space.screen,
+  },
+  emptyBlock: {
+    paddingHorizontal: space.screen,
+    paddingVertical: space.xl,
+  },
+  sectionAction: {
+    minHeight: 44,
+    minWidth: 44,
+    paddingHorizontal: space.xs,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 })

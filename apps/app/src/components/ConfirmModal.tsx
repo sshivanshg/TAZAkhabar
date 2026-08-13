@@ -72,7 +72,7 @@ export function ConfirmModal({
               accessibilityLabel={confirmLabel}
               style={({ pressed }) => [styles.actionBtn, pressed ? styles.pressed : null]}
             >
-              <Text fontSize={16} lineHeight={22} fontWeight="$bold" color={colors.text}>
+              <Text fontSize={16} lineHeight={22} fontWeight="$bold" color={colors.destructive}>
                 {confirmLabel}
               </Text>
             </Pressable>
@@ -92,7 +92,7 @@ const styles = StyleSheet.create({
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.45)',
+    backgroundColor: colors.overlay,
   },
   card: {
     width: '100%',

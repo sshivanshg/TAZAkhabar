@@ -1,13 +1,11 @@
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native'
-import { Text } from '@gluestack-ui/themed'
+import { ScrollView, StyleSheet, View } from 'react-native'
 import {
   FEED_CATEGORIES,
   type FeedCategory,
   colors,
-  radius,
   space,
-  typography,
 } from '../theme/tokens'
+import { Chip } from './ui/Chip'
 
 type Props = {
   selected: FeedCategory
@@ -16,14 +14,9 @@ type Props = {
   categories?: readonly FeedCategory[]
 }
 
-const CHIP_HEIGHT = 40
-
 /**
  * Shared category filter row — Home and Discover must both use this
  * so chip style, order, and selected state cannot drift apart.
- *
- * Uses RN ScrollView (not Gluestack) so the row cannot flex-grow and
- * open a giant vertical gap above the feed.
  */
 export function CategoryChipRow({
   selected,
@@ -44,46 +37,28 @@ export function CategoryChipRow({
         {categories.map((category) => {
           const isActive = category === selected
           return (
-            <Pressable
+            <Chip
               key={category}
+              label={category}
+              selected={isActive}
               onPress={() => onSelect(category)}
               onLongPress={
                 onLongPressCategory && category !== 'All'
                   ? () => onLongPressCategory(category)
                   : undefined
               }
-              delayLongPress={380}
-              accessibilityRole="tab"
-              accessibilityState={{ selected: isActive }}
               accessibilityLabel={
                 category === 'All'
                   ? `Filter ${category}`
                   : `Filter ${category}. Long press to block.`
               }
-              style={({ pressed }) => [
-                styles.chip,
-                isActive ? styles.chipActive : styles.chipInactive,
-                pressed ? styles.chipPressed : null,
-              ]}
-            >
-              <Text
-                fontSize={typography.chip.fontSize}
-                lineHeight={typography.chip.lineHeight}
-                fontWeight="$semibold"
-                color={isActive ? colors.chipSelectedText : colors.chipInactiveText}
-              >
-                {category}
-              </Text>
-            </Pressable>
+            />
           )
         })}
       </ScrollView>
     </View>
   )
 }
-
-/** @deprecated Use CategoryChipRow — kept as alias for existing imports. */
-export const CategoryChips = CategoryChipRow
 
 const styles = StyleSheet.create({
   wrap: {
@@ -100,25 +75,5 @@ const styles = StyleSheet.create({
     paddingVertical: space.xs,
     alignItems: 'center',
     gap: space.xs,
-  },
-  chip: {
-    height: CHIP_HEIGHT,
-    paddingHorizontal: space.md,
-    borderWidth: 1,
-    borderRadius: radius.full,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  chipActive: {
-    borderColor: colors.accent,
-    backgroundColor: colors.accent,
-  },
-  chipInactive: {
-    borderColor: colors.chipInactiveBorder,
-    backgroundColor: colors.surface,
-  },
-  chipPressed: {
-    opacity: 0.88,
-    transform: [{ scale: 0.97 }],
   },
 })

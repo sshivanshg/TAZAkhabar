@@ -1,80 +1,128 @@
 import { Pressable, StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { Bell, Menu, Search } from 'lucide-react-native'
-import { colors, radius, space } from '../theme/tokens'
+import { Text } from '@gluestack-ui/themed'
+import { MapPin, Search } from 'lucide-react-native'
+import { colors, HIT_TARGET, radius, space, typography } from '../theme/tokens'
 import { iconStroke } from '../theme/categoryIcons'
 
 type Props = {
-  onMenuPress: () => void
+  cityTitle?: string
+  onCityPress: () => void
   onSearchPress: () => void
-  onNotificationPress?: () => void
+  /** When false, skip notch padding (parent already applied it, e.g. A2HS banner). */
+  includeSafeArea?: boolean
 }
 
-/** Home top bar — menu left, search + notification stub right. */
-export function HomeTopBar({ onMenuPress, onSearchPress, onNotificationPress }: Props) {
+/** Home top bar — brand + city pill left, search right. */
+export function HomeTopBar({
+  cityTitle,
+  onCityPress,
+  onSearchPress,
+  includeSafeArea = true,
+}: Props) {
   const insets = useSafeAreaInsets()
-  return (
-    <View style={[styles.bar, { paddingTop: Math.max(insets.top, 4) }]}>
-      <Pressable
-        onPress={onMenuPress}
-        accessibilityRole="button"
-        accessibilityLabel="Open menu"
-        hitSlop={8}
-        style={({ pressed }) => [styles.iconBtn, pressed ? styles.pressed : null]}
-      >
-        <Menu size={24} strokeWidth={iconStroke} color={colors.text} />
-      </Pressable>
+  const paddingTop = includeSafeArea ? Math.max(insets.top, space.xxs) : space.xxs
 
-      <View style={styles.right}>
-        <Pressable
-          onPress={onSearchPress}
-          accessibilityRole="button"
-          accessibilityLabel="Search and discover"
-          hitSlop={8}
-          style={({ pressed }) => [styles.iconBtn, pressed ? styles.pressed : null]}
+  return (
+    <View style={[styles.bar, { paddingTop }]}>
+      <View style={styles.left} accessibilityRole="header">
+        <Text
+          fontSize={typography.section.fontSize}
+          lineHeight={typography.section.lineHeight}
+          fontWeight="$bold"
+          color={colors.text}
+          numberOfLines={1}
         >
-          <Search size={22} strokeWidth={iconStroke} color={colors.accent} />
-        </Pressable>
-        <Pressable
-          onPress={onNotificationPress}
-          accessibilityRole="button"
-          accessibilityLabel="Notifications (coming soon)"
-          hitSlop={8}
-          style={({ pressed }) => [styles.iconBtn, pressed ? styles.pressed : null]}
-        >
-          <Bell size={22} strokeWidth={iconStroke} color={colors.text} />
-        </Pressable>
+          NewsFeed
+        </Text>
+        {cityTitle ? (
+          <Pressable
+            onPress={onCityPress}
+            accessibilityRole="button"
+            accessibilityLabel={`Change city, currently ${cityTitle}`}
+            hitSlop={4}
+            style={({ pressed }) => [styles.cityPill, pressed ? styles.cityPressed : null]}
+          >
+            <MapPin size={12} strokeWidth={iconStroke} color={colors.accent} />
+            <Text
+              fontSize={typography.label.fontSize}
+              lineHeight={typography.label.lineHeight}
+              fontWeight="$medium"
+              color={colors.accent}
+              numberOfLines={1}
+            >
+              {cityTitle}
+            </Text>
+          </Pressable>
+        ) : null}
       </View>
+
+      <Pressable
+        onPress={onSearchPress}
+        accessibilityRole="button"
+        accessibilityLabel="Search and discover"
+        hitSlop={8}
+        style={({ pressed }) => [styles.searchHit, pressed ? styles.searchPressed : null]}
+      >
+        <View style={styles.searchCircle}>
+          <Search size={18} strokeWidth={iconStroke} color={colors.text} />
+        </View>
+      </Pressable>
     </View>
   )
 }
 
 const styles = StyleSheet.create({
   bar: {
-    height: undefined,
-    minHeight: 48,
-    paddingBottom: space.xxs,
-    paddingHorizontal: space.sm,
+    minHeight: HIT_TARGET,
+    paddingBottom: space.xs,
+    paddingHorizontal: space.screen,
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     justifyContent: 'space-between',
     backgroundColor: colors.background,
     flexGrow: 0,
     flexShrink: 0,
+    gap: space.sm,
   },
-  right: {
+  left: {
+    flex: 1,
+    alignItems: 'flex-start',
+    justifyContent: 'center',
+    gap: space.xxs + 2,
+    paddingTop: space.xxs,
+  },
+  cityPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 2,
+    gap: space.xxs,
+    paddingHorizontal: space.xs + 2,
+    paddingVertical: space.xxs + 2,
+    minHeight: 28,
+    borderRadius: radius.full,
+    backgroundColor: colors.accentSoft,
+    maxWidth: '100%',
   },
-  iconBtn: {
-    width: 44,
-    height: 44,
+  cityPressed: {
+    opacity: 0.85,
+  },
+  searchHit: {
+    width: HIT_TARGET,
+    height: HIT_TARGET,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: radius.full,
   },
-  pressed: {
-    backgroundColor: colors.surfaceRaised,
+  searchCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: radius.full,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.surface,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
+  },
+  searchPressed: {
+    opacity: 0.85,
   },
 })

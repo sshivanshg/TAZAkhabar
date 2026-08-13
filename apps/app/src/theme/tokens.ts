@@ -2,60 +2,68 @@ import { Platform, type ViewStyle } from 'react-native'
 
 /**
  * Light UI palette with a single blue accent.
- * Contrast targets (WCAG AA) are documented next to each text token.
+ * Naming kept for existing imports; values match the UI redesign palette.
  */
 export const colors = {
-  /** Page canvas — near-white */
-  background: '#FAFAFA',
+  /** Page canvas — surfaceAlt */
+  background: '#F5F6FA',
   /** Card / elevated surface */
   surface: '#FFFFFF',
-  /** Pressed / secondary fill on light */
-  surfaceRaised: '#F0F0F0',
+  /** Secondary fill / cancel pill / pressed wash — surfaceAlt */
+  surfaceRaised: '#F5F6FA',
   /** Single blue accent — tabs, chips, links, category pills */
-  accent: '#1D7BFF',
-  /** Accent pressed / darker hover */
-  accentPressed: '#1563D4',
-  /** Soft accent wash for selected chip outlines / icon tints */
-  accentSoft: 'rgba(29, 123, 255, 0.12)',
-  /** Headline on surface/background — ~16:1 on #FAFAFA */
-  text: '#1A1A1A',
-  /** Summary / supporting body — ~5.5:1 on #FAFAFA */
-  textSecondary: '#6B6B6B',
-  /** Source / timestamp — AA for small text on white */
-  textMuted: '#8A8A8A',
+  accent: '#4F6BFF',
+  /** Accent pressed */
+  accentPressed: '#2F49D6',
+  /** Soft accent wash for selected chip / city pill */
+  accentSoft: '#EEF1FF',
+  /** Headline on surface/background */
+  text: '#1A1B1E',
+  /** Supporting body */
+  textSecondary: '#6B6E76',
+  /** Source / timestamp / muted labels */
+  textMuted: '#A0A3AB',
   /** Text on accent fill */
   textOnAccent: '#FFFFFF',
+  /** Overlay text on hero images */
+  textOnImage: '#FFFFFF',
+  textOnImageMuted: 'rgba(255, 255, 255, 0.85)',
   /** Hairline / chip outline */
-  border: 'rgba(0, 0, 0, 0.08)',
-  borderSolid: '#D6D6D6',
+  border: '#ECEDF1',
+  borderSolid: '#ECEDF1',
   /** Selected chip fill */
-  chipSelectedBg: '#1D7BFF',
+  chipSelectedBg: '#4F6BFF',
   chipSelectedText: '#FFFFFF',
   /** Unselected chip */
-  chipInactiveBorder: '#D6D6D6',
-  chipInactiveText: '#6B6B6B',
+  chipInactiveBorder: '#ECEDF1',
+  chipInactiveText: '#6B6E76',
   /** Skeleton shimmer base */
-  skeleton: '#E8E8E8',
-  /** Dark fade under hero overlay text (legibility on photos) */
+  skeleton: '#E8EAEF',
+  /** Dark fade under hero overlay text */
   imageFade: '#000000',
   /** Soft card shadow tint */
   shadow: '#000000',
-  /** Legacy alias */
-  muted: '#8A8A8A',
+  /** Destructive / block actions */
+  destructive: '#E24B4A',
+  /** Destructive row wash */
+  destructiveSoft: '#FCEBEB',
+  /** Legacy alias — same as textMuted */
+  muted: '#A0A3AB',
+  /** Scrim behind sheets */
+  overlay: 'rgba(0, 0, 0, 0.4)',
 } as const
 
 /**
  * Rounded design language — use these everywhere instead of ad-hoc radii.
- * sm/md/lg for surfaces; full for pills (chips, primary buttons, search).
  */
 export const radius = {
-  xs: 6,
-  sm: 10,
-  md: 14,
-  lg: 18,
-  xl: 24,
-  /** Fully pill-shaped controls (height/2 or larger) */
-  full: 9999,
+  xs: 8,
+  sm: 12,
+  md: 16,
+  lg: 20,
+  xl: 28,
+  /** Fully pill-shaped controls */
+  full: 999,
 } as const
 
 /** Shared spacing scale (px). Prefer these over magic numbers. */
@@ -73,7 +81,8 @@ export const space = {
 
 /** Image / media sizing used by cards and heroes. */
 export const media = {
-  thumb: 108,
+  /** List card thumbnail */
+  thumb: 56,
   heroHeight: 220,
   articleHeroHeight: 260,
   cardImageHeight: 188,
@@ -104,18 +113,31 @@ function elevationShadow(
 }
 
 export const shadows = {
-  card: elevationShadow(2, 10, 0.08, 3),
+  card: elevationShadow(4, 16, 0.06, 3),
   tabBar: elevationShadow(6, 16, 0.12, 8),
 } as const
 
+/**
+ * Type scale — names kept for imports; sizes match redesign h1–label.
+ */
 export const typography = {
-  headline: { fontSize: 23, lineHeight: 30, fontWeight: '700' as const },
-  headlineSm: { fontSize: 17, lineHeight: 24, fontWeight: '700' as const },
-  summary: { fontSize: 16, lineHeight: 24, fontWeight: '400' as const },
+  /** ~h1 */
+  display: { fontSize: 28, lineHeight: 34, fontWeight: '700' as const },
+  /** ~h2 — app title, section titles */
+  section: { fontSize: 22, lineHeight: 28, fontWeight: '700' as const },
+  /** ~h3 — hero headline, card section titles */
+  headlineSm: { fontSize: 17, lineHeight: 24, fontWeight: '600' as const },
+  /** Legacy large headline */
+  headline: { fontSize: 22, lineHeight: 28, fontWeight: '700' as const },
+  /** ~body */
+  summary: { fontSize: 15, lineHeight: 22, fontWeight: '400' as const },
+  bodySemibold: { fontSize: 15, lineHeight: 22, fontWeight: '600' as const },
+  /** ~caption */
   meta: { fontSize: 13, lineHeight: 18, fontWeight: '500' as const, letterSpacing: 0.2 },
-  chip: { fontSize: 15, lineHeight: 20, fontWeight: '600' as const },
-  section: { fontSize: 20, lineHeight: 28, fontWeight: '700' as const },
-  button: { fontSize: 16, lineHeight: 22, fontWeight: '600' as const },
+  /** ~label — chips, badges, uppercase section headers */
+  label: { fontSize: 12, lineHeight: 16, fontWeight: '500' as const, letterSpacing: 0.4 },
+  chip: { fontSize: 13, lineHeight: 18, fontWeight: '500' as const },
+  button: { fontSize: 15, lineHeight: 20, fontWeight: '600' as const },
 } as const
 
 export const CITY_STORAGE_KEY = 'newsfeed.selectedCitySlug'
@@ -141,9 +163,15 @@ export const PAGE_SIZE = 20
 export const BREAKING_NEWS_COUNT = 5
 
 /** Floating tab bar height — keep in sync with tabBarStyle.height in (tabs)/_layout */
-export const TAB_BAR_HEIGHT = 64
+export const TAB_BAR_HEIGHT = 72
 /** Breathing room above the floating tab bar for the last list item */
 export const TAB_BAR_CONTENT_GAP = 20
+
+/** Wide-web tab bar max width (centered) */
+export const TAB_BAR_MAX_WIDTH = 560
+
+/** Minimum touch target (a11y) */
+export const HIT_TARGET = 44
 
 export const breakpoints = {
   mobile: 0,

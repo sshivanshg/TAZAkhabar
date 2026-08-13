@@ -1,15 +1,15 @@
 import { StyleSheet, View } from 'react-native'
 import { Text } from '@gluestack-ui/themed'
-import { colors, radius, space, typography } from '../theme/tokens'
+import { colors, radius, space, typography } from '../../theme/tokens'
 
 type Props = {
   label: string
-  /** Filled blue pill (hero overlay) vs soft outline on light cards */
+  /** Solid accent on dark heroes vs soft wash on light cards */
   variant?: 'filled' | 'soft'
 }
 
-/** Category tag badge — blue accent, used on hero cards and compact rows. */
-export function CategoryPill({ label, variant = 'filled' }: Props) {
+/** Small category label pill — hero and list cards. */
+export function Badge({ label, variant = 'filled' }: Props) {
   const filled = variant === 'filled'
   return (
     <View
@@ -18,9 +18,9 @@ export function CategoryPill({ label, variant = 'filled' }: Props) {
       importantForAccessibility="no"
     >
       <Text
-        fontSize={typography.meta.fontSize}
-        lineHeight={typography.meta.lineHeight}
-        fontWeight="$semibold"
+        fontSize={typography.label.fontSize}
+        lineHeight={typography.label.lineHeight}
+        fontWeight="$medium"
         color={filled ? colors.textOnAccent : colors.accent}
         numberOfLines={1}
       >
@@ -33,7 +33,7 @@ export function CategoryPill({ label, variant = 'filled' }: Props) {
 const styles = StyleSheet.create({
   base: {
     alignSelf: 'flex-start',
-    paddingHorizontal: space.sm - 2,
+    paddingHorizontal: space.xs + 2,
     paddingVertical: space.xxs,
     borderRadius: radius.full,
     maxWidth: '100%',
