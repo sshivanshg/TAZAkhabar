@@ -5,9 +5,9 @@ VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "apps", "apps", "{17178B85-C628-4B01-8BD5-28B176C394FB}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Buildy.Api", "apps\api\Buildy.Api.csproj", "{D4032058-3A46-432A-AD26-594868E9109D}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NewsFeed.Api", "apps\api\NewsFeed.Api.csproj", "{D4032058-3A46-432A-AD26-594868E9109D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Buildy.Api.Tests", "apps\api.Tests\Buildy.Api.Tests.csproj", "{DE6BF11A-4770-4F34-A2FC-44DC276E31D7}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NewsFeed.Api.Tests", "apps\api.Tests\NewsFeed.Api.Tests.csproj", "{DE6BF11A-4770-4F34-A2FC-44DC276E31D7}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

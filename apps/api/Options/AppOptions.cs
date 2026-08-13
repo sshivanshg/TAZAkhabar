@@ -1,4 +1,4 @@
-namespace Buildy.Api.Options;
+namespace NewsFeed.Api.Options;
 
 public sealed class CorsOptions
 {

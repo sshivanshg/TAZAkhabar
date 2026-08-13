@@ -18,18 +18,18 @@ jobs:
       postgres:
         image: postgres:16-alpine
         env:
-          POSTGRES_DB: buildy_test
-          POSTGRES_USER: buildy
-          POSTGRES_PASSWORD: buildy_test_password
+          POSTGRES_DB: newsfeed_test
+          POSTGRES_USER: newsfeed
+          POSTGRES_PASSWORD: newsfeed_test_password
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U buildy -d buildy_test"
+          --health-cmd "pg_isready -U newsfeed -d newsfeed_test"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10
     env:
-      ConnectionStrings__Database: Host=localhost;Port=5432;Database=buildy_test;Username=buildy;Password=buildy_test_password
+      ConnectionStrings__Database: Host=localhost;Port=5432;Database=newsfeed_test;Username=newsfeed;Password=newsfeed_test_password
       Cors__AllowedOrigins__0: http://localhost:8081
       ASPNETCORE_ENVIRONMENT: Development
     steps:
@@ -41,16 +41,16 @@ jobs:
           dotnet-version: "8.0.x"
 
       - name: Restore
-        run: dotnet restore Buildy.sln
+        run: dotnet restore NewsFeed.sln
 
       - name: Format check
-        run: dotnet format Buildy.sln --verify-no-changes --verbosity diagnostic
+        run: dotnet format NewsFeed.sln --verify-no-changes --verbosity diagnostic
 
       - name: Build
-        run: dotnet build Buildy.sln -c Release --no-restore
+        run: dotnet build NewsFeed.sln -c Release --no-restore
 
       - name: Test
-        run: dotnet test Buildy.sln -c Release --no-build --verbosity normal
+        run: dotnet test NewsFeed.sln -c Release --no-build --verbosity normal
 
   frontend:
     name: Expo app lint, test, web export
@@ -81,13 +81,13 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Typecheck
-        run: pnpm --filter @buildy/app lint
+        run: pnpm --filter @newsfeed/app lint
 
       - name: Unit / component tests
-        run: pnpm --filter @buildy/app test
+        run: pnpm --filter @newsfeed/app test
 
       - name: Export web (Cloudflare Pages artifact)
-        run: pnpm --filter @buildy/app build:web
+        run: pnpm --filter @newsfeed/app build:web
         env:
           EXPO_PUBLIC_API_BASE_URL: https://api.example.com
           EXPO_PUBLIC_APP_ENV: ci

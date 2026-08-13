@@ -8,7 +8,7 @@ alwaysApply: true
 ## Secrets
 
 - **Never commit secrets.** `.env` files are gitignored; only `*.example` templates are checked in.
-- Use Railway / platform secrets and Cloudflare env vars for staging and production.
+- Use Render / platform secrets and Cloudflare env vars for staging and production.
 - No connection strings, API keys, or tokens in source, Dockerfiles, or workflow files (use GitHub Actions secrets).
 
 ## Public API (no-auth MVP)

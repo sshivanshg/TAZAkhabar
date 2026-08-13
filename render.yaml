@@ -1,0 +1,26 @@
+# Render Blueprint — NewsFeed API (ADR-004)
+# Secrets (ConnectionStrings__Database, Cors origins) are set in the Render dashboard (sync: false).
+
+services:
+  - type: web
+    name: newsfeed-api
+    runtime: docker
+    dockerfilePath: ./infra/docker/Dockerfile.api
+    dockerContext: .
+    plan: starter
+    healthCheckPath: /healthz
+    envVars:
+      - key: PORT
+        value: "8080"
+      - key: ASPNETCORE_URLS
+        value: http://0.0.0.0:8080
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      - key: ConnectionStrings__Database
+        sync: false
+      - key: Cors__AllowedOrigins__0
+        sync: false
+      - key: RateLimiting__PermitLimit
+        value: "60"
+      - key: RateLimiting__WindowSeconds
+        value: "60"

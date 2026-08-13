@@ -1,8 +1,10 @@
 using System.Threading.RateLimiting;
-using Buildy.Api.Data;
-using Buildy.Api.Dtos;
-using Buildy.Api.Options;
+using NewsFeed.Api.Data;
+using NewsFeed.Api.Dtos;
+using NewsFeed.Api.Endpoints;
+using NewsFeed.Api.Options;
 using Microsoft.AspNetCore.Diagnostics;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
@@ -20,7 +22,8 @@ try
         .ReadFrom.Configuration(context.Configuration)
         .ReadFrom.Services(services)
         .Enrich.FromLogContext()
-        .WriteTo.Console());
+        .WriteTo.Console(),
+        preserveStaticLogger: true);
 
     builder.Services.Configure<CorsOptions>(builder.Configuration.GetSection(CorsOptions.SectionName));
     builder.Services.Configure<RateLimitingOptions>(builder.Configuration.GetSection(RateLimitingOptions.SectionName));
@@ -29,11 +32,19 @@ try
     var rateLimitingOptions = builder.Configuration.GetSection(RateLimitingOptions.SectionName).Get<RateLimitingOptions>()
         ?? new RateLimitingOptions();
 
+    builder.Services.Configure<ForwardedHeadersOptions>(options =>
+    {
+        options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+        // Trust proxy headers from Cloudflare / Render (no fixed known-proxy list).
+        options.KnownNetworks.Clear();
+        options.KnownProxies.Clear();
+    });
+
     builder.Services.AddProblemDetails();
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddSwaggerGen(options =>
     {
-        options.SwaggerDoc("v1", new() { Title = "Buildy API", Version = "v1" });
+        options.SwaggerDoc("v1", new() { Title = "NewsFeed API", Version = "v1" });
     });
 
     var connectionString = builder.Configuration.GetConnectionString("Database");
@@ -70,6 +81,7 @@ try
         options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
         options.OnRejected = async (context, token) =>
         {
+            context.HttpContext.Response.Headers.RetryAfter = rateLimitingOptions.WindowSeconds.ToString();
             context.HttpContext.Response.ContentType = "application/problem+json";
             var problem = Results.Problem(
                 title: "Too Many Requests",
@@ -78,15 +90,27 @@ try
             await problem.ExecuteAsync(context.HttpContext);
         };
 
-        options.AddFixedWindowLimiter("public", limiter =>
-        {
-            limiter.PermitLimit = rateLimitingOptions.PermitLimit;
-            limiter.Window = TimeSpan.FromSeconds(rateLimitingOptions.WindowSeconds);
-            limiter.QueueLimit = 0;
-        });
+        options.AddPolicy("public", httpContext =>
+            RateLimitPartition.GetFixedWindowLimiter(
+                partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+                factory: _ => new FixedWindowRateLimiterOptions
+                {
+                    PermitLimit = rateLimitingOptions.PermitLimit,
+                    Window = TimeSpan.FromSeconds(rateLimitingOptions.WindowSeconds),
+                    QueueLimit = 0,
+                }));
     });
 
     var app = builder.Build();
+
+    using (var scope = app.Services.CreateScope())
+    {
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        if (db.Database.IsRelational())
+        {
+            await db.Database.MigrateAsync();
+        }
+    }
 
     app.UseSerilogRequestLogging();
     app.UseExceptionHandler(errorApp =>
@@ -125,6 +149,15 @@ try
     // OpenAPI JSON is always available for shared-types generation (local + CI).
     app.MapSwagger("/openapi/{documentName}.json");
 
+    app.UseForwardedHeaders();
+
+    app.Use(async (context, next) =>
+    {
+        context.Response.Headers.XContentTypeOptions = "nosniff";
+        context.Response.Headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
+        await next();
+    });
+
     app.UseCors("Frontend");
     app.UseRateLimiter();
 
@@ -136,7 +169,7 @@ try
             var canConnect = await db.Database.CanConnectAsync(cancellationToken);
             var response = new HealthResponse(
                 Status: canConnect ? "healthy" : "degraded",
-                Service: "buildy-api",
+                Service: "newsfeed-api",
                 TimestampUtc: DateTimeOffset.UtcNow,
                 Database: canConnect ? "up" : "down");
 
@@ -149,6 +182,9 @@ try
         .Produces<HealthResponse>(StatusCodes.Status200OK)
         .Produces<HealthResponse>(StatusCodes.Status503ServiceUnavailable)
         .ProducesProblem(StatusCodes.Status429TooManyRequests);
+
+    api.MapCitiesEndpoints();
+    api.MapArticlesEndpoints();
 
     app.MapHealthChecks("/healthz");
 

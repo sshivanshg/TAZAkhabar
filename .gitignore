@@ -32,6 +32,9 @@ apps/api/appsettings.*.local.json
 .DS_Store
 Thumbs.db
 
+# Cursor agent session archives (prompts / transcripts — may contain secrets)
+.cursor/sessions/
+
 # Logs / coverage
 *.log
 logs/
@@ -60,3 +63,7 @@ apps/app/.expo/
 *.tmp
 .turbo/
 .cache/
+.tmp/
+
+# Expo local (root)
+.expo/
