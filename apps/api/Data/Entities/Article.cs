@@ -19,7 +19,9 @@ public sealed class Article
     public string? ReviewedBy { get; set; }
     public DateTimeOffset? ReviewedAt { get; set; }
     public int? SourceId { get; set; }
+    public int? DocumentUploadId { get; set; }
 
     public City City { get; set; } = null!;
     public Source? Source { get; set; }
+    public DocumentUpload? DocumentUpload { get; set; }
 }

@@ -71,6 +71,39 @@ public static class SeedData
             Language = "hi",
             IsActive = true,
         },
+        new()
+        {
+            Id = 5,
+            Name = "PDF uploads",
+            FeedUrl = null,
+            CityId = 2,
+            Type = SourceType.PdfUpload,
+            Kind = SourceKind.CityEdition,
+            Language = "hi",
+            IsActive = false,
+        },
+        new()
+        {
+            Id = 6,
+            Name = "PDF uploads",
+            FeedUrl = null,
+            CityId = 3,
+            Type = SourceType.PdfUpload,
+            Kind = SourceKind.CityEdition,
+            Language = "hi",
+            IsActive = false,
+        },
+        new()
+        {
+            Id = 7,
+            Name = "PDF uploads",
+            FeedUrl = null,
+            CityId = 4,
+            Type = SourceType.PdfUpload,
+            Kind = SourceKind.CityEdition,
+            Language = "hi",
+            IsActive = false,
+        },
     ];
 
     public static readonly Article[] Articles = BuildArticles();

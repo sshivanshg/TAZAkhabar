@@ -15,6 +15,7 @@ public sealed class Source
     public DateTimeOffset? LastFetchedAt { get; set; }
     public FetchStatus? LastFetchStatus { get; set; }
     public string? LastErrorMessage { get; set; }
+    public string? ScrapeConfig { get; set; }
 
     public City City { get; set; } = null!;
     public ICollection<Article> Articles { get; set; } = new List<Article>();

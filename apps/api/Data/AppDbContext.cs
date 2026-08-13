@@ -9,6 +9,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     public DbSet<Article> Articles => Set<Article>();
     public DbSet<Source> Sources => Set<Source>();
     public DbSet<IngestionRun> IngestionRuns => Set<IngestionRun>();
+    public DbSet<DocumentUpload> DocumentUploads => Set<DocumentUpload>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -39,6 +40,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             entity.Property(s => s.LastFetchedAt).HasColumnName("last_fetched_at");
             entity.Property(s => s.LastFetchStatus).HasColumnName("last_fetch_status").HasConversion<string>().HasMaxLength(32);
             entity.Property(s => s.LastErrorMessage).HasColumnName("last_error_message").HasMaxLength(1000);
+            entity.Property(s => s.ScrapeConfig).HasColumnName("scrape_config").HasMaxLength(4000);
             entity.HasOne(s => s.City)
                 .WithMany(c => c.Sources)
                 .HasForeignKey(s => s.CityId)
@@ -69,6 +71,42 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             entity.HasIndex(r => new { r.SourceId, r.StartedAt });
         });
 
+        modelBuilder.Entity<DocumentUpload>(entity =>
+        {
+            entity.ToTable("document_uploads");
+            entity.HasKey(d => d.Id);
+            entity.Property(d => d.Id).HasColumnName("id");
+            entity.Property(d => d.OriginalFileName).HasColumnName("original_file_name").HasMaxLength(260).IsRequired();
+            entity.Property(d => d.StoredPath).HasColumnName("stored_path").HasMaxLength(500).IsRequired();
+            entity.Property(d => d.ContentType).HasColumnName("content_type").HasMaxLength(127).IsRequired();
+            entity.Property(d => d.ByteSize).HasColumnName("byte_size");
+            entity.Property(d => d.CityHintId).HasColumnName("city_hint_id");
+            entity.Property(d => d.Status)
+                .HasColumnName("status")
+                .HasConversion<string>()
+                .HasMaxLength(32)
+                .IsRequired();
+            entity.Property(d => d.ErrorSummary).HasColumnName("error_summary").HasMaxLength(1000);
+            entity.Property(d => d.IngestionRunId).HasColumnName("ingestion_run_id");
+            entity.Property(d => d.SourceId).HasColumnName("source_id");
+            entity.Property(d => d.CreatedAt).HasColumnName("created_at");
+            entity.Property(d => d.ProcessedAt).HasColumnName("processed_at");
+            entity.HasOne(d => d.CityHint)
+                .WithMany()
+                .HasForeignKey(d => d.CityHintId)
+                .OnDelete(DeleteBehavior.SetNull);
+            entity.HasOne(d => d.IngestionRun)
+                .WithMany()
+                .HasForeignKey(d => d.IngestionRunId)
+                .OnDelete(DeleteBehavior.SetNull);
+            entity.HasOne(d => d.Source)
+                .WithMany()
+                .HasForeignKey(d => d.SourceId)
+                .OnDelete(DeleteBehavior.SetNull);
+            entity.HasIndex(d => d.Status);
+            entity.HasIndex(d => d.CreatedAt);
+        });
+
         modelBuilder.Entity<Article>(entity =>
         {
             entity.ToTable("articles");
@@ -86,16 +124,19 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
                 .HasColumnName("status")
                 .HasConversion<string>()
                 .HasMaxLength(32)
-                .IsRequired();
-            entity.Property(a => a.IsMock).HasColumnName("is_mock");
+                .IsRequired()
+                .HasDefaultValue(ArticleStatus.Published);
+            entity.Property(a => a.IsMock).HasColumnName("is_mock").HasDefaultValue(false);
             entity.Property(a => a.IngestedAt).HasColumnName("ingested_at");
             entity.Property(a => a.ReviewedBy).HasColumnName("reviewed_by").HasMaxLength(80);
             entity.Property(a => a.ReviewedAt).HasColumnName("reviewed_at");
             entity.Property(a => a.SourceId).HasColumnName("source_id");
+            entity.Property(a => a.DocumentUploadId).HasColumnName("document_upload_id");
             entity.HasIndex(a => new { a.CityId, a.PublishedAt });
             entity.HasIndex(a => a.SourceUrl).IsUnique();
             entity.HasIndex(a => new { a.Status, a.CityId });
             entity.HasIndex(a => a.SourceId);
+            entity.HasIndex(a => a.DocumentUploadId);
             entity.HasOne(a => a.City)
                 .WithMany(c => c.Articles)
                 .HasForeignKey(a => a.CityId)
@@ -103,6 +144,10 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             entity.HasOne(a => a.Source)
                 .WithMany(s => s.Articles)
                 .HasForeignKey(a => a.SourceId)
+                .OnDelete(DeleteBehavior.SetNull);
+            entity.HasOne(a => a.DocumentUpload)
+                .WithMany(d => d.Articles)
+                .HasForeignKey(a => a.DocumentUploadId)
                 .OnDelete(DeleteBehavior.SetNull);
             entity.HasData(SeedData.Articles);
         });
