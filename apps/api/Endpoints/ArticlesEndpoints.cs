@@ -63,7 +63,9 @@ public static class ArticlesEndpoints
 
                 var query = db.Articles
                     .AsNoTracking()
-                    .Where(a => a.CityId == cityEntity.Id);
+                    .Where(a => a.CityId == cityEntity.Id
+                        && a.Status == ArticleStatus.Published
+                        && !a.IsMock);
 
                 if (!string.IsNullOrWhiteSpace(category))
                 {
@@ -75,16 +77,6 @@ public static class ArticlesEndpoints
                 {
                     var needle = q.Trim().ToLowerInvariant();
                     query = query.Where(a => a.Headline.ToLower().Contains(needle));
-                }
-
-                if (cityEntity.Slug == "jhansi")
-                {
-                    var hasIngested = await db.Articles.AsNoTracking()
-                        .AnyAsync(a => a.CityId == cityEntity.Id && !a.Headline.StartsWith("[MOCK]"), cancellationToken);
-                    if (hasIngested)
-                    {
-                        query = query.Where(a => !a.Headline.StartsWith("[MOCK]"));
-                    }
                 }
 
                 var total = await query.CountAsync(cancellationToken);
@@ -122,7 +114,9 @@ public static class ArticlesEndpoints
             {
                 var article = await db.Articles
                     .AsNoTracking()
-                    .Where(a => a.Id == id)
+                    .Where(a => a.Id == id
+                        && a.Status == ArticleStatus.Published
+                        && !a.IsMock)
                     .Select(a => new ArticleResponse(
                         a.Id,
                         a.CityId,

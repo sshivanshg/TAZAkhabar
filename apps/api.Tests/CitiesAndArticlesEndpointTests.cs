@@ -52,26 +52,35 @@ public sealed class ArticlesEndpointTests : IClassFixture<NewsFeedWebApplication
     public async Task GetArticles_ForJhansi_ReturnsNewestFirst()
     {
         var client = _factory.CreateSeededClient();
+        var older = DateTimeOffset.UtcNow.AddHours(-2);
+        var newer = DateTimeOffset.UtcNow;
+        InsertJhansiArticles(
+            Published("Older published", "https://example.com/older", older),
+            Published("Newer published", "https://example.com/newer", newer));
+
         var response = await client.GetAsync("/api/articles?city=jhansi");
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
         var payload = await response.Content.ReadFromJsonAsync<PagedArticlesResponse>();
         Assert.NotNull(payload);
-        Assert.True(payload.Total >= 8);
-        Assert.NotEmpty(payload.Items);
+        Assert.Equal(2, payload.Total);
         Assert.Equal(0, payload.Offset);
         Assert.Equal(20, payload.Limit);
-
-        var dates = payload.Items.Select(a => a.PublishedAt).ToList();
-        Assert.Equal(dates.OrderByDescending(d => d), dates);
-        Assert.All(payload.Items, a => Assert.Contains("[MOCK]", a.Headline));
+        Assert.Equal(["Newer published", "Older published"], payload.Items.Select(a => a.Headline));
+        Assert.All(payload.Items, a => Assert.DoesNotContain("[MOCK]", a.Headline));
     }
 
     [Fact]
     public async Task GetArticles_SupportsOffsetPagination()
     {
         var client = _factory.CreateSeededClient();
+        var now = DateTimeOffset.UtcNow;
+        InsertJhansiArticles(
+            Enumerable.Range(0, 6)
+                .Select(i => Published($"Live {i}", $"https://example.com/page-{i}", now.AddHours(-i)))
+                .ToArray());
+
         var page1 = await client.GetFromJsonAsync<PagedArticlesResponse>("/api/articles?city=jhansi&limit=3&offset=0");
         var page2 = await client.GetFromJsonAsync<PagedArticlesResponse>("/api/articles?city=jhansi&limit=3&offset=3");
 
@@ -123,6 +132,10 @@ public sealed class ArticlesEndpointTests : IClassFixture<NewsFeedWebApplication
     public async Task GetArticles_QueryFilter_MatchesHeadlineSubstring()
     {
         var client = _factory.CreateSeededClient();
+        InsertJhansiArticles(
+            Published("Local municipal budget approved", "https://example.com/budget"),
+            Published("Unrelated sports result", "https://example.com/sports"));
+
         var response = await client.GetAsync("/api/articles?city=jhansi&q=budget");
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -137,6 +150,10 @@ public sealed class ArticlesEndpointTests : IClassFixture<NewsFeedWebApplication
     public async Task GetArticles_CategoryFilter_MatchesCategory()
     {
         var client = _factory.CreateSeededClient();
+        InsertJhansiArticles(
+            Published("Clinic hours", "https://example.com/health", category: "Health"),
+            Published("Ward meeting", "https://example.com/local"));
+
         var response = await client.GetAsync("/api/articles?city=jhansi&category=Health");
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -161,6 +178,7 @@ public sealed class ArticlesEndpointTests : IClassFixture<NewsFeedWebApplication
     public async Task GetArticleById_ReturnsArticle()
     {
         var client = _factory.CreateSeededClient();
+        InsertJhansiArticles(Published("Live published", "https://example.com/by-id"));
         var list = await client.GetFromJsonAsync<PagedArticlesResponse>("/api/articles?city=jhansi&limit=1");
         Assert.NotNull(list);
         Assert.NotEmpty(list.Items);
@@ -200,84 +218,78 @@ public sealed class ArticlesEndpointTests : IClassFixture<NewsFeedWebApplication
     }
 
     [Fact]
-    public async Task GetArticles_Jhansi_KeepsMocks_WhenNoIngestedRows()
+    public async Task GetArticles_HidesMockSeedRows()
     {
         var client = _factory.CreateSeededClient();
+        var jhansi = await client.GetFromJsonAsync<PagedArticlesResponse>("/api/articles?city=jhansi");
+        var lucknow = await client.GetFromJsonAsync<PagedArticlesResponse>("/api/articles?city=lucknow");
+        Assert.NotNull(jhansi);
+        Assert.NotNull(lucknow);
+        Assert.Equal(0, jhansi.Total);
+        Assert.Empty(jhansi.Items);
+        Assert.Equal(0, lucknow.Total);
+    }
+
+    [Fact]
+    public async Task GetArticles_ReturnsOnlyPublishedNonMock()
+    {
+        var client = _factory.CreateSeededClient();
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            db.Articles.AddRange(
+                new Article { CityId = 2, Headline = "Live published", Summary = "s", SourceName = "A", SourceUrl = "https://example.com/live-pub", PublishedAt = DateTimeOffset.UtcNow, Category = "Local", Status = ArticleStatus.Published, IsMock = false },
+                new Article { CityId = 2, Headline = "Pending", Summary = "s", SourceName = "A", SourceUrl = "https://example.com/pending", PublishedAt = DateTimeOffset.UtcNow, Category = "Local", Status = ArticleStatus.PendingReview, IsMock = false },
+                new Article { CityId = 2, Headline = "Draft", Summary = "s", SourceName = "A", SourceUrl = "https://example.com/draft", PublishedAt = DateTimeOffset.UtcNow, Category = "Local", Status = ArticleStatus.Draft, IsMock = false });
+            db.SaveChanges();
+        }
         var payload = await client.GetFromJsonAsync<PagedArticlesResponse>("/api/articles?city=jhansi");
-        Assert.All(payload!.Items, a => Assert.StartsWith("[MOCK]", a.Headline));
+        Assert.Equal(1, payload!.Total);
+        Assert.Equal("Live published", Assert.Single(payload.Items).Headline);
     }
 
     [Fact]
-    public async Task GetArticles_Jhansi_HidesMocks_WhenRealRowExists()
+    public async Task GetArticleById_UnpublishedOrMock_Returns404()
     {
         var client = _factory.CreateSeededClient();
+        int mockId, pendingId;
         using (var scope = _factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-            db.Articles.Add(new Article
-            {
-                CityId = 2,
-                Headline = "Ward sabha tonight",
-                Summary = "A ward sabha is scheduled this evening.",
-                SourceName = "Amar Ujala",
-                SourceUrl = "https://www.amarujala.com/jhansi/ward-sabha-tonight-task7",
-                PublishedAt = DateTimeOffset.UtcNow,
-                Category = "Local",
-            });
+            var mock = db.Articles.First(a => a.IsMock);
+            mockId = mock.Id;
+            var pending = new Article { CityId = 2, Headline = "P", Summary = "s", SourceName = "A", SourceUrl = "https://example.com/p-byid", PublishedAt = DateTimeOffset.UtcNow, Category = "Local", Status = ArticleStatus.PendingReview, IsMock = false };
+            db.Articles.Add(pending);
             db.SaveChanges();
+            pendingId = pending.Id;
         }
-
-        var payload = await client.GetFromJsonAsync<PagedArticlesResponse>("/api/articles?city=jhansi");
-        Assert.DoesNotContain(payload!.Items, a => a.Headline.StartsWith("[MOCK]", StringComparison.Ordinal));
-        Assert.Contains(payload.Items, a => a.Headline == "Ward sabha tonight");
+        Assert.Equal(HttpStatusCode.NotFound, (await client.GetAsync($"/api/articles/{mockId}")).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await client.GetAsync($"/api/articles/{pendingId}")).StatusCode);
     }
 
-    [Fact]
-    public async Task GetArticles_Lucknow_StillMock_AfterJhansiRealRow()
+    private void InsertJhansiArticles(params Article[] articles)
     {
-        var client = _factory.CreateSeededClient();
-        using (var scope = _factory.Services.CreateScope())
-        {
-            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-            db.Articles.Add(new Article
-            {
-                CityId = 2,
-                Headline = "Ward sabha tonight",
-                Summary = "A ward sabha is scheduled this evening.",
-                SourceName = "Amar Ujala",
-                SourceUrl = "https://www.amarujala.com/jhansi/ward-sabha-lucknow-isolation-task7",
-                PublishedAt = DateTimeOffset.UtcNow,
-                Category = "Local",
-            });
-            db.SaveChanges();
-        }
-
-        var payload = await client.GetFromJsonAsync<PagedArticlesResponse>("/api/articles?city=lucknow");
-        Assert.NotEmpty(payload!.Items);
-        Assert.All(payload.Items, a => Assert.Contains("[MOCK]", a.Headline));
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        db.Articles.AddRange(articles);
+        db.SaveChanges();
     }
 
-    [Fact]
-    public async Task GetArticles_Jhansi_HidesMocks_OnFilteredQuery_WhenRealRowExists()
-    {
-        var client = _factory.CreateSeededClient();
-        using (var scope = _factory.Services.CreateScope())
+    private static Article Published(
+        string headline,
+        string sourceUrl,
+        DateTimeOffset? publishedAt = null,
+        string category = "Local") =>
+        new()
         {
-            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-            db.Articles.Add(new Article
-            {
-                CityId = 2,
-                Headline = "Ward sabha tonight",
-                Summary = "A ward sabha is scheduled this evening.",
-                SourceName = "Amar Ujala",
-                SourceUrl = "https://www.amarujala.com/jhansi/ward-sabha-filtered-query-task7",
-                PublishedAt = DateTimeOffset.UtcNow,
-                Category = "Local",
-            });
-            db.SaveChanges();
-        }
-
-        var payload = await client.GetFromJsonAsync<PagedArticlesResponse>("/api/articles?city=jhansi&q=budget");
-        Assert.DoesNotContain(payload!.Items, a => a.Headline.StartsWith("[MOCK]", StringComparison.Ordinal));
-    }
+            CityId = 2,
+            Headline = headline,
+            Summary = "s",
+            SourceName = "A",
+            SourceUrl = sourceUrl,
+            PublishedAt = publishedAt ?? DateTimeOffset.UtcNow,
+            Category = category,
+            Status = ArticleStatus.Published,
+            IsMock = false,
+        };
 }

@@ -1,5 +1,6 @@
 using NewsFeed.Api.Data;
 using NewsFeed.Api.Data.Entities;
+using NewsFeed.Api.Ingest;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
@@ -10,6 +11,8 @@ namespace NewsFeed.Api.Tests;
 public sealed class NewsFeedWebApplicationFactory : WebApplicationFactory<Program>
 {
     public const string TestIngestKey = "test-ingest-key";
+    public const string TestAdminPassword = "test-admin-password";
+    public const string TestAdminJwtSigningKey = "test-admin-jwt-signing-key-min-32-chars!!";
 
     private readonly string _databaseName = $"newsfeed-tests-{Guid.NewGuid():N}";
 
@@ -17,6 +20,9 @@ public sealed class NewsFeedWebApplicationFactory : WebApplicationFactory<Progra
     {
         builder.UseEnvironment("Development");
         builder.UseSetting("RssIngest:Secret", TestIngestKey);
+        builder.UseSetting("Admin:Password", TestAdminPassword);
+        builder.UseSetting("Admin:JwtSigningKey", TestAdminJwtSigningKey);
+        builder.UseSetting("Upload:MaxBytes", "8192");
 
         builder.ConfigureServices(services =>
         {
@@ -32,6 +38,13 @@ public sealed class NewsFeedWebApplicationFactory : WebApplicationFactory<Progra
 
             services.AddDbContext<AppDbContext>(options =>
                 options.UseInMemoryDatabase(_databaseName));
+
+            foreach (var descriptor in services.Where(d => d.ServiceType == typeof(IArticleIntelligence)).ToList())
+            {
+                services.Remove(descriptor);
+            }
+
+            services.AddSingleton<IArticleIntelligence, FakeArticleIntelligence>();
         });
     }
 

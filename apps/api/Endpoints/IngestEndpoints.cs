@@ -38,6 +38,33 @@ public static class IngestEndpoints
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status429TooManyRequests);
 
+        api.MapPost("/ingest/scrape", async (
+                HttpContext http,
+                ScrapeIngestService ingest,
+                IOptions<RssIngestOptions> options,
+                CancellationToken cancellationToken) =>
+            {
+                if (!IngestKeyMatches(http.Request.Headers["X-Ingest-Key"].ToString(), options.Value.Secret))
+                {
+                    return Results.Problem(
+                        title: "Unauthorized",
+                        detail: "Invalid or missing ingest key.",
+                        statusCode: StatusCodes.Status401Unauthorized);
+                }
+
+                var result = await ingest.RunAllActiveAsync(cancellationToken);
+                return Results.Ok(new IngestRunResponse(
+                    result.FeedsAttempted,
+                    result.FeedsFailed,
+                    result.Inserted,
+                    result.Skipped));
+            })
+            .WithName("IngestScrape")
+            .WithOpenApi()
+            .Produces<IngestRunResponse>(StatusCodes.Status200OK)
+            .ProducesProblem(StatusCodes.Status401Unauthorized)
+            .ProducesProblem(StatusCodes.Status429TooManyRequests);
+
         return api;
     }
 

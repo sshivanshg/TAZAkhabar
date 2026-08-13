@@ -1,101 +1,223 @@
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
 using NewsFeed.Api.Data;
 using NewsFeed.Api.Data.Entities;
-using NewsFeed.Api.Options;
 
 namespace NewsFeed.Api.Ingest;
 
 public sealed class RssIngestService(
     AppDbContext db,
-    IOptions<RssIngestOptions> options,
     IRssFeedClient feedClient,
+    IIngestionEventBus events,
     ILogger<RssIngestService> logger)
 {
     public async Task<IngestRunResult> RunAsync(CancellationToken cancellationToken)
     {
-        var feeds = options.Value.Feeds ?? [];
+        var sources = await db.Sources
+            .AsNoTracking()
+            .Where(s => s.Type == SourceType.Rss && s.IsActive)
+            .OrderBy(s => s.Id)
+            .ToListAsync(cancellationToken);
+
         var attempted = 0;
         var failed = 0;
         var inserted = 0;
         var skipped = 0;
 
-        foreach (var feed in feeds)
+        foreach (var source in sources)
         {
             attempted++;
-            try
-            {
-                var xml = await feedClient.FetchXmlAsync(feed.Url, cancellationToken);
-                if (xml is null)
-                {
-                    failed++;
-                    logger.LogWarning("RSS fetch failed for {FeedUrl}", feed.Url);
-                    continue;
-                }
-
-                var (feedInserted, feedSkipped) = await IngestFeedAsync(feed, xml, cancellationToken);
-                inserted += feedInserted;
-                skipped += feedSkipped;
-            }
-            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-            {
-                throw;
-            }
-            catch (Exception ex)
+            var run = await RunSourceAsync(source.Id, cancellationToken);
+            inserted += run.ArticlesAdded;
+            skipped += run.ArticlesSkipped;
+            if (run.ArticlesFailed > 0 || !string.IsNullOrEmpty(run.ErrorSummary))
             {
                 failed++;
-                logger.LogError(ex, "RSS ingest failed for {FeedUrl}", feed.Url);
-                db.ChangeTracker.Clear();
             }
         }
 
         return new IngestRunResult(attempted, failed, inserted, skipped);
     }
 
-    private async Task<(int Inserted, int Skipped)> IngestFeedAsync(
-        RssFeedConfig feed,
-        string xml,
+    public async Task<IngestionRun> RunSourceAsync(
+        int sourceId,
+        CancellationToken cancellationToken,
+        int? existingRunId = null)
+    {
+        var source = await db.Sources.FirstOrDefaultAsync(s => s.Id == sourceId, cancellationToken)
+            ?? throw new InvalidOperationException($"Source {sourceId} not found.");
+
+        IngestionRun run;
+        if (existingRunId is int runId)
+        {
+            run = await db.IngestionRuns.FirstOrDefaultAsync(r => r.Id == runId && r.SourceId == sourceId, cancellationToken)
+                ?? throw new InvalidOperationException($"Ingestion run {runId} not found for source {sourceId}.");
+        }
+        else
+        {
+            run = new IngestionRun
+            {
+                SourceId = source.Id,
+                StartedAt = DateTimeOffset.UtcNow,
+            };
+            db.IngestionRuns.Add(run);
+            await db.SaveChangesAsync(cancellationToken);
+            IngestionEvents.Emit(events, run.Id, "started", $"RSS run started · {source.Name}");
+        }
+
+        try
+        {
+            if (source.Type != SourceType.Rss || string.IsNullOrWhiteSpace(source.FeedUrl))
+            {
+                run.ArticlesFailed = 1;
+                run.ErrorSummary = HtmlText.Truncate("Source is not an active RSS feed with a URL.", 1000);
+                await CompleteRunAsync(source, run, FetchStatus.Error, run.ErrorSummary, cancellationToken);
+                return run;
+            }
+
+            IngestionEvents.Emit(events, run.Id, "fetch", $"Fetching feed {source.FeedUrl}");
+            var xml = await feedClient.FetchXmlAsync(source.FeedUrl, cancellationToken);
+            if (xml is null)
+            {
+                run.ArticlesFailed = 1;
+                run.ErrorSummary = HtmlText.Truncate($"RSS fetch failed for {source.FeedUrl}", 1000);
+                logger.LogWarning("RSS fetch failed for {FeedUrl}", source.FeedUrl);
+                await CompleteRunAsync(source, run, FetchStatus.Error, run.ErrorSummary, cancellationToken);
+                return run;
+            }
+
+            var items = RssFeedParser.Parse(xml);
+            run.ArticlesFound = items.Count;
+            IngestionEvents.Emit(
+                events,
+                run.Id,
+                "found",
+                $"Parsed {items.Count} feed item{(items.Count == 1 ? "" : "s")}",
+                found: items.Count);
+
+            var city = await db.Cities
+                .AsNoTracking()
+                .FirstOrDefaultAsync(c => c.Id == source.CityId, cancellationToken);
+
+            if (city is null)
+            {
+                run.ArticlesSkipped = items.Count;
+                run.ErrorSummary = HtmlText.Truncate($"City id {source.CityId} not found for source {source.Id}", 1000);
+                logger.LogWarning("City id {CityId} not found; skipping feed {FeedUrl}", source.CityId, source.FeedUrl);
+                await CompleteRunAsync(source, run, FetchStatus.Error, run.ErrorSummary, cancellationToken);
+                return run;
+            }
+
+            var inserted = 0;
+            var skipped = 0;
+
+            foreach (var item in items)
+            {
+                if (source.Kind == SourceKind.Wider
+                    && !PlaceNameMatcher.MatchesJhansiEdition(item.Title, item.Snippet))
+                {
+                    skipped++;
+                    IngestionEvents.Emit(
+                        events,
+                        run.Id,
+                        "skipped",
+                        $"Skipped (wider filter) · {HtmlText.Truncate(item.Title, 80)}",
+                        found: items.Count,
+                        added: inserted,
+                        skipped: skipped);
+                    continue;
+                }
+
+                if (await TryInsertAsync(city.Id, source, item, cancellationToken))
+                {
+                    inserted++;
+                    IngestionEvents.Emit(
+                        events,
+                        run.Id,
+                        "article_added",
+                        $"Added · {HtmlText.Truncate(item.Title, 100)}",
+                        found: items.Count,
+                        added: inserted,
+                        skipped: skipped);
+                }
+                else
+                {
+                    skipped++;
+                    IngestionEvents.Emit(
+                        events,
+                        run.Id,
+                        "skipped",
+                        $"Duplicate/skip · {HtmlText.Truncate(item.Title, 80)}",
+                        found: items.Count,
+                        added: inserted,
+                        skipped: skipped);
+                }
+            }
+
+            run.ArticlesAdded = inserted;
+            run.ArticlesSkipped = skipped;
+            await CompleteRunAsync(source, run, FetchStatus.Success, null, cancellationToken);
+            return run;
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "RSS ingest failed for source {SourceId} {FeedUrl}", source.Id, source.FeedUrl);
+            db.ChangeTracker.Clear();
+
+            var trackedRun = await db.IngestionRuns.FirstAsync(r => r.Id == run.Id, CancellationToken.None);
+            var trackedSource = await db.Sources.FirstAsync(s => s.Id == source.Id, CancellationToken.None);
+            trackedRun.ArticlesFailed = Math.Max(trackedRun.ArticlesFailed, 1);
+            trackedRun.ErrorSummary = HtmlText.Truncate(ex.Message, 1000);
+            await CompleteRunAsync(trackedSource, trackedRun, FetchStatus.Error, trackedRun.ErrorSummary, CancellationToken.None);
+            return trackedRun;
+        }
+    }
+
+    private async Task CompleteRunAsync(
+        Source source,
+        IngestionRun run,
+        FetchStatus status,
+        string? error,
         CancellationToken cancellationToken)
     {
-        var items = RssFeedParser.Parse(xml);
-        var city = await db.Cities
-            .AsNoTracking()
-            .FirstOrDefaultAsync(c => c.Slug == feed.CitySlug, cancellationToken);
+        run.CompletedAt = DateTimeOffset.UtcNow;
+        source.LastFetchedAt = run.CompletedAt;
+        source.LastFetchStatus = status;
+        source.LastErrorMessage = error;
+        await db.SaveChangesAsync(cancellationToken);
 
-        if (city is null)
+        if (status == FetchStatus.Error)
         {
-            logger.LogWarning("City slug {CitySlug} not found; skipping feed {FeedUrl}", feed.CitySlug, feed.Url);
-            return (0, items.Count);
+            IngestionEvents.Emit(
+                events,
+                run.Id,
+                "error",
+                error ?? "RSS run failed",
+                found: run.ArticlesFound,
+                added: run.ArticlesAdded,
+                skipped: run.ArticlesSkipped,
+                failed: run.ArticlesFailed);
         }
-
-        var inserted = 0;
-        var skipped = 0;
-
-        foreach (var item in items)
+        else
         {
-            if (feed.Kind == RssFeedKind.Wider
-                && !PlaceNameMatcher.MatchesJhansiEdition(item.Title, item.Snippet))
-            {
-                skipped++;
-                continue;
-            }
-
-            if (await TryInsertAsync(city.Id, feed, item, cancellationToken))
-            {
-                inserted++;
-            }
-            else
-            {
-                skipped++;
-            }
+            IngestionEvents.Emit(
+                events,
+                run.Id,
+                "completed",
+                $"Done · +{run.ArticlesAdded} added · {run.ArticlesSkipped} skipped",
+                found: run.ArticlesFound,
+                added: run.ArticlesAdded,
+                skipped: run.ArticlesSkipped,
+                failed: run.ArticlesFailed);
         }
-
-        return (inserted, skipped);
     }
 
     private async Task<bool> TryInsertAsync(
         int cityId,
-        RssFeedConfig feed,
+        Source source,
         ParsedRssItem item,
         CancellationToken cancellationToken)
     {
@@ -111,13 +233,14 @@ public sealed class RssIngestService(
         }
 
         var sourceName = string.IsNullOrWhiteSpace(item.SourceName)
-            ? feed.SourceName
+            ? source.Name
             : item.SourceName.Trim();
         var snippet = item.Snippet;
         var summary = string.IsNullOrWhiteSpace(snippet)
             ? $"Tap to read the full story on {sourceName}"
             : snippet;
 
+        var now = DateTimeOffset.UtcNow;
         var article = new Article
         {
             CityId = cityId,
@@ -125,9 +248,13 @@ public sealed class RssIngestService(
             Summary = summary,
             SourceName = sourceName,
             SourceUrl = sourceUrl,
-            PublishedAt = item.PublishedAt ?? DateTimeOffset.UtcNow,
+            PublishedAt = ToUtc(item.PublishedAt ?? now),
             Category = "Local",
             ImageUrl = NormalizeImageUrl(item.ImageUrl),
+            Status = ArticleStatus.PendingReview,
+            IsMock = false,
+            IngestedAt = now,
+            SourceId = source.Id,
         };
 
         db.Articles.Add(article);
@@ -142,6 +269,9 @@ public sealed class RssIngestService(
             return false;
         }
     }
+
+    private static DateTimeOffset ToUtc(DateTimeOffset value) =>
+        value.Offset == TimeSpan.Zero ? value : value.ToUniversalTime();
 
     private static string? NormalizeImageUrl(string? url)
     {

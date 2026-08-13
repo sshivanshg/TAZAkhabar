@@ -21,4 +21,22 @@ public sealed class PlaceNameMatcherTests
     {
         Assert.True(PlaceNameMatcher.MatchesJhansiEdition("झांसी में जल केंद्र", ""));
     }
+
+    [Fact]
+    public void MatchesCity_Kanpur_Hindi()
+    {
+        Assert.True(PlaceNameMatcher.MatchesCity("kanpur", "कानपुर में बस अड्डा", ""));
+    }
+
+    [Fact]
+    public void MatchesCity_Lucknow_RejectsKanpurOnly()
+    {
+        Assert.False(PlaceNameMatcher.MatchesCity("lucknow", "Kanpur metro update", ""));
+    }
+
+    [Fact]
+    public void MatchesJhansiEdition_StillWorks()
+    {
+        Assert.True(PlaceNameMatcher.MatchesJhansiEdition("Orchha fort", ""));
+    }
 }

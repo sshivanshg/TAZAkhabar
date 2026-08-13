@@ -1,3 +1,5 @@
+using NewsFeed.Api.Data;
+
 namespace NewsFeed.Api.Data.Entities;
 
 public sealed class Article
@@ -11,6 +13,15 @@ public sealed class Article
     public DateTimeOffset PublishedAt { get; set; }
     public required string Category { get; set; }
     public string? ImageUrl { get; set; }
+    public ArticleStatus Status { get; set; } = ArticleStatus.Published;
+    public bool IsMock { get; set; }
+    public DateTimeOffset? IngestedAt { get; set; }
+    public string? ReviewedBy { get; set; }
+    public DateTimeOffset? ReviewedAt { get; set; }
+    public int? SourceId { get; set; }
+    public int? DocumentUploadId { get; set; }
 
     public City City { get; set; } = null!;
+    public Source? Source { get; set; }
+    public DocumentUpload? DocumentUpload { get; set; }
 }

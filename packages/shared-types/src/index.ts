@@ -5,10 +5,24 @@
  * Regenerate with: `pnpm generate:types` (NSwag OpenAPI → TypeScript).
  */
 export type {
+  AdminArticleResponse,
+  AdminLoginRequest,
+  AdminLoginResponse,
+  AdminSourceResponse,
   ArticleResponse,
   CityResponse,
+  CreateAdminArticleRequest,
+  CreateAdminSourceRequest,
+  DocumentUploadResponseDto,
   HealthResponse,
   IngestRunResponse,
+  IngestionEventDto,
+  IngestionRunResponseDto,
+  PagedAdminArticlesResponse,
   PagedArticlesResponse,
+  PagedDocumentUploadsResponse,
+  PagedIngestionRunsResponse,
+  PatchAdminArticleRequest,
+  PatchAdminSourceRequest,
   ProblemDetails,
 } from './generated'

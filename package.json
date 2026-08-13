@@ -9,11 +9,19 @@
     "lint:app": "pnpm --filter @newsfeed/app lint",
     "test:app": "pnpm --filter @newsfeed/app test",
     "generate:types": "pnpm --filter @newsfeed/shared-types generate",
+    "dev:admin": "pnpm --filter @newsfeed/admin dev",
+    "build:admin": "pnpm --filter @newsfeed/admin build",
     "dev:api": "dotnet run --project apps/api/NewsFeed.Api.csproj",
     "test:api": "dotnet test NewsFeed.sln",
     "build:api": "dotnet build NewsFeed.sln -c Release"
   },
   "engines": {
     "node": ">=20"
+  },
+  "pnpm": {
+    "overrides": {
+      "react": "19.1.0",
+      "react-dom": "19.1.0"
+    }
   }
 }

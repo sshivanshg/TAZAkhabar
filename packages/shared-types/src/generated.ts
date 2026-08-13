@@ -9,6 +9,49 @@
 
 
 
+export interface AdminArticleResponse {
+    id?: number;
+    cityId?: number;
+    headline?: string | undefined;
+    summary?: string | undefined;
+    sourceName?: string | undefined;
+    sourceUrl?: string | undefined;
+    publishedAt?: string;
+    category?: string | undefined;
+    imageUrl?: string | undefined;
+    status?: string | undefined;
+    isMock?: boolean;
+    ingestedAt?: string | undefined;
+    reviewedBy?: string | undefined;
+    reviewedAt?: string | undefined;
+    sourceId?: number | undefined;
+}
+
+export interface AdminLoginRequest {
+    password?: string | undefined;
+    displayName?: string | undefined;
+}
+
+export interface AdminLoginResponse {
+    token?: string | undefined;
+    expiresAt?: string;
+}
+
+export interface AdminSourceResponse {
+    id?: number;
+    name?: string | undefined;
+    feedUrl?: string | undefined;
+    cityId?: number;
+    citySlug?: string | undefined;
+    type?: string | undefined;
+    kind?: string | undefined;
+    language?: string | undefined;
+    isActive?: boolean;
+    lastFetchedAt?: string | undefined;
+    lastFetchStatus?: string | undefined;
+    lastErrorMessage?: string | undefined;
+}
+
 export interface ArticleResponse {
     id?: number;
     cityId?: number;
@@ -28,6 +71,40 @@ export interface CityResponse {
     slug?: string | undefined;
 }
 
+export interface CreateAdminArticleRequest {
+    headline?: string | undefined;
+    summary?: string | undefined;
+    city?: string | undefined;
+    category?: string | undefined;
+    sourceName?: string | undefined;
+    sourceUrl?: string | undefined;
+    publishNow?: boolean;
+}
+
+export interface CreateAdminSourceRequest {
+    name?: string | undefined;
+    feedUrl?: string | undefined;
+    city?: string | undefined;
+    type?: string | undefined;
+    kind?: string | undefined;
+    language?: string | undefined;
+    isActive?: boolean;
+}
+
+export interface DocumentUploadResponseDto {
+    id?: number;
+    originalFileName?: string | undefined;
+    contentType?: string | undefined;
+    byteSize?: number;
+    cityHintId?: number | undefined;
+    status?: string | undefined;
+    errorSummary?: string | undefined;
+    ingestionRunId?: number | undefined;
+    createdAt?: string;
+    processedAt?: string | undefined;
+    articlesCreated?: number;
+}
+
 export interface HealthResponse {
     status?: string | undefined;
     service?: string | undefined;
@@ -42,11 +119,71 @@ export interface IngestRunResponse {
     skipped?: number;
 }
 
+export interface IngestionRunResponseDto {
+    id?: number;
+    sourceId?: number;
+    startedAt?: string;
+    completedAt?: string | undefined;
+    articlesFound?: number;
+    articlesAdded?: number;
+    articlesSkipped?: number;
+    articlesFailed?: number;
+    errorSummary?: string | undefined;
+}
+
+export interface IngestionEventDto {
+    type?: string;
+    message?: string;
+    at?: string;
+    found?: number | undefined;
+    added?: number | undefined;
+    skipped?: number | undefined;
+    failed?: number | undefined;
+}
+
+export interface PagedAdminArticlesResponse {
+    items?: AdminArticleResponse[] | undefined;
+    total?: number;
+    page?: number;
+    limit?: number;
+}
+
 export interface PagedArticlesResponse {
     items?: ArticleResponse[] | undefined;
     total?: number;
     offset?: number;
     limit?: number;
+}
+
+export interface PagedDocumentUploadsResponse {
+    items?: DocumentUploadResponseDto[] | undefined;
+    total?: number;
+    page?: number;
+    pageSize?: number;
+}
+
+export interface PagedIngestionRunsResponse {
+    items?: IngestionRunResponseDto[] | undefined;
+    total?: number;
+    page?: number;
+    limit?: number;
+}
+
+export interface PatchAdminArticleRequest {
+    headline?: string | undefined;
+    summary?: string | undefined;
+    category?: string | undefined;
+    city?: string | undefined;
+}
+
+export interface PatchAdminSourceRequest {
+    name?: string | undefined;
+    feedUrl?: string | undefined;
+    city?: string | undefined;
+    type?: string | undefined;
+    kind?: string | undefined;
+    language?: string | undefined;
+    isActive?: boolean | undefined;
 }
 
 export interface ProblemDetails {
@@ -57,4 +194,9 @@ export interface ProblemDetails {
     instance?: string | undefined;
 
     [key: string]: any;
+}
+
+export interface FileParameter {
+    data: any;
+    fileName: string;
 }
