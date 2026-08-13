@@ -36,6 +36,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             entity.Property(a => a.Category).HasColumnName("category").HasMaxLength(40).IsRequired();
             entity.Property(a => a.ImageUrl).HasColumnName("image_url").HasMaxLength(500);
             entity.HasIndex(a => new { a.CityId, a.PublishedAt });
+            entity.HasIndex(a => a.SourceUrl).IsUnique();
             entity.HasOne(a => a.City)
                 .WithMany(c => c.Articles)
                 .HasForeignKey(a => a.CityId)
