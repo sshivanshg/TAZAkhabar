@@ -78,8 +78,9 @@ function DiscoverBody() {
   const desktop = isDesktopLayout(useBreakpoint())
   const [citySlug, setCitySlug] = useState<string | null>(null)
   const [cityMeta, setCityMeta] = useState<CityResponse | null>(null)
-  const [query, setQuery] = useState('')
-  const [debounced, setDebounced] = useState('')
+  const initialQ = typeof params.q === 'string' ? params.q : ''
+  const [query, setQuery] = useState(initialQ)
+  const [debounced, setDebounced] = useState(initialQ.trim())
   const [category, setCategory] = useState<FeedCategory>(() =>
     isFeedCategory(params.category) ? params.category : 'All',
   )

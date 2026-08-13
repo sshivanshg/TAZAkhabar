@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
 import { FlatList } from 'react-native'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import { Box, Button, ButtonText, Text, VStack } from '@gluestack-ui/themed'
 import { MotiView } from 'moti'
@@ -8,13 +7,10 @@ import type { CityResponse } from '@newsfeed/shared-types'
 import { apiClient } from '../src/api/client'
 import { CityListSkeleton, CityRow } from '../src/components/CityRow'
 import { setStoredCitySlug } from '../src/storage/cityPreference'
-import { colors, radius, space } from '../src/theme/tokens'
-import { isDesktopLayout, useBreakpoint } from '../src/hooks/useBreakpoint'
+import { colors, radius } from '../src/theme/tokens'
 
 export default function CityPickerScreen() {
   const router = useRouter()
-  const insets = useSafeAreaInsets()
-  const desktop = isDesktopLayout(useBreakpoint())
   const [cities, setCities] = useState<CityResponse[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -54,12 +50,7 @@ export default function CityPickerScreen() {
       style={{ flex: 1, backgroundColor: colors.background }}
     >
       <Box flex={1} bg={colors.background}>
-        <VStack
-          px="$4"
-          pb="$2"
-          space="sm"
-          style={{ paddingTop: desktop ? space.md : Math.max(insets.top, 8) + space.md }}
-        >
+        <VStack px="$4" pt="$4" pb="$2" space="sm">
           <Text fontSize={28} lineHeight={36} fontWeight="$bold" color={colors.text}>
             NewsFeed
           </Text>

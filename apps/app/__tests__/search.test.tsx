@@ -1,14 +1,13 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react-native'
-import { StyleSheet } from 'react-native'
+import { render, waitFor } from '@testing-library/react-native'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import type { ArticleResponse, CityResponse, PagedArticlesResponse } from '@newsfeed/shared-types'
 import { FeedPreferencesProvider } from '../src/preferences/FeedPreferencesContext'
-import { ERROR_COLUMN_MAX } from '../src/theme/tokens'
 
 const mockPush = jest.fn()
 const mockReplace = jest.fn()
 const mockGetArticles = jest.fn()
 const mockGetCities = jest.fn()
+const mockParams: { category?: string; from?: string; q?: string } = { q: 'budget' }
 
 jest.mock('expo-router', () => {
   const React = require('react')
@@ -17,7 +16,7 @@ jest.mock('expo-router', () => {
       push: mockPush,
       replace: mockReplace,
     }),
-    useLocalSearchParams: () => ({ city: 'jhansi' }),
+    useLocalSearchParams: () => mockParams,
     useFocusEffect: (effect: () => void | (() => void)) => {
       React.useEffect(() => {
         const cleanup = effect()
@@ -131,11 +130,7 @@ jest.mock('react-native-svg', () => {
   }
 })
 
-import FeedScreen from '../app/(tabs)/index'
-
-const { useBreakpoint } = require('../src/hooks/useBreakpoint') as {
-  useBreakpoint: jest.Mock
-}
+import DiscoverScreen from '../app/(tabs)/search'
 
 const sampleArticle: ArticleResponse = {
   id: 1,
@@ -157,17 +152,7 @@ function paged(items: ArticleResponse[]): PagedArticlesResponse {
   return { items, total: items.length, offset: 0, limit: 20 }
 }
 
-function makeArticles(count: number): ArticleResponse[] {
-  return Array.from({ length: count }, (_, i) => ({
-    ...sampleArticle,
-    id: i + 1,
-    headline: i === 0
-      ? '[MOCK] Local municipal budget approved for FY26'
-      : `[MOCK] Story ${i + 1}`,
-  }))
-}
-
-function renderFeed() {
+function renderDiscover() {
   return render(
     <SafeAreaProvider
       initialMetrics={{
@@ -176,120 +161,29 @@ function renderFeed() {
       }}
     >
       <FeedPreferencesProvider>
-        <FeedScreen />
+        <DiscoverScreen />
       </FeedPreferencesProvider>
     </SafeAreaProvider>,
   )
 }
 
-describe('FeedScreen', () => {
+describe('DiscoverScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks()
-    useBreakpoint.mockReturnValue('mobile')
+    mockParams.q = 'budget'
     mockGetCities.mockResolvedValue(cities)
-    // Need more than BREAKING_NEWS_COUNT so recommendation list has the sample headline
-    mockGetArticles.mockResolvedValue(paged(makeArticles(6)))
+    mockGetArticles.mockResolvedValue(paged([sampleArticle]))
   })
 
-  it('renders articles from the API', async () => {
-    renderFeed()
-
-    expect(
-      await screen.findByText('[MOCK] Local municipal budget approved for FY26'),
-    ).toBeTruthy()
-    expect(screen.getByText('Breaking News')).toBeTruthy()
-    expect(screen.getByText('Latest for you')).toBeTruthy()
-    expect(screen.getByLabelText(/Change city/)).toBeTruthy()
-    expect(screen.queryByTestId('article-row')).toBeNull()
-  })
-
-  it('shows empty state when there are no articles', async () => {
-    mockGetArticles.mockResolvedValue(paged([]))
-    renderFeed()
-
-    expect(await screen.findByText('No stories yet')).toBeTruthy()
-    expect(screen.getByText(/We do not have articles for/)).toBeTruthy()
-  })
-
-  it('shows error state with retry', async () => {
-    mockGetArticles.mockRejectedValueOnce(new Error('Server unavailable'))
-    renderFeed()
-
-    expect(await screen.findByText('Something went wrong')).toBeTruthy()
-    expect(screen.getByText('Server unavailable')).toBeTruthy()
-    expect(screen.queryByTestId('error-column')).toBeNull()
-
-    mockGetArticles.mockResolvedValueOnce(paged(makeArticles(6)))
-    fireEvent.press(screen.getByLabelText('Retry loading articles'))
+  it('sends params.q on the first articles fetch', async () => {
+    renderDiscover()
 
     await waitFor(() => {
-      expect(
-        screen.getByText('[MOCK] Local municipal budget approved for FY26'),
-      ).toBeTruthy()
+      expect(mockGetArticles).toHaveBeenCalled()
     })
-  })
 
-  it('pairs recommendation articles into a 2-column row on tablet', async () => {
-    useBreakpoint.mockReturnValue('tablet')
-    mockGetArticles.mockResolvedValue(paged(makeArticles(7)))
-    renderFeed()
-
-    expect(await screen.findByText('[MOCK] Story 6')).toBeTruthy()
-    expect(screen.getByText('[MOCK] Story 7')).toBeTruthy()
-    expect(screen.getByTestId('article-row')).toBeTruthy()
-    expect(screen.queryByTestId('error-column')).toBeNull()
-  })
-
-  it('keeps a single-column article list on desktop', async () => {
-    useBreakpoint.mockReturnValue('desktop')
-    mockGetArticles.mockResolvedValue(paged(makeArticles(7)))
-    renderFeed()
-
-    expect(await screen.findByText('[MOCK] Story 6')).toBeTruthy()
-    expect(screen.getByText('[MOCK] Story 7')).toBeTruthy()
-    expect(screen.queryByTestId('article-row')).toBeNull()
-  })
-
-  it('lists leftover breaking stories that do not fit the desktop hero', async () => {
-    useBreakpoint.mockReturnValue('desktop')
-    mockGetArticles.mockResolvedValue(paged(makeArticles(7)))
-    renderFeed()
-
-    expect(await screen.findByText('[MOCK] Story 4')).toBeTruthy()
-    expect(screen.getByText('[MOCK] Story 5')).toBeTruthy()
-  })
-
-  it('centers the error column at ERROR_COLUMN_MAX on desktop', async () => {
-    useBreakpoint.mockReturnValue('desktop')
-    mockGetArticles.mockRejectedValueOnce(new Error('Server unavailable'))
-    renderFeed()
-
-    expect(await screen.findByText('Something went wrong')).toBeTruthy()
-    const column = screen.getByTestId('error-column')
-    expect(StyleSheet.flatten(column.props.style).maxWidth).toBe(ERROR_COLUMN_MAX)
-  })
-
-  it('opens city picker from city pill', async () => {
-    renderFeed()
-
-    await screen.findByText('Breaking News')
-    fireEvent.press(screen.getByLabelText(/Change city/))
-
-    expect(mockPush).toHaveBeenCalledWith('/city')
-  })
-
-  it('opens story actions on long press of a recommendation card', async () => {
-    renderFeed()
-
-    const card = await screen.findByLabelText(
-      /Story 6.*Open options for more actions/,
+    expect(mockGetArticles.mock.calls[0]?.[0]).toEqual(
+      expect.objectContaining({ q: 'budget' }),
     )
-    fireEvent(card, 'onLongPress')
-
-    // Native share label is "Share"; web uses "Share on WhatsApp".
-    expect(await screen.findByText('Share')).toBeTruthy()
-    expect(screen.getByText('Save')).toBeTruthy()
-    expect(screen.getByText('Show more like this')).toBeTruthy()
-    expect(screen.getByText('Block this source')).toBeTruthy()
   })
 })

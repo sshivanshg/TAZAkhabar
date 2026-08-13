@@ -1,7 +1,10 @@
 import { fireEvent, render, screen } from '@testing-library/react-native'
 import { View } from 'react-native'
 import type { ArticleResponse } from '@newsfeed/shared-types'
-import { DesktopHeroRow } from '../src/components/desktop/DesktopHeroRow'
+import {
+  DesktopHeroRow,
+  desktopHeroVisibleCount,
+} from '../src/components/desktop/DesktopHeroRow'
 
 jest.mock('moti', () => {
   const React = require('react')
@@ -68,6 +71,13 @@ function renderRow(items: ArticleResponse[] = articles, width = 720) {
     nativeEvent: { layout: { x: 0, y: 0, width, height: 220 } },
   })
 }
+
+describe('desktopHeroVisibleCount', () => {
+  it('shows 3 cards at the 640 rail threshold and 2 below it', () => {
+    expect(desktopHeroVisibleCount(640)).toBe(3)
+    expect(desktopHeroVisibleCount(639)).toBe(2)
+  })
+})
 
 describe('DesktopHeroRow', () => {
   it('renders 3 headlines when given 3+ articles', () => {

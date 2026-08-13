@@ -12,22 +12,24 @@ type Props = {
 /** Rail width at which a third hero card fits comfortably. */
 const WIDE_ENOUGH = 640
 
-function estimateRailWidth(windowWidth: number): number {
+export function estimateDesktopRailWidth(windowWidth: number): number {
   return Math.min(CONTENT_RAIL_MAX, Math.max(0, windowWidth - SIDEBAR_WIDTH))
 }
 
+/** Visible hero cards for a given rail width (2 below 640, otherwise 3). */
+export function desktopHeroVisibleCount(railWidth: number): number {
+  return railWidth >= WIDE_ENOUGH ? 3 : 2
+}
+
 function cardCount(articleCount: number, parentWidth: number): number {
-  if (articleCount >= 3 && parentWidth >= WIDE_ENOUGH) {
-    return 3
-  }
-  return Math.min(2, articleCount)
+  return Math.min(desktopHeroVisibleCount(parentWidth), articleCount)
 }
 
 /** 2–3 breaking cards in a horizontal row. Does not wrap the mobile carousel. */
 export function DesktopHeroRow({ articles, onPress }: Props) {
   const { width: windowWidth } = useWindowDimensions()
   const [measuredWidth, setMeasuredWidth] = useState<number | null>(null)
-  const parentWidth = measuredWidth ?? estimateRailWidth(windowWidth)
+  const parentWidth = measuredWidth ?? estimateDesktopRailWidth(windowWidth)
 
   const onLayout = useCallback((event: LayoutChangeEvent) => {
     const next = event.nativeEvent.layout.width

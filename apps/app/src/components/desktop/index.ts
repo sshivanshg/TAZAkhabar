@@ -1,6 +1,10 @@
 export { AppShell } from './AppShell'
 export { ContentRail } from './ContentRail'
-export { DesktopHeroRow } from './DesktopHeroRow'
+export {
+  DesktopHeroRow,
+  desktopHeroVisibleCount,
+  estimateDesktopRailWidth,
+} from './DesktopHeroRow'
 export { DesktopSidebar } from './DesktopSidebar'
 export { DesktopTopBar } from './DesktopTopBar'
 export {

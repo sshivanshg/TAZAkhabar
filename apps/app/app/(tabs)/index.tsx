@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import { FlatList, Platform, Pressable, RefreshControl, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native'
+import { FlatList, Platform, Pressable, RefreshControl, StyleSheet, useWindowDimensions, View, type StyleProp, type ViewStyle } from 'react-native'
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router'
 import { Box, HStack, Text } from '@gluestack-ui/themed'
 import { MotiView } from 'moti'
@@ -25,7 +25,11 @@ import {
 } from '../../src/components/CompactArticleCard'
 import { ConfirmModal } from '../../src/components/ConfirmModal'
 import { AddToHomeBanner } from '../../src/components/AddToHomeBanner'
-import { DesktopHeroRow } from '../../src/components/desktop/DesktopHeroRow'
+import {
+  DesktopHeroRow,
+  desktopHeroVisibleCount,
+  estimateDesktopRailWidth,
+} from '../../src/components/desktop/DesktopHeroRow'
 import {
   StoryOptionsPopover,
   captureMoreButtonAnchor,
@@ -131,6 +135,7 @@ function HomeFeedBody() {
   const bp = useBreakpoint()
   const desktop = isDesktopLayout(bp)
   const tablet = bp === 'tablet'
+  const { width: windowWidth } = useWindowDimensions()
   const [citySlug, setCitySlug] = useState<string | null>(params.city ?? null)
   const [cityMeta, setCityMeta] = useState<CityResponse | null>(null)
   const [category, setCategory] = useState<FeedCategory>(() =>
@@ -308,9 +313,12 @@ function HomeFeedBody() {
     () => visibleArticles.slice(0, BREAKING_NEWS_COUNT),
     [visibleArticles],
   )
+  const listStart = desktop
+    ? desktopHeroVisibleCount(estimateDesktopRailWidth(windowWidth))
+    : BREAKING_NEWS_COUNT
   const recommendations = useMemo(
-    () => visibleArticles.slice(BREAKING_NEWS_COUNT),
-    [visibleArticles],
+    () => visibleArticles.slice(listStart),
+    [visibleArticles, listStart],
   )
   const hasMore = articles.length < total
 
