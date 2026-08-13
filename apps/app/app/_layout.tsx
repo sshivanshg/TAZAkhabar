@@ -5,7 +5,7 @@ import { GluestackUIProvider } from '@gluestack-ui/themed'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { FeedPreferencesProvider } from '../src/preferences/FeedPreferencesContext'
 import { ScreenErrorBoundary } from '../src/components/ScreenErrorBoundary'
-import { AppShell } from '../src/components/desktop'
+import { AppShell, DesktopSidebar } from '../src/components/desktop'
 import { newsfeedConfig } from '../src/theme/gluestack-config'
 import { colors } from '../src/theme/tokens'
 
@@ -16,7 +16,7 @@ export default function RootLayout() {
         <FeedPreferencesProvider>
           <ScreenErrorBoundary name="root">
             <StatusBar style="dark" />
-            <AppShell>
+            <AppShell sidebar={<DesktopSidebar />}>
               <Stack
                 screenOptions={{
                   headerStyle: { backgroundColor: colors.background },

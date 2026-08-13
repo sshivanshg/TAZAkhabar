@@ -12,6 +12,7 @@ import {
 } from '../../src/theme/tokens'
 import { iconStroke } from '../../src/theme/categoryIcons'
 import { ScreenErrorBoundary } from '../../src/components/ScreenErrorBoundary'
+import { isDesktopLayout, useBreakpoint } from '../../src/hooks/useBreakpoint'
 
 function TabIcon({
   Icon,
@@ -36,7 +37,8 @@ function TabIcon({
 
 export default function TabsLayout() {
   const insets = useSafeAreaInsets()
-  const bottomPad = Math.max(insets.bottom, space.xs)
+  const desktop = isDesktopLayout(useBreakpoint())
+  const bottomPad = desktop ? 0 : Math.max(insets.bottom, space.xs)
 
   return (
     <ScreenErrorBoundary name="tabs">
@@ -62,6 +64,9 @@ export default function TabsLayout() {
               ...shadows.tabBar,
               ...(Platform.OS === 'web'
                 ? ({ overflow: 'hidden' } as const)
+                : null),
+              ...(desktop
+                ? { display: 'none' as const, height: 0, marginBottom: 0, overflow: 'hidden' as const }
                 : null),
             },
             tabBarItemStyle: {

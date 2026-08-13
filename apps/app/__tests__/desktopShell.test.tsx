@@ -1,11 +1,20 @@
 import { render, screen } from '@testing-library/react-native'
 import { Text } from 'react-native'
+import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { AppShell } from '../src/components/desktop/AppShell'
+import { DesktopSidebar } from '../src/components/desktop/DesktopSidebar'
 
 jest.mock('../src/hooks/useBreakpoint', () => ({
   useBreakpoint: jest.fn(),
   isDesktopLayout: (bp: string) => bp === 'desktop' || bp === 'wide',
   isCompactNav: (bp: string) => bp === 'mobile' || bp === 'tablet',
+}))
+
+const mockUsePathname = jest.fn(() => '/')
+
+jest.mock('expo-router', () => ({
+  usePathname: () => mockUsePathname(),
+  useRouter: () => ({ push: jest.fn() }),
 }))
 
 const { useBreakpoint } = require('../src/hooks/useBreakpoint')
@@ -55,4 +64,24 @@ it('renders sidebar on wide', () => {
   )
   expect(screen.getByText('Sidebar')).toBeTruthy()
   expect(screen.getByText('ChildOnly')).toBeTruthy()
+})
+
+function renderSidebar() {
+  return render(
+    <SafeAreaProvider
+      initialMetrics={{
+        frame: { x: 0, y: 0, width: 1280, height: 800 },
+        insets: { top: 0, left: 0, right: 0, bottom: 0 },
+      }}
+    >
+      <DesktopSidebar />
+    </SafeAreaProvider>,
+  )
+}
+
+it('marks Bookmarks selected and Home not selected when pathname is /bookmarks', () => {
+  mockUsePathname.mockReturnValue('/bookmarks')
+  renderSidebar()
+  expect(screen.getByTestId('sidebar-nav-bookmarks').props.accessibilityState?.selected).toBe(true)
+  expect(screen.getByTestId('sidebar-nav-home').props.accessibilityState?.selected).toBe(false)
 })
