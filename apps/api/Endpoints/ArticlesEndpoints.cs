@@ -77,6 +77,15 @@ public static class ArticlesEndpoints
                     query = query.Where(a => a.Headline.ToLower().Contains(needle));
                 }
 
+                if (cityEntity.Slug == "jhansi")
+                {
+                    var hasIngested = await query.AnyAsync(a => !a.Headline.StartsWith("[MOCK]"), cancellationToken);
+                    if (hasIngested)
+                    {
+                        query = query.Where(a => !a.Headline.StartsWith("[MOCK]"));
+                    }
+                }
+
                 var total = await query.CountAsync(cancellationToken);
 
                 var items = await query

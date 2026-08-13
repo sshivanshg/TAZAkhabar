@@ -1,7 +1,10 @@
 using System.Net;
 using System.Net.Http.Json;
-using NewsFeed.Api.Dtos;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.DependencyInjection;
+using NewsFeed.Api.Data;
+using NewsFeed.Api.Data.Entities;
+using NewsFeed.Api.Dtos;
 
 namespace NewsFeed.Api.Tests;
 
@@ -194,5 +197,63 @@ public sealed class ArticlesEndpointTests : IClassFixture<NewsFeedWebApplication
         var response = await client.GetAsync($"/api/articles?city=jhansi&q={q}");
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetArticles_Jhansi_KeepsMocks_WhenNoIngestedRows()
+    {
+        var client = _factory.CreateSeededClient();
+        var payload = await client.GetFromJsonAsync<PagedArticlesResponse>("/api/articles?city=jhansi");
+        Assert.All(payload!.Items, a => Assert.StartsWith("[MOCK]", a.Headline));
+    }
+
+    [Fact]
+    public async Task GetArticles_Jhansi_HidesMocks_WhenRealRowExists()
+    {
+        var client = _factory.CreateSeededClient();
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            db.Articles.Add(new Article
+            {
+                CityId = 2,
+                Headline = "Ward sabha tonight",
+                Summary = "A ward sabha is scheduled this evening.",
+                SourceName = "Amar Ujala",
+                SourceUrl = "https://www.amarujala.com/jhansi/ward-sabha-tonight-task7",
+                PublishedAt = DateTimeOffset.UtcNow,
+                Category = "Local",
+            });
+            db.SaveChanges();
+        }
+
+        var payload = await client.GetFromJsonAsync<PagedArticlesResponse>("/api/articles?city=jhansi");
+        Assert.DoesNotContain(payload!.Items, a => a.Headline.StartsWith("[MOCK]", StringComparison.Ordinal));
+        Assert.Contains(payload.Items, a => a.Headline == "Ward sabha tonight");
+    }
+
+    [Fact]
+    public async Task GetArticles_Lucknow_StillMock_AfterJhansiRealRow()
+    {
+        var client = _factory.CreateSeededClient();
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            db.Articles.Add(new Article
+            {
+                CityId = 2,
+                Headline = "Ward sabha tonight",
+                Summary = "A ward sabha is scheduled this evening.",
+                SourceName = "Amar Ujala",
+                SourceUrl = "https://www.amarujala.com/jhansi/ward-sabha-lucknow-isolation-task7",
+                PublishedAt = DateTimeOffset.UtcNow,
+                Category = "Local",
+            });
+            db.SaveChanges();
+        }
+
+        var payload = await client.GetFromJsonAsync<PagedArticlesResponse>("/api/articles?city=lucknow");
+        Assert.NotEmpty(payload!.Items);
+        Assert.All(payload.Items, a => Assert.Contains("[MOCK]", a.Headline));
     }
 }
