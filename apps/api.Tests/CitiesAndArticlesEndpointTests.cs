@@ -238,9 +238,9 @@ public sealed class ArticlesEndpointTests : IClassFixture<NewsFeedWebApplication
         {
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             db.Articles.AddRange(
-                new Article { CityId = 2, Headline = "Live published", Summary = "s", SourceName = "A", SourceUrl = "https://example.com/live-pub", PublishedAt = DateTimeOffset.UtcNow, Category = "Local", Status = ArticleStatus.Published, IsMock = false },
-                new Article { CityId = 2, Headline = "Pending", Summary = "s", SourceName = "A", SourceUrl = "https://example.com/pending", PublishedAt = DateTimeOffset.UtcNow, Category = "Local", Status = ArticleStatus.PendingReview, IsMock = false },
-                new Article { CityId = 2, Headline = "Draft", Summary = "s", SourceName = "A", SourceUrl = "https://example.com/draft", PublishedAt = DateTimeOffset.UtcNow, Category = "Local", Status = ArticleStatus.Draft, IsMock = false });
+                new Article { CityId = 2, Headline = "Live published", Summary = "s", SourceName = "A", SourceUrl = "https://example.com/live-pub", PublishedAt = DateTimeOffset.UtcNow, Category = "Local", Status = ArticleStatus.Published, IsMock = false, DetectedLanguage = "en" },
+                new Article { CityId = 2, Headline = "Pending", Summary = "s", SourceName = "A", SourceUrl = "https://example.com/pending", PublishedAt = DateTimeOffset.UtcNow, Category = "Local", Status = ArticleStatus.PendingReview, IsMock = false, DetectedLanguage = "en" },
+                new Article { CityId = 2, Headline = "Draft", Summary = "s", SourceName = "A", SourceUrl = "https://example.com/draft", PublishedAt = DateTimeOffset.UtcNow, Category = "Local", Status = ArticleStatus.Draft, IsMock = false, DetectedLanguage = "en" });
             db.SaveChanges();
         }
         var payload = await client.GetFromJsonAsync<PagedArticlesResponse>("/api/articles?city=jhansi");
@@ -258,7 +258,7 @@ public sealed class ArticlesEndpointTests : IClassFixture<NewsFeedWebApplication
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             var mock = db.Articles.First(a => a.IsMock);
             mockId = mock.Id;
-            var pending = new Article { CityId = 2, Headline = "P", Summary = "s", SourceName = "A", SourceUrl = "https://example.com/p-byid", PublishedAt = DateTimeOffset.UtcNow, Category = "Local", Status = ArticleStatus.PendingReview, IsMock = false };
+            var pending = new Article { CityId = 2, Headline = "P", Summary = "s", SourceName = "A", SourceUrl = "https://example.com/p-byid", PublishedAt = DateTimeOffset.UtcNow, Category = "Local", Status = ArticleStatus.PendingReview, IsMock = false, DetectedLanguage = "en" };
             db.Articles.Add(pending);
             db.SaveChanges();
             pendingId = pending.Id;
@@ -291,5 +291,6 @@ public sealed class ArticlesEndpointTests : IClassFixture<NewsFeedWebApplication
             Category = category,
             Status = ArticleStatus.Published,
             IsMock = false,
+            DetectedLanguage = "en",
         };
 }

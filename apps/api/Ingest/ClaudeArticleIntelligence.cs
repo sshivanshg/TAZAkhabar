@@ -47,6 +47,14 @@ public sealed class ClaudeArticleIntelligence(
         Do not copy the source verbatim.
         """;
 
+    private const string TranslateSystemPrompt =
+        """
+        You translate news headlines and short summaries for a local news reader.
+        Reply with JSON only, no markdown: {"headline":"...","summary":"..."}
+        Preserve meaning, names, and numbers. Keep the same journalistic tone.
+        Do not add commentary or explain the translation.
+        """;
+
     public async Task<IReadOnlyList<ExtractedStory>> ExtractStoriesAsync(
         string plainText,
         string? cityHintSlug,
@@ -93,6 +101,28 @@ public sealed class ClaudeArticleIntelligence(
         return ParseSummaryJson(content);
     }
 
+    public async Task<(string Headline, string Summary)?> TranslateArticleAsync(
+        string headline,
+        string summary,
+        string sourceLanguage,
+        string targetLanguage,
+        CancellationToken cancellationToken)
+    {
+        EnsureApiKey();
+
+        var src = ArticleLanguageDetector.Normalize(sourceLanguage) ?? ArticleLanguageDetector.DefaultLanguage;
+        var tgt = ArticleLanguageDetector.Normalize(targetLanguage) ?? ArticleLanguageDetector.DefaultLanguage;
+        if (string.Equals(src, tgt, StringComparison.Ordinal))
+        {
+            return (headline, summary);
+        }
+
+        var userContent =
+            $"Source language: {src}\nTarget language: {tgt}\nHeadline: {headline}\nSummary: {summary}";
+        var content = await CompleteJsonAsync(TranslateSystemPrompt, userContent, cancellationToken);
+        return ParseTranslationJson(content);
+    }
+
     public static IReadOnlyList<ExtractedStory> ParseStoriesJson(string json)
     {
         json = StripMarkdownFence(json);
@@ -121,7 +151,8 @@ public sealed class ClaudeArticleIntelligence(
             }
 
             var citySlug = string.IsNullOrWhiteSpace(item.CitySlug) ? null : item.CitySlug.Trim();
-            var language = string.IsNullOrWhiteSpace(item.Language) ? "en" : item.Language.Trim();
+            var language = ArticleLanguageDetector.Normalize(item.Language)
+                ?? ArticleLanguageDetector.DefaultLanguage;
 
             stories.Add(new ExtractedStory(
                 Headline: HtmlText.Truncate(headline, 300),
@@ -145,6 +176,29 @@ public sealed class ClaudeArticleIntelligence(
         catch (JsonException)
         {
             return "";
+        }
+    }
+
+    public static (string Headline, string Summary)? ParseTranslationJson(string json)
+    {
+        json = StripMarkdownFence(json);
+        try
+        {
+            var parsed = JsonSerializer.Deserialize<TranslationEnvelope>(json, JsonOptions);
+            var headline = parsed?.Headline?.Trim() ?? "";
+            var summary = parsed?.Summary?.Trim() ?? "";
+            if (string.IsNullOrWhiteSpace(headline) || string.IsNullOrWhiteSpace(summary))
+            {
+                return null;
+            }
+
+            return (
+                HtmlText.Truncate(headline, 300),
+                HtmlText.Truncate(summary, MaxSummaryChars));
+        }
+        catch (JsonException)
+        {
+            return null;
         }
     }
 
@@ -317,6 +371,8 @@ public sealed class ClaudeArticleIntelligence(
         string? Language);
 
     private sealed record SummaryEnvelope(string? Summary);
+
+    private sealed record TranslationEnvelope(string? Headline, string? Summary);
 
     private sealed record MessagesRequest(
         string Model,

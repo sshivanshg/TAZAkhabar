@@ -18,6 +18,7 @@ export function ArticleEditorPage() {
   const [status, setStatus] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const [detectedLanguage, setDetectedLanguage] = useState('')
 
   useEffect(() => {
     void api.getCities().then((c) => {
@@ -47,6 +48,7 @@ export function ArticleEditorPage() {
         setSourceName(found.sourceName)
         setSourceUrl(found.sourceUrl)
         setStatus(found.status)
+        setDetectedLanguage(found.detectedLanguage ?? '')
         const city = (await api.getCities()).find((c) => c.id === found!.cityId)
         if (city) setCitySlug(city.slug)
       } catch (e) {
@@ -69,10 +71,17 @@ export function ArticleEditorPage() {
           sourceName,
           sourceUrl,
           publishNow: false,
+          detectedLanguage: detectedLanguage.trim() || undefined,
         })
         navigate(`/articles/${created.id}`, { replace: true })
       } else {
-        await api.patchArticle(Number(id), { headline, summary, category, city: citySlug })
+        await api.patchArticle(Number(id), {
+          headline,
+          summary,
+          category,
+          city: citySlug,
+          detectedLanguage: detectedLanguage.trim() || undefined,
+        })
         setStatus('Draft')
       }
     } catch (err) {
@@ -95,10 +104,17 @@ export function ArticleEditorPage() {
           sourceName,
           sourceUrl,
           publishNow: true,
+          detectedLanguage: detectedLanguage.trim() || undefined,
         })
         navigate(`/articles/${created.id}`, { replace: true })
       } else {
-        await api.patchArticle(Number(id), { headline, summary, category, city: citySlug })
+        await api.patchArticle(Number(id), {
+          headline,
+          summary,
+          category,
+          city: citySlug,
+          detectedLanguage: detectedLanguage.trim() || undefined,
+        })
         const updated = await api.publishArticle(Number(id))
         setStatus(updated.status)
       }
@@ -140,6 +156,15 @@ export function ArticleEditorPage() {
         <label className="field">
           Summary
           <textarea value={summary} onChange={(e) => setSummary(e.target.value)} required maxLength={1000} rows={5} />
+        </label>
+        <label className="field">
+          Detected language (optional)
+          <input
+            value={detectedLanguage}
+            onChange={(e) => setDetectedLanguage(e.target.value)}
+            placeholder="auto — e.g. en or hi"
+            maxLength={8}
+          />
         </label>
         <label className="field">
           Category

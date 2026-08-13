@@ -37,6 +37,7 @@ public sealed class AdminArticlesTests : IClassFixture<NewsFeedWebApplicationFac
                 Category = "Local",
                 Status = ArticleStatus.PendingReview,
                 IsMock = false,
+                DetectedLanguage = "en",
                 IngestedAt = DateTimeOffset.UtcNow,
             };
             db.Articles.Add(article);
@@ -149,6 +150,7 @@ public sealed class AdminArticlesTests : IClassFixture<NewsFeedWebApplicationFac
                 Category = "Local",
                 Status = ArticleStatus.Archived,
                 IsMock = false,
+                DetectedLanguage = "en",
             };
             db.Articles.Add(article);
             db.SaveChanges();
@@ -221,6 +223,7 @@ public sealed class AdminArticlesTests : IClassFixture<NewsFeedWebApplicationFac
                 Category = "Local",
                 Status = ArticleStatus.Archived,
                 IsMock = false,
+                DetectedLanguage = "en",
             };
             db.Articles.Add(article);
             db.SaveChanges();

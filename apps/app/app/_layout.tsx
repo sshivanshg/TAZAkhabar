@@ -4,6 +4,7 @@ import { StatusBar } from 'expo-status-bar'
 import { GluestackUIProvider } from '@gluestack-ui/themed'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { FeedPreferencesProvider } from '../src/preferences/FeedPreferencesContext'
+import { LanguagePreferenceProvider } from '../src/preferences/LanguagePreferenceContext'
 import { ScreenErrorBoundary } from '../src/components/ScreenErrorBoundary'
 import { AppShell, DesktopSidebar } from '../src/components/desktop'
 import { newsfeedConfig } from '../src/theme/gluestack-config'
@@ -14,6 +15,7 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <GluestackUIProvider config={newsfeedConfig}>
         <FeedPreferencesProvider>
+          <LanguagePreferenceProvider>
           <ScreenErrorBoundary name="root">
             <StatusBar style="dark" />
             <AppShell sidebar={<DesktopSidebar />}>
@@ -45,6 +47,7 @@ export default function RootLayout() {
               </Stack>
             </AppShell>
           </ScreenErrorBoundary>
+          </LanguagePreferenceProvider>
         </FeedPreferencesProvider>
       </GluestackUIProvider>
     </SafeAreaProvider>

@@ -97,6 +97,7 @@ public sealed class ArticleImageEnrichmentServiceTests
             SourceUrl = "https://news.example/a",
             Category = "Local",
             PublishedAt = DateTimeOffset.UtcNow,
+            DetectedLanguage = "en",
         };
         Assert.True(ArticleImageEnrichmentService.IsEligible(eligible));
 
@@ -125,6 +126,7 @@ public sealed class ArticleImageEnrichmentServiceTests
             CityId = 2,
             Headline = "Headline",
             Summary = "Summary",
+            DetectedLanguage = "en",
             SourceName = "Source",
             SourceUrl = sourceUrl,
             PublishedAt = DateTimeOffset.UtcNow,

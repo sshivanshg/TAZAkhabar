@@ -5,7 +5,7 @@ import Constants from 'expo-constants'
 import { useFocusEffect, useRouter } from 'expo-router'
 import { Text, VStack } from '@gluestack-ui/themed'
 import { MotiView } from 'moti'
-import { Ban, Info, MapPin, Tag } from 'lucide-react-native'
+import { Ban, Info, Languages, MapPin, Tag } from 'lucide-react-native'
 import type { CityResponse } from '@newsfeed/shared-types'
 import { apiClient } from '../../src/api/client'
 import { ScreenErrorBoundary } from '../../src/components/ScreenErrorBoundary'
@@ -13,6 +13,8 @@ import { TabScreenShell } from '../../src/components/TabScreenShell'
 import { Card } from '../../src/components/ui/Card'
 import { PrimaryButton } from '../../src/components/ui/PrimaryButton'
 import { useFeedPreferences } from '../../src/preferences/FeedPreferencesContext'
+import { useLanguagePreference } from '../../src/preferences/LanguagePreferenceContext'
+import { READING_LANGUAGES } from '../../src/storage/languagePreference'
 import { getStoredCitySlug } from '../../src/storage/cityPreference'
 import { colors, HIT_TARGET, space, typography } from '../../src/theme/tokens'
 import { iconStroke } from '../../src/theme/categoryIcons'
@@ -33,6 +35,8 @@ function ProfileBody() {
   const router = useRouter()
   const insets = useSafeAreaInsets()
   const prefs = useFeedPreferences()
+  const { preferredLanguage, setPreferredLanguage, ready: languageReady } =
+    useLanguagePreference()
   const tabClearance = useTabBarClearance()
   const desktop = isDesktopLayout(useBreakpoint())
   const [cityMeta, setCityMeta] = useState<CityResponse | null>(null)
@@ -126,6 +130,42 @@ function ProfileBody() {
             accessibilityLabel="Change city"
             style={styles.changeCity}
           />
+        </Section>
+
+        <Section title="Reading language" Icon={Languages}>
+          <Text
+            fontSize={typography.summary.fontSize}
+            lineHeight={typography.summary.lineHeight}
+            color={colors.textSecondary}
+            mb="$3"
+          >
+            Stories are translated on this device when the original language differs.
+            Preference is saved locally.
+          </Text>
+          <View style={styles.langRow}>
+            {READING_LANGUAGES.map((lang) => {
+              const selected = languageReady && preferredLanguage === lang.code
+              return (
+                <Pressable
+                  key={lang.code}
+                  onPress={() => setPreferredLanguage(lang.code)}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected }}
+                  accessibilityLabel={`Prefer ${lang.label}`}
+                  style={[styles.langChip, selected ? styles.langChipSelected : null]}
+                >
+                  <Text
+                    fontSize={typography.label.fontSize}
+                    lineHeight={typography.label.lineHeight}
+                    fontWeight="$semibold"
+                    color={selected ? colors.chipSelectedText : colors.chipInactiveText}
+                  >
+                    {lang.label}
+                  </Text>
+                </Pressable>
+              )
+            })}
+          </View>
         </Section>
 
         <Section title="Blocked" Icon={Ban}>
@@ -324,6 +364,25 @@ const styles = StyleSheet.create({
   changeCity: {
     alignSelf: 'flex-start',
     paddingHorizontal: space.md,
+  },
+  langRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: space.xs,
+  },
+  langChip: {
+    minHeight: HIT_TARGET - 8,
+    paddingHorizontal: space.md,
+    paddingVertical: space.xs,
+    borderRadius: 999,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.chipInactiveBorder,
+    backgroundColor: colors.surface,
+    justifyContent: 'center',
+  },
+  langChipSelected: {
+    backgroundColor: colors.chipSelectedBg,
+    borderColor: colors.chipSelectedBg,
   },
   spacer: {
     height: space.md,

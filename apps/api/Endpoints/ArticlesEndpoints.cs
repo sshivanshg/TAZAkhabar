@@ -1,5 +1,6 @@
 using NewsFeed.Api.Data;
 using NewsFeed.Api.Dtos;
+using NewsFeed.Api.Services;
 using Microsoft.EntityFrameworkCore;
 
 namespace NewsFeed.Api.Endpoints;
@@ -17,9 +18,11 @@ public static class ArticlesEndpoints
                 string? city,
                 string? category,
                 string? q,
+                string? lang,
                 int? offset,
                 int? limit,
                 AppDbContext db,
+                IArticlePresentationService presentation,
                 HttpContext httpContext,
                 CancellationToken cancellationToken) =>
             {
@@ -81,21 +84,13 @@ public static class ArticlesEndpoints
 
                 var total = await query.CountAsync(cancellationToken);
 
-                var items = await query
+                var entities = await query
                     .OrderByDescending(a => a.PublishedAt)
                     .Skip(pageOffset)
                     .Take(pageLimit)
-                    .Select(a => new ArticleResponse(
-                        a.Id,
-                        a.CityId,
-                        a.Headline,
-                        a.Summary,
-                        a.SourceName,
-                        a.SourceUrl,
-                        a.PublishedAt,
-                        a.Category,
-                        a.ImageUrl))
                     .ToListAsync(cancellationToken);
+
+                var items = await presentation.PresentManyAsync(entities, lang, cancellationToken);
 
                 httpContext.Response.Headers.CacheControl = PublicCacheControl;
                 return Results.Ok(new PagedArticlesResponse(items, total, pageOffset, pageLimit));
@@ -108,34 +103,29 @@ public static class ArticlesEndpoints
 
         api.MapGet("/articles/{id:int}", async (
                 int id,
+                string? lang,
                 AppDbContext db,
+                IArticlePresentationService presentation,
                 HttpContext httpContext,
                 CancellationToken cancellationToken) =>
             {
-                var article = await db.Articles
+                var entity = await db.Articles
                     .AsNoTracking()
-                    .Where(a => a.Id == id
-                        && a.Status == ArticleStatus.Published
-                        && !a.IsMock)
-                    .Select(a => new ArticleResponse(
-                        a.Id,
-                        a.CityId,
-                        a.Headline,
-                        a.Summary,
-                        a.SourceName,
-                        a.SourceUrl,
-                        a.PublishedAt,
-                        a.Category,
-                        a.ImageUrl))
-                    .FirstOrDefaultAsync(cancellationToken);
+                    .FirstOrDefaultAsync(
+                        a => a.Id == id
+                            && a.Status == ArticleStatus.Published
+                            && !a.IsMock,
+                        cancellationToken);
 
-                if (article is null)
+                if (entity is null)
                 {
                     return Results.Problem(
                         title: "Article not found",
                         detail: $"No article found with id '{id}'.",
                         statusCode: StatusCodes.Status404NotFound);
                 }
+
+                var article = await presentation.PresentAsync(entity, lang, cancellationToken);
 
                 httpContext.Response.Headers.CacheControl = PublicCacheControl;
                 return Results.Ok(article);

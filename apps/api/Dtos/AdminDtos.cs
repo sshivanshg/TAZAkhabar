@@ -19,7 +19,8 @@ public sealed record AdminArticleResponse(
     DateTimeOffset? IngestedAt,
     string? ReviewedBy,
     DateTimeOffset? ReviewedAt,
-    int? SourceId);
+    int? SourceId,
+    string DetectedLanguage);
 
 public sealed record PagedAdminArticlesResponse(
     IReadOnlyList<AdminArticleResponse> Items,
@@ -31,7 +32,8 @@ public sealed record PatchAdminArticleRequest(
     string? Headline,
     string? Summary,
     string? Category,
-    string? City);
+    string? City,
+    string? DetectedLanguage);
 
 public sealed record CreateAdminArticleRequest(
     string Headline,
@@ -40,7 +42,8 @@ public sealed record CreateAdminArticleRequest(
     string Category,
     string SourceName,
     string SourceUrl,
-    bool PublishNow);
+    bool PublishNow,
+    string? DetectedLanguage);
 
 public sealed record AdminSourceResponse(
     int Id,

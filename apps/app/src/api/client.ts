@@ -81,6 +81,7 @@ export type GetArticlesParams = {
   city: string
   category?: string
   q?: string
+  lang?: string
   offset?: number
   limit?: number
 }
@@ -105,6 +106,9 @@ export const apiClient = {
       // API MaxQueryLength is 100 — truncate so Discover never hard-fails on long paste.
       search.set('q', params.q.slice(0, 100))
     }
+    if (params.lang) {
+      search.set('lang', params.lang)
+    }
     if (params.offset != null) {
       search.set('offset', String(params.offset))
     }
@@ -114,7 +118,14 @@ export const apiClient = {
     return request<PagedArticlesResponse>(`/api/articles?${search.toString()}`)
   },
 
-  getArticle(id: string): Promise<ArticleResponse> {
-    return request<ArticleResponse>(`/api/articles/${encodeURIComponent(id)}`)
+  getArticle(id: string, lang?: string): Promise<ArticleResponse> {
+    const search = new URLSearchParams()
+    if (lang) {
+      search.set('lang', lang)
+    }
+    const qs = search.toString()
+    return request<ArticleResponse>(
+      `/api/articles/${encodeURIComponent(id)}${qs ? `?${qs}` : ''}`,
+    )
   },
 }

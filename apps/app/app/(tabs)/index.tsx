@@ -42,6 +42,7 @@ import { TabScreenShell } from '../../src/components/TabScreenShell'
 import { ErrorState } from '../../src/components/ui/ErrorState'
 import { PrimaryButton } from '../../src/components/ui/PrimaryButton'
 import { useFeedPreferences } from '../../src/preferences/FeedPreferencesContext'
+import { useLanguagePreference } from '../../src/preferences/LanguagePreferenceContext'
 import {
   articleToBookmark,
   getBookmarks,
@@ -131,6 +132,7 @@ function HomeFeedBody() {
   const router = useRouter()
   const params = useLocalSearchParams<{ city?: string; category?: string }>()
   const prefs = useFeedPreferences()
+  const { preferredLanguage, ready: languageReady } = useLanguagePreference()
   const tabClearance = useTabBarClearance()
   const bp = useBreakpoint()
   const desktop = isDesktopLayout(bp)
@@ -255,6 +257,7 @@ function HomeFeedBody() {
         const result = await apiClient.getArticles({
           city: citySlug,
           category: category === 'All' ? undefined : category,
+          lang: preferredLanguage,
           offset,
           limit: PAGE_SIZE,
         })
@@ -286,14 +289,14 @@ function HomeFeedBody() {
         }
       }
     },
-    [citySlug, category],
+    [citySlug, category, preferredLanguage],
   )
 
   useEffect(() => {
-    if (citySlug) {
+    if (citySlug && languageReady) {
       void loadPage('replace')
     }
-  }, [citySlug, category, loadPage])
+  }, [citySlug, category, preferredLanguage, languageReady, loadPage])
 
   const cityTitle = cityMeta?.name ?? citySlug ?? 'Your city'
   const visibleArticles = useMemo(

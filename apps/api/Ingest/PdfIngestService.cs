@@ -296,6 +296,11 @@ public sealed class PdfIngestService(
             IngestedAt = now,
             SourceId = source.Id,
             DocumentUploadId = upload.Id,
+            DetectedLanguage = ArticleLanguageDetector.CoerceOrDetect(
+                story.Language,
+                headline,
+                story.Summary,
+                fallback: source.Language),
         };
 
         db.Articles.Add(article);

@@ -92,6 +92,8 @@ public static class AdminArticlesEndpoints
                         statusCode: StatusCodes.Status404NotFound);
                 }
 
+                var textChanged = false;
+
                 if (request.Headline is not null)
                 {
                     var headline = HtmlText.Truncate(request.Headline.Trim(), 300);
@@ -103,7 +105,11 @@ public static class AdminArticlesEndpoints
                             statusCode: StatusCodes.Status400BadRequest);
                     }
 
-                    article.Headline = headline;
+                    if (!string.Equals(article.Headline, headline, StringComparison.Ordinal))
+                    {
+                        article.Headline = headline;
+                        textChanged = true;
+                    }
                 }
 
                 if (request.Summary is not null)
@@ -117,7 +123,11 @@ public static class AdminArticlesEndpoints
                             statusCode: StatusCodes.Status400BadRequest);
                     }
 
-                    article.Summary = summary;
+                    if (!string.Equals(article.Summary, summary, StringComparison.Ordinal))
+                    {
+                        article.Summary = summary;
+                        textChanged = true;
+                    }
                 }
 
                 if (request.Category is not null)
@@ -147,6 +157,38 @@ public static class AdminArticlesEndpoints
                     }
 
                     article.CityId = cityEntity.Id;
+                }
+
+                if (request.DetectedLanguage is not null)
+                {
+                    var normalized = ArticleLanguageDetector.Normalize(request.DetectedLanguage);
+                    if (normalized is null)
+                    {
+                        return Results.Problem(
+                            title: "Invalid detectedLanguage",
+                            detail: "detectedLanguage must be a short ISO language code (e.g. en, hi).",
+                            statusCode: StatusCodes.Status400BadRequest);
+                    }
+
+                    article.DetectedLanguage = normalized;
+                }
+                else if (textChanged)
+                {
+                    article.DetectedLanguage = ArticleLanguageDetector.Detect(
+                        article.Headline,
+                        article.Summary,
+                        fallback: article.DetectedLanguage);
+                }
+
+                if (textChanged)
+                {
+                    var stale = await db.ArticleTranslations
+                        .Where(t => t.ArticleId == article.Id)
+                        .ToListAsync(cancellationToken);
+                    if (stale.Count > 0)
+                    {
+                        db.ArticleTranslations.RemoveRange(stale);
+                    }
                 }
 
                 await db.SaveChangesAsync(cancellationToken);
@@ -294,6 +336,10 @@ public static class AdminArticlesEndpoints
                     SourceId = null,
                     ReviewedBy = request.PublishNow ? editor : null,
                     ReviewedAt = request.PublishNow ? now : null,
+                    DetectedLanguage = ArticleLanguageDetector.CoerceOrDetect(
+                        request.DetectedLanguage,
+                        headline,
+                        summary),
                 };
 
                 db.Articles.Add(article);
@@ -374,5 +420,6 @@ public static class AdminArticlesEndpoints
             a.IngestedAt,
             a.ReviewedBy,
             a.ReviewedAt,
-            a.SourceId);
+            a.SourceId,
+            a.DetectedLanguage);
 }

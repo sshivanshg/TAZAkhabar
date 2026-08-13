@@ -18,4 +18,15 @@ public interface IArticleIntelligence
         string bodyOrSnippet,
         string citySlug,
         CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Translate headline + summary into <paramref name="targetLanguage"/>.
+    /// Returns null when the model response cannot be parsed.
+    /// </summary>
+    Task<(string Headline, string Summary)?> TranslateArticleAsync(
+        string headline,
+        string summary,
+        string sourceLanguage,
+        string targetLanguage,
+        CancellationToken cancellationToken);
 }

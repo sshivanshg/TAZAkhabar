@@ -256,6 +256,10 @@ public sealed class RssIngestService(
             IsMock = false,
             IngestedAt = now,
             SourceId = source.Id,
+            DetectedLanguage = ArticleLanguageDetector.Detect(
+                item.Title,
+                summary,
+                fallback: source.Language),
         };
 
         db.Articles.Add(article);

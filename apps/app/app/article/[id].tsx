@@ -12,6 +12,8 @@ import { useLocalSearchParams, useRouter } from 'expo-router'
 import { Image, Text } from '@gluestack-ui/themed'
 import type { ArticleResponse } from '@newsfeed/shared-types'
 import { apiClient } from '../../src/api/client'
+import { useLanguagePreference } from '../../src/preferences/LanguagePreferenceContext'
+import { isArticleTranslated } from '../../src/utils/articleLanguage'
 import { ImageBottomFade } from '../../src/components/ImageBottomFade'
 import { ScreenErrorBoundary } from '../../src/components/ScreenErrorBoundary'
 import {
@@ -93,6 +95,7 @@ function ArticleBody() {
     }
   }, [id, raw.headline, raw.summary, raw.sourceName, raw.sourceUrl, raw.imageUrl, raw.publishedAt, raw.category])
 
+  const { preferredLanguage } = useLanguagePreference()
   const [article, setArticle] = useState<ArticleResponse | null>(initialFromParams)
   const [loading, setLoading] = useState(!initialFromParams && Boolean(id))
   const [error, setError] = useState<string | null>(null)
@@ -116,7 +119,7 @@ function ArticleBody() {
     }
     setError(null)
     try {
-      const result = await apiClient.getArticle(id)
+      const result = await apiClient.getArticle(id, preferredLanguage)
       if (signal?.cancelled) {
         return
       }
@@ -136,7 +139,7 @@ function ArticleBody() {
         setLoading(false)
       }
     }
-  }, [id, initialFromParams])
+  }, [id, initialFromParams, preferredLanguage])
 
   useEffect(() => {
     // Params are an optimistic placeholder only; always reconcile from the API when id is present.
@@ -312,6 +315,18 @@ function ArticleBody() {
         ) : null}
 
         <View style={[styles.body, !imageUrl ? styles.bodyNoImage : null]}>
+          {isArticleTranslated(article) ? (
+            <Text
+              fontSize={typography.label.fontSize}
+              lineHeight={typography.label.lineHeight}
+              fontWeight="$medium"
+              color={colors.textMuted}
+              mb="$2"
+              accessibilityLabel="Machine translated"
+            >
+              Translated
+            </Text>
+          ) : null}
           <Text
             fontSize={26}
             lineHeight={34}

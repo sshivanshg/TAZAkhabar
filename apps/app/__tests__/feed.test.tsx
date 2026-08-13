@@ -3,6 +3,7 @@ import { StyleSheet } from 'react-native'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import type { ArticleResponse, CityResponse, PagedArticlesResponse } from '@newsfeed/shared-types'
 import { FeedPreferencesProvider } from '../src/preferences/FeedPreferencesContext'
+import { LanguagePreferenceProvider } from '../src/preferences/LanguagePreferenceContext'
 import { ERROR_COLUMN_MAX } from '../src/theme/tokens'
 
 const mockPush = jest.fn()
@@ -176,7 +177,9 @@ function renderFeed() {
       }}
     >
       <FeedPreferencesProvider>
-        <FeedScreen />
+        <LanguagePreferenceProvider>
+          <FeedScreen />
+        </LanguagePreferenceProvider>
       </FeedPreferencesProvider>
     </SafeAreaProvider>,
   )

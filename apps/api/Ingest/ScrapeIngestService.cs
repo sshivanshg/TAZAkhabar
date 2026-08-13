@@ -392,6 +392,10 @@ public sealed class ScrapeIngestService
             IsMock = false,
             IngestedAt = now,
             SourceId = source.Id,
+            DetectedLanguage = ArticleLanguageDetector.Detect(
+                headline,
+                summary,
+                fallback: source.Language),
         };
 
         _db.Articles.Add(article);

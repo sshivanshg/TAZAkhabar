@@ -36,6 +36,7 @@ import { ScreenErrorBoundary } from '../../src/components/ScreenErrorBoundary'
 import { TabScreenShell } from '../../src/components/TabScreenShell'
 import { ErrorState } from '../../src/components/ui/ErrorState'
 import { useFeedPreferences } from '../../src/preferences/FeedPreferencesContext'
+import { useLanguagePreference } from '../../src/preferences/LanguagePreferenceContext'
 import {
   addBookmark,
   articleToBookmark,
@@ -74,6 +75,7 @@ function DiscoverBody() {
   const insets = useSafeAreaInsets()
   const params = useLocalSearchParams<{ category?: string; from?: string; q?: string }>()
   const prefs = useFeedPreferences()
+  const { preferredLanguage } = useLanguagePreference()
   const tabClearance = useTabBarClearance()
   const desktop = isDesktopLayout(useBreakpoint())
   const [citySlug, setCitySlug] = useState<string | null>(null)
@@ -177,6 +179,7 @@ function DiscoverBody() {
           city: citySlug,
           q: debounced || undefined,
           category: category === 'All' ? undefined : category,
+          lang: preferredLanguage,
           limit: PAGE_SIZE,
           offset: 0,
         })
@@ -200,7 +203,7 @@ function DiscoverBody() {
         }
       }
     },
-    [citySlug, debounced, category],
+    [citySlug, debounced, category, preferredLanguage],
   )
 
   useEffect(() => {

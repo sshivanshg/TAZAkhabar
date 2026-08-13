@@ -115,7 +115,14 @@ export function CompactArticleCard({
                 gap: compact ? 2 : undefined,
               }}
             >
-              <Badge label={category} variant="soft" />
+              <HStack space="xs" alignItems="center" flexWrap="wrap">
+                <Badge label={category} variant="soft" />
+                {article.detectedLanguage &&
+                article.displayLanguage &&
+                article.detectedLanguage !== article.displayLanguage ? (
+                  <Badge label="Translated" variant="soft" />
+                ) : null}
+              </HStack>
               <Text
                 fontSize={titleSize}
                 lineHeight={titleLine}

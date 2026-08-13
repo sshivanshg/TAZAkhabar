@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import type { ArticleResponse } from '@newsfeed/shared-types'
+import { LanguagePreferenceProvider } from '../src/preferences/LanguagePreferenceContext'
 
 const mockBack = jest.fn()
 const mockGetArticle = jest.fn()
@@ -58,6 +59,7 @@ jest.mock('react-native-svg', () => {
     Rect: Mock,
     Stop: Mock,
     Path: Mock,
+    Circle: Mock,
   }
 })
 
@@ -81,7 +83,9 @@ function renderArticle() {
         insets: { top: 0, left: 0, right: 0, bottom: 0 },
       }}
     >
-      <ArticleScreen />
+      <LanguagePreferenceProvider>
+        <ArticleScreen />
+      </LanguagePreferenceProvider>
     </SafeAreaProvider>,
   )
 }
@@ -103,7 +107,7 @@ describe('ArticleScreen', () => {
     expect(screen.getByText('Fetched summary body.')).toBeTruthy()
     // Native share label is "Share"; web uses "Share on WhatsApp".
     expect(screen.getByLabelText('Share')).toBeTruthy()
-    expect(mockGetArticle).toHaveBeenCalledWith('7')
+    expect(mockGetArticle).toHaveBeenCalledWith('7', 'en')
   })
 
   it('always fetches by id even when route params include article fields', async () => {
@@ -113,7 +117,7 @@ describe('ArticleScreen', () => {
     renderArticle()
 
     expect(await screen.findByText('Fetched headline')).toBeTruthy()
-    expect(mockGetArticle).toHaveBeenCalledWith('7')
+    expect(mockGetArticle).toHaveBeenCalledWith('7', 'en')
   })
 
   it('shows optimistic article when fetch fails but route params are complete', async () => {
