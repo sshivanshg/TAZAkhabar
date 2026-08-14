@@ -5,11 +5,17 @@ alwaysApply: true
 
 # Architecture
 
+## Living atlas
+
+Deep “how it works now” docs (Mermaid, ingest, hosting, stack rationale): **`docs/architecture/`**.  
+Keep them in sync per `.cursor/rules/architecture-docs.mdc`.
+
 ## Layout
 
 ```
 /apps
   /app            # Expo universal client (web + iOS + Android)
+  /admin          # Vite editorial SPA (internal; ADR-006)
   /api            # .NET 8 Web API — only process that talks to Postgres
 /packages
   /shared-types   # TS types generated from API OpenAPI (NSwag)
@@ -17,6 +23,7 @@ alwaysApply: true
   /docker         # Dockerfiles for api and app (web static)
   /migrations     # EF Core migrations (checked in; never edit applied ones)
 /docs
+  /architecture   # Living system atlas
   /adr            # One markdown file per architecture decision
   PRD.md          # Product requirements — read before structural/product changes
 ```
@@ -25,12 +32,12 @@ alwaysApply: true
 
 - **API is the only thing that talks to the database.** Frontend never queries Postgres/Neon directly.
 - **All new endpoints must appear in the OpenAPI document** exposed by the API. Shared TS types are generated from that document.
-- **No breaking changes to shared-types without updating API and the Expo app in the same PR.**
-- **No auth for MVP** (see `docs/adr/002-no-auth-mvp.md`).
-- **One client codebase:** Expo in `apps/app` serves web (MVP hosting) and native later. Do not add a separate Vite/CRA web app. See `docs/adr/003-expo-universal-client.md`.
+- **No breaking changes to shared-types without updating API and consumers (Expo app and/or admin) in the same PR.**
+- **No auth for MVP readers** (see `docs/adr/002-no-auth-mvp.md`). Admin uses shared password + JWT (`docs/adr/005-admin-shared-credential.md`).
+- **One reader client codebase:** Expo in `apps/app` serves web (MVP hosting) and native later. Do not add a separate Vite/CRA **reader**. Admin Vite SPA at `apps/admin` is a narrow exception (`docs/adr/006-internal-admin-spa.md`).
 - **Placeholder product name is NewsFeed** (packages, titles, manifests). Find-and-replace when the real name is chosen — do not invent alternate brand names.
 - **MVP UI is light with a single blue accent** (no multi-color brand palette / logo yet) so full branding can land later without a UI rebuild.
 
 ## Before structural changes
 
-Read `.cursor/rules/architecture.mdc` and `docs/PRD.md`. Prefer an ADR under `docs/adr/` when changing hosting, auth, data ownership, or monorepo shape.
+Read `docs/architecture/` (matching page), `.cursor/rules/architecture.mdc`, and `docs/PRD.md`. Prefer an ADR under `docs/adr/` when changing hosting, auth, data ownership, or monorepo shape.

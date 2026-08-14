@@ -27,5 +27,15 @@ Use Conventional Commits:
 1. **What** changed
 2. **Why** it changed
 3. **How** it was tested (commands, CI, manual checks)
+4. **Docs** — which `docs/architecture/` pages changed (or N/A with one-line why)
 
 Contract / OpenAPI changes must update `packages/shared-types` and web consumers in the **same PR**.
+
+## Architecture-relevant PRs
+
+When the change touches boundaries, endpoints, data model, ingest, admin, reader routes, OpenAPI/shared-types, or hosting/env:
+
+- [ ] Atlas page(s) updated (or N/A with one-line why)
+- [ ] Mermaid still accurate
+- [ ] “Last verified” bumped on edited pages
+- [ ] Hub index updated if a new page was added

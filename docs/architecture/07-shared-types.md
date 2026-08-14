@@ -1,0 +1,75 @@
+# Shared types
+
+> **Living doc** — update when OpenAPI generation, NSwag config, or contract PR rules change.  
+> **Last verified against:** 2026-08-14 (local working tree)
+
+## Purpose
+
+Keep TypeScript DTOs for reader and admin in lockstep with the API OpenAPI document via NSwag — no hand-maintained parallel types.
+
+## Boundaries
+
+- **In scope:** `packages/shared-types`, fetch/generate scripts, committed OpenAPI snapshot.
+- **Out of scope:** Runtime API behavior; hand-written UI-only types that are not API contracts.
+
+## Context diagram
+
+```mermaid
+flowchart LR
+  API[NewsFeed.Api] -->|/openapi/v1.json| Fetch[scripts/fetch-openapi.mjs]
+  Fetch --> Snap[openapi/openapi.json]
+  Snap --> NSwag[nswag run nswag.json]
+  NSwag --> Gen[src/generated.ts]
+  Gen --> Index[src/index.ts re-exports]
+  Index --> App[apps/app]
+  Index --> Admin[apps/admin]
+```
+
+## Components / key types
+
+| Path | Role |
+|------|------|
+| `packages/shared-types/openapi/openapi.json` | Committed snapshot |
+| `packages/shared-types/nswag.json` | DTO interfaces only → `src/generated.ts` |
+| `packages/shared-types/src/generated.ts` | **Generated — do not hand-edit** |
+| `packages/shared-types/src/index.ts` | Selected re-exports |
+| `packages/shared-types/scripts/fetch-openapi.mjs` | Pulls `OPENAPI_URL` or `http://localhost:8080/openapi/v1.json` |
+| `packages/shared-types/scripts/generate.mjs` | Runs NSwag |
+
+## Data & control flows
+
+```bash
+# API must be running (or OPENAPI_URL set)
+pnpm --filter @newsfeed/shared-types fetch-openapi
+pnpm generate:types
+```
+
+Same PR must include: API change + OpenAPI snapshot + `generated.ts` + consumer updates (`apps/app` and/or `apps/admin`).
+
+## Key files
+
+- `packages/shared-types/package.json`
+- `packages/shared-types/nswag.json`
+- Root script `generate:types` in `package.json`
+
+## Public contracts
+
+Consumers import from `@newsfeed/shared-types` only through the package `index` surface. Breaking DTO changes require coordinated client updates in the same PR (architecture hard rule).
+
+## Failure modes & invariants
+
+- Hand-editing `generated.ts` causes silent drift — always regenerate.
+- Fetching OpenAPI from a stale or wrong environment publishes the wrong contract — prefer local running API for generation during feature work.
+- Do not publish shared-types as an independent versioned npm package for MVP; workspace dependency only.
+
+## Related docs
+
+- [02-api](./02-api.md), [01-monorepo](./01-monorepo.md)
+- [ADR-001](../adr/001-monorepo.md)
+
+## Change checklist
+
+| When you change… | Update… |
+|------------------|---------|
+| OpenAPI / NSwag / export surface | This page |
+| New consumer of shared-types | [01-monorepo](./01-monorepo.md) if package graph changes |

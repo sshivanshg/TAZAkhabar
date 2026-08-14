@@ -8,16 +8,20 @@ Localized news summarization monorepo. MVP: **Expo (React Native + Web)** + .NET
 
 ```
 apps/app              Expo universal client (web now, iOS/Android when needed)
+apps/admin            Vite editorial SPA (internal; separate Pages origin)
 apps/api              .NET 8 Minimal API
 apps/api.Tests        xUnit + WebApplicationFactory tests
 packages/shared-types OpenAPI → TypeScript via NSwag
 infra/docker          Dockerfiles
 infra/migrations      EF Core migrations (never edit applied ones)
+docs/architecture     Living system atlas (start here for how-it-works)
 docs/adr              Architecture decision records
-docs/PRD.md           Product requirements (paste content here)
+docs/PRD.md           Product requirements
 ```
 
-One client codebase ships the Cloudflare Pages web/PWA via React Native Web and later native binaries — see `docs/adr/003-expo-universal-client.md`.
+**Architecture:** [docs/architecture/README.md](docs/architecture/README.md) — system overview, ingest/scrapers, admin, CDN/hosting, and tech-stack rationale.
+
+One reader codebase ships the Cloudflare Pages web/PWA via React Native Web and later native binaries — see `docs/adr/003-expo-universal-client.md`. Admin is a separate Vite app (`docs/adr/006-internal-admin-spa.md`).
 
 UI is **light** (`#FAFAFA` shell) with a **single blue accent** (`#1D7BFF`) — no multi-color brand palette yet so full branding can land later.
 
@@ -92,7 +96,7 @@ pnpm build:web   # Expo static export used by Cloudflare Pages
 
 ## Deploy
 
-Per `docs/adr/004-render-cloudflare-neon-hosting.md`:
+Per `docs/adr/004-render-cloudflare-neon-hosting.md` and [docs/architecture/08-hosting-and-ci.md](docs/architecture/08-hosting-and-ci.md):
 
 - **API** → Render (Docker Web Service; auto-deploy from `main`)
 - **Web** → Cloudflare Pages from `expo export -p web` → `apps/app/dist`

@@ -1,0 +1,30 @@
+---
+description: Keep docs/architecture living atlas in sync with structural code changes
+alwaysApply: true
+---
+
+# Architecture docs (living atlas)
+
+## Before structural / product changes
+
+Read the matching page(s) under `docs/architecture/` (hub: `docs/architecture/README.md`).
+
+## Same-change updates required when touching
+
+- Boundaries / topology → `00-system-overview.md` (+ affected page)
+- `apps/api/Endpoints/*`, `Program.cs` → `02-api.md` (+ `00` if topology changes)
+- `apps/api/Data/*`, `infra/migrations/*` → `03-data-model.md`
+- `apps/api/Ingest/*` → `04-ingestion.md`
+- `apps/admin/**` → `05-admin.md`
+- `apps/app/**` → `06-reader-app.md`
+- `packages/shared-types/**`, OpenAPI → `07-shared-types.md`
+- `render.yaml`, docker, Cloudflare, env examples, CI deploy → `08-hosting-and-ci.md`
+- Workspace layout / root scripts → `01-monorepo.md`
+
+## Rules
+
+1. Bump **Last verified against** on every edited atlas page.
+2. New subsystem → page from `docs/architecture/_template.md`, link from hub README, add a row to this mapping.
+3. No parallel “how it works now” docs outside `docs/architecture/`.
+4. If atlas and code disagree, fix in the **same change** (prefer atlas → intended design; fix code if atlas was correct and code drifted).
+5. Do not rewrite ADRs for current behavior — ADRs are decision history.
