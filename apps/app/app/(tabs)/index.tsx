@@ -156,6 +156,7 @@ function HomeFeedBody() {
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [loadingMore, setLoadingMore] = useState(false)
+  const [appendError, setAppendError] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showContent, setShowContent] = useState(false)
   const [actionArticle, setActionArticle] = useState<ArticleResponse | null>(null)
@@ -301,10 +302,12 @@ function HomeFeedBody() {
         setLoading(true)
         setShowContent(false)
         setError(null)
+        setAppendError(false)
         offsetRef.current = 0
       } else if (mode === 'refresh') {
         setRefreshing(true)
         setError(null)
+        setAppendError(false)
         offsetRef.current = 0
       } else {
         if (loadingMoreLock.current) {
@@ -312,6 +315,7 @@ function HomeFeedBody() {
         }
         loadingMoreLock.current = true
         setLoadingMore(true)
+        setAppendError(false)
       }
 
       try {
@@ -334,6 +338,7 @@ function HomeFeedBody() {
         setArticles((prev) => (mode === 'append' ? [...prev, ...items] : items))
         offsetRef.current = offset + items.length
         setError(null)
+        setAppendError(false)
         if (mode === 'replace' || mode === 'refresh') {
           setTrendingEpoch((n) => n + 1)
         }
@@ -342,7 +347,11 @@ function HomeFeedBody() {
         if (gen !== loadGenRef.current) {
           return
         }
-        setError(err instanceof Error ? err.message : 'Could not load articles')
+        if (mode === 'append') {
+          setAppendError(true)
+        } else {
+          setError(err instanceof Error ? err.message : 'Could not load articles')
+        }
         // Keep prior items on refresh/append failure; only clear on initial replace.
         if (mode === 'replace') {
           setArticles([])
@@ -822,6 +831,31 @@ function HomeFeedBody() {
                         density={desktop ? 'compact' : 'default'}
                       />
                     </Box>
+                  ) : appendError ? (
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel="Retry loading more articles"
+                      onPress={() => void loadPage('append')}
+                      style={{ paddingVertical: space.md, paddingHorizontal: space.lg }}
+                    >
+                      <Text
+                        color={colors.accent}
+                        fontSize={typography.meta.fontSize}
+                        textAlign="center"
+                      >
+                        Couldn’t load more · Tap to retry
+                      </Text>
+                    </Pressable>
+                  ) : !hasMore && articles.length > 0 ? (
+                    <Text
+                      accessibilityRole="text"
+                      color={colors.textMuted}
+                      fontSize={typography.meta.fontSize}
+                      textAlign="center"
+                      py="$4"
+                    >
+                      You’re caught up
+                    </Text>
                   ) : null
                 }
               />

@@ -276,6 +276,15 @@ describe('FeedScreen', () => {
     expect(StyleSheet.flatten(column.props.style).maxWidth).toBe(ERROR_COLUMN_MAX)
   })
 
+  it('shows You’re caught up when the feed has no more pages', async () => {
+    renderFeed()
+
+    expect(
+      await screen.findByText('[MOCK] Local municipal budget approved for FY26'),
+    ).toBeTruthy()
+    expect(await screen.findByText('You’re caught up')).toBeTruthy()
+  })
+
   it('opens city picker from city pill', async () => {
     renderFeed()
 
