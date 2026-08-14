@@ -1,5 +1,3 @@
-using System.Security.Cryptography;
-using System.Text;
 using Microsoft.Extensions.Options;
 using NewsFeed.Api.Dtos;
 using NewsFeed.Api.Ingest;
@@ -17,7 +15,7 @@ public static class IngestEndpoints
                 IOptions<RssIngestOptions> options,
                 CancellationToken cancellationToken) =>
             {
-                if (!IngestKeyMatches(http.Request.Headers["X-Ingest-Key"].ToString(), options.Value.Secret))
+                if (!IngestKeyAuth.Matches(http.Request.Headers["X-Ingest-Key"].ToString(), options.Value.Secret))
                 {
                     return Results.Problem(
                         title: "Unauthorized",
@@ -44,7 +42,7 @@ public static class IngestEndpoints
                 IOptions<RssIngestOptions> options,
                 CancellationToken cancellationToken) =>
             {
-                if (!IngestKeyMatches(http.Request.Headers["X-Ingest-Key"].ToString(), options.Value.Secret))
+                if (!IngestKeyAuth.Matches(http.Request.Headers["X-Ingest-Key"].ToString(), options.Value.Secret))
                 {
                     return Results.Problem(
                         title: "Unauthorized",
@@ -66,18 +64,5 @@ public static class IngestEndpoints
             .ProducesProblem(StatusCodes.Status429TooManyRequests);
 
         return api;
-    }
-
-    private static bool IngestKeyMatches(string provided, string configured)
-    {
-        if (string.IsNullOrEmpty(configured) || string.IsNullOrEmpty(provided))
-        {
-            return false;
-        }
-
-        var providedBytes = Encoding.UTF8.GetBytes(provided);
-        var configuredBytes = Encoding.UTF8.GetBytes(configured);
-        return providedBytes.Length == configuredBytes.Length
-            && CryptographicOperations.FixedTimeEquals(providedBytes, configuredBytes);
     }
 }

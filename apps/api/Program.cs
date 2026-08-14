@@ -5,6 +5,7 @@ using NewsFeed.Api.Dtos;
 using NewsFeed.Api.Endpoints;
 using NewsFeed.Api.Ingest;
 using NewsFeed.Api.Options;
+using NewsFeed.Api.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.HttpOverrides;
@@ -34,6 +35,8 @@ try
     builder.Services.Configure<CorsOptions>(builder.Configuration.GetSection(CorsOptions.SectionName));
     builder.Services.Configure<RateLimitingOptions>(builder.Configuration.GetSection(RateLimitingOptions.SectionName));
     builder.Services.Configure<RssIngestOptions>(builder.Configuration.GetSection(RssIngestOptions.SectionName));
+    builder.Services.Configure<ArticleRetentionOptions>(
+        builder.Configuration.GetSection(ArticleRetentionOptions.SectionName));
     builder.Services.Configure<AdminOptions>(builder.Configuration.GetSection(AdminOptions.SectionName));
     builder.Services.Configure<ArticleIntelligenceOptions>(
         builder.Configuration.GetSection(ArticleIntelligenceOptions.SectionName));
@@ -83,6 +86,7 @@ try
     builder.Services.AddSingleton<PdfProcessingQueue>();
     builder.Services.AddSingleton<ImageEnrichmentQueue>();
     builder.Services.AddScoped<RssIngestService>();
+    builder.Services.AddScoped<ArticlePurgeService>();
     builder.Services.AddScoped<PdfIngestService>();
     builder.Services.AddScoped<ScrapeIngestService>();
     builder.Services.AddScoped<ArticleImageEnrichmentService>();
@@ -289,6 +293,7 @@ try
     api.MapCitiesEndpoints();
     api.MapArticlesEndpoints();
     api.MapIngestEndpoints();
+    api.MapMaintenanceEndpoints();
 
     var admin = api.MapGroup("/admin");
     admin.MapAdminAuthEndpoints();
