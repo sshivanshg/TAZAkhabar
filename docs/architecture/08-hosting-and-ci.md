@@ -1,7 +1,7 @@
 # Hosting and CI
 
 > **Living doc** — update when Render, Cloudflare, Neon, Docker, workflows, or env templates change.  
-> **Last verified against:** 2026-08-14 (Pages Git builds need baked `EXPO_PUBLIC_*`)
+> **Last verified against:** 2026-08-14 (daily no-AI ingest cron)
 
 ## Purpose
 
@@ -30,6 +30,7 @@ flowchart TB
   Render --> Neon[(Neon Postgres)]
   CronRSS[Render cron RSS] --> Render
   CronScrape[Render cron scrape] --> Render
+  CronDaily[Render cron daily no-AI] --> Render
   Readers[Readers] --> PagesWeb
   Editors[Editors] --> PagesAdmin
   PagesWeb --> CFAPI[CF-proxied api domain]
@@ -43,7 +44,7 @@ flowchart TB
 |-------|----------------|
 | API image | `infra/docker/Dockerfile.api` |
 | Optional web nginx preview | `infra/docker/Dockerfile.web`, `nginx.web.conf` |
-| Blueprint | `render.yaml` — web `newsfeed-api` + two crons |
+| Blueprint | `render.yaml` — web `newsfeed-api` + ingest/purge crons |
 | Local DB | `docker-compose.yml` Postgres 16 |
 | CI | `.github/workflows/ci.yml` — API format/build/test + Postgres; app lint/test/export; admin build |
 | Deploy | `.github/workflows/deploy.yml` — Pages for web + admin; API via Render auto-deploy |
@@ -58,7 +59,7 @@ No `wrangler.toml` in-repo — Pages deploy uses `cloudflare/pages-action` (wran
 1. Static assets: browser → Cloudflare Pages CDN.
 2. JSON: browser → Cloudflare-proxied `api.<domain>` → Render Docker.
 3. `GET /api/articles` and `GET /api/cities` send `Cache-Control: public, max-age=60` so the edge can cut Neon load ([ADR-004](../adr/004-render-cloudflare-neon-hosting.md)).
-4. Crons every 45m hit ingest endpoints with `X-Ingest-Key`.
+4. Crons every 45m hit individual ingest endpoints with `X-Ingest-Key`; the daily midnight IST cron hits the combined no-AI ingest endpoint.
 
 ### Render web service
 
@@ -98,6 +99,7 @@ No `wrangler.toml` in-repo — Pages deploy uses `cloudflare/pages-action` (wran
 - API deploys are owned by Render, not the Pages deploy job.
 - **Do not let Cloudflare dashboard Git builds replace Actions without env.** Connecting the repo in Pages Settings starts a second pipeline that does **not** see GitHub `vars.EXPO_PUBLIC_API_BASE_URL`. Expo then ships `EXPO_PUBLIC_API_BASE_URL is not configured`. Prefer: pause Pages automatic deployments and keep `.github/workflows/deploy.yml`. If Git builds stay on, set production env `EXPO_PUBLIC_API_BASE_URL`, build command `corepack enable && pnpm install --frozen-lockfile && pnpm --filter @newsfeed/app build:web`, output `apps/app/dist`.
 - Edge caching implies up to ~60s feed staleness — tune deliberately.
+- `newsfeed-daily-ingest-no-ai` runs at `30 18 * * *` UTC (00:00 IST) and calls `/api/ingest/daily`, which avoids Claude summarization.
 - Staging Render/Neon deferred; when added, separate service + Neon branch/project.
 - Never commit real secrets; only `*.example` templates.
 - Local tools must not point at production Neon.

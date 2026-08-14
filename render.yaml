@@ -72,6 +72,19 @@ services:
         sync: false
 
   - type: cron
+    name: newsfeed-daily-ingest-no-ai
+    runtime: python
+    plan: starter
+    schedule: "30 18 * * *"
+    buildCommand: "pip install requests"
+    startCommand: "python -c \"import os,requests; r=requests.post(os.environ['INGEST_URL'].rstrip('/')+'/api/ingest/daily', headers={'X-Ingest-Key': os.environ['RssIngest__Secret']}, timeout=600); r.raise_for_status()\""
+    envVars:
+      - key: INGEST_URL
+        sync: false
+      - key: RssIngest__Secret
+        sync: false
+
+  - type: cron
     name: newsfeed-purge-old-articles
     runtime: python
     plan: starter

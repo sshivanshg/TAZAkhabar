@@ -53,6 +53,14 @@ export interface AdminSourceResponse {
     lastErrorMessage?: string | undefined;
 }
 
+export interface ArticleBodyBackfillResponse {
+    examined?: number;
+    updated?: number;
+    skipped?: number;
+    failed?: number;
+    nextAfterId?: number | undefined;
+}
+
 export interface ArticleResponse {
     id?: number;
     cityId?: number;
@@ -206,14 +214,6 @@ export interface ProblemDetails {
     instance?: string | undefined;
 
     [key: string]: any;
-}
-
-export interface ArticleBodyBackfillResponse {
-    examined?: number;
-    updated?: number;
-    skipped?: number;
-    failed?: number;
-    nextAfterId?: number | undefined;
 }
 
 export interface ArticleDatesResponse {

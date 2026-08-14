@@ -4,6 +4,7 @@ namespace NewsFeed.Api.Tests;
 
 public sealed class FakeArticleIntelligence : IArticleIntelligence
 {
+    public int SummarizeCallCount { get; private set; }
     public int TranslateCallCount { get; private set; }
 
     public Task<IReadOnlyList<ExtractedStory>> ExtractStoriesAsync(string plainText, string? cityHintSlug, CancellationToken cancellationToken)
@@ -16,7 +17,10 @@ public sealed class FakeArticleIntelligence : IArticleIntelligence
         => ExtractStoriesAsync("IMAGE_UPLOAD", cityHintSlug, cancellationToken);
 
     public Task<string> SummarizeArticleAsync(string headline, string bodyOrSnippet, string citySlug, CancellationToken cancellationToken)
-        => Task.FromResult("Short original summary for " + headline);
+    {
+        SummarizeCallCount++;
+        return Task.FromResult("Short original summary for " + headline);
+    }
 
     public Task<(string Headline, string Summary)?> TranslateArticleAsync(
         string headline,

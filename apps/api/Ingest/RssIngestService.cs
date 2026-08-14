@@ -13,7 +13,7 @@ public sealed class RssIngestService(
     ImageEnrichmentQueue imageEnrichmentQueue,
     ILogger<RssIngestService> logger)
 {
-    public async Task<IngestRunResult> RunAsync(CancellationToken cancellationToken)
+    public async Task<IngestRunResult> RunAsync(CancellationToken cancellationToken, bool useIntelligence = true)
     {
         var sources = await db.Sources
             .AsNoTracking()
@@ -29,7 +29,7 @@ public sealed class RssIngestService(
         foreach (var source in sources)
         {
             attempted++;
-            var run = await RunSourceAsync(source.Id, cancellationToken);
+            var run = await RunSourceAsync(source.Id, cancellationToken, useIntelligence: useIntelligence);
             inserted += run.ArticlesAdded;
             skipped += run.ArticlesSkipped;
             if (run.ArticlesFailed > 0 || !string.IsNullOrEmpty(run.ErrorSummary))
@@ -44,7 +44,8 @@ public sealed class RssIngestService(
     public async Task<IngestionRun> RunSourceAsync(
         int sourceId,
         CancellationToken cancellationToken,
-        int? existingRunId = null)
+        int? existingRunId = null,
+        bool useIntelligence = true)
     {
         var source = await db.Sources.FirstOrDefaultAsync(s => s.Id == sourceId, cancellationToken)
             ?? throw new InvalidOperationException($"Source {sourceId} not found.");
@@ -130,7 +131,7 @@ public sealed class RssIngestService(
                     continue;
                 }
 
-                if (await TryInsertAsync(city, source, item, run, cancellationToken))
+                if (await TryInsertAsync(city, source, item, run, cancellationToken, useIntelligence))
                 {
                     inserted++;
                     IngestionEvents.Emit(
@@ -223,7 +224,8 @@ public sealed class RssIngestService(
         Source source,
         ParsedRssItem item,
         IngestionRun run,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        bool useIntelligence)
     {
         var sourceUrl = HtmlText.Truncate(item.SourceUrl.Trim(), 500);
         if (string.IsNullOrWhiteSpace(sourceUrl))
@@ -244,22 +246,29 @@ public sealed class RssIngestService(
             ? $"Tap to read the full story on {sourceName}"
             : snippet;
 
-        try
+        if (useIntelligence)
         {
-            IngestionEvents.Emit(events, run.Id, "progress", $"Summarizing · {HtmlText.Truncate(item.Title, 80)}");
-            var rewritten = await intelligence.SummarizeArticleAsync(item.Title, snippet, city.Slug, cancellationToken);
-            if (!string.IsNullOrWhiteSpace(rewritten))
+            try
             {
-                summary = rewritten;
+                IngestionEvents.Emit(events, run.Id, "progress", $"Summarizing · {HtmlText.Truncate(item.Title, 80)}");
+                var rewritten = await intelligence.SummarizeArticleAsync(item.Title, snippet, city.Slug, cancellationToken);
+                if (!string.IsNullOrWhiteSpace(rewritten))
+                {
+                    summary = rewritten;
+                }
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex, "RSS summarize failed for {SourceUrl}; using feed snippet", sourceUrl);
             }
         }
-        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        else
         {
-            throw;
-        }
-        catch (Exception ex)
-        {
-            logger.LogWarning(ex, "RSS summarize failed for {SourceUrl}; using feed snippet", sourceUrl);
+            IngestionEvents.Emit(events, run.Id, "progress", $"Using feed snippet · {HtmlText.Truncate(item.Title, 80)}");
         }
 
         var body = await TryFetchArticleBodyAsync(sourceUrl, cancellationToken);

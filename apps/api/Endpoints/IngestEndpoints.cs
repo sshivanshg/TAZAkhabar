@@ -63,6 +63,35 @@ public static class IngestEndpoints
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status429TooManyRequests);
 
+        api.MapPost("/ingest/daily", async (
+                HttpContext http,
+                RssIngestService rssIngest,
+                ScrapeIngestService scrapeIngest,
+                IOptions<RssIngestOptions> options,
+                CancellationToken cancellationToken) =>
+            {
+                if (!IngestKeyAuth.Matches(http.Request.Headers["X-Ingest-Key"].ToString(), options.Value.Secret))
+                {
+                    return Results.Problem(
+                        title: "Unauthorized",
+                        detail: "Invalid or missing ingest key.",
+                        statusCode: StatusCodes.Status401Unauthorized);
+                }
+
+                var rss = await rssIngest.RunAsync(cancellationToken, useIntelligence: false);
+                var scrape = await scrapeIngest.RunAllActiveAsync(cancellationToken);
+                return Results.Ok(new IngestRunResponse(
+                    rss.FeedsAttempted + scrape.FeedsAttempted,
+                    rss.FeedsFailed + scrape.FeedsFailed,
+                    rss.Inserted + scrape.Inserted,
+                    rss.Skipped + scrape.Skipped));
+            })
+            .WithName("IngestDaily")
+            .WithOpenApi()
+            .Produces<IngestRunResponse>(StatusCodes.Status200OK)
+            .ProducesProblem(StatusCodes.Status401Unauthorized)
+            .ProducesProblem(StatusCodes.Status429TooManyRequests);
+
         api.MapPost("/ingest/backfill-bodies", async (
                 HttpContext http,
                 ArticleBodyBackfillService backfill,

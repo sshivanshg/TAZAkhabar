@@ -182,10 +182,114 @@ public sealed class IngestEndpointTests : IClassFixture<NewsFeedWebApplicationFa
     }
 
     [Fact]
+    public async Task IngestDaily_ValidKey_IngestsAllActiveSourcesWithoutSummarizing()
+    {
+        const string listUrl = "https://www.amarujala.com/uttar-pradesh/jhansi-daily";
+        const string storyUrl = "https://www.amarujala.com/city/story-ingest-daily";
+        var feed = new FakeRssFeedClient
+        {
+            Responses =
+            {
+                [FeedUrl] = """
+                    <?xml version="1.0"?><rss version="2.0"><channel>
+                      <item>
+                        <title>Jhansi daily RSS update</title>
+                        <link>https://www.amarujala.com/jhansi/story-ingest-daily-rss</link>
+                        <description>Feed supplied summary</description>
+                        <pubDate>Thu, 13 Aug 2026 04:17:33 +0530</pubDate>
+                      </item>
+                    </channel></rss>
+                    """,
+            },
+        };
+        var scrape = new FakeScrapeHttpClient
+        {
+            Responses =
+            {
+                [listUrl] = """
+                    <html><body><ul>
+                      <li><a href="/city/story-ingest-daily">Triggered daily scrape story</a></li>
+                    </ul></body></html>
+                    """,
+                [storyUrl] = File.ReadAllText(
+                    Path.Combine(AppContext.BaseDirectory, "Fixtures", "scrape-article.html")),
+            },
+        };
+
+        using var factory = _factory.WithWebHostBuilder(builder =>
+        {
+            builder.ConfigureServices(services =>
+            {
+                foreach (var descriptor in services.Where(d => d.ServiceType == typeof(IRssFeedClient)).ToList())
+                {
+                    services.Remove(descriptor);
+                }
+
+                foreach (var descriptor in services.Where(d => d.ServiceType == typeof(IScrapeHttpClient)).ToList())
+                {
+                    services.Remove(descriptor);
+                }
+
+                services.AddSingleton<IRssFeedClient>(feed);
+                services.AddSingleton<IScrapeHttpClient>(scrape);
+            });
+        });
+
+        var client = factory.CreateClient();
+        using (var scope = factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            db.Database.EnsureDeleted();
+            db.Database.EnsureCreated();
+            db.Sources.RemoveRange(db.Sources);
+            db.Sources.AddRange(
+                new NewsFeed.Api.Data.Entities.Source
+                {
+                    Name = "RSS Source",
+                    FeedUrl = FeedUrl,
+                    CityId = 2,
+                    Type = SourceType.Rss,
+                    Kind = SourceKind.CityEdition,
+                    Language = "hi",
+                    IsActive = true,
+                },
+                new NewsFeed.Api.Data.Entities.Source
+                {
+                    Name = "Scrape Source",
+                    FeedUrl = listUrl,
+                    CityId = 2,
+                    Type = SourceType.Scrape,
+                    Kind = SourceKind.CityEdition,
+                    Language = "hi",
+                    IsActive = true,
+                });
+            db.SaveChanges();
+        }
+
+        client.DefaultRequestHeaders.Add("X-Ingest-Key", NewsFeedWebApplicationFactory.TestIngestKey);
+        var response = await client.PostAsync("/api/ingest/daily", null);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var body = await response.Content.ReadFromJsonAsync<IngestRunResponse>();
+        Assert.Equal(2, body!.FeedsAttempted);
+        Assert.Equal(2, body.Inserted);
+
+        var fake = (FakeArticleIntelligence)factory.Services.GetRequiredService<IArticleIntelligence>();
+        Assert.Equal(0, fake.SummarizeCallCount);
+
+        using var verifyScope = factory.Services.CreateScope();
+        var verifyDb = verifyScope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var rssArticle = await verifyDb.Articles.SingleAsync(a => a.SourceUrl.Contains("daily-rss"));
+        Assert.Equal("Feed supplied summary", rssArticle.Summary);
+    }
+
+    [Fact]
     public async Task OpenApi_IncludesBackfillBodiesAndArticleBody()
     {
         var client = _factory.CreateClient();
         var json = await client.GetStringAsync("/openapi/v1.json");
+        Assert.Contains("/api/ingest/daily", json, StringComparison.Ordinal);
+        Assert.Contains("IngestDaily", json, StringComparison.Ordinal);
         Assert.Contains("/api/ingest/backfill-bodies", json, StringComparison.Ordinal);
         Assert.Contains("ArticleBodyBackfillResponse", json, StringComparison.Ordinal);
         Assert.Contains("IngestBackfillBodies", json, StringComparison.Ordinal);

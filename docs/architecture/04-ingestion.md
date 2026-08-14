@@ -1,7 +1,7 @@
 # Ingestion
 
 > **Living doc** — update when pipelines, article status on insert, cron, SSE, or intelligence providers change.  
-> **Last verified against:** 2026-08-14 (scrape stores body, no Claude summarize)
+> **Last verified against:** 2026-08-14 (daily cron ingests all active RSS/scrape sources without Claude)
 
 ## Purpose
 
@@ -18,9 +18,12 @@ Bring external news into Postgres: RSS, HTML scrape, PDF/image upload, optional 
 flowchart TB
   Cron[Render cron 45m] -->|X-Ingest-Key| RssEP[POST /api/ingest/rss]
   Cron -->|X-Ingest-Key| ScrapeEP[POST /api/ingest/scrape]
+  DailyCron[Render cron daily 00:00 IST] -->|X-Ingest-Key| DailyEP[POST /api/ingest/daily]
   Admin[Admin JWT] -->|trigger / uploads| API[Ingest services]
   RssEP --> RssSvc[RssIngestService]
   ScrapeEP --> ScrapeSvc[ScrapeIngestService]
+  DailyEP --> RssSvc
+  DailyEP --> ScrapeSvc
   API --> PdfSvc[PdfIngestService + queue]
   RssSvc --> Bus[IngestionEventBus]
   ScrapeSvc --> Bus
@@ -79,7 +82,12 @@ Every 45 minutes (`render.yaml`):
 - `newsfeed-rss-ingest` → `POST {INGEST_URL}/api/ingest/rss`
 - `newsfeed-scrape-ingest` → `POST {INGEST_URL}/api/ingest/scrape`
 
-Both send header `X-Ingest-Key: RssIngest__Secret`.
+Daily at midnight IST (`30 18 * * *` UTC):
+
+- `newsfeed-daily-ingest-no-ai` → `POST {INGEST_URL}/api/ingest/daily`
+- Runs all active RSS sources with Claude summarization disabled, then all active scrape sources.
+
+All ingest crons send header `X-Ingest-Key: RssIngest__Secret`.
 
 ### Intelligence calls
 
@@ -88,7 +96,7 @@ Claude via `ArticleIntelligence__ApiKey`, `BaseUrl` (default `https://api.anthro
 | Pipeline | Claude | Stored `summary` | Stored `body` |
 |----------|--------|------------------|---------------|
 | **Scrape** | None | Extracted snippet (plain text) | `HtmlArticleExtractor.ExtractBody` (~50k chars, never raw HTML) |
-| **RSS** | `SummarizeArticleAsync` (fallback to feed snippet on failure) | Claude digest | Fetched HTML body when the link is reachable |
+| **RSS** | `SummarizeArticleAsync` (fallback to feed snippet on failure); disabled for `/api/ingest/daily` | Claude digest, or feed snippet in daily no-AI cron | Fetched HTML body when the link is reachable |
 | **PDF** | `ExtractStoriesAsync` / image extract | Claude story summary | PdfPig plain text (shared across stories from that file) |
 
 Translate still runs on read for headline/summary when `?lang=` differs from detected language. Body is not translated.
@@ -107,6 +115,7 @@ Existing rows without body: `POST /api/ingest/backfill-bodies?take=&afterId=` (i
 |----------|--------|
 | `POST /api/ingest/rss` | `IngestRss` + ingest key |
 | `POST /api/ingest/scrape` | `IngestScrape` + ingest key |
+| `POST /api/ingest/daily` | `IngestDaily` + ingest key; RSS + scrape, no RSS summarization |
 | `POST /api/ingest/backfill-bodies` | `IngestBackfillBodies` + ingest key |
 | Admin trigger | `POST /api/admin/sources/{id}/trigger` → 202 |
 | SSE | `GET /api/admin/ingestion-runs/{id}/events` |
