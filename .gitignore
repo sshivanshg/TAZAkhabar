@@ -35,6 +35,9 @@ Thumbs.db
 # Cursor agent session archives (prompts / transcripts — may contain secrets)
 .cursor/sessions/
 
+# Superpowers brainstorm / local session artifacts
+.superpowers/
+
 # Logs / coverage
 *.log
 logs/
@@ -67,3 +70,4 @@ apps/app/.expo/
 
 # Expo local (root)
 .expo/
+.worktrees/
