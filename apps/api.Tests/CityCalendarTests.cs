@@ -10,9 +10,11 @@ public sealed class CityCalendarTests
         var day = new DateOnly(2026, 8, 14);
         var (start, end) = CityCalendar.UtcBoundsForLocalDate(day);
 
-        // IST = UTC+5:30 → local midnight 14 Aug = 13 Aug 18:30 UTC
-        Assert.Equal(new DateTimeOffset(2026, 8, 13, 18, 30, 0, TimeSpan.Zero), start.ToUniversalTime());
-        Assert.Equal(new DateTimeOffset(2026, 8, 14, 18, 30, 0, TimeSpan.Zero), end.ToUniversalTime());
+        // Npgsql timestamptz parameters must be offset 0. IST midnight 14 Aug = 13 Aug 18:30 UTC.
+        Assert.Equal(TimeSpan.Zero, start.Offset);
+        Assert.Equal(TimeSpan.Zero, end.Offset);
+        Assert.Equal(new DateTimeOffset(2026, 8, 13, 18, 30, 0, TimeSpan.Zero), start);
+        Assert.Equal(new DateTimeOffset(2026, 8, 14, 18, 30, 0, TimeSpan.Zero), end);
         Assert.Equal(TimeSpan.FromHours(24), end - start);
     }
 
@@ -36,5 +38,17 @@ public sealed class CityCalendarTests
         Assert.False(CityCalendar.TryParseDateParam("", out _, out _));
         Assert.True(CityCalendar.TryParseDateParam("2026-08-14", out var ok, out _));
         Assert.Equal(new DateOnly(2026, 8, 14), ok);
+    }
+
+    [Fact]
+    public void ResolveNamedOrFixedIst_UnknownIds_UsesFixedPlus530Offset()
+    {
+        var winter = new DateTime(2026, 1, 15, 0, 0, 0, DateTimeKind.Unspecified);
+        var summer = new DateTime(2026, 7, 15, 0, 0, 0, DateTimeKind.Unspecified);
+        var tz = CityCalendar.ResolveNamedOrFixedIst("No/SuchZone", "Also/Missing");
+
+        Assert.Equal(TimeSpan.FromHours(5.5), tz.GetUtcOffset(winter));
+        Assert.Equal(TimeSpan.FromHours(5.5), tz.GetUtcOffset(summer));
+        Assert.False(tz.SupportsDaylightSavingTime);
     }
 }

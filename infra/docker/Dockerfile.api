@@ -13,9 +13,14 @@ WORKDIR /src/apps/api
 RUN dotnet publish -c Release -o /app/publish --no-restore
 
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS final
+# tzdata so Asia/Kolkata resolves; CityCalendar also falls back to a fixed +05:30 zone.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends tzdata \
+    && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 ENV ASPNETCORE_URLS=http://+:8080
 ENV DOTNET_HOSTBUILDER__RELOADCONFIGONCHANGE=false
+ENV TZ=Asia/Kolkata
 EXPOSE 8080
 COPY --from=build /app/publish .
 ENTRYPOINT ["dotnet", "NewsFeed.Api.dll"]

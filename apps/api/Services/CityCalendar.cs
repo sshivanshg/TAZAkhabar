@@ -11,9 +11,42 @@ public static class CityCalendar
     public const string DefaultIanaId = "Asia/Kolkata";
     public const int DefaultDatesWindowDays = 30;
 
-    private static readonly Lazy<TimeZoneInfo> IndiaTz = new(ResolveIndiaTimeZone);
+    private static readonly Lazy<TimeZoneInfo> IndiaTz = new(() =>
+        ResolveNamedOrFixedIst(DefaultIanaId, "India Standard Time"));
 
     public static TimeZoneInfo ResolveTimeZone(City? city = null) => IndiaTz.Value;
+
+    /// <summary>
+    /// Resolves IST from the host timezone database, then a fixed UTC+5:30 zone.
+    /// Slim Linux images often lack tzdata, so both IANA and Windows IDs can throw.
+    /// </summary>
+    public static TimeZoneInfo ResolveNamedOrFixedIst(params string[] ids)
+    {
+        foreach (var id in ids)
+        {
+            if (string.IsNullOrWhiteSpace(id))
+            {
+                continue;
+            }
+
+            try
+            {
+                return TimeZoneInfo.FindSystemTimeZoneById(id);
+            }
+            catch (TimeZoneNotFoundException)
+            {
+            }
+            catch (InvalidTimeZoneException)
+            {
+            }
+        }
+
+        return TimeZoneInfo.CreateCustomTimeZone(
+            DefaultIanaId,
+            TimeSpan.FromHours(5.5),
+            "India Standard Time",
+            "India Standard Time");
+    }
 
     public static DateOnly TodayLocal(City? city = null) =>
         DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(DateTimeOffset.UtcNow, ResolveTimeZone(city)).DateTime);
@@ -28,8 +61,9 @@ public static class CityCalendar
         var tz = ResolveTimeZone(city);
         var startLocal = localDate.ToDateTime(TimeOnly.MinValue, DateTimeKind.Unspecified);
         var offset = tz.GetUtcOffset(startLocal);
-        var start = new DateTimeOffset(startLocal, offset);
-        return (start, start.AddDays(1));
+        // Npgsql only accepts timestamptz parameters with offset 0.
+        var startUtc = new DateTimeOffset(startLocal, offset).ToUniversalTime();
+        return (startUtc, startUtc.AddDays(1));
     }
 
     public static DateOnly ToLocalDate(DateTimeOffset utcInstant, City? city = null)
@@ -59,21 +93,5 @@ public static class CityCalendar
         }
 
         return true;
-    }
-
-    private static TimeZoneInfo ResolveIndiaTimeZone()
-    {
-        try
-        {
-            return TimeZoneInfo.FindSystemTimeZoneById(DefaultIanaId);
-        }
-        catch (TimeZoneNotFoundException)
-        {
-            return TimeZoneInfo.FindSystemTimeZoneById("India Standard Time");
-        }
-        catch (InvalidTimeZoneException)
-        {
-            return TimeZoneInfo.FindSystemTimeZoneById("India Standard Time");
-        }
     }
 }
