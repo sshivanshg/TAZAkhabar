@@ -1,7 +1,7 @@
 # Data model
 
 > **Living doc** — update when entities, statuses, or migration ownership change.  
-> **Last verified against:** 2026-08-14 (articles.body plain text)
+> **Last verified against:** 2026-08-14 (`AddArticleBody` idempotent for drift)
 
 ## Purpose
 

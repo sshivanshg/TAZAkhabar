@@ -67,6 +67,78 @@ public sealed class ArticleTranslationEndpointTests : IClassFixture<NewsFeedWebA
     }
 
     [Fact]
+    public async Task GetArticle_WithLangAndBody_DoesNotReturnOriginalBodyForTranslatedArticle()
+    {
+        var client = _factory.CreateSeededClient();
+        int id;
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var article = new Article
+            {
+                CityId = 2,
+                Headline = "झांसी में बजट पास",
+                Summary = "नगर निगम ने बजट मंजूरी दी।",
+                Body = "यह मूल हिंदी पूरा लेख है।",
+                SourceName = "A",
+                SourceUrl = "https://example.com/hi-story-with-body",
+                PublishedAt = DateTimeOffset.UtcNow,
+                Category = "Local",
+                Status = ArticleStatus.Published,
+                IsMock = false,
+                DetectedLanguage = "hi",
+            };
+            db.Articles.Add(article);
+            db.SaveChanges();
+            id = article.Id;
+        }
+
+        var body = await client.GetFromJsonAsync<ArticleResponse>($"/api/articles/{id}?lang=en");
+
+        Assert.NotNull(body);
+        Assert.Equal("hi", body.DetectedLanguage);
+        Assert.Equal("en", body.DisplayLanguage);
+        Assert.StartsWith("[en]", body.Headline);
+        Assert.StartsWith("[en]", body.Summary);
+        Assert.Null(body.Body);
+    }
+
+    [Fact]
+    public async Task GetArticle_WithLang_ReDetectsHindiTextWhenStoredLanguageIsWrong()
+    {
+        var client = _factory.CreateSeededClient();
+        int id;
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var article = new Article
+            {
+                CityId = 2,
+                Headline = "लाल किला आतंकी हमला",
+                Summary = "एनआईए चार्जशीट पर सुनवाई होगी।",
+                SourceName = "A",
+                SourceUrl = "https://example.com/misdetected-hi-story",
+                PublishedAt = DateTimeOffset.UtcNow,
+                Category = "Local",
+                Status = ArticleStatus.Published,
+                IsMock = false,
+                DetectedLanguage = "en",
+            };
+            db.Articles.Add(article);
+            db.SaveChanges();
+            id = article.Id;
+        }
+
+        var body = await client.GetFromJsonAsync<ArticleResponse>($"/api/articles/{id}?lang=en");
+
+        Assert.NotNull(body);
+        Assert.Equal("hi", body.DetectedLanguage);
+        Assert.Equal("en", body.DisplayLanguage);
+        Assert.StartsWith("[en]", body.Headline);
+        Assert.StartsWith("[en]", body.Summary);
+    }
+
+    [Fact]
     public async Task GetArticles_SameLanguage_DoesNotTranslate()
     {
         var client = _factory.CreateSeededClient();

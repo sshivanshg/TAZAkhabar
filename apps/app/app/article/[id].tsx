@@ -12,6 +12,7 @@ import {
   type NativeSyntheticEvent,
   type ViewToken,
 } from 'react-native'
+import { StatusBar } from 'expo-status-bar'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import type { ArticleResponse } from '@newsfeed/shared-types'
 import { apiClient } from '../../src/api/client'
@@ -276,6 +277,10 @@ function ArticlePagerBody() {
   }, [citySlug, feedCategory, lang, routeDate, hasMore])
 
   useEffect(() => {
+    hydratedIdsRef.current = new Set()
+  }, [lang])
+
+  useEffect(() => {
     const nearby = [stack[index], stack[index + 1], stack[index - 1]]
     for (const article of nearby) {
       if (article?.id == null) {
@@ -428,6 +433,7 @@ function ArticlePagerBody() {
 
   return (
     <View style={styles.root}>
+      <StatusBar style="light" />
       <FlatList
         ref={listRef}
         testID="story-pager"

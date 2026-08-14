@@ -43,7 +43,8 @@ export function CompactArticleCard({
   const headline = article.headline ?? 'Untitled'
   const source = article.sourceName ?? 'Unknown source'
   const relative = formatRelativeTime(article.publishedAt)
-  const category = article.category ?? 'Local'
+  const category = article.category?.trim()
+  const displayCategory = category?.toLowerCase() === 'local' ? undefined : category
   const imageUrl = article.imageUrl
   const showMore = Boolean(onMorePress ?? onLongPress)
   const openMore = onMorePress ?? onLongPress
@@ -68,7 +69,7 @@ export function CompactArticleCard({
             onLongPress={onLongPress ? () => onLongPress(article) : undefined}
             delayLongPress={380}
             accessibilityRole="button"
-            accessibilityLabel={`${headline}. ${category}. ${source}. ${relative}.${
+            accessibilityLabel={`${[headline, displayCategory, source, relative].filter(Boolean).join('. ')}.${
               showMore ? ' Open options for more actions.' : ''
             }`}
             style={(state) => {
@@ -115,14 +116,11 @@ export function CompactArticleCard({
                 gap: compact ? 2 : undefined,
               }}
             >
-              <HStack space="xs" alignItems="center" flexWrap="wrap">
-                <Badge label={category} variant="soft" />
-                {article.detectedLanguage &&
-                article.displayLanguage &&
-                article.detectedLanguage !== article.displayLanguage ? (
-                  <Badge label="Translated" variant="soft" />
-                ) : null}
-              </HStack>
+              {displayCategory ? (
+                <HStack space="xs" alignItems="center" flexWrap="wrap">
+                  <Badge label={displayCategory} variant="soft" />
+                </HStack>
+              ) : null}
               <Text
                 fontSize={titleSize}
                 lineHeight={titleLine}

@@ -37,9 +37,7 @@ export default function RootLayout() {
                 <Stack.Screen
                   name="article/[id]"
                   options={{
-                    title: 'Story',
-                    headerBackTitle: 'Back',
-                    headerTintColor: colors.text,
+                    headerShown: false,
                     animation: 'fade_from_bottom',
                     animationDuration: 280,
                   }}

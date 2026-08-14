@@ -259,8 +259,10 @@ public sealed class ArticlePresentationService(
     }
 
     private static string DetectedOf(Article article) =>
-        ArticleLanguageDetector.Normalize(article.DetectedLanguage)
-        ?? ArticleLanguageDetector.DefaultLanguage;
+        ArticleLanguageDetector.Detect(
+            article.Headline,
+            article.Summary,
+            fallback: article.DetectedLanguage);
 
     private static ArticleResponse ToOriginal(Article article, string? detected = null, bool includeBody = false)
     {
@@ -292,7 +294,8 @@ public sealed class ArticlePresentationService(
             article.CityId,
             headline,
             summary,
-            includeBody ? article.Body : null,
+            // Body is stored only in the original language; translated reads use translated summary.
+            null,
             article.SourceName,
             article.SourceUrl,
             article.PublishedAt,

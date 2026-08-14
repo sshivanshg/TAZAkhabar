@@ -4,7 +4,6 @@ import type { ArticleResponse } from '@newsfeed/shared-types'
 import { ImageBottomFade } from './ImageBottomFade'
 import { readerColors } from '../theme/readerTokens'
 import { formatRelativeTime } from '../utils/relativeTime'
-import { isArticleTranslated } from '../utils/articleLanguage'
 import { isHttpsUrl } from '../utils/shareToWhatsApp'
 import {
   READING_LANGUAGES,
@@ -45,14 +44,15 @@ export function SwipeStoryCard({
 }: Props) {
   const insets = useSafeAreaInsets()
   const imageUri = article.imageUrl && isHttpsUrl(article.imageUrl) ? article.imageUrl : null
-  const category = article.category?.trim() || 'Local'
-  const eyebrow = cityLabel ? `${cityLabel} · ${category}` : category
+  const category = article.category?.trim()
+  const displayCategory = category?.toLowerCase() === 'local' ? undefined : category
+  const eyebrow = [cityLabel, displayCategory].filter(Boolean).join(' · ')
   const time = article.publishedAt ? formatRelativeTime(article.publishedAt) : null
   const paragraphs = splitArticleBody(article.body)
   const hasBody = paragraphs.length > 0
 
   return (
-    <View style={[styles.root, { height, paddingBottom: Math.max(insets.bottom, 12) }]}>
+    <View style={[styles.root, { height }]}>
       <View style={[styles.topBar, { paddingTop: Math.max(insets.top, 12) }]}>
         <Pressable
           accessibilityRole="button"
@@ -97,10 +97,7 @@ export function SwipeStoryCard({
         )}
         <ImageBottomFade height={120} />
         <View style={styles.heroText}>
-          <Text style={styles.eyebrow}>
-            {eyebrow}
-            {isArticleTranslated(article) ? ' · Translated' : ''}
-          </Text>
+          {eyebrow ? <Text style={styles.eyebrow}>{eyebrow}</Text> : null}
           <Text style={styles.headline}>{article.headline}</Text>
         </View>
       </View>
@@ -122,6 +119,9 @@ export function SwipeStoryCard({
             {[article.sourceName, time].filter(Boolean).join(' · ')}
           </Text>
         </View>
+      </ScrollView>
+
+      <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 12) }]}>
         <View style={styles.actions}>
           <Pressable
             accessibilityRole="button"
@@ -141,7 +141,7 @@ export function SwipeStoryCard({
           </Pressable>
         </View>
         {showNextCue ? <Text style={styles.nextCue}>↑ Next story</Text> : null}
-      </ScrollView>
+      </View>
     </View>
   )
 }
@@ -164,7 +164,12 @@ export function CaughtUpCard({
     >
       <Text style={styles.caughtUpTitle}>You’re caught up</Text>
       <Text style={styles.caughtUpBody}>That’s all the latest for now.</Text>
-      <Pressable accessibilityRole="button" accessibilityLabel="Go back" onPress={onBack} style={styles.actionBtn}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Go back"
+        onPress={onBack}
+        style={[styles.actionBtn, styles.caughtUpBtn]}
+      >
         <Text style={styles.actionText}>Back to feed</Text>
       </Pressable>
     </View>
@@ -257,9 +262,8 @@ const styles = StyleSheet.create({
     paddingTop: 16,
   },
   bodyContent: {
-    paddingBottom: 8,
+    paddingBottom: 16,
     gap: 12,
-    flexGrow: 1,
   },
   summary: {
     color: readerColors.textSecondary,
@@ -267,20 +271,29 @@ const styles = StyleSheet.create({
     lineHeight: 24,
   },
   metaRow: {
-    marginTop: 14,
+    marginTop: 2,
   },
   meta: {
     color: readerColors.textMuted,
     fontSize: 13,
   },
+  footer: {
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    gap: 8,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: readerColors.sheetBorder,
+    backgroundColor: readerColors.canvas,
+  },
   actions: {
     flexDirection: 'row',
     gap: 10,
-    marginTop: 18,
   },
   actionBtn: {
     flex: 1,
-    minHeight: 44,
+    flexBasis: 0,
+    minWidth: 0,
+    minHeight: 48,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: readerColors.sheetBorder,
@@ -293,21 +306,26 @@ const styles = StyleSheet.create({
     color: readerColors.accent,
     fontSize: 14,
     fontWeight: '600',
+    textAlign: 'center',
+    width: '100%',
   },
   nextCue: {
-    marginTop: 'auto',
     textAlign: 'center',
     color: readerColors.textMuted,
     fontSize: 12,
     fontWeight: '600',
-    paddingBottom: 4,
-    paddingTop: 8,
+    paddingBottom: 2,
   },
   caughtUp: {
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 24,
     gap: 12,
+  },
+  caughtUpBtn: {
+    flex: 0,
+    alignSelf: 'stretch',
+    maxWidth: 280,
   },
   caughtUpTitle: {
     color: readerColors.text,

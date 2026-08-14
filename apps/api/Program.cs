@@ -23,6 +23,7 @@ try
 {
     // Render Free/shared kernels cap inotify at 128; JSON file watchers blow that at boot.
     Environment.SetEnvironmentVariable("DOTNET_HOSTBUILDER__RELOADCONFIGONCHANGE", "false");
+    LoadDotEnv();
 
     var builder = WebApplication.CreateBuilder(args);
 
@@ -318,6 +319,45 @@ catch (Exception ex) when (ex is not HostAbortedException)
 finally
 {
     Log.CloseAndFlush();
+}
+
+static void LoadDotEnv()
+{
+    var current = new DirectoryInfo(Directory.GetCurrentDirectory());
+    while (current is not null)
+    {
+        var path = Path.Combine(current.FullName, ".env");
+        if (File.Exists(path))
+        {
+            foreach (var rawLine in File.ReadLines(path))
+            {
+                var line = rawLine.Trim();
+                if (line.Length == 0 || line.StartsWith('#'))
+                {
+                    continue;
+                }
+
+                var separator = line.IndexOf('=');
+                if (separator <= 0)
+                {
+                    continue;
+                }
+
+                var key = line[..separator].Trim();
+                var value = line[(separator + 1)..].Trim().Trim('"');
+                if (key.Length > 0
+                    && !key.StartsWith("ConnectionStrings__", StringComparison.Ordinal)
+                    && Environment.GetEnvironmentVariable(key) is null)
+                {
+                    Environment.SetEnvironmentVariable(key, value);
+                }
+            }
+
+            return;
+        }
+
+        current = current.Parent;
+    }
 }
 
 public partial class Program;

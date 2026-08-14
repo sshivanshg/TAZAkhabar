@@ -10,19 +10,22 @@ namespace NewsFeed.Api.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.AddColumn<string>(
-                name: "body",
-                table: "articles",
-                type: "text",
-                nullable: true);
+            // Idempotent: local/dev DBs may already have `body` from an earlier
+            // worktree migration id (20260814045948_AddArticleBody) that is not
+            // in this assembly.
+            migrationBuilder.Sql(
+                """
+                ALTER TABLE articles ADD COLUMN IF NOT EXISTS body text;
+                """);
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropColumn(
-                name: "body",
-                table: "articles");
+            migrationBuilder.Sql(
+                """
+                ALTER TABLE articles DROP COLUMN IF EXISTS body;
+                """);
         }
     }
 }

@@ -73,7 +73,8 @@ export function BreakingHeroCard({
   const headline = article.headline ?? 'Untitled'
   const source = article.sourceName ?? 'Unknown source'
   const relative = formatRelativeTime(article.publishedAt)
-  const category = article.category ?? 'Local'
+  const category = article.category?.trim()
+  const displayCategory = category?.toLowerCase() === 'local' ? undefined : category
   const imageUrl = article.imageUrl
   const metrics = heroMetrics(size)
   const fadeHeight = Math.round(metrics.height * metrics.fadeRatio)
@@ -106,9 +107,11 @@ export function BreakingHeroCard({
               <View style={styles.imagePlaceholder} />
             )}
             <ImageBottomFade height={fadeHeight} peakOpacity={metrics.fadePeak} />
-            <View style={styles.pillWrap}>
-              <Badge label={category} variant="filled" />
-            </View>
+            {displayCategory ? (
+              <View style={styles.pillWrap}>
+                <Badge label={displayCategory} variant="filled" />
+              </View>
+            ) : null}
             <VStack style={styles.overlay} space="xs">
               {showMeta ? (
                 <Text

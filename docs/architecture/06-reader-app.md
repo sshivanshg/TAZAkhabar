@@ -1,7 +1,7 @@
 # Reader app
 
 > **Living doc** — update when Expo routes, city/feed/share behavior, or desktop web layer change.  
-> **Last verified against:** 2026-08-14 (swipe reader shows stored body)
+> **Last verified against:** 2026-08-14 (immersive story: translated reads use translated summary instead of original body)
 
 ## Purpose
 
@@ -96,7 +96,7 @@ API helpers used: `getHealth`, `getCities`, `getArticles`, `getArticleDates`, `g
 - Do not add a second Vite reader app.
 - MVP UI stays light + single blue accent until branding lands.
 - No login — city preference is device-local only.
-- List payloads omit `body`; the swipe card shows full plain-text `body` when `GET /api/articles/{id}` returns it, otherwise the summary.
+- List payloads omit `body`; the swipe card shows full plain-text `body` when `GET /api/articles/{id}` returns it, otherwise the summary. For translated reads, the API suppresses original-language `body` so the card shows translated headline/summary rather than mixing languages.
 
 ## Related docs
 
