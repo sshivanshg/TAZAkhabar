@@ -123,6 +123,10 @@ export interface IngestRunResponse {
     skipped?: number;
 }
 
+export interface PurgeOldArticlesResponse {
+    deleted?: number;
+}
+
 export interface IngestionEventDto {
     type?: string;
     message?: string;

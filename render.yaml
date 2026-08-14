@@ -42,6 +42,8 @@ services:
         value: "claude-sonnet-4-5"
       - key: Upload__RootPath
         sync: false
+      - key: ArticleRetention__Days
+        value: "7"
 
   - type: cron
     name: newsfeed-rss-ingest
@@ -63,6 +65,19 @@ services:
     schedule: "*/45 * * * *"
     buildCommand: "pip install requests"
     startCommand: "python -c \"import os,requests; r=requests.post(os.environ['INGEST_URL'].rstrip('/')+'/api/ingest/scrape', headers={'X-Ingest-Key': os.environ['RssIngest__Secret']}, timeout=300); r.raise_for_status()\""
+    envVars:
+      - key: INGEST_URL
+        sync: false
+      - key: RssIngest__Secret
+        sync: false
+
+  - type: cron
+    name: newsfeed-purge-old-articles
+    runtime: python
+    plan: starter
+    schedule: "0 3 * * *"
+    buildCommand: "pip install requests"
+    startCommand: "python -c \"import os,requests; r=requests.post(os.environ['INGEST_URL'].rstrip('/')+'/api/maintenance/purge-old-articles', headers={'X-Ingest-Key': os.environ['RssIngest__Secret']}, timeout=300); r.raise_for_status()\""
     envVars:
       - key: INGEST_URL
         sync: false

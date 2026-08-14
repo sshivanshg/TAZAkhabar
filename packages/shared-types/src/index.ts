@@ -17,6 +17,7 @@ export type {
   DocumentUploadResponseDto,
   HealthResponse,
   IngestRunResponse,
+  PurgeOldArticlesResponse,
   IngestionEventDto,
   IngestionRunResponseDto,
   PagedAdminArticlesResponse,

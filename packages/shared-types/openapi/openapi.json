@@ -451,6 +451,46 @@
         }
       }
     },
+    "/api/maintenance/purge-old-articles": {
+      "post": {
+        "tags": [
+          "NewsFeed.Api"
+        ],
+        "operationId": "PurgeOldArticles",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PurgeOldArticlesResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/ingest/scrape": {
       "post": {
         "tags": [
@@ -1790,6 +1830,16 @@
             "format": "int32"
           },
           "skipped": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "PurgeOldArticlesResponse": {
+        "type": "object",
+        "properties": {
+          "deleted": {
             "type": "integer",
             "format": "int32"
           }
