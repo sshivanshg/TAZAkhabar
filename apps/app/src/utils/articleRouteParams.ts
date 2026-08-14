@@ -11,10 +11,20 @@ export type ArticleRouteParams = {
   imageUrl: string
   publishedAt: string
   category: string
+  city?: string
+  feedCategory?: string
+  date?: string
+  lang?: string
 }
 
 export function articleRouteParams(
   article: ArticleResponse | BookmarkSnapshot,
+  extras?: {
+    city?: string
+    feedCategory?: string
+    date?: string
+    lang?: string
+  },
 ): ArticleRouteParams | null {
   if (article.id == null) {
     return null
@@ -28,5 +38,9 @@ export function articleRouteParams(
     imageUrl: article.imageUrl ?? '',
     publishedAt: article.publishedAt ?? '',
     category: article.category ?? '',
+    city: extras?.city,
+    feedCategory: extras?.feedCategory,
+    date: extras?.date,
+    lang: extras?.lang,
   }
 }

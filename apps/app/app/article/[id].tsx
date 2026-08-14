@@ -1,46 +1,44 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   ActivityIndicator,
-  Animated,
+  FlatList,
   Platform,
   Pressable,
   StyleSheet,
+  Text,
   useWindowDimensions,
   View,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
+  type ViewToken,
 } from 'react-native'
 import { useLocalSearchParams, useRouter } from 'expo-router'
-import { Image, Text } from '@gluestack-ui/themed'
 import type { ArticleResponse } from '@newsfeed/shared-types'
 import { apiClient } from '../../src/api/client'
-import { useLanguagePreference } from '../../src/preferences/LanguagePreferenceContext'
-import { isArticleTranslated } from '../../src/utils/articleLanguage'
-import { ImageBottomFade } from '../../src/components/ImageBottomFade'
+import { CaughtUpCard, SwipeStoryCard } from '../../src/components/SwipeStoryCard'
 import { ScreenErrorBoundary } from '../../src/components/ScreenErrorBoundary'
+import { useLanguagePreference } from '../../src/preferences/LanguagePreferenceContext'
 import {
   addBookmark,
   articleToBookmark,
   isBookmarked,
   removeBookmark,
 } from '../../src/storage/bookmarks'
+import { getStoredCitySlug } from '../../src/storage/cityPreference'
+import {
+  hasCompletedSwipeCoach,
+  markSwipeCoachCompleted,
+} from '../../src/storage/swipeCoach'
 import { getViewSessionId } from '../../src/storage/viewSession'
-import {
-  colors,
-  media,
-  radius,
-  space,
-  typography,
-} from '../../src/theme/tokens'
-import { formatRelativeTime } from '../../src/utils/relativeTime'
-import {
-  isHttpsUrl,
-  openHttpsSource,
-  shareArticleToWhatsApp,
-} from '../../src/utils/shareToWhatsApp'
+import { PAGE_SIZE } from '../../src/theme/tokens'
+import { readerColors } from '../../src/theme/readerTokens'
+import { todayCityIso } from '../../src/utils/cityCalendar'
+import { shareArticleToWhatsApp } from '../../src/utils/shareToWhatsApp'
 
 export default function ArticleScreen() {
   return (
     <ScreenErrorBoundary name="article">
-      <ArticleBody />
+      <ArticlePagerBody />
     </ScreenErrorBoundary>
   )
 }
@@ -60,9 +58,13 @@ function paramsLookComplete(params: {
   return Boolean(params.headline?.trim() && params.summary?.trim())
 }
 
-function ArticleBody() {
+type PagerItem =
+  | { kind: 'story'; article: ArticleResponse }
+  | { kind: 'end'; key: string }
+
+function ArticlePagerBody() {
   const router = useRouter()
-  const { width: windowWidth } = useWindowDimensions()
+  const { height: windowHeight } = useWindowDimensions()
   const raw = useLocalSearchParams<{
     id?: string
     headline?: string
@@ -72,15 +74,29 @@ function ArticleBody() {
     imageUrl?: string
     publishedAt?: string
     category?: string
+    city?: string
+    feedCategory?: string
+    date?: string
+    lang?: string
   }>()
 
   const id = paramString(raw.id)
+  const routeCity = paramString(raw.city)
+  const feedCategory = paramString(raw.feedCategory)
+  const routeDate = paramString(raw.date)
+  const routeLang = paramString(raw.lang)
+  const { preferredLanguage } = useLanguagePreference()
+  const lang = routeLang || preferredLanguage
+
   const initialFromParams: ArticleResponse | null = useMemo(() => {
-    if (!id || !paramsLookComplete({
-      headline: paramString(raw.headline),
-      summary: paramString(raw.summary),
-      sourceName: paramString(raw.sourceName),
-    })) {
+    if (
+      !id ||
+      !paramsLookComplete({
+        headline: paramString(raw.headline),
+        summary: paramString(raw.summary),
+        sourceName: paramString(raw.sourceName),
+      })
+    ) {
       return null
     }
     const image = paramString(raw.imageUrl)
@@ -96,206 +112,289 @@ function ArticleBody() {
     }
   }, [id, raw.headline, raw.summary, raw.sourceName, raw.sourceUrl, raw.imageUrl, raw.publishedAt, raw.category])
 
-  const { preferredLanguage } = useLanguagePreference()
-  const [article, setArticle] = useState<ArticleResponse | null>(initialFromParams)
-  const [loading, setLoading] = useState(!initialFromParams && Boolean(id))
+  const [citySlug, setCitySlug] = useState(routeCity)
+  const [stack, setStack] = useState<ArticleResponse[]>(
+    initialFromParams ? [initialFromParams] : [],
+  )
+  const [total, setTotal] = useState(initialFromParams ? 1 : 0)
+  const [index, setIndex] = useState(0)
+  const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [bookmarked, setBookmarked] = useState(false)
+  const [showCoach, setShowCoach] = useState(false)
+  const [bookmarkedIds, setBookmarkedIds] = useState<Set<number>>(new Set())
+  const [hasMore, setHasMore] = useState(true)
+  const offsetRef = useRef(0)
+  const loadingMoreRef = useRef(false)
+  const initialIndexRef = useRef(0)
+  const coachCompletedRef = useRef(false)
+  const listRef = useRef<FlatList<PagerItem>>(null)
   const shareLabel = Platform.OS === 'web' ? 'Share on WhatsApp' : 'Share'
 
-  const scrollY = useRef(new Animated.Value(0)).current
-  const [contentHeight, setContentHeight] = useState(1)
-  const [layoutHeight, setLayoutHeight] = useState(1)
-  const [trackWidth, setTrackWidth] = useState(windowWidth)
-
-  const loadArticle = useCallback(async (signal?: { cancelled: boolean }) => {
-    if (!id) {
-      setError('Article not found')
-      setLoading(false)
-      return
-    }
-    // Keep optimistic placeholder visible; only show spinner when we have nothing yet.
-    if (!initialFromParams) {
-      setLoading(true)
-    }
-    setError(null)
-    try {
-      const result = await apiClient.getArticle(id, preferredLanguage)
-      if (signal?.cancelled) {
-        return
-      }
-      setArticle(result)
-      setError(null)
-    } catch (err) {
-      if (signal?.cancelled) {
-        return
-      }
-      // Keep optimistic placeholder if present; only surface errors when we have nothing to show.
-      if (!initialFromParams) {
-        setError(err instanceof Error ? err.message : 'Could not load article')
-        setArticle(null)
-      }
-    } finally {
-      if (!signal?.cancelled) {
-        setLoading(false)
-      }
-    }
-  }, [id, initialFromParams, preferredLanguage])
-
   useEffect(() => {
-    // Params are an optimistic placeholder only; always reconcile from the API when id is present.
-    if (initialFromParams) {
-      setArticle(initialFromParams)
-      setLoading(false)
-      setError(null)
-    } else if (!id) {
-      setArticle(null)
-      setError('Article not found')
-      setLoading(false)
-      return
-    } else {
-      setArticle(null)
-      setLoading(true)
-    }
-
-    const signal = { cancelled: false }
-    void loadArticle(signal)
-    return () => {
-      signal.cancelled = true
-    }
-  }, [id, initialFromParams, loadArticle])
-
-  useEffect(() => {
-    if (!id) {
-      return
-    }
     let cancelled = false
     void (async () => {
-      const sessionId = await getViewSessionId()
-      if (cancelled) {
+      if (routeCity) {
+        setCitySlug(routeCity)
         return
       }
-      await apiClient.recordArticleView(id, sessionId)
+      const stored = await getStoredCitySlug()
+      if (!cancelled && stored) {
+        setCitySlug(stored)
+      }
     })()
     return () => {
       cancelled = true
     }
-  }, [id])
+  }, [routeCity])
 
   useEffect(() => {
-    const articleId = article?.id ?? id
-    if (!articleId) {
-      setBookmarked(false)
-      return
-    }
     let cancelled = false
-    void isBookmarked(articleId).then((value) => {
+    void hasCompletedSwipeCoach().then((done) => {
       if (!cancelled) {
-        setBookmarked(value)
+        coachCompletedRef.current = done
+        setShowCoach(!done)
       }
     })
     return () => {
       cancelled = true
     }
-  }, [article?.id, id])
+  }, [])
 
-  const progressWidth = useMemo(() => {
-    const maxScroll = Math.max(contentHeight - layoutHeight, 1)
-    return scrollY.interpolate({
-      inputRange: [0, maxScroll],
-      outputRange: [0, trackWidth],
-      extrapolate: 'clamp',
-    })
-  }, [scrollY, contentHeight, layoutHeight, trackWidth])
+  const loadStack = useCallback(async () => {
+    if (!citySlug) {
+      if (!id) {
+        setError('Article not found')
+        setLoading(false)
+      }
+      return
+    }
 
-  const onScroll = useMemo(
-    () =>
-      Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], {
-        useNativeDriver: false,
-      }),
-    [scrollY],
+    setLoading(true)
+    setError(null)
+    try {
+      const isToday = !routeDate || routeDate === todayCityIso()
+      const first = await apiClient.getArticles({
+        city: citySlug,
+        category: feedCategory || undefined,
+        lang,
+        date: isToday ? undefined : routeDate || undefined,
+        offset: 0,
+        limit: PAGE_SIZE,
+      })
+      let items = first.items ?? []
+      const pageTotal = first.total ?? items.length
+      let startIndex = items.findIndex((a) => String(a.id) === id)
+
+      if (startIndex < 0 && id) {
+        try {
+          const single = await apiClient.getArticle(id, lang)
+          items = [single, ...items.filter((a) => a.id !== single.id)]
+          startIndex = 0
+        } catch {
+          if (!initialFromParams) {
+            setError('Article not found')
+            setStack([])
+            setLoading(false)
+            return
+          }
+          items = [initialFromParams]
+          startIndex = 0
+        }
+      }
+
+      if (items.length === 0) {
+        setError('Article not found')
+        setStack([])
+        setLoading(false)
+        return
+      }
+
+      offsetRef.current = items.length
+      initialIndexRef.current = Math.max(0, startIndex)
+      setStack(items)
+      setTotal(Math.max(pageTotal, items.length))
+      setHasMore(items.length < pageTotal)
+      setIndex(Math.max(0, startIndex))
+      setLoading(false)
+    } catch (err) {
+      if (initialFromParams) {
+        setStack([initialFromParams])
+        setTotal(1)
+        setHasMore(false)
+        setIndex(0)
+        setLoading(false)
+        return
+      }
+      setError(err instanceof Error ? err.message : 'Could not load article')
+      setLoading(false)
+    }
+  }, [citySlug, feedCategory, lang, routeDate, id, initialFromParams])
+
+  useEffect(() => {
+    void loadStack()
+  }, [loadStack])
+
+  const loadMore = useCallback(async () => {
+    if (!citySlug || loadingMoreRef.current || !hasMore) {
+      return
+    }
+    loadingMoreRef.current = true
+    try {
+      const isToday = !routeDate || routeDate === todayCityIso()
+      const result = await apiClient.getArticles({
+        city: citySlug,
+        category: feedCategory || undefined,
+        lang,
+        date: isToday ? undefined : routeDate || undefined,
+        offset: offsetRef.current,
+        limit: PAGE_SIZE,
+      })
+      const items = result.items ?? []
+      if (items.length === 0) {
+        setHasMore(false)
+        return
+      }
+      setStack((prev) => {
+        const seen = new Set(prev.map((a) => a.id))
+        const merged = [...prev]
+        for (const item of items) {
+          if (item.id != null && !seen.has(item.id)) {
+            merged.push(item)
+          }
+        }
+        offsetRef.current = merged.length
+        setHasMore(merged.length < (result.total ?? merged.length))
+        return merged
+      })
+      setTotal(result.total ?? offsetRef.current)
+    } catch {
+      // Soft fail — stay on current cards.
+    } finally {
+      loadingMoreRef.current = false
+    }
+  }, [citySlug, feedCategory, lang, routeDate, hasMore])
+
+  useEffect(() => {
+    if (index >= stack.length - 3 && hasMore) {
+      void loadMore()
+    }
+  }, [index, stack.length, hasMore, loadMore])
+
+  const recordView = useCallback(async (articleId: number | string | undefined) => {
+    if (articleId == null) {
+      return
+    }
+    const sessionId = await getViewSessionId()
+    await apiClient.recordArticleView(String(articleId), sessionId)
+  }, [])
+
+  useEffect(() => {
+    const current = stack[index]
+    if (current?.id != null) {
+      void recordView(current.id)
+      void isBookmarked(current.id).then((value) => {
+        setBookmarkedIds((prev) => {
+          const next = new Set(prev)
+          if (value) {
+            next.add(current.id!)
+          } else {
+            next.delete(current.id!)
+          }
+          return next
+        })
+      })
+    }
+  }, [index, stack, recordView])
+
+  const dismissCoachIfNeeded = useCallback(async (nextIndex: number) => {
+    if (coachCompletedRef.current) {
+      return
+    }
+    if (nextIndex !== initialIndexRef.current) {
+      coachCompletedRef.current = true
+      setShowCoach(false)
+      await markSwipeCoachCompleted()
+    }
+  }, [])
+
+  const onMomentumScrollEnd = useCallback(
+    (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+      const next = Math.round(event.nativeEvent.contentOffset.y / windowHeight)
+      if (Number.isFinite(next) && next !== index) {
+        setIndex(next)
+        void dismissCoachIfNeeded(next)
+      }
+    },
+    [windowHeight, index, dismissCoachIfNeeded],
   )
 
-  const headline = article?.headline || 'Article'
-  const summary = article?.summary || ''
-  const sourceName = article?.sourceName || 'Source'
-  const sourceUrl = article?.sourceUrl
-  const imageUrl = article?.imageUrl
-  const relative = formatRelativeTime(article?.publishedAt)
-  const canOpenSource = isHttpsUrl(sourceUrl)
+  const onViewableItemsChanged = useRef(
+    ({ viewableItems }: { viewableItems: ViewToken[] }) => {
+      const first = viewableItems[0]
+      if (first?.index != null && first.index !== index) {
+        setIndex(first.index)
+        void dismissCoachIfNeeded(first.index)
+      }
+    },
+  ).current
 
-  const onToggleBookmark = async () => {
-    if (!article?.id) {
+  const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 80 }).current
+
+  const pagerItems: PagerItem[] = useMemo(() => {
+    const items: PagerItem[] = stack.map((article) => ({ kind: 'story', article }))
+    if (!hasMore && stack.length > 0) {
+      items.push({ kind: 'end', key: 'caught-up' })
+    }
+    return items
+  }, [stack, hasMore])
+
+  const storyTotal = Math.max(total, stack.length)
+
+  const onBack = useCallback(() => {
+    router.back()
+  }, [router])
+
+  const onShare = useCallback(async (article: ArticleResponse) => {
+    await shareArticleToWhatsApp(article)
+  }, [])
+
+  const onToggleBookmark = useCallback(async (article: ArticleResponse) => {
+    if (article.id == null) {
       return
     }
-    const snap = articleToBookmark(article)
-    if (!snap) {
+    const snapshot = articleToBookmark(article)
+    if (!snapshot) {
       return
     }
-    if (bookmarked) {
-      await removeBookmark(snap.id)
-      setBookmarked(false)
+    const currently = bookmarkedIds.has(article.id)
+    if (currently) {
+      await removeBookmark(article.id)
+      setBookmarkedIds((prev) => {
+        const next = new Set(prev)
+        next.delete(article.id!)
+        return next
+      })
     } else {
-      await addBookmark(snap)
-      setBookmarked(true)
+      await addBookmark(snapshot)
+      setBookmarkedIds((prev) => new Set(prev).add(article.id!))
     }
-  }
+  }, [bookmarkedIds])
 
-  if (loading) {
+  if (loading && stack.length === 0) {
     return (
-      <View style={[styles.root, styles.centered]}>
-        <ActivityIndicator color={colors.accent} size="large" />
-        <Text fontSize={16} lineHeight={24} color={colors.textSecondary} mt="$3">
-          Loading article…
-        </Text>
+      <View style={styles.center}>
+        <ActivityIndicator color={readerColors.accent} />
       </View>
     )
   }
 
-  if (!article) {
+  if (error && stack.length === 0) {
     return (
-      <View style={[styles.root, styles.centeredPad]}>
-        <Text fontSize={18} lineHeight={28} fontWeight="$bold" color={colors.text}>
-          Something went wrong
-        </Text>
-        <Text fontSize={16} lineHeight={24} color={colors.textSecondary} mt="$2" mb="$4">
-          {error ?? 'Article not found'}
-        </Text>
-        <Pressable
-          onPress={() => void loadArticle()}
-          accessibilityRole="button"
-          accessibilityLabel="Retry loading article"
-          style={({ pressed }) => [
-            styles.primaryBtn,
-            pressed ? styles.primaryPressed : null,
-          ]}
-        >
-          <Text
-            fontSize={typography.button.fontSize}
-            lineHeight={typography.button.lineHeight}
-            fontWeight="$semibold"
-            color={colors.textOnAccent}
-          >
-            Try again
-          </Text>
-        </Pressable>
-        <Pressable
-          onPress={() => router.back()}
-          accessibilityRole="button"
-          accessibilityLabel="Back to feed"
-          style={({ pressed }) => [
-            styles.secondaryBtn,
-            pressed ? styles.secondaryPressed : null,
-          ]}
-        >
-          <Text
-            fontSize={typography.button.fontSize}
-            lineHeight={typography.button.lineHeight}
-            fontWeight="$semibold"
-            color={colors.textSecondary}
-          >
-            Back to feed
-          </Text>
+      <View style={styles.center}>
+        <Text style={styles.errorTitle}>Story unavailable</Text>
+        <Text style={styles.errorBody}>{error}</Text>
+        <Pressable accessibilityRole="button" accessibilityLabel="Go back" onPress={onBack} style={styles.errorBtn}>
+          <Text style={styles.errorBtnText}>Back</Text>
         </Pressable>
       </View>
     )
@@ -303,167 +402,59 @@ function ArticleBody() {
 
   return (
     <View style={styles.root}>
-      <View
-        style={styles.progressTrack}
-        accessibilityLabel="Reading progress"
-        onLayout={(e) => setTrackWidth(e.nativeEvent.layout.width)}
-      >
-        <Animated.View style={[styles.progressFill, { width: progressWidth }]} />
-      </View>
-
-      <Animated.ScrollView
-        style={styles.scroll}
-        contentContainerStyle={styles.scrollContent}
-        scrollEventThrottle={16}
-        onScroll={onScroll}
-        onLayout={(e) => setLayoutHeight(e.nativeEvent.layout.height)}
-        onContentSizeChange={(_w, h) => setContentHeight(h)}
-      >
-        {imageUrl ? (
-          <View style={styles.heroWrap}>
-            <Image
-              source={{ uri: imageUrl }}
-              alt=""
-              w="$full"
-              h={media.articleHeroHeight}
-              resizeMode="cover"
+      <FlatList
+        ref={listRef}
+        testID="story-pager"
+        data={pagerItems}
+        keyExtractor={(item) =>
+          item.kind === 'end' ? item.key : String(item.article.id ?? item.article.headline)
+        }
+        renderItem={({ item, index: itemIndex }) => {
+          if (item.kind === 'end') {
+            return <CaughtUpCard height={windowHeight} onBack={onBack} />
+          }
+          const article = item.article
+          return (
+            <SwipeStoryCard
+              article={article}
+              index={itemIndex}
+              total={storyTotal}
+              height={windowHeight}
+              cityLabel={citySlug || undefined}
+              bookmarked={article.id != null && bookmarkedIds.has(article.id)}
+              shareLabel={shareLabel}
+              onBack={onBack}
+              onShare={() => void onShare(article)}
+              onToggleBookmark={() => void onToggleBookmark(article)}
+              showNextCue={hasMore || itemIndex < pagerItems.length - 2}
             />
-            <ImageBottomFade height={96} />
-          </View>
-        ) : null}
+          )
+        }}
+        pagingEnabled
+        showsVerticalScrollIndicator={false}
+        getItemLayout={(_, i) => ({
+          length: windowHeight,
+          offset: windowHeight * i,
+          index: i,
+        })}
+        initialScrollIndex={Math.min(initialIndexRef.current, Math.max(pagerItems.length - 1, 0))}
+        onScrollToIndexFailed={() => {
+          // ignore — FlatList will settle
+        }}
+        onMomentumScrollEnd={onMomentumScrollEnd}
+        onViewableItemsChanged={onViewableItemsChanged}
+        viewabilityConfig={viewabilityConfig}
+      />
 
-        <View style={[styles.body, !imageUrl ? styles.bodyNoImage : null]}>
-          {isArticleTranslated(article) ? (
-            <Text
-              fontSize={typography.label.fontSize}
-              lineHeight={typography.label.lineHeight}
-              fontWeight="$medium"
-              color={colors.textMuted}
-              mb="$2"
-              accessibilityLabel="Machine translated"
-            >
-              Translated
-            </Text>
-          ) : null}
-          <Text
-            fontSize={26}
-            lineHeight={34}
-            fontWeight="$bold"
-            color={colors.text}
-            letterSpacing={-0.3}
-          >
-            {headline}
-          </Text>
-
-          <Text
-            fontSize={typography.meta.fontSize}
-            lineHeight={typography.meta.lineHeight}
-            letterSpacing={typography.meta.letterSpacing}
-            fontWeight="$medium"
-            color={colors.textMuted}
-            textTransform="uppercase"
-            style={styles.meta}
-          >
-            {sourceName}
-            {relative ? `  ·  ${relative}` : ''}
-          </Text>
-
-          {summary ? (
-            <Text
-              fontSize={typography.summary.fontSize}
-              lineHeight={Math.round(typography.summary.lineHeight * 1.05)}
-              color={colors.textSecondary}
-              style={styles.summary}
-            >
-              {summary}
-            </Text>
-          ) : null}
-
-          <View style={styles.actions}>
-            <Pressable
-              onPress={() => void shareArticleToWhatsApp({
-                headline: article.headline,
-                summary: article.summary,
-                sourceUrl: article.sourceUrl,
-              })}
-              accessibilityRole="button"
-              accessibilityLabel={shareLabel}
-              style={({ pressed }) => [
-                styles.primaryBtn,
-                pressed ? styles.primaryPressed : null,
-              ]}
-            >
-              <Text
-                fontSize={typography.button.fontSize}
-                lineHeight={typography.button.lineHeight}
-                fontWeight="$semibold"
-                color={colors.textOnAccent}
-              >
-                {shareLabel}
-              </Text>
-            </Pressable>
-
-            <Pressable
-              onPress={() => void onToggleBookmark()}
-              accessibilityRole="button"
-              accessibilityLabel={bookmarked ? 'Remove bookmark' : 'Save bookmark'}
-              style={({ pressed }) => [
-                styles.secondaryBtn,
-                pressed ? styles.secondaryPressed : null,
-              ]}
-            >
-              <Text
-                fontSize={typography.button.fontSize}
-                lineHeight={typography.button.lineHeight}
-                fontWeight="$semibold"
-                color={colors.text}
-              >
-                {bookmarked ? 'Remove bookmark' : 'Save'}
-              </Text>
-            </Pressable>
-
-            {canOpenSource ? (
-              <Pressable
-                onPress={() => void openHttpsSource(sourceUrl)}
-                accessibilityRole="button"
-                accessibilityLabel="Open original source"
-                style={({ pressed }) => [
-                  styles.secondaryBtn,
-                  pressed ? styles.secondaryPressed : null,
-                ]}
-              >
-                <Text
-                  fontSize={typography.button.fontSize}
-                  lineHeight={typography.button.lineHeight}
-                  fontWeight="$semibold"
-                  color={colors.textSecondary}
-                >
-                  Open original source
-                </Text>
-              </Pressable>
-            ) : null}
-
-            <Pressable
-              onPress={() => router.back()}
-              accessibilityRole="button"
-              accessibilityLabel="Back to feed"
-              style={({ pressed }) => [
-                styles.ghostBtn,
-                pressed ? styles.secondaryPressed : null,
-              ]}
-            >
-              <Text
-                fontSize={typography.button.fontSize}
-                lineHeight={typography.button.lineHeight}
-                fontWeight="$semibold"
-                color={colors.textSecondary}
-              >
-                Back to feed
-              </Text>
-            </Pressable>
+      {showCoach ? (
+        <View style={styles.coachOverlay} pointerEvents="box-none">
+          <View style={styles.coachSheet}>
+            <Text style={styles.coachArrow}>↑</Text>
+            <Text style={styles.coachTitle}>Swipe up for the next story</Text>
+            <Text style={styles.coachBody}>Shown until you swipe once</Text>
           </View>
         </View>
-      </Animated.ScrollView>
+      ) : null}
     </View>
   )
 }
@@ -471,85 +462,72 @@ function ArticleBody() {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: readerColors.canvas,
   },
-  centered: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  centeredPad: {
-    paddingHorizontal: space.lg,
-    justifyContent: 'center',
-  },
-  progressTrack: {
-    height: 3,
-    width: '100%',
-    backgroundColor: colors.surfaceRaised,
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: '100%',
-    backgroundColor: colors.accent,
-  },
-  scroll: {
+  center: {
     flex: 1,
-    backgroundColor: colors.background,
-  },
-  scrollContent: {
-    paddingBottom: space.xxl,
-  },
-  heroWrap: {
-    width: '100%',
-    height: media.articleHeroHeight,
-    backgroundColor: colors.surface,
-    overflow: 'hidden',
-  },
-  body: {
-    paddingHorizontal: space.md,
-    paddingTop: space.md,
-  },
-  bodyNoImage: {
-    paddingTop: space.xl,
-  },
-  meta: {
-    marginTop: space.xs,
-  },
-  summary: {
-    marginTop: space.md,
-  },
-  actions: {
-    marginTop: space.xl,
-    gap: space.sm,
-  },
-  primaryBtn: {
-    minHeight: 52,
-    borderRadius: radius.full,
-    backgroundColor: colors.accent,
+    backgroundColor: readerColors.canvas,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: space.lg,
+    padding: 24,
+    gap: 12,
   },
-  primaryPressed: {
-    backgroundColor: colors.accentPressed,
+  errorTitle: {
+    color: readerColors.text,
+    fontSize: 20,
+    fontWeight: '700',
   },
-  secondaryBtn: {
-    minHeight: 52,
-    borderRadius: radius.full,
+  errorBody: {
+    color: readerColors.textMuted,
+    fontSize: 14,
+    textAlign: 'center',
+  },
+  errorBtn: {
+    marginTop: 8,
+    minHeight: 44,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    backgroundColor: readerColors.sheet,
     borderWidth: 1,
-    borderColor: colors.chipInactiveBorder,
-    backgroundColor: colors.surface,
+    borderColor: readerColors.sheetBorder,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: space.lg,
   },
-  secondaryPressed: {
-    backgroundColor: colors.surfaceRaised,
+  errorBtnText: {
+    color: readerColors.accent,
+    fontWeight: '600',
   },
-  ghostBtn: {
-    minHeight: 48,
-    borderRadius: radius.full,
+  coachOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: readerColors.overlay,
+    justifyContent: 'flex-end',
+    padding: 20,
+  },
+  coachSheet: {
+    backgroundColor: readerColors.sheet,
+    borderColor: readerColors.sheetBorder,
+    borderWidth: 1,
+    borderRadius: 16,
+    padding: 20,
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: space.lg,
+    marginBottom: 24,
+  },
+  coachArrow: {
+    color: readerColors.text,
+    fontSize: 28,
+    fontWeight: '700',
+  },
+  coachTitle: {
+    marginTop: 8,
+    color: readerColors.text,
+    fontSize: 16,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+  coachBody: {
+    marginTop: 6,
+    color: readerColors.textMuted,
+    fontSize: 13,
+    textAlign: 'center',
   },
 })

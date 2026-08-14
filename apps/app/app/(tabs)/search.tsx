@@ -224,7 +224,10 @@ function DiscoverBody() {
 
   const openArticle = useCallback(
     (article: ArticleResponse) => {
-      const params = articleRouteParams(article)
+      const params = articleRouteParams(article, {
+        city: citySlug ?? undefined,
+        lang: preferredLanguage,
+      })
       if (!params) {
         return
       }
@@ -233,7 +236,7 @@ function DiscoverBody() {
         params,
       })
     },
-    [router],
+    [router, citySlug, preferredLanguage],
   )
 
   const openStoryActions = useCallback((article: ArticleResponse) => {

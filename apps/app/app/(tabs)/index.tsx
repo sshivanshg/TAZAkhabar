@@ -458,7 +458,13 @@ function HomeFeedBody() {
 
   const openArticle = useCallback(
     (article: ArticleResponse) => {
-      const params = articleRouteParams(article)
+      const isToday = selectedDate === todayCityIso()
+      const params = articleRouteParams(article, {
+        city: citySlug ?? undefined,
+        feedCategory: category === 'All' ? undefined : category,
+        date: isToday ? undefined : selectedDate,
+        lang: preferredLanguage,
+      })
       if (!params) {
         return
       }
@@ -467,7 +473,7 @@ function HomeFeedBody() {
         params,
       })
     },
-    [router],
+    [router, citySlug, category, selectedDate, preferredLanguage],
   )
 
   const goDiscover = useCallback(() => {
