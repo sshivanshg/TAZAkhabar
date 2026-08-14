@@ -4,7 +4,12 @@ import type { ArticleResponse } from '@newsfeed/shared-types'
 import { ImageBottomFade } from './ImageBottomFade'
 import { readerColors } from '../theme/readerTokens'
 import { formatRelativeTime } from '../utils/relativeTime'
+import { isArticleTranslated } from '../utils/articleLanguage'
 import { isHttpsUrl } from '../utils/shareToWhatsApp'
+import {
+  READING_LANGUAGES,
+  type ReadingLanguageCode,
+} from '../storage/languagePreference'
 
 type Props = {
   article: ArticleResponse
@@ -18,6 +23,8 @@ type Props = {
   onShare: () => void
   onToggleBookmark: () => void
   showNextCue?: boolean
+  readingLanguage?: ReadingLanguageCode
+  onSelectLanguage?: (code: ReadingLanguageCode) => void
 }
 
 export function SwipeStoryCard({
@@ -32,6 +39,8 @@ export function SwipeStoryCard({
   onShare,
   onToggleBookmark,
   showNextCue = true,
+  readingLanguage,
+  onSelectLanguage,
 }: Props) {
   const insets = useSafeAreaInsets()
   const imageUri = article.imageUrl && isHttpsUrl(article.imageUrl) ? article.imageUrl : null
@@ -50,9 +59,31 @@ export function SwipeStoryCard({
         >
           <Text style={styles.topAction}>← Back</Text>
         </Pressable>
-        <Text style={styles.topMeta}>
-          {index + 1} / {total}
-        </Text>
+        <View style={styles.topRight}>
+          {onSelectLanguage
+            ? READING_LANGUAGES.map((lang) => {
+                const selected = readingLanguage === lang.code
+                return (
+                  <Pressable
+                    key={lang.code}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected }}
+                    accessibilityLabel={`Prefer ${lang.label}`}
+                    onPress={() => onSelectLanguage(lang.code)}
+                    hitSlop={8}
+                    style={[styles.langChip, selected ? styles.langChipSelected : null]}
+                  >
+                    <Text style={[styles.langChipText, selected ? styles.langChipTextSelected : null]}>
+                      {lang.code === 'en' ? 'EN' : 'हि'}
+                    </Text>
+                  </Pressable>
+                )
+              })
+            : null}
+          <Text style={styles.topMeta}>
+            {index + 1} / {total}
+          </Text>
+        </View>
       </View>
 
       <View style={styles.hero}>
@@ -63,7 +94,10 @@ export function SwipeStoryCard({
         )}
         <ImageBottomFade height={120} />
         <View style={styles.heroText}>
-          <Text style={styles.eyebrow}>{eyebrow}</Text>
+          <Text style={styles.eyebrow}>
+            {eyebrow}
+            {isArticleTranslated(article) ? ' · Translated' : ''}
+          </Text>
           <Text style={styles.headline}>{article.headline}</Text>
         </View>
       </View>
@@ -144,6 +178,33 @@ const styles = StyleSheet.create({
     color: readerColors.textSecondary,
     fontSize: 14,
     fontWeight: '600',
+  },
+  topRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  langChip: {
+    minWidth: 36,
+    minHeight: 32,
+    paddingHorizontal: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.28)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  langChipSelected: {
+    backgroundColor: readerColors.accent,
+    borderColor: readerColors.accent,
+  },
+  langChipText: {
+    color: readerColors.textSecondary,
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  langChipTextSelected: {
+    color: readerColors.canvas,
   },
   topMeta: {
     color: readerColors.textMuted,

@@ -102,7 +102,7 @@ function ProfileBody() {
             color={colors.textSecondary}
             mt="$1"
           >
-            City, blocks, and about
+            City, language, blocks, and about
           </Text>
         </View>
 

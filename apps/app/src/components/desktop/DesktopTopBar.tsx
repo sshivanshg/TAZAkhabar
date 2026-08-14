@@ -16,10 +16,16 @@ import { MapPin, Search } from 'lucide-react-native'
 import { MotiView } from 'moti'
 import { iconStroke } from '../../theme/categoryIcons'
 import { colors, HIT_TARGET, radius, space, typography } from '../../theme/tokens'
+import {
+  READING_LANGUAGES,
+  type ReadingLanguageCode,
+} from '../../storage/languagePreference'
 
 type Props = {
   cityTitle?: string
   onCityPress: () => void
+  readingLanguage?: ReadingLanguageCode
+  onSelectLanguage?: (code: ReadingLanguageCode) => void
 }
 
 type WebPressableState = PressableStateCallbackType & {
@@ -34,7 +40,12 @@ const SEARCH_EXPANDED_WIDTH = 340
 const MOTION_MS = 200
 
 /** Desktop home header — city pill + morphing search. */
-export function DesktopTopBar({ cityTitle, onCityPress }: Props) {
+export function DesktopTopBar({
+  cityTitle,
+  onCityPress,
+  readingLanguage,
+  onSelectLanguage,
+}: Props) {
   const router = useRouter()
   const inputRef = useRef<TextInput>(null)
   const { width: windowWidth } = useWindowDimensions()
@@ -157,6 +168,31 @@ export function DesktopTopBar({ cityTitle, onCityPress }: Props) {
       </View>
 
       <View style={styles.rightCluster}>
+        {onSelectLanguage ? (
+          <View style={styles.langRow}>
+            {READING_LANGUAGES.map((lang) => {
+              const selected = readingLanguage === lang.code
+              return (
+                <Pressable
+                  key={lang.code}
+                  onPress={() => onSelectLanguage(lang.code)}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected }}
+                  accessibilityLabel={`Prefer ${lang.label}`}
+                  style={[styles.langChip, selected ? styles.langChipSelected : null]}
+                >
+                  <Text
+                    fontSize={typography.label.fontSize}
+                    fontWeight="$semibold"
+                    color={selected ? colors.chipSelectedText : colors.chipInactiveText}
+                  >
+                    {lang.code === 'en' ? 'EN' : 'हि'}
+                  </Text>
+                </Pressable>
+              )
+            })}
+          </View>
+        ) : null}
         {/*
           One chrome surface: Moti grows width from circle → pill.
           Icon stays inside; input is clipped until width opens. Never two sibling controls.
@@ -246,6 +282,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexShrink: 0,
     gap: space.sm,
+  },
+  langRow: {
+    flexDirection: 'row',
+    gap: 6,
+  },
+  langChip: {
+    minWidth: 36,
+    minHeight: 32,
+    paddingHorizontal: 8,
+    borderRadius: radius.full,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  langChipSelected: {
+    backgroundColor: colors.accent,
+    borderColor: colors.accent,
   },
   cityPill: {
     flexDirection: 'row',

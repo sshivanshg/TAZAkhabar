@@ -119,6 +119,7 @@ describe('ArticleScreen', () => {
     expect(await screen.findByText('Fetched headline')).toBeTruthy()
     expect(screen.getByText('Fetched summary body.')).toBeTruthy()
     expect(screen.getAllByLabelText('Share').length).toBeGreaterThan(0)
+    expect(screen.getAllByLabelText('Prefer English').length).toBeGreaterThan(0)
     expect(mockGetArticles).toHaveBeenCalled()
   })
 

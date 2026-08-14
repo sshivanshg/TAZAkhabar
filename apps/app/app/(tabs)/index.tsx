@@ -135,7 +135,8 @@ function HomeFeedBody() {
   const router = useRouter()
   const params = useLocalSearchParams<{ city?: string; category?: string }>()
   const prefs = useFeedPreferences()
-  const { preferredLanguage, ready: languageReady } = useLanguagePreference()
+  const { preferredLanguage, setPreferredLanguage, ready: languageReady } =
+    useLanguagePreference()
   const tabClearance = useTabBarClearance()
   const bp = useBreakpoint()
   const desktop = isDesktopLayout(bp)
@@ -642,12 +643,16 @@ function HomeFeedBody() {
           <DesktopTopBar
             cityTitle={cityTitle}
             onCityPress={() => router.push('/city')}
+            readingLanguage={preferredLanguage}
+            onSelectLanguage={setPreferredLanguage}
           />
         ) : (
           <HomeTopBar
             cityTitle={cityTitle}
             onCityPress={() => router.push('/city')}
             onSearchPress={goDiscover}
+            readingLanguage={preferredLanguage}
+            onSelectLanguage={setPreferredLanguage}
           />
         )}
         {Platform.OS === 'web' ? <AddToHomeBanner /> : null}

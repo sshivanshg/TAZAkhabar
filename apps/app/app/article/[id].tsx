@@ -84,9 +84,8 @@ function ArticlePagerBody() {
   const routeCity = paramString(raw.city)
   const feedCategory = paramString(raw.feedCategory)
   const routeDate = paramString(raw.date)
-  const routeLang = paramString(raw.lang)
-  const { preferredLanguage } = useLanguagePreference()
-  const lang = routeLang || preferredLanguage
+  const { preferredLanguage, setPreferredLanguage } = useLanguagePreference()
+  const lang = preferredLanguage
 
   const initialFromParams: ArticleResponse | null = useMemo(() => {
     if (
@@ -427,6 +426,8 @@ function ArticlePagerBody() {
               onShare={() => void onShare(article)}
               onToggleBookmark={() => void onToggleBookmark(article)}
               showNextCue={hasMore || itemIndex < pagerItems.length - 2}
+              readingLanguage={preferredLanguage}
+              onSelectLanguage={setPreferredLanguage}
             />
           )
         }}
