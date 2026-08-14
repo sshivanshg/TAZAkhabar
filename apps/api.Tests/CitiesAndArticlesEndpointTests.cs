@@ -322,6 +322,38 @@ public sealed class ArticlesEndpointTests : IClassFixture<NewsFeedWebApplication
         Assert.Equal(HttpStatusCode.NotFound, (await client.GetAsync($"/api/articles/{pendingId}")).StatusCode);
     }
 
+    [Fact]
+    public async Task GetArticles_ExcludesOlderThanRetention()
+    {
+        var client = _factory.CreateSeededClient();
+        InsertJhansiArticles(
+            Published("Old", "https://example.com/old-ret", DateTimeOffset.UtcNow.AddDays(-8)),
+            Published("Fresh", "https://example.com/fresh-ret", DateTimeOffset.UtcNow.AddDays(-1)));
+
+        var payload = await client.GetFromJsonAsync<PagedArticlesResponse>("/api/articles?city=jhansi");
+        Assert.NotNull(payload);
+        Assert.DoesNotContain(payload.Items, a => a.Headline == "Old");
+        Assert.Contains(payload.Items, a => a.Headline == "Fresh");
+    }
+
+    [Fact]
+    public async Task GetArticleById_Old_Returns404()
+    {
+        var client = _factory.CreateSeededClient();
+        int id;
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var article = Published("Ancient", "https://example.com/ancient", DateTimeOffset.UtcNow.AddDays(-10));
+            db.Articles.Add(article);
+            db.SaveChanges();
+            id = article.Id;
+        }
+
+        var response = await client.GetAsync($"/api/articles/{id}");
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
     private void InsertJhansiArticles(params Article[] articles)
     {
         using var scope = _factory.Services.CreateScope();

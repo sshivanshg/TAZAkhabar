@@ -1,7 +1,9 @@
 using NewsFeed.Api.Data;
 using NewsFeed.Api.Dtos;
+using NewsFeed.Api.Options;
 using NewsFeed.Api.Services;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace NewsFeed.Api.Endpoints;
 
@@ -24,6 +26,7 @@ public static class ArticlesEndpoints
                 int? limit,
                 AppDbContext db,
                 IArticlePresentationService presentation,
+                IOptions<ArticleRetentionOptions> retentionOptions,
                 HttpContext httpContext,
                 CancellationToken cancellationToken) =>
             {
@@ -79,11 +82,14 @@ public static class ArticlesEndpoints
 
                 pageLimit = Math.Min(pageLimit, MaxLimit);
 
+                var cutoff = ArticleRetention.CutoffUtc(DateTimeOffset.UtcNow, retentionOptions.Value.Days);
+
                 var query = db.Articles
                     .AsNoTracking()
                     .Where(a => a.CityId == cityEntity.Id
                         && a.Status == ArticleStatus.Published
-                        && !a.IsMock);
+                        && !a.IsMock
+                        && a.PublishedAt >= cutoff);
 
                 if (!string.IsNullOrWhiteSpace(category))
                 {
@@ -127,6 +133,7 @@ public static class ArticlesEndpoints
                 string? category,
                 int? days,
                 AppDbContext db,
+                IOptions<ArticleRetentionOptions> retentionOptions,
                 HttpContext httpContext,
                 CancellationToken cancellationToken) =>
             {
@@ -138,13 +145,14 @@ public static class ArticlesEndpoints
                         statusCode: StatusCodes.Status400BadRequest);
                 }
 
-                var windowDays = days ?? CityCalendar.DefaultDatesWindowDays;
+                var retentionDays = Math.Max(1, retentionOptions.Value.Days);
+                var windowDays = days ?? Math.Min(CityCalendar.DefaultDatesWindowDays, retentionDays);
                 if (windowDays < 1)
                 {
-                    windowDays = CityCalendar.DefaultDatesWindowDays;
+                    windowDays = Math.Min(CityCalendar.DefaultDatesWindowDays, retentionDays);
                 }
 
-                windowDays = Math.Min(windowDays, CityCalendar.DefaultDatesWindowDays);
+                windowDays = Math.Min(windowDays, Math.Min(CityCalendar.DefaultDatesWindowDays, retentionDays));
 
                 var slug = city.Trim().ToLowerInvariant();
                 var cityEntity = await db.Cities
@@ -204,6 +212,7 @@ public static class ArticlesEndpoints
                 int? limit,
                 AppDbContext db,
                 IArticlePresentationService presentation,
+                IOptions<ArticleRetentionOptions> retentionOptions,
                 HttpContext httpContext,
                 CancellationToken cancellationToken) =>
             {
@@ -238,7 +247,8 @@ public static class ArticlesEndpoints
 
                 var now = DateTimeOffset.UtcNow;
                 var viewSince = now - TrendingDefaults.ViewWindow;
-                var publishedSince = now - TrendingDefaults.PublishCeiling;
+                var retentionDays = Math.Max(1, retentionOptions.Value.Days);
+                var publishedSince = now - TimeSpan.FromDays(retentionDays);
 
                 var rankedIds = await db.ArticleViews
                     .AsNoTracking()
@@ -287,14 +297,17 @@ public static class ArticlesEndpoints
                 int id,
                 RecordArticleViewRequest? body,
                 AppDbContext db,
+                IOptions<ArticleRetentionOptions> retentionOptions,
                 CancellationToken cancellationToken) =>
             {
+                var cutoff = ArticleRetention.CutoffUtc(DateTimeOffset.UtcNow, retentionOptions.Value.Days);
                 var exists = await db.Articles
                     .AsNoTracking()
                     .AnyAsync(
                         a => a.Id == id
                             && a.Status == ArticleStatus.Published
-                            && !a.IsMock,
+                            && !a.IsMock
+                            && a.PublishedAt >= cutoff,
                         cancellationToken);
 
                 if (!exists)
@@ -343,15 +356,18 @@ public static class ArticlesEndpoints
                 string? lang,
                 AppDbContext db,
                 IArticlePresentationService presentation,
+                IOptions<ArticleRetentionOptions> retentionOptions,
                 HttpContext httpContext,
                 CancellationToken cancellationToken) =>
             {
+                var cutoff = ArticleRetention.CutoffUtc(DateTimeOffset.UtcNow, retentionOptions.Value.Days);
                 var entity = await db.Articles
                     .AsNoTracking()
                     .FirstOrDefaultAsync(
                         a => a.Id == id
                             && a.Status == ArticleStatus.Published
-                            && !a.IsMock,
+                            && !a.IsMock
+                            && a.PublishedAt >= cutoff,
                         cancellationToken);
 
                 if (entity is null)
@@ -396,7 +412,6 @@ public static class ArticlesEndpoints
 internal static class TrendingDefaults
 {
     public static readonly TimeSpan ViewWindow = TimeSpan.FromHours(24);
-    public static readonly TimeSpan PublishCeiling = TimeSpan.FromDays(7);
     public static readonly TimeSpan DedupWindow = TimeSpan.FromMinutes(30);
     public const int DefaultLimit = 5;
     public const int MaxLimit = 20;
