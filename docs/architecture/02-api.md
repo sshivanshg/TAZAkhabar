@@ -1,7 +1,7 @@
 # API
 
 > **Living doc** — update when endpoints, auth, rate limits, CORS, or DI composition change.  
-> **Last verified against:** 2026-08-14 (article `body` on detail; scrape skips Claude summarize)
+> **Last verified against:** 2026-08-14 (CORS allows Pages preview hosts)
 
 ## Purpose
 
@@ -73,6 +73,7 @@ Pipeline (order): ExceptionHandler → StatusCodePages → ForwardedHeaders → 
 - Readers: none ([ADR-002](../adr/002-no-auth-mvp.md)).
 - Admin: shared password + display name → HS256 JWT 8h ([ADR-005](../adr/005-admin-shared-credential.md)).
 - Ingest key is **not** accepted on admin routes.
+- CORS: configured `Cors__AllowedOrigins__*` plus HTTPS hosts under `*.newsfeed-web.pages.dev` / `*.newsfeed-admin.pages.dev` (Cloudflare Git preview aliases). Never `AllowAnyOrigin`.
 
 ## Key files
 

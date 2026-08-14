@@ -1,5 +1,6 @@
 using System.Text;
 using System.Threading.RateLimiting;
+using NewsFeed.Api;
 using NewsFeed.Api.Data;
 using NewsFeed.Api.Dtos;
 using NewsFeed.Api.Endpoints;
@@ -143,7 +144,7 @@ try
                     "Cors:AllowedOrigins must contain at least one origin. Wildcard CORS is not allowed.");
             }
 
-            policy.WithOrigins(corsOptions.AllowedOrigins)
+            policy.SetIsOriginAllowed(origin => CorsOrigin.IsAllowed(origin, corsOptions.AllowedOrigins))
                 .AllowAnyHeader()
                 .AllowAnyMethod();
         });
