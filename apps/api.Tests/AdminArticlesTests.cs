@@ -25,7 +25,7 @@ public sealed class AdminArticlesTests : IClassFixture<NewsFeedWebApplicationFac
         using (var scope = _factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-            publishedAt = DateTimeOffset.Parse("2026-01-15T10:00:00Z");
+            publishedAt = DateTimeOffset.UtcNow.AddHours(-2);
             var article = new Article
             {
                 CityId = 2,
