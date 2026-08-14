@@ -1,7 +1,7 @@
 # Hosting and CI
 
 > **Living doc** — update when Render, Cloudflare, Neon, Docker, workflows, or env templates change.  
-> **Last verified against:** 2026-08-14 (local working tree)
+> **Last verified against:** 2026-08-14 (Pages Git builds need baked `EXPO_PUBLIC_*`)
 
 ## Purpose
 
@@ -87,8 +87,8 @@ No `wrangler.toml` in-repo — Pages deploy uses `cloudflare/pages-action` (wran
 | `ArticleIntelligence__ApiKey` / `BaseUrl` / `Model` | Render |
 | `Upload__RootPath` | Render |
 | `INGEST_URL` | Cron services |
-| `EXPO_PUBLIC_API_BASE_URL` | GitHub Actions → reader build |
-| `VITE_API_BASE_URL` | GitHub Actions → admin build |
+| `EXPO_PUBLIC_API_BASE_URL` | GitHub Actions **and** `apps/app/.env.production` (Expo inlines this at export) |
+| `VITE_API_BASE_URL` | GitHub Actions **and** `apps/admin/.env.production` |
 | `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` | GitHub secrets |
 | `CLOUDFLARE_PAGES_PROJECT_NAME` | default `newsfeed-web` |
 | `CLOUDFLARE_PAGES_ADMIN_PROJECT_NAME` | default `newsfeed-admin` |
@@ -96,6 +96,7 @@ No `wrangler.toml` in-repo — Pages deploy uses `cloudflare/pages-action` (wran
 ## Failure modes & invariants
 
 - API deploys are owned by Render, not the Pages deploy job.
+- **Do not let Cloudflare dashboard Git builds replace Actions without env.** Connecting the repo in Pages Settings starts a second pipeline that does **not** see GitHub `vars.EXPO_PUBLIC_API_BASE_URL`. Expo then ships `EXPO_PUBLIC_API_BASE_URL is not configured`. Prefer: pause Pages automatic deployments and keep `.github/workflows/deploy.yml`. If Git builds stay on, set production env `EXPO_PUBLIC_API_BASE_URL`, build command `corepack enable && pnpm install --frozen-lockfile && pnpm --filter @newsfeed/app build:web`, output `apps/app/dist`.
 - Edge caching implies up to ~60s feed staleness — tune deliberately.
 - Staging Render/Neon deferred; when added, separate service + Neon branch/project.
 - Never commit real secrets; only `*.example` templates.
