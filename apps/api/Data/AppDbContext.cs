@@ -117,6 +117,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             entity.Property(a => a.CityId).HasColumnName("city_id");
             entity.Property(a => a.Headline).HasColumnName("headline").HasMaxLength(300).IsRequired();
             entity.Property(a => a.Summary).HasColumnName("summary").HasMaxLength(1000).IsRequired();
+            entity.Property(a => a.Body).HasColumnName("body");
             entity.Property(a => a.SourceName).HasColumnName("source_name").HasMaxLength(120).IsRequired();
             entity.Property(a => a.SourceUrl).HasColumnName("source_url").HasMaxLength(500).IsRequired();
             entity.Property(a => a.PublishedAt).HasColumnName("published_at");

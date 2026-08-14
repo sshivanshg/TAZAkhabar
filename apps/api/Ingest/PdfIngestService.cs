@@ -134,12 +134,13 @@ public sealed class PdfIngestService(
                 : null;
 
             IngestionEvents.Emit(events, run.Id, "progress", "Extracting stories from upload");
-            var stories = await ExtractStoriesAsync(upload, hintCity?.Slug, ct);
-            if (stories is null)
+            var extracted = await ExtractStoriesAsync(upload, hintCity?.Slug, ct);
+            if (extracted is null)
             {
                 return;
             }
 
+            var (stories, bodyText) = extracted.Value;
             run.ArticlesFound = stories.Count;
             IngestionEvents.Emit(
                 events,
@@ -152,7 +153,7 @@ public sealed class PdfIngestService(
             var skipped = 0;
             foreach (var story in stories)
             {
-                if (await TryInsertAsync(upload, source, story, hintCity, source.CityId, ct))
+                if (await TryInsertAsync(upload, source, story, bodyText, hintCity, source.CityId, ct))
                 {
                     inserted++;
                     IngestionEvents.Emit(
@@ -211,7 +212,7 @@ public sealed class PdfIngestService(
         }
     }
 
-    private async Task<IReadOnlyList<ExtractedStory>?> ExtractStoriesAsync(
+    private async Task<(IReadOnlyList<ExtractedStory> Stories, string? BodyText)?> ExtractStoriesAsync(
         DocumentUpload upload,
         string? cityHintSlug,
         CancellationToken ct)
@@ -220,7 +221,9 @@ public sealed class PdfIngestService(
         if (IsImage(upload.ContentType))
         {
             var bytes = await File.ReadAllBytesAsync(upload.StoredPath, ct);
-            return await intelligence.ExtractStoriesFromImageAsync(bytes, upload.ContentType, cityHintSlug, ct);
+            var imageStories = await intelligence.ExtractStoriesFromImageAsync(
+                bytes, upload.ContentType, cityHintSlug, ct);
+            return (imageStories, null);
         }
 
         if (!IsPdf(upload.ContentType))
@@ -246,7 +249,9 @@ public sealed class PdfIngestService(
             return null;
         }
 
-        return await intelligence.ExtractStoriesAsync(extracted.Text, cityHintSlug, ct);
+        var bodyText = HtmlText.Truncate(extracted.Text.Trim(), 50_000);
+        var stories = await intelligence.ExtractStoriesAsync(extracted.Text, cityHintSlug, ct);
+        return (stories, string.IsNullOrWhiteSpace(bodyText) ? null : bodyText);
     }
 
     private async Task FailCurrentAsync(DocumentUpload upload, string error, CancellationToken ct)
@@ -264,6 +269,7 @@ public sealed class PdfIngestService(
         DocumentUpload upload,
         Source source,
         ExtractedStory story,
+        string? bodyText,
         City? hintCity,
         int inboxCityId,
         CancellationToken ct)
@@ -287,6 +293,7 @@ public sealed class PdfIngestService(
             CityId = cityId,
             Headline = headline,
             Summary = HtmlText.Truncate(story.Summary ?? "", 1000),
+            Body = bodyText,
             SourceName = "PDF upload",
             SourceUrl = sourceUrl,
             PublishedAt = now,

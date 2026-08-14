@@ -39,9 +39,9 @@ Differentiation: (1) UX explicitly designed for 40+ readability (larger text, si
 Web app (mobile-responsive), used as the MVP surface before native app
 Coverage: 3-4 pilot cities
 Content sourced via RSS (where available) from local newspapers, or direct partnership with 1-2 local outlets per pilot city
-Original short-form summaries generated per article (not verbatim reproduction), with link-back to source
+Original short-form summaries for RSS/PDF (Claude); scrape stores extracted plain-text body in-app (with source attribution and link-back)
 City/locality selection on first use (manual selection; no GPS requirement for MVP)
-Feed view: headline + 2-4 line summary + source attribution + "Read full story" link
+Feed view: headline + 2-4 line summary + source attribution; tap opens an in-app swipe reader (full body when stored)
 Share button → WhatsApp (deep link / share intent)
 Basic categories: Local, State, National (optional), a couple of interest tags (e.g. Business, Health)
 Simple onboarding flow optimized for low digital literacy
@@ -56,7 +56,7 @@ Paid subscriptions / paywall
 Audio/video news formats
 6. Core User Flows
 First visit (via QR scan): Land on web app → select city/locality → land on localized feed → no login required
-Daily use: Open app/bookmark → scroll short summaries → tap to read full story on source site (opens in-app browser or new tab) → tap share → send to WhatsApp
+Daily use: Open app/bookmark → scroll short summaries → tap to read in the swipe reader (full extracted text when stored) → tap share → send to WhatsApp
 QR flyer flow: Printed flyer dropped at home → scan QR → lands on mobile web view → optionally prompted to "Add to Home Screen" (PWA-style) instead of a full native install for MVP
 7. Functional Requirements
 ID
@@ -66,7 +66,7 @@ FR-1
 System ingests articles via RSS/scraping pipeline per source, tagged by city
 Must
 FR-2
-System generates a short original summary per article (manual review step for MVP)
+System generates a short original summary for RSS/PDF (review queue). Scrape uses the publisher snippet as summary and stores extracted plain-text body.
 Must
 FR-3
 User can select/change their city on the web app
@@ -98,12 +98,12 @@ Could
 Performance: Feed loads in under 2 seconds on 4G
 Accessibility: Large tap targets, minimum 16px base font, WCAG AA contrast — critical given the 40+ target audience
 Reliability: Content pipeline must handle source site downtime/layout changes gracefully (fallback/error logging, not a broken feed)
-Legal/Compliance: No verbatim reproduction of source articles beyond fair-use snippet length; always attribute and link to source; maintain a takedown process if a publisher objects
+Legal/Compliance: Always attribute and link to source; maintain a takedown process if a publisher objects. Scrape stores plain-text body extracted from already-fetched HTML (not raw HTML). RSS/PDF remain digest-first with editorial review.
 9. Content Sourcing & Legal Notes
 Prioritize sources with public RSS feeds
-For sources without RSS, pursue a direct syndication/partnership conversation rather than scraping full text at scale
-Summaries must be independently written from the facts, not compressed rewrites of the original copy
-Keep an editorial log of source-to-summary mapping in case of publisher disputes
+For sources without RSS, scrape list pages and store extracted plain text for in-app reading; keep a takedown process
+RSS/PDF summaries are independently written (Claude); scrape summaries are the extracted snippet, not a second Claude rewrite
+Keep an editorial log of source-to-article mapping in case of publisher disputes
 10. Tech Stack (as decided)
 Frontend (MVP): Web app, mobile-responsive (PWA-capable for "Add to Home Screen" flow)
 Frontend (Phase 2): React Native for native iOS/Android

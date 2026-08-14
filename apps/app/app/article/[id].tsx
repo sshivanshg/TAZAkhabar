@@ -126,6 +126,7 @@ function ArticlePagerBody() {
   const loadingMoreRef = useRef(false)
   const initialIndexRef = useRef(0)
   const coachCompletedRef = useRef(false)
+  const hydratedIdsRef = useRef(new Set<number>())
   const listRef = useRef<FlatList<PagerItem>>(null)
   const shareLabel = Platform.OS === 'web' ? 'Share on WhatsApp' : 'Share'
 
@@ -210,6 +211,7 @@ function ArticlePagerBody() {
 
       offsetRef.current = items.length
       initialIndexRef.current = Math.max(0, startIndex)
+      hydratedIdsRef.current = new Set()
       setStack(items)
       setTotal(Math.max(pageTotal, items.length))
       setHasMore(items.length < pageTotal)
@@ -272,6 +274,31 @@ function ArticlePagerBody() {
       loadingMoreRef.current = false
     }
   }, [citySlug, feedCategory, lang, routeDate, hasMore])
+
+  useEffect(() => {
+    const nearby = [stack[index], stack[index + 1], stack[index - 1]]
+    for (const article of nearby) {
+      if (article?.id == null) {
+        continue
+      }
+      if (hydratedIdsRef.current.has(article.id)) {
+        continue
+      }
+      if (article.body) {
+        hydratedIdsRef.current.add(article.id)
+        continue
+      }
+      hydratedIdsRef.current.add(article.id)
+      void apiClient
+        .getArticle(String(article.id), lang)
+        .then((full) => {
+          setStack((prev) => prev.map((item) => (item.id === full.id ? { ...item, ...full } : item)))
+        })
+        .catch(() => {
+          hydratedIdsRef.current.delete(article.id!)
+        })
+    }
+  }, [index, stack, lang])
 
   useEffect(() => {
     if (index >= stack.length - 3 && hasMore) {

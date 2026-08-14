@@ -8,12 +8,17 @@ namespace NewsFeed.Api.Services;
 
 public interface IArticlePresentationService
 {
-    Task<ArticleResponse> PresentAsync(Article article, string? preferredLanguage, CancellationToken cancellationToken);
+    Task<ArticleResponse> PresentAsync(
+        Article article,
+        string? preferredLanguage,
+        CancellationToken cancellationToken,
+        bool includeBody = false);
 
     Task<IReadOnlyList<ArticleResponse>> PresentManyAsync(
         IReadOnlyList<Article> articles,
         string? preferredLanguage,
-        CancellationToken cancellationToken);
+        CancellationToken cancellationToken,
+        bool includeBody = false);
 }
 
 public sealed class ArticlePresentationService(
@@ -26,16 +31,18 @@ public sealed class ArticlePresentationService(
     public async Task<ArticleResponse> PresentAsync(
         Article article,
         string? preferredLanguage,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        bool includeBody = false)
     {
-        var items = await PresentManyAsync([article], preferredLanguage, cancellationToken);
+        var items = await PresentManyAsync([article], preferredLanguage, cancellationToken, includeBody);
         return items[0];
     }
 
     public async Task<IReadOnlyList<ArticleResponse>> PresentManyAsync(
         IReadOnlyList<Article> articles,
         string? preferredLanguage,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        bool includeBody = false)
     {
         if (articles.Count == 0)
         {
@@ -49,7 +56,7 @@ public sealed class ArticlePresentationService(
         {
             for (var i = 0; i < articles.Count; i++)
             {
-                results[i] = ToOriginal(articles[i]);
+                results[i] = ToOriginal(articles[i], includeBody: includeBody);
             }
 
             return results;
@@ -62,7 +69,7 @@ public sealed class ArticlePresentationService(
             var detected = DetectedOf(article);
             if (string.Equals(detected, target, StringComparison.Ordinal))
             {
-                results[i] = ToOriginal(article, detected);
+                results[i] = ToOriginal(article, detected, includeBody);
             }
             else
             {
@@ -94,7 +101,8 @@ public sealed class ArticlePresentationService(
                     DetectedOf(article),
                     target,
                     hit.TranslatedHeadline,
-                    hit.TranslatedSummary);
+                    hit.TranslatedSummary,
+                    includeBody);
             }
             else
             {
@@ -173,7 +181,8 @@ public sealed class ArticlePresentationService(
                     detected,
                     target,
                     outcome.Headline,
-                    outcome.Summary);
+                    outcome.Summary,
+                    includeBody);
             }
             else
             {
@@ -184,7 +193,7 @@ public sealed class ArticlePresentationService(
                     outcome.Article.Summary,
                     TranslationStatus.Failed,
                     cancellationToken);
-                results[outcome.Index] = ToOriginal(outcome.Article, detected);
+                results[outcome.Index] = ToOriginal(outcome.Article, detected, includeBody);
             }
         }
 
@@ -253,7 +262,7 @@ public sealed class ArticlePresentationService(
         ArticleLanguageDetector.Normalize(article.DetectedLanguage)
         ?? ArticleLanguageDetector.DefaultLanguage;
 
-    private static ArticleResponse ToOriginal(Article article, string? detected = null)
+    private static ArticleResponse ToOriginal(Article article, string? detected = null, bool includeBody = false)
     {
         var lang = detected ?? DetectedOf(article);
         return new ArticleResponse(
@@ -261,6 +270,7 @@ public sealed class ArticlePresentationService(
             article.CityId,
             article.Headline,
             article.Summary,
+            includeBody ? article.Body : null,
             article.SourceName,
             article.SourceUrl,
             article.PublishedAt,
@@ -275,12 +285,14 @@ public sealed class ArticlePresentationService(
         string detected,
         string display,
         string headline,
-        string summary) =>
+        string summary,
+        bool includeBody) =>
         new(
             article.Id,
             article.CityId,
             headline,
             summary,
+            includeBody ? article.Body : null,
             article.SourceName,
             article.SourceUrl,
             article.PublishedAt,

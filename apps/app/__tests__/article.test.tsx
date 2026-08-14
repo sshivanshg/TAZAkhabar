@@ -60,7 +60,7 @@ jest.mock('react-native-svg', () => {
 import ArticleScreen from '../app/article/[id]'
 import { hasCompletedSwipeCoach } from '../src/storage/swipeCoach'
 
-const fetched: ArticleResponse = {
+const listed: ArticleResponse = {
   id: 7,
   headline: 'Fetched headline',
   summary: 'Fetched summary body.',
@@ -68,6 +68,11 @@ const fetched: ArticleResponse = {
   sourceUrl: 'https://example.com/7',
   publishedAt: '2026-08-03T10:00:00.000Z',
   category: 'Local',
+}
+
+const fetched: ArticleResponse = {
+  ...listed,
+  body: 'Full story from the publisher.',
 }
 
 const second: ArticleResponse = {
@@ -104,7 +109,7 @@ describe('ArticleScreen', () => {
     mockParams.id = '7'
     mockParams.city = 'jhansi'
     mockGetArticles.mockResolvedValue({
-      items: [fetched, second],
+      items: [listed, second],
       total: 2,
       offset: 0,
       limit: 20,
@@ -117,10 +122,11 @@ describe('ArticleScreen', () => {
     renderArticle()
 
     expect(await screen.findByText('Fetched headline')).toBeTruthy()
-    expect(screen.getByText('Fetched summary body.')).toBeTruthy()
+    expect(await screen.findByText('Full story from the publisher.')).toBeTruthy()
     expect(screen.getAllByLabelText('Share').length).toBeGreaterThan(0)
     expect(screen.getAllByLabelText('Prefer English').length).toBeGreaterThan(0)
     expect(mockGetArticles).toHaveBeenCalled()
+    expect(mockGetArticle).toHaveBeenCalled()
   })
 
   it('shows swipe coach until completed', async () => {

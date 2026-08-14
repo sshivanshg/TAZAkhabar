@@ -87,6 +87,7 @@ try
     builder.Services.AddSingleton<ImageEnrichmentQueue>();
     builder.Services.AddScoped<RssIngestService>();
     builder.Services.AddScoped<ArticlePurgeService>();
+    builder.Services.AddScoped<ArticleBodyBackfillService>();
     builder.Services.AddScoped<PdfIngestService>();
     builder.Services.AddScoped<ScrapeIngestService>();
     builder.Services.AddScoped<ArticleImageEnrichmentService>();

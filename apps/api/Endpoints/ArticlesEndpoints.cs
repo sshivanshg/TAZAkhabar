@@ -378,7 +378,7 @@ public static class ArticlesEndpoints
                         statusCode: StatusCodes.Status404NotFound);
                 }
 
-                var article = await presentation.PresentAsync(entity, lang, cancellationToken);
+                var article = await presentation.PresentAsync(entity, lang, cancellationToken, includeBody: true);
 
                 httpContext.Response.Headers.CacheControl = PublicCacheControl;
                 return Results.Ok(article);

@@ -1,7 +1,7 @@
 # Data model
 
 > **Living doc** — update when entities, statuses, or migration ownership change.  
-> **Last verified against:** 2026-08-14 (local working tree)
+> **Last verified against:** 2026-08-14 (articles.body plain text)
 
 ## Purpose
 
@@ -35,7 +35,7 @@ erDiagram
 |--------|-------|-------|
 | `City` | `cities` | `Name`, `State`, unique `Slug` |
 | `Source` | `sources` | `FeedUrl`, `Type`, `Kind`, `Language`, `IsActive`, fetch status, `ScrapeConfig` |
-| `Article` | `articles` | Headline/summary/source fields, `Status`, `IsMock`, review fields, `DetectedLanguage`, `ImageUrl`, unique `SourceUrl` |
+| `Article` | `articles` | Headline/summary, optional plain-text `Body` (max ~50k at extract), source fields, `Status`, `IsMock`, review fields, `DetectedLanguage`, `ImageUrl`, unique `SourceUrl` |
 | `IngestionRun` | `ingestion_runs` | Counts found/added/skipped/failed, `ErrorSummary` |
 | `DocumentUpload` | `document_uploads` | Path, `Status`, links to run/source/city hint |
 | `ArticleTranslation` | `article_translations` | Target lang + translated headline/summary |

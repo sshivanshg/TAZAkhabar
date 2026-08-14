@@ -57,11 +57,22 @@ public sealed class HtmlArticleExtractorTests
     {
         var html = File.ReadAllText(FixturePath("scrape-article.html"));
 
-        var (headline, snippet, publishedAt) = HtmlArticleExtractor.ExtractArticle(html);
+        var (headline, snippet, body, publishedAt) = HtmlArticleExtractor.ExtractArticle(html);
 
         Assert.Equal("Jhansi water supply restored", headline);
         Assert.Contains("piped water", snippet, StringComparison.Ordinal);
+        Assert.Contains("piped water", body, StringComparison.Ordinal);
+        Assert.Contains("restored pressure", body, StringComparison.Ordinal);
         Assert.Equal(new DateTimeOffset(2026, 8, 13, 10, 0, 0, TimeSpan.FromHours(5.5)), publishedAt);
+    }
+
+    [Fact]
+    public void ExtractBody_JoinsArticleParagraphs()
+    {
+        var html = File.ReadAllText(FixturePath("scrape-article.html"));
+        var body = HtmlArticleExtractor.ExtractBody(html);
+        Assert.Contains("piped water", body, StringComparison.Ordinal);
+        Assert.Contains("\n\n", body, StringComparison.Ordinal);
     }
 
     private static string FixturePath(string fileName) =>

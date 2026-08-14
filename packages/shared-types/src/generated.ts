@@ -58,6 +58,7 @@ export interface ArticleResponse {
     cityId?: number;
     headline?: string | undefined;
     summary?: string | undefined;
+    body?: string | undefined;
     sourceName?: string | undefined;
     sourceUrl?: string | undefined;
     publishedAt?: string;
@@ -205,6 +206,14 @@ export interface ProblemDetails {
     instance?: string | undefined;
 
     [key: string]: any;
+}
+
+export interface ArticleBodyBackfillResponse {
+    examined?: number;
+    updated?: number;
+    skipped?: number;
+    failed?: number;
+    nextAfterId?: number | undefined;
 }
 
 export interface ArticleDatesResponse {

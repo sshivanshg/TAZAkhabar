@@ -1,7 +1,7 @@
 # Ingestion
 
 > **Living doc** — update when pipelines, article status on insert, cron, SSE, or intelligence providers change.  
-> **Last verified against:** 2026-08-14 (local working tree)
+> **Last verified against:** 2026-08-14 (scrape stores body, no Claude summarize)
 
 ## Purpose
 
@@ -29,6 +29,7 @@ flowchart TB
   RssSvc --> Claude[ClaudeArticleIntelligence]
   PdfSvc --> Claude
   ScrapeSvc --> HTML[SafeHttp + HtmlArticleExtractor]
+  RssSvc --> HTML
   RssSvc --> Feeds[RSS URLs]
   ImgQ[ImageEnrichmentWorker] --> OG[OG image extract]
 ```
@@ -45,7 +46,7 @@ flowchart TB
 | Piece | Path / type |
 |-------|-------------|
 | Intelligence | `IArticleIntelligence` → `ClaudeArticleIntelligence` |
-| Safety | `SafeHttp.cs` (blocks private/localhost targets) |
+| Safety | `SafeHttp.cs` (blocks private/localhost targets; scrape re-validates each redirect `Location`) |
 | Events | `IngestionEventBus`, `IngestionEvents.Emit`, `IngestionEventDto` |
 | Run row | `IngestionRun` entity |
 | Result DTO | `IngestRunResponse` |
@@ -82,7 +83,17 @@ Both send header `X-Ingest-Key: RssIngest__Secret`.
 
 ### Intelligence calls
 
-Claude via `ArticleIntelligence__ApiKey`, `BaseUrl` (default `https://api.anthropic.com`), `Model` (default `claude-sonnet-4-5`): extract stories (text/image), summarize, translate.
+Claude via `ArticleIntelligence__ApiKey`, `BaseUrl` (default `https://api.anthropic.com`), `Model` (default `claude-sonnet-4-5`):
+
+| Pipeline | Claude | Stored `summary` | Stored `body` |
+|----------|--------|------------------|---------------|
+| **Scrape** | None | Extracted snippet (plain text) | `HtmlArticleExtractor.ExtractBody` (~50k chars, never raw HTML) |
+| **RSS** | `SummarizeArticleAsync` (fallback to feed snippet on failure) | Claude digest | Fetched HTML body when the link is reachable |
+| **PDF** | `ExtractStoriesAsync` / image extract | Claude story summary | PdfPig plain text (shared across stories from that file) |
+
+Translate still runs on read for headline/summary when `?lang=` differs from detected language. Body is not translated.
+
+Existing rows without body: `POST /api/ingest/backfill-bodies?take=&afterId=` (ingest key).
 
 ## Key files
 
@@ -96,6 +107,7 @@ Claude via `ArticleIntelligence__ApiKey`, `BaseUrl` (default `https://api.anthro
 |----------|--------|
 | `POST /api/ingest/rss` | `IngestRss` + ingest key |
 | `POST /api/ingest/scrape` | `IngestScrape` + ingest key |
+| `POST /api/ingest/backfill-bodies` | `IngestBackfillBodies` + ingest key |
 | Admin trigger | `POST /api/admin/sources/{id}/trigger` → 202 |
 | SSE | `GET /api/admin/ingestion-runs/{id}/events` |
 | Uploads | `POST /api/admin/uploads` multipart |
@@ -107,7 +119,7 @@ Event types: `started`, `fetch`, `progress`, `completed`, `error` (terminal: `co
 
 - Source site downtime must not break the public feed — log/fail the run, leave published content intact.
 - Outbound fetch must not target private IPs (`SafeHttp`).
-- RSS/scraped HTML is untrusted — sanitize/validate before store and render (security rule).
+- RSS/scraped HTML is untrusted — store **plain text only**, never raw HTML; sanitize/validate before store and render (security rule).
 - **Status asymmetry:** scrape currently publishes immediately; RSS/PDF go to review — document and preserve or change deliberately.
 - Ingest key ≠ admin JWT; do not conflate.
 

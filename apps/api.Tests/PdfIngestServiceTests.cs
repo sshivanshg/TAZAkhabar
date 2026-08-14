@@ -33,6 +33,7 @@ public sealed class PdfIngestServiceTests
         Assert.Equal(5, stored.SourceId);
         Assert.NotNull(stored.IngestedAt);
         Assert.StartsWith($"pdf://upload/{upload.Id}/", stored.SourceUrl, StringComparison.Ordinal);
+        Assert.False(string.IsNullOrWhiteSpace(stored.Body));
 
         var processed = await harness.Db.DocumentUploads.SingleAsync(d => d.Id == upload.Id);
         Assert.Equal(DocumentUploadStatus.Ready, processed.Status);

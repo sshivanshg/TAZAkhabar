@@ -42,7 +42,9 @@ public sealed class ScrapeIngestServiceTests
 
         var stored = Assert.Single(await db.Articles.ToListAsync());
         Assert.Equal("Jhansi water supply restored", stored.Headline);
-        Assert.Equal("Short original summary for Jhansi water supply restored", stored.Summary);
+        Assert.Contains("piped water", stored.Summary, StringComparison.Ordinal);
+        Assert.Contains("piped water", stored.Body, StringComparison.Ordinal);
+        Assert.Contains("restored pressure", stored.Body, StringComparison.Ordinal);
         Assert.Equal(Story1Url, stored.SourceUrl);
         Assert.Equal("Amar Ujala Jhansi", stored.SourceName);
         Assert.Equal(2, stored.CityId);
@@ -204,7 +206,7 @@ public sealed class ScrapeIngestServiceTests
     }
 
     private static ScrapeIngestService CreateService(AppDbContext db, FakeScrapeHttpClient http) =>
-        new(db, http, new FakeArticleIntelligence(), new IngestionEventBus(), new ImageEnrichmentQueue(), NullLogger<ScrapeIngestService>.Instance, TimeSpan.Zero);
+        new(db, http, new IngestionEventBus(), new ImageEnrichmentQueue(), NullLogger<ScrapeIngestService>.Instance, TimeSpan.Zero);
 
     private static string FixturePath(string fileName) =>
         Path.Combine(AppContext.BaseDirectory, "Fixtures", fileName);

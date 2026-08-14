@@ -7,6 +7,8 @@ namespace NewsFeed.Api.Ingest;
 public sealed class RssIngestService(
     AppDbContext db,
     IRssFeedClient feedClient,
+    IScrapeHttpClient scrapeHttp,
+    IArticleIntelligence intelligence,
     IIngestionEventBus events,
     ImageEnrichmentQueue imageEnrichmentQueue,
     ILogger<RssIngestService> logger)
@@ -128,7 +130,7 @@ public sealed class RssIngestService(
                     continue;
                 }
 
-                if (await TryInsertAsync(city.Id, source, item, cancellationToken))
+                if (await TryInsertAsync(city, source, item, run, cancellationToken))
                 {
                     inserted++;
                     IngestionEvents.Emit(
@@ -217,9 +219,10 @@ public sealed class RssIngestService(
     }
 
     private async Task<bool> TryInsertAsync(
-        int cityId,
+        City city,
         Source source,
         ParsedRssItem item,
+        IngestionRun run,
         CancellationToken cancellationToken)
     {
         var sourceUrl = HtmlText.Truncate(item.SourceUrl.Trim(), 500);
@@ -241,12 +244,33 @@ public sealed class RssIngestService(
             ? $"Tap to read the full story on {sourceName}"
             : snippet;
 
+        try
+        {
+            IngestionEvents.Emit(events, run.Id, "progress", $"Summarizing · {HtmlText.Truncate(item.Title, 80)}");
+            var rewritten = await intelligence.SummarizeArticleAsync(item.Title, snippet, city.Slug, cancellationToken);
+            if (!string.IsNullOrWhiteSpace(rewritten))
+            {
+                summary = rewritten;
+            }
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "RSS summarize failed for {SourceUrl}; using feed snippet", sourceUrl);
+        }
+
+        var body = await TryFetchArticleBodyAsync(sourceUrl, cancellationToken);
+
         var now = DateTimeOffset.UtcNow;
         var article = new Article
         {
-            CityId = cityId,
+            CityId = city.Id,
             Headline = item.Title,
-            Summary = summary,
+            Summary = HtmlText.Truncate(summary.Trim(), 1000),
+            Body = body,
             SourceName = sourceName,
             SourceUrl = sourceUrl,
             PublishedAt = ToUtc(item.PublishedAt ?? now),
@@ -277,6 +301,30 @@ public sealed class RssIngestService(
         {
             db.Entry(article).State = EntityState.Detached;
             return false;
+        }
+    }
+
+    private async Task<string?> TryFetchArticleBodyAsync(string sourceUrl, CancellationToken cancellationToken)
+    {
+        if (!SafeHttp.TryValidatePublicAbsoluteUri(sourceUrl, out var articleUri, out _))
+        {
+            return null;
+        }
+
+        try
+        {
+            var html = await scrapeHttp.GetStringAsync(articleUri, cancellationToken);
+            var body = HtmlArticleExtractor.ExtractBody(html);
+            return string.IsNullOrWhiteSpace(body) ? null : body;
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            logger.LogDebug(ex, "RSS article body fetch failed for {SourceUrl}", sourceUrl);
+            return null;
         }
     }
 

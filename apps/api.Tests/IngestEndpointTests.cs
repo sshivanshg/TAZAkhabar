@@ -180,4 +180,15 @@ public sealed class IngestEndpointTests : IClassFixture<NewsFeedWebApplicationFa
         Assert.True(body!.FeedsAttempted >= 1);
         Assert.True(body.Inserted >= 1);
     }
+
+    [Fact]
+    public async Task OpenApi_IncludesBackfillBodiesAndArticleBody()
+    {
+        var client = _factory.CreateClient();
+        var json = await client.GetStringAsync("/openapi/v1.json");
+        Assert.Contains("/api/ingest/backfill-bodies", json, StringComparison.Ordinal);
+        Assert.Contains("ArticleBodyBackfillResponse", json, StringComparison.Ordinal);
+        Assert.Contains("IngestBackfillBodies", json, StringComparison.Ordinal);
+        Assert.Contains("\"body\"", json, StringComparison.Ordinal);
+    }
 }

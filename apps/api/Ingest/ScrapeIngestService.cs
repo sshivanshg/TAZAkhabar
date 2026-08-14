@@ -10,7 +10,6 @@ public sealed class ScrapeIngestService
 
     private readonly AppDbContext _db;
     private readonly IScrapeHttpClient _http;
-    private readonly IArticleIntelligence _intelligence;
     private readonly IIngestionEventBus _events;
     private readonly ImageEnrichmentQueue _imageEnrichmentQueue;
     private readonly ILogger<ScrapeIngestService> _logger;
@@ -19,18 +18,16 @@ public sealed class ScrapeIngestService
     public ScrapeIngestService(
         AppDbContext db,
         IScrapeHttpClient http,
-        IArticleIntelligence intelligence,
         IIngestionEventBus events,
         ImageEnrichmentQueue imageEnrichmentQueue,
         ILogger<ScrapeIngestService> logger)
-        : this(db, http, intelligence, events, imageEnrichmentQueue, logger, TimeSpan.FromMilliseconds(300))
+        : this(db, http, events, imageEnrichmentQueue, logger, TimeSpan.FromMilliseconds(300))
     {
     }
 
     public ScrapeIngestService(
         AppDbContext db,
         IScrapeHttpClient http,
-        IArticleIntelligence intelligence,
         IIngestionEventBus events,
         ImageEnrichmentQueue imageEnrichmentQueue,
         ILogger<ScrapeIngestService> logger,
@@ -38,7 +35,6 @@ public sealed class ScrapeIngestService
     {
         _db = db;
         _http = http;
-        _intelligence = intelligence;
         _events = events;
         _imageEnrichmentQueue = imageEnrichmentQueue;
         _logger = logger;
@@ -201,7 +197,7 @@ public sealed class ScrapeIngestService
                 try
                 {
                     var articleHtml = await _http.GetStringAsync(link, ct);
-                    var (headline, snippet, publishedAt) = HtmlArticleExtractor.ExtractArticle(articleHtml);
+                    var (headline, snippet, body, publishedAt) = HtmlArticleExtractor.ExtractArticle(articleHtml);
                     headline = HtmlText.Truncate(headline.Trim(), 300);
                     if (string.IsNullOrWhiteSpace(headline))
                     {
@@ -218,43 +214,17 @@ public sealed class ScrapeIngestService
                         continue;
                     }
 
-                    string summary;
-                    try
-                    {
-                        IngestionEvents.Emit(_events, run.Id, "progress", $"Summarizing · {HtmlText.Truncate(headline, 80)}");
-                        summary = await _intelligence.SummarizeArticleAsync(headline, snippet, city.Slug, ct);
-                    }
-                    catch (OperationCanceledException) when (ct.IsCancellationRequested)
-                    {
-                        throw;
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogWarning(ex, "Summarize failed for {SourceUrl}", sourceUrl);
-                        failed++;
-                        IngestionEvents.Emit(
-                            _events,
-                            run.Id,
-                            "failed",
-                            $"Summarize failed · {HtmlText.Truncate(headline, 80)}",
-                            found: links.Count,
-                            added: inserted,
-                            skipped: skipped,
-                            failed: failed);
-                        continue;
-                    }
+                    IngestionEvents.Emit(_events, run.Id, "progress", $"Extracting · {HtmlText.Truncate(headline, 80)}");
 
-                    if (string.IsNullOrWhiteSpace(summary))
-                    {
-                        summary = snippet;
-                    }
-
+                    var summary = snippet;
                     if (string.IsNullOrWhiteSpace(summary))
                     {
                         summary = $"Tap to read the full story on {source.Name}";
                     }
 
-                    if (await TryInsertAsync(city.Id, source, headline, summary, sourceUrl, publishedAt, ct))
+                    var storedBody = string.IsNullOrWhiteSpace(body) ? null : body;
+
+                    if (await TryInsertAsync(city.Id, source, headline, summary, storedBody, sourceUrl, publishedAt, ct))
                     {
                         inserted++;
                         IngestionEvents.Emit(
@@ -369,6 +339,7 @@ public sealed class ScrapeIngestService
         Source source,
         string headline,
         string summary,
+        string? body,
         string sourceUrl,
         DateTimeOffset? publishedAt,
         CancellationToken cancellationToken)
@@ -384,6 +355,7 @@ public sealed class ScrapeIngestService
             CityId = cityId,
             Headline = headline,
             Summary = HtmlText.Truncate(summary.Trim(), 1000),
+            Body = body,
             SourceName = HtmlText.Truncate(source.Name, 120),
             SourceUrl = sourceUrl,
             PublishedAt = ToUtc(publishedAt ?? now),

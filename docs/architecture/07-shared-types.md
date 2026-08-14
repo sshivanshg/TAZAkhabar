@@ -1,7 +1,7 @@
 # Shared types
 
 > **Living doc** — update when OpenAPI generation, NSwag config, or contract PR rules change.  
-> **Last verified against:** 2026-08-14 (local working tree)
+> **Last verified against:** 2026-08-14 (ArticleResponse.body; IngestBackfillBodies)
 
 ## Purpose
 

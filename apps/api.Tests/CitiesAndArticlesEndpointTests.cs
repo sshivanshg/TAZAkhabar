@@ -247,6 +247,32 @@ public sealed class ArticlesEndpointTests : IClassFixture<NewsFeedWebApplication
         var article = await response.Content.ReadFromJsonAsync<ArticleResponse>();
         Assert.NotNull(article);
         Assert.Equal(id, article.Id);
+        Assert.Null(article.Body);
+    }
+
+    [Fact]
+    public async Task GetArticleById_IncludesBody_ListOmitsBody()
+    {
+        var client = _factory.CreateSeededClient();
+        int id;
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var article = Published("With body", "https://example.com/with-body");
+            article.Body = "Full story paragraph one.\n\nParagraph two.";
+            db.Articles.Add(article);
+            db.SaveChanges();
+            id = article.Id;
+        }
+
+        var list = await client.GetFromJsonAsync<PagedArticlesResponse>("/api/articles?city=jhansi");
+        Assert.NotNull(list);
+        var listed = Assert.Single(list.Items, a => a.Id == id);
+        Assert.Null(listed.Body);
+
+        var detail = await client.GetFromJsonAsync<ArticleResponse>($"/api/articles/{id}");
+        Assert.NotNull(detail);
+        Assert.Equal("Full story paragraph one.\n\nParagraph two.", detail.Body);
     }
 
     [Fact]

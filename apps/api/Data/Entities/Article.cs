@@ -8,6 +8,8 @@ public sealed class Article
     public int CityId { get; set; }
     public required string Headline { get; set; }
     public required string Summary { get; set; }
+    /// <summary>Plain-text article body extracted at ingest. Null when not captured.</summary>
+    public string? Body { get; set; }
     public required string SourceName { get; set; }
     public required string SourceUrl { get; set; }
     public DateTimeOffset PublishedAt { get; set; }

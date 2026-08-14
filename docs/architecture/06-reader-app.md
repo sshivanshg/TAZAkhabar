@@ -1,7 +1,7 @@
 # Reader app
 
 > **Living doc** — update when Expo routes, city/feed/share behavior, or desktop web layer change.  
-> **Last verified against:** 2026-08-14 (local working tree)
+> **Last verified against:** 2026-08-14 (swipe reader shows stored body)
 
 ## Purpose
 
@@ -35,7 +35,7 @@ flowchart LR
 | `(tabs)/bookmarks.tsx` | Local bookmarks |
 | `(tabs)/profile.tsx` | Settings / change city |
 | `(tabs)/categories.tsx` | Hidden (`href: null`) |
-| `article/[id].tsx` | Detail + WhatsApp share |
+| `article/[id].tsx` | Immersive vertical swipe pager; hydrates `body` via `getArticle` |
 | `feed.tsx` | Legacy redirect → tabs |
 
 ### Modules
@@ -66,6 +66,7 @@ sequenceDiagram
   end
   App->>API: getCities / getArticles / getArticleDates
   U->>App: Open article
+  App->>API: getArticles (stack) + getArticle (body)
   App->>API: recordArticleView
   U->>App: Share
   App->>U: WhatsApp share sheet / URL
@@ -95,6 +96,7 @@ API helpers used: `getHealth`, `getCities`, `getArticles`, `getArticleDates`, `g
 - Do not add a second Vite reader app.
 - MVP UI stays light + single blue accent until branding lands.
 - No login — city preference is device-local only.
+- List payloads omit `body`; the swipe card shows full plain-text `body` when `GET /api/articles/{id}` returns it, otherwise the summary.
 
 ## Related docs
 

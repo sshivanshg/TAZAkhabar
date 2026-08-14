@@ -1,4 +1,4 @@
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native'
+import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import type { ArticleResponse } from '@newsfeed/shared-types'
 import { ImageBottomFade } from './ImageBottomFade'
@@ -10,6 +10,7 @@ import {
   READING_LANGUAGES,
   type ReadingLanguageCode,
 } from '../storage/languagePreference'
+import { splitArticleBody } from '../utils/splitArticleBody'
 
 type Props = {
   article: ArticleResponse
@@ -47,6 +48,8 @@ export function SwipeStoryCard({
   const category = article.category?.trim() || 'Local'
   const eyebrow = cityLabel ? `${cityLabel} · ${category}` : category
   const time = article.publishedAt ? formatRelativeTime(article.publishedAt) : null
+  const paragraphs = splitArticleBody(article.body)
+  const hasBody = paragraphs.length > 0
 
   return (
     <View style={[styles.root, { height, paddingBottom: Math.max(insets.bottom, 12) }]}>
@@ -86,7 +89,7 @@ export function SwipeStoryCard({
         </View>
       </View>
 
-      <View style={styles.hero}>
+      <View style={[styles.hero, hasBody ? styles.heroCompact : null]}>
         {imageUri ? (
           <Image source={{ uri: imageUri }} style={StyleSheet.absoluteFillObject} resizeMode="cover" />
         ) : (
@@ -102,8 +105,18 @@ export function SwipeStoryCard({
         </View>
       </View>
 
-      <View style={styles.body}>
-        <Text style={styles.summary}>{article.summary}</Text>
+      <ScrollView
+        style={styles.body}
+        contentContainerStyle={styles.bodyContent}
+        nestedScrollEnabled
+      >
+        {hasBody
+          ? paragraphs.map((paragraph, paragraphIndex) => (
+              <Text key={paragraphIndex} style={styles.summary}>
+                {paragraph}
+              </Text>
+            ))
+          : <Text style={styles.summary}>{article.summary}</Text>}
         <View style={styles.metaRow}>
           <Text style={styles.meta}>
             {[article.sourceName, time].filter(Boolean).join(' · ')}
@@ -128,7 +141,7 @@ export function SwipeStoryCard({
           </Pressable>
         </View>
         {showNextCue ? <Text style={styles.nextCue}>↑ Next story</Text> : null}
-      </View>
+      </ScrollView>
     </View>
   )
 }
@@ -216,6 +229,9 @@ const styles = StyleSheet.create({
     backgroundColor: readerColors.imageFallback,
     justifyContent: 'flex-end',
   },
+  heroCompact: {
+    height: '36%',
+  },
   heroText: {
     paddingHorizontal: 16,
     paddingBottom: 16,
@@ -239,6 +255,11 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 16,
     paddingTop: 16,
+  },
+  bodyContent: {
+    paddingBottom: 8,
+    gap: 12,
+    flexGrow: 1,
   },
   summary: {
     color: readerColors.textSecondary,
@@ -280,6 +301,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
     paddingBottom: 4,
+    paddingTop: 8,
   },
   caughtUp: {
     alignItems: 'center',

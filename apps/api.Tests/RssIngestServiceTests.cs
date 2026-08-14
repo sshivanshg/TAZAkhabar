@@ -40,7 +40,7 @@ public sealed class RssIngestServiceTests
 
         var stored = Assert.Single(await db.Articles.Where(a => a.CityId == 2).ToListAsync());
         Assert.Equal("Jhansi municipal budget", stored.Headline);
-        Assert.Equal("Nagar nigam session", stored.Summary);
+        Assert.Equal("Short original summary for Jhansi municipal budget", stored.Summary);
         Assert.Equal(CityItemUrl, stored.SourceUrl);
         Assert.Equal("Local", stored.Category);
         Assert.Equal("Amar Ujala", stored.SourceName);
@@ -221,7 +221,7 @@ public sealed class RssIngestServiceTests
     }
 
     private static RssIngestService CreateService(AppDbContext db, FakeRssFeedClient client) =>
-        new(db, client, new IngestionEventBus(), new ImageEnrichmentQueue(), NullLogger<RssIngestService>.Instance);
+        new(db, client, new FakeScrapeHttpClient(), new FakeArticleIntelligence(), new IngestionEventBus(), new ImageEnrichmentQueue(), NullLogger<RssIngestService>.Instance);
 
     private static string CityEditionXml(string itemUrl, string title, string description) => $"""
         <?xml version="1.0"?><rss version="2.0"><channel>

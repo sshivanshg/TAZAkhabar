@@ -5,6 +5,7 @@ public sealed record ArticleResponse(
     int CityId,
     string Headline,
     string Summary,
+    string? Body,
     string SourceName,
     string SourceUrl,
     DateTimeOffset PublishedAt,

@@ -1,7 +1,7 @@
 # API
 
 > **Living doc** — update when endpoints, auth, rate limits, CORS, or DI composition change.  
-> **Last verified against:** 2026-08-14 (local working tree)
+> **Last verified against:** 2026-08-14 (article `body` on detail; scrape skips Claude summarize)
 
 ## Purpose
 
@@ -44,13 +44,14 @@ Pipeline (order): ExceptionHandler → StatusCodePages → ForwardedHeaders → 
 | GET | `/api/health` | `GetHealth` | App health |
 | GET | `/healthz` | — | ASP.NET + Npgsql; Render health check |
 | GET | `/api/cities` | `GetCities` | `Cache-Control: public, max-age=60` |
-| GET | `/api/articles` | `GetArticles` | `city` required; published only; cache 60s |
+| GET | `/api/articles` | `GetArticles` | `city` required; published only; cache 60s; **no `body`** |
 | GET | `/api/articles/dates` | `GetArticleDates` | City calendar (Asia/Kolkata) |
-| GET | `/api/articles/trending` | `GetTrendingArticles` | View-based |
+| GET | `/api/articles/trending` | `GetTrendingArticles` | View-based; **no `body`** |
 | POST | `/api/articles/{id}/view` | `RecordArticleView` | Optional `sessionId` |
-| GET | `/api/articles/{id}` | `GetArticleById` | Published only |
+| GET | `/api/articles/{id}` | `GetArticleById` | Published only; includes plain-text `body` when stored |
 | POST | `/api/ingest/rss` | `IngestRss` | `X-Ingest-Key` |
 | POST | `/api/ingest/scrape` | `IngestScrape` | `X-Ingest-Key` |
+| POST | `/api/ingest/backfill-bodies` | `IngestBackfillBodies` | `X-Ingest-Key`; fills missing `body` from source HTML |
 
 ### Admin endpoints
 

@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using NewsFeed.Api.Data;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace NewsFeed.Api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260814062609_AddArticleBody")]
+    partial class AddArticleBody
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1473,12 +1476,12 @@ namespace NewsFeed.Api.Migrations
                         {
                             Id = 9,
                             CityId = 2,
-                            FeedUrl = "https://news.google.com/rss/search?q=Jhansi&hl=hi-IN&gl=IN&ceid=IN:hi",
-                            IsActive = true,
+                            FeedUrl = "https://news.google.com/search?q=Jhansi&hl=hi-IN&gl=IN&ceid=IN:hi",
+                            IsActive = false,
                             Kind = "CityEdition",
                             Language = "hi",
                             Name = "Google News",
-                            Type = "Rss"
+                            Type = "Scrape"
                         },
                         new
                         {
@@ -1495,12 +1498,12 @@ namespace NewsFeed.Api.Migrations
                         {
                             Id = 11,
                             CityId = 3,
-                            FeedUrl = "https://news.google.com/rss/search?q=Kanpur&hl=hi-IN&gl=IN&ceid=IN:hi",
-                            IsActive = true,
+                            FeedUrl = "https://news.google.com/search?q=Kanpur&hl=hi-IN&gl=IN&ceid=IN:hi",
+                            IsActive = false,
                             Kind = "CityEdition",
                             Language = "hi",
                             Name = "Google News",
-                            Type = "Rss"
+                            Type = "Scrape"
                         },
                         new
                         {
@@ -1517,12 +1520,12 @@ namespace NewsFeed.Api.Migrations
                         {
                             Id = 13,
                             CityId = 4,
-                            FeedUrl = "https://news.google.com/rss/search?q=Lucknow&hl=hi-IN&gl=IN&ceid=IN:hi",
-                            IsActive = true,
+                            FeedUrl = "https://news.google.com/search?q=Lucknow&hl=hi-IN&gl=IN&ceid=IN:hi",
+                            IsActive = false,
                             Kind = "CityEdition",
                             Language = "hi",
                             Name = "Google News",
-                            Type = "Rss"
+                            Type = "Scrape"
                         },
                         new
                         {
@@ -1582,12 +1585,12 @@ namespace NewsFeed.Api.Migrations
                         {
                             Id = 19,
                             CityId = 5,
-                            FeedUrl = "https://news.google.com/rss/search?q=Delhi%20OR%20Gurugram%20OR%20Noida&hl=hi-IN&gl=IN&ceid=IN:hi",
-                            IsActive = true,
+                            FeedUrl = "https://news.google.com/search?q=Delhi%20OR%20Gurugram%20OR%20Noida&hl=hi-IN&gl=IN&ceid=IN:hi",
+                            IsActive = false,
                             Kind = "CityEdition",
                             Language = "hi",
                             Name = "Google News",
-                            Type = "Rss"
+                            Type = "Scrape"
                         },
                         new
                         {

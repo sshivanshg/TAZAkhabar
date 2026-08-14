@@ -7,6 +7,7 @@ public static partial class HtmlArticleExtractor
 {
     private const int MaxHeadlineChars = 300;
     private const int MaxSnippetChars = 400;
+    private const int MaxBodyChars = 50_000;
 
     public static IReadOnlyList<Uri> ExtractArticleLinks(string listHtml, Uri baseUri, int maxLinks)
     {
@@ -91,11 +92,11 @@ public static partial class HtmlArticleExtractor
         return links;
     }
 
-    public static (string Headline, string Snippet, DateTimeOffset? PublishedAt) ExtractArticle(string articleHtml)
+    public static (string Headline, string Snippet, string Body, DateTimeOffset? PublishedAt) ExtractArticle(string articleHtml)
     {
         if (string.IsNullOrWhiteSpace(articleHtml))
         {
-            return ("", "", null);
+            return ("", "", "", null);
         }
 
         var document = new HtmlParser().ParseDocument(articleHtml);
@@ -116,7 +117,40 @@ public static partial class HtmlArticleExtractor
         return (
             HtmlText.Truncate(headline, MaxHeadlineChars),
             HtmlText.Truncate(snippet, MaxSnippetChars),
+            ExtractBody(articleHtml),
             publishedAt);
+    }
+
+    public static string ExtractBody(string html)
+    {
+        if (string.IsNullOrWhiteSpace(html))
+        {
+            return "";
+        }
+
+        var document = new HtmlParser().ParseDocument(html);
+        var paragraphs = document.QuerySelectorAll("article p");
+        if (paragraphs.Length == 0)
+        {
+            paragraphs = document.QuerySelectorAll("p");
+        }
+
+        var parts = new List<string>();
+        foreach (var paragraph in paragraphs)
+        {
+            var text = HtmlText.ToPlainText(paragraph.TextContent);
+            if (!string.IsNullOrWhiteSpace(text))
+            {
+                parts.Add(text);
+            }
+        }
+
+        if (parts.Count == 0)
+        {
+            return "";
+        }
+
+        return HtmlText.Truncate(string.Join("\n\n", parts), MaxBodyChars);
     }
 
     internal static bool LooksLikeArticleLink(Uri uri)
