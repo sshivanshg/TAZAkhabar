@@ -129,6 +129,8 @@ function ArticlePagerBody() {
   const coachCompletedRef = useRef(false)
   const hydratedIdsRef = useRef(new Set<number>())
   const listRef = useRef<FlatList<PagerItem>>(null)
+  const currentIndexRef = useRef(0)
+  const scrollStartIndexRef = useRef(0)
   const shareLabel = Platform.OS === 'web' ? 'Share on WhatsApp' : 'Share'
 
   useEffect(() => {
@@ -217,6 +219,8 @@ function ArticlePagerBody() {
       setTotal(Math.max(pageTotal, items.length))
       setHasMore(items.length < pageTotal)
       setIndex(Math.max(0, startIndex))
+      currentIndexRef.current = Math.max(0, startIndex)
+      scrollStartIndexRef.current = Math.max(0, startIndex)
       setLoading(false)
     } catch (err) {
       if (initialFromParams) {
@@ -224,6 +228,8 @@ function ArticlePagerBody() {
         setTotal(1)
         setHasMore(false)
         setIndex(0)
+        currentIndexRef.current = 0
+        scrollStartIndexRef.current = 0
         setLoading(false)
         return
       }
@@ -348,29 +354,6 @@ function ArticlePagerBody() {
     }
   }, [])
 
-  const onMomentumScrollEnd = useCallback(
-    (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-      const next = Math.round(event.nativeEvent.contentOffset.y / windowHeight)
-      if (Number.isFinite(next) && next !== index) {
-        setIndex(next)
-        void dismissCoachIfNeeded(next)
-      }
-    },
-    [windowHeight, index, dismissCoachIfNeeded],
-  )
-
-  const onViewableItemsChanged = useRef(
-    ({ viewableItems }: { viewableItems: ViewToken[] }) => {
-      const first = viewableItems[0]
-      if (first?.index != null && first.index !== index) {
-        setIndex(first.index)
-        void dismissCoachIfNeeded(first.index)
-      }
-    },
-  ).current
-
-  const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 80 }).current
-
   const pagerItems: PagerItem[] = useMemo(() => {
     const items: PagerItem[] = stack.map((article) => ({ kind: 'story', article }))
     if (!hasMore && stack.length > 0) {
@@ -378,6 +361,76 @@ function ArticlePagerBody() {
     }
     return items
   }, [stack, hasMore])
+
+  const setPagerIndex = useCallback(
+    (nextIndex: number) => {
+      currentIndexRef.current = nextIndex
+      setIndex(nextIndex)
+      void dismissCoachIfNeeded(nextIndex)
+    },
+    [dismissCoachIfNeeded],
+  )
+
+  const settlePagerIndex = useCallback(
+    (rawIndex: number, resetScrollStart = false) => {
+      if (!Number.isFinite(rawIndex) || pagerItems.length === 0) {
+        return
+      }
+
+      const maxIndex = pagerItems.length - 1
+      const startIndex = Math.max(0, Math.min(scrollStartIndexRef.current, maxIndex))
+      const targetIndex = Math.max(0, Math.min(rawIndex, maxIndex))
+      const clampedIndex = Math.max(startIndex - 1, Math.min(targetIndex, startIndex + 1))
+
+      if (clampedIndex !== targetIndex) {
+        listRef.current?.scrollToIndex({
+          index: clampedIndex,
+          animated: false,
+        })
+      }
+
+      if (clampedIndex !== currentIndexRef.current) {
+        setPagerIndex(clampedIndex)
+      }
+
+      if (resetScrollStart) {
+        scrollStartIndexRef.current = clampedIndex
+      }
+    },
+    [pagerItems.length, setPagerIndex],
+  )
+
+  const onScrollBeginDrag = useCallback(() => {
+    scrollStartIndexRef.current = currentIndexRef.current
+  }, [])
+
+  const onMomentumScrollBegin = useCallback(() => {
+    scrollStartIndexRef.current = currentIndexRef.current
+  }, [])
+
+  const onMomentumScrollEnd = useCallback(
+    (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+      settlePagerIndex(Math.round(event.nativeEvent.contentOffset.y / windowHeight), true)
+    },
+    [windowHeight, settlePagerIndex],
+  )
+
+  const settlePagerIndexRef = useRef(settlePagerIndex)
+
+  useEffect(() => {
+    settlePagerIndexRef.current = settlePagerIndex
+  }, [settlePagerIndex])
+
+  const onViewableItemsChanged = useRef(
+    ({ viewableItems }: { viewableItems: ViewToken[] }) => {
+      const first = viewableItems[0]
+      if (first?.index != null && first.index !== currentIndexRef.current) {
+        settlePagerIndexRef.current(first.index)
+      }
+    },
+  ).current
+
+  const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 80 }).current
 
   const storyTotal = Math.max(total, stack.length)
 
@@ -465,6 +518,7 @@ function ArticlePagerBody() {
           )
         }}
         pagingEnabled
+        disableIntervalMomentum
         showsVerticalScrollIndicator={false}
         getItemLayout={(_, i) => ({
           length: windowHeight,
@@ -476,6 +530,8 @@ function ArticlePagerBody() {
           // ignore — FlatList will settle
         }}
         onMomentumScrollEnd={onMomentumScrollEnd}
+        onScrollBeginDrag={onScrollBeginDrag}
+        onMomentumScrollBegin={onMomentumScrollBegin}
         onViewableItemsChanged={onViewableItemsChanged}
         viewabilityConfig={viewabilityConfig}
       />

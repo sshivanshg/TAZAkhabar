@@ -1,7 +1,7 @@
 # Reader app
 
 > **Living doc** — update when Expo routes, city/feed/share behavior, or desktop web layer change.  
-> **Last verified against:** 2026-08-15 (frontend phase 2: icon bundle fix, popover keyboard coverage, a11y baselines)
+> **Last verified against:** 2026-08-15 (article pager momentum clamp)
 
 ## Purpose
 
@@ -119,6 +119,7 @@ Manual verification still required before claiming a comprehensive a11y sweep is
 - MVP UI stays light + single blue accent until branding lands.
 - No login — city preference is device-local only.
 - List payloads omit `body`; the swipe card shows full plain-text `body` when `GET /api/articles/{id}` returns it, otherwise the summary. For translated reads, the API suppresses original-language `body` so the card shows translated headline/summary rather than mixing languages.
+- Article pager scroll settling clamps each gesture to one adjacent story so fast wheel/trackpad/touch momentum cannot skip multiple pages.
 
 ## Related docs
 
