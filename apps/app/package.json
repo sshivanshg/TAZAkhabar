@@ -59,6 +59,9 @@
     "setupFiles": [
       "./jest.setup.ts"
     ],
+    "moduleNameMapper": {
+      "^lucide-react-native/icons/.+$": "<rootDir>/__mocks__/lucideIconMock.tsx"
+    },
     "transformIgnorePatterns": [
       "node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@sentry/react-native|native-base|react-native-svg|react-native-web|react-native-safe-area-context|react-native-screens|moti|@legendapp/motion|@gluestack-ui/.*|@gluestack-style/.*|expo-router|@react-native-async-storage/async-storage|lucide-react-native)"
     ]

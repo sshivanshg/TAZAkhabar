@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import {
   Modal,
   Platform,
@@ -78,6 +78,47 @@ function menuPosition(
 export function StoryOptionsPopover({ visible, anchor, title, sections, onClose }: Props) {
   const viewport = useWindowDimensions()
   const open = visible && anchor != null
+  const returnFocusRef = useRef<HTMLElement | null>(null)
+  const hasCapturedFocusRef = useRef(false)
+
+  const focusableItems = useCallback((): HTMLElement[] => {
+    if (Platform.OS !== 'web' || typeof document === 'undefined') {
+      return []
+    }
+    return Array.from(document.querySelectorAll('[data-story-options-item="1"]')).filter(
+      (node): node is HTMLElement =>
+        typeof (node as HTMLElement).focus === 'function',
+    )
+  }, [])
+
+  const closeAndReturnFocus = useCallback(() => {
+    onClose()
+    if (Platform.OS === 'web') {
+      requestAnimationFrame(() => returnFocusRef.current?.focus())
+    }
+  }, [onClose])
+
+  useEffect(() => {
+    if (!open) {
+      hasCapturedFocusRef.current = false
+      return
+    }
+    if (
+      Platform.OS !== 'web' ||
+      hasCapturedFocusRef.current ||
+      typeof document === 'undefined'
+    ) {
+      return
+    }
+    const active = document.activeElement
+    returnFocusRef.current =
+      active && typeof (active as HTMLElement).focus === 'function'
+        ? (active as HTMLElement)
+        : null
+    hasCapturedFocusRef.current = true
+    const id = requestAnimationFrame(() => focusableItems()[0]?.focus())
+    return () => cancelAnimationFrame(id)
+  }, [focusableItems, open])
 
   useEffect(() => {
     if (
@@ -90,8 +131,26 @@ export function StoryOptionsPopover({ visible, anchor, title, sections, onClose 
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         event.preventDefault()
-        onClose()
+        closeAndReturnFocus()
+        return
       }
+      if (event.key !== 'Tab') {
+        return
+      }
+      const items = focusableItems()
+      if (items.length === 0) {
+        return
+      }
+      const activeIndex = items.findIndex((item) => item === document.activeElement)
+      const nextIndex = event.shiftKey
+        ? activeIndex <= 0
+          ? items.length - 1
+          : activeIndex - 1
+        : activeIndex < 0 || activeIndex === items.length - 1
+          ? 0
+          : activeIndex + 1
+      event.preventDefault()
+      items[nextIndex]?.focus()
     }
     window.addEventListener('keydown', onKeyDown)
     return () => {
@@ -99,7 +158,7 @@ export function StoryOptionsPopover({ visible, anchor, title, sections, onClose 
         window.removeEventListener('keydown', onKeyDown)
       }
     }
-  }, [open, onClose])
+  }, [closeAndReturnFocus, focusableItems, open])
 
   const itemCount = sections.reduce((n, section) => n + section.items.length, 0)
   const estimatedHeight =
@@ -107,12 +166,12 @@ export function StoryOptionsPopover({ visible, anchor, title, sections, onClose 
   const pos = anchor ? menuPosition(anchor, viewport, estimatedHeight) : null
 
   return (
-    <Modal visible={open} transparent animationType="none" onRequestClose={onClose}>
+    <Modal visible={open} transparent animationType="none" onRequestClose={closeAndReturnFocus}>
       <View style={styles.root} pointerEvents="box-none">
         <Pressable
           focusable={false}
           style={StyleSheet.absoluteFill}
-          onPress={onClose}
+          onPress={closeAndReturnFocus}
           accessibilityRole="button"
           accessibilityLabel="Dismiss story options"
         />
@@ -137,15 +196,33 @@ export function StoryOptionsPopover({ visible, anchor, title, sections, onClose 
                 {sectionIndex > 0 ? <View style={styles.sectionDivider} /> : null}
                 {section.items.map((item) => {
                   const Icon = item.Icon
+                  const rowWebProps =
+                    Platform.OS === 'web'
+                      ? ({
+                          dataSet: { storyOptionsItem: '1' },
+                          onKeyDown: ({
+                            nativeEvent,
+                          }: {
+                            nativeEvent: { key?: string; preventDefault?: () => void }
+                          }) => {
+                            if (nativeEvent.key === 'Enter' || nativeEvent.key === ' ') {
+                              nativeEvent.preventDefault?.()
+                              closeAndReturnFocus()
+                              requestAnimationFrame(() => item.onPress())
+                            }
+                          },
+                        } as object)
+                      : null
                   return (
                     <Pressable
                       key={item.key}
                       onPress={() => {
-                        onClose()
+                        closeAndReturnFocus()
                         requestAnimationFrame(() => item.onPress())
                       }}
                       accessibilityRole="button"
                       accessibilityLabel={item.label}
+                      {...rowWebProps}
                       style={(state) => {
                         const { pressed, hovered, focused } = state as WebPressableState
                         return [

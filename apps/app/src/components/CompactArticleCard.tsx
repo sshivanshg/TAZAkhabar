@@ -1,6 +1,6 @@
 import { Platform, Pressable, StyleSheet, View, type PressableStateCallbackType } from 'react-native'
 import { Box, HStack, Image, Text, VStack } from '@gluestack-ui/themed'
-import { Ellipsis } from 'lucide-react-native'
+import Ellipsis from 'lucide-react-native/icons/ellipsis'
 import { MotiView } from 'moti'
 import type { ArticleResponse } from '@newsfeed/shared-types'
 import { colors, HIT_TARGET, media, radius, space, typography } from '../theme/tokens'

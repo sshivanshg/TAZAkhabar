@@ -12,7 +12,7 @@ export const colors = {
   /** Secondary fill / cancel pill / pressed wash — surfaceAlt */
   surfaceRaised: '#F5F6FA',
   /** Single blue accent — tabs, chips, links, category pills */
-  accent: '#4F6BFF',
+  accent: '#3F5BEA',
   /** Accent pressed */
   accentPressed: '#2F49D6',
   /** Soft accent wash for selected chip / city pill */
@@ -22,7 +22,7 @@ export const colors = {
   /** Supporting body */
   textSecondary: '#6B6E76',
   /** Source / timestamp / muted labels */
-  textMuted: '#A0A3AB',
+  textMuted: '#6B6E76',
   /** Text on accent fill */
   textOnAccent: '#FFFFFF',
   /** Overlay text on hero images */
@@ -32,7 +32,7 @@ export const colors = {
   border: '#ECEDF1',
   borderSolid: '#ECEDF1',
   /** Selected chip fill */
-  chipSelectedBg: '#4F6BFF',
+  chipSelectedBg: '#3F5BEA',
   chipSelectedText: '#FFFFFF',
   /** Unselected chip */
   chipInactiveBorder: '#ECEDF1',
@@ -44,11 +44,11 @@ export const colors = {
   /** Soft card shadow tint */
   shadow: '#000000',
   /** Destructive / block actions */
-  destructive: '#E24B4A',
+  destructive: '#C73535',
   /** Destructive row wash */
   destructiveSoft: '#FCEBEB',
   /** Legacy alias — same as textMuted */
-  muted: '#A0A3AB',
+  muted: '#6B6E76',
   /** Scrim behind sheets */
   overlay: 'rgba(0, 0, 0, 0.4)',
 } as const

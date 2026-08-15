@@ -1,7 +1,7 @@
 # Reader app
 
 > **Living doc** — update when Expo routes, city/feed/share behavior, or desktop web layer change.  
-> **Last verified against:** 2026-08-15 (reader server-state convention + bundle reporting)
+> **Last verified against:** 2026-08-15 (frontend phase 2: icon bundle fix, popover keyboard coverage, a11y baselines)
 
 ## Purpose
 
@@ -97,6 +97,20 @@ API helpers used: `getHealth`, `getCities`, `getArticles`, `getArticleDates`, `g
 | Bundle report | `pnpm --filter @newsfeed/app bundle:report` |
 | Pages project | default `newsfeed-web` |
 | Auth | None for MVP |
+
+## Frontend quality baselines
+
+- Bundle baseline after direct lucide icon imports:
+  - Before: `5534.7 KiB` raw / `1049.0 KiB` gzip, `4670` Metro modules.
+  - After: `3751.7 KiB` raw / `869.7 KiB` gzip, `2936` Metro modules.
+  - Sourcemap check after the fix found `29` lucide sources instead of the full icon set; lucide no longer appears in the top generated-byte buckets.
+- Gluestack import check: `@gluestack-ui/themed` publishes a top-level `build/index.js` and `build/components/index.js`, with no supported per-component export map equivalent to `lucide-react-native/icons/*`. Keep usage scoped at call sites, but treat `react-aria` / `react-stately` weight as inherent unless the library is replaced or removed.
+- Desktop popover keyboard baseline: `StoryOptionsPopover` traps Tab/Shift+Tab within action rows, focuses the first action on open, restores focus to the trigger on close, and activates focused actions with Enter/Space. Jest coverage lives in `apps/app/__tests__/storyOptionsPopover.test.tsx`.
+- Contrast baseline: `apps/app/__tests__/contrast.test.ts` checks normal text and UI contrast for light feed tokens, category badges, destructive affordances, and the dark reader palette. Token changes must keep WCAG AA thresholds.
+- Font scaling baseline: `apps/app/src/accessibility/defaultTextScaling.ts` sets RN `Text` and `TextInput` defaults to allow OS font scaling up to `2` (200%).
+- Static screen-reader label/role sweep: all current `Pressable` call sites under `apps/app/app` and `apps/app/src` have matching role/label coverage as of this verification.
+
+Manual verification still required before claiming a comprehensive a11y sweep is complete: VoiceOver/TalkBack spot-checks on Home feed and Article detail, plus one desktop-only interaction (popover or sidebar nav), on a real device or named simulator/emulator.
 
 ## Failure modes & invariants
 

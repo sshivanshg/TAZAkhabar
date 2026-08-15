@@ -3,14 +3,12 @@ import { FlatList, Platform, Pressable, RefreshControl, StyleSheet, useWindowDim
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router'
 import { Box, HStack, Text } from '@gluestack-ui/themed'
 import { MotiView } from 'moti'
-import {
-  Bookmark,
-  EyeOff,
-  MessageCircle,
-  Ban,
-  ThumbsDown,
-  ThumbsUp,
-} from 'lucide-react-native'
+import Ban from 'lucide-react-native/icons/ban'
+import Bookmark from 'lucide-react-native/icons/bookmark'
+import EyeOff from 'lucide-react-native/icons/eye-off'
+import MessageCircle from 'lucide-react-native/icons/message-circle'
+import ThumbsDown from 'lucide-react-native/icons/thumbs-down'
+import ThumbsUp from 'lucide-react-native/icons/thumbs-up'
 import type { ArticleResponse, CityResponse } from '@newsfeed/shared-types'
 import { apiClient } from '../../src/api/client'
 import { useAsyncResource } from '../../src/api/useAsyncResource'

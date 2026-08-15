@@ -1,7 +1,8 @@
 import { Pressable, StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Text } from '@gluestack-ui/themed'
-import { MapPin, Search } from 'lucide-react-native'
+import MapPin from 'lucide-react-native/icons/map-pin'
+import Search from 'lucide-react-native/icons/search'
 import { colors, HIT_TARGET, radius, space, typography } from '../theme/tokens'
 import { iconStroke } from '../theme/categoryIcons'
 import {

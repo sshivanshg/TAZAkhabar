@@ -1,8 +1,11 @@
 import { Platform, Pressable, StyleSheet, Text, View, type AccessibilityRole, type PressableStateCallbackType } from 'react-native'
 import { usePathname, useRouter, type Href } from 'expo-router'
-import { Bookmark, Globe, Home, User, type LucideIcon } from 'lucide-react-native'
+import Bookmark from 'lucide-react-native/icons/bookmark'
+import Globe from 'lucide-react-native/icons/globe'
+import Home from 'lucide-react-native/icons/house'
+import User from 'lucide-react-native/icons/user'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { iconStroke } from '../../theme/categoryIcons'
+import { iconStroke, type AppIcon } from '../../theme/categoryIcons'
 import { colors, HIT_TARGET, radius, space, typography } from '../../theme/tokens'
 
 type NavItem = {
@@ -10,7 +13,7 @@ type NavItem = {
   label: string
   href: Href
   testID: string
-  Icon: LucideIcon
+  Icon: AppIcon
 }
 
 const NAV_ITEMS: NavItem[] = [

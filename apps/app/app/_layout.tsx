@@ -1,4 +1,5 @@
 import 'react-native-gesture-handler'
+import '../src/accessibility/defaultTextScaling'
 import { Stack } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
 import { GluestackUIProvider } from '@gluestack-ui/themed'

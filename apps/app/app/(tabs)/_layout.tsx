@@ -1,7 +1,10 @@
 import { Tabs } from 'expo-router'
 import { Platform, StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { Bookmark, Globe, Home, User } from 'lucide-react-native'
+import Bookmark from 'lucide-react-native/icons/bookmark'
+import Globe from 'lucide-react-native/icons/globe'
+import Home from 'lucide-react-native/icons/house'
+import User from 'lucide-react-native/icons/user'
 import { MotiView } from 'moti'
 import {
   colors,

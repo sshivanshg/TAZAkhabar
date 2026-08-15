@@ -7,7 +7,7 @@ import {
   View,
 } from 'react-native'
 import { Text } from '@gluestack-ui/themed'
-import { Calendar } from 'lucide-react-native'
+import Calendar from 'lucide-react-native/icons/calendar'
 import { Chip } from './ui/Chip'
 import {
   formatDateStripLabel,

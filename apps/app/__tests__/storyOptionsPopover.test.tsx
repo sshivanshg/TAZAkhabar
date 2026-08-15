@@ -1,4 +1,5 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react-native'
+import { Platform } from 'react-native'
 import type { BottomSheetSection } from '../src/components/ui/BottomSheet'
 import { StoryOptionsPopover } from '../src/components/desktop/StoryOptionsPopover'
 
@@ -10,6 +11,29 @@ jest.mock('moti', () => {
       React.createElement(View, props, children),
   }
 })
+
+function makeSections(actions: jest.Mock[] = [jest.fn()]): BottomSheetSection[] {
+  return [
+    {
+      key: 'share',
+      items: [
+        { key: 'share', label: 'Share', onPress: actions[0] ?? jest.fn() },
+        { key: 'save', label: 'Save', onPress: actions[1] ?? jest.fn() },
+      ],
+    },
+    {
+      key: 'danger',
+      items: [
+        {
+          key: 'block',
+          label: 'Block this source',
+          destructive: true,
+          onPress: actions[2] ?? jest.fn(),
+        },
+      ],
+    },
+  ]
+}
 
 const sections: BottomSheetSection[] = [
   {
@@ -62,6 +86,77 @@ function dispatchEscape() {
   const event = new Event('keydown')
   Object.defineProperty(event, 'key', { value: 'Escape' })
   window.dispatchEvent(event)
+}
+
+function dispatchTab(shiftKey = false) {
+  const event = new Event('keydown')
+  const preventDefault = jest.fn()
+  Object.defineProperty(event, 'key', { value: 'Tab' })
+  Object.defineProperty(event, 'shiftKey', { value: shiftKey })
+  Object.defineProperty(event, 'preventDefault', { value: preventDefault })
+  window.dispatchEvent(event)
+  return preventDefault
+}
+
+type FakeFocusable = {
+  label: string
+  focus: jest.Mock<void, []>
+}
+
+function installWebFocusHarness() {
+  const platformDescriptor = Object.getOwnPropertyDescriptor(Platform, 'OS')
+  Object.defineProperty(Platform, 'OS', {
+    configurable: true,
+    get: () => 'web',
+  })
+
+  const originalDocument = (globalThis as { document?: Document }).document
+  const fakeDocument = {
+    activeElement: null,
+    querySelectorAll: jest.fn(),
+  } as unknown as Document
+  ;(globalThis as { document?: Document }).document = fakeDocument
+
+  const originalRaf = global.requestAnimationFrame
+  const originalCancelRaf = global.cancelAnimationFrame
+  global.requestAnimationFrame = ((callback: FrameRequestCallback) => {
+    callback(0)
+    return 1
+  }) as typeof requestAnimationFrame
+  global.cancelAnimationFrame = jest.fn() as typeof cancelAnimationFrame
+
+  const trigger: FakeFocusable = { label: 'trigger', focus: jest.fn() }
+  const items: FakeFocusable[] = ['Share', 'Save', 'Block this source'].map((label) => {
+    const item: FakeFocusable = {
+      label,
+      focus: jest.fn(() => {
+        Object.defineProperty(document, 'activeElement', {
+          configurable: true,
+          value: item,
+        })
+      }),
+    }
+    return item
+  })
+
+  Object.defineProperty(document, 'activeElement', {
+    configurable: true,
+    value: trigger,
+  })
+  document.querySelectorAll = jest.fn(() => items as unknown as NodeListOf<Element>)
+
+  return {
+    items,
+    trigger,
+    restore: () => {
+      ;(globalThis as { document?: Document }).document = originalDocument
+      global.requestAnimationFrame = originalRaf
+      global.cancelAnimationFrame = originalCancelRaf
+      if (platformDescriptor) {
+        Object.defineProperty(Platform, 'OS', platformDescriptor)
+      }
+    },
+  }
 }
 
 describe('StoryOptionsPopover', () => {
@@ -119,5 +214,112 @@ describe('StoryOptionsPopover', () => {
     )
 
     expect(screen.queryByLabelText('Dismiss story options')).toBeNull()
+  })
+
+  it('focuses the first action and traps Tab inside the popover', () => {
+    const harness = installWebFocusHarness()
+    try {
+      render(
+        <StoryOptionsPopover
+          visible
+          anchor={anchor}
+          sections={makeSections()}
+          onClose={jest.fn()}
+        />,
+      )
+
+      expect(harness.items[0]!.focus).toHaveBeenCalledTimes(1)
+
+      const preventedForward = dispatchTab()
+      expect(preventedForward).toHaveBeenCalledTimes(1)
+      expect(harness.items[1]!.focus).toHaveBeenCalledTimes(1)
+
+      const preventedBackward = dispatchTab(true)
+      expect(preventedBackward).toHaveBeenCalledTimes(1)
+      expect(harness.items[0]!.focus).toHaveBeenCalledTimes(2)
+    } finally {
+      harness.restore()
+    }
+  })
+
+  it('cycles Shift+Tab from the first action to the last action', () => {
+    const harness = installWebFocusHarness()
+    try {
+      render(
+        <StoryOptionsPopover
+          visible
+          anchor={anchor}
+          sections={makeSections()}
+          onClose={jest.fn()}
+        />,
+      )
+
+      dispatchTab(true)
+
+      expect(harness.items[2]!.focus).toHaveBeenCalledTimes(1)
+    } finally {
+      harness.restore()
+    }
+  })
+
+  it('returns focus to the trigger on Escape and outside press', () => {
+    const harness = installWebFocusHarness()
+    try {
+      const { rerender } = render(
+        <StoryOptionsPopover
+          visible
+          anchor={anchor}
+          sections={makeSections()}
+          onClose={jest.fn()}
+        />,
+      )
+
+      dispatchEscape()
+      expect(harness.trigger.focus).toHaveBeenCalledTimes(1)
+
+      harness.trigger.focus.mockClear()
+      rerender(
+        <StoryOptionsPopover
+          visible
+          anchor={anchor}
+          sections={makeSections()}
+          onClose={jest.fn()}
+        />,
+      )
+      fireEvent.press(screen.getByLabelText('Dismiss story options'))
+
+      expect(harness.trigger.focus).toHaveBeenCalledTimes(1)
+    } finally {
+      harness.restore()
+    }
+  })
+
+  it('activates a focused action with Enter or Space and returns focus', () => {
+    const harness = installWebFocusHarness()
+    const share = jest.fn()
+    const save = jest.fn()
+    try {
+      render(
+        <StoryOptionsPopover
+          visible
+          anchor={anchor}
+          sections={makeSections([share, save])}
+          onClose={jest.fn()}
+        />,
+      )
+
+      fireEvent(screen.getByLabelText('Share'), 'onKeyDown', {
+        nativeEvent: { key: 'Enter', preventDefault: jest.fn() },
+      })
+      fireEvent(screen.getByLabelText('Save'), 'onKeyDown', {
+        nativeEvent: { key: ' ', preventDefault: jest.fn() },
+      })
+
+      expect(share).toHaveBeenCalledTimes(1)
+      expect(save).toHaveBeenCalledTimes(1)
+      expect(harness.trigger.focus).toHaveBeenCalledTimes(2)
+    } finally {
+      harness.restore()
+    }
   })
 })

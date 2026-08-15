@@ -3,7 +3,7 @@ import { FlatList, Pressable, StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useFocusEffect, useRouter } from 'expo-router'
 import { Text, VStack } from '@gluestack-ui/themed'
-import { Bookmark } from 'lucide-react-native'
+import Bookmark from 'lucide-react-native/icons/bookmark'
 import { MotiView } from 'moti'
 import { CompactArticleCard } from '../../src/components/CompactArticleCard'
 import {
