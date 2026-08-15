@@ -14,6 +14,7 @@ using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Serilog;
+using Serilog.Context;
 
 Log.Logger = new LoggerConfiguration()
     .WriteTo.Console()
@@ -43,6 +44,7 @@ try
     builder.Services.Configure<ArticleIntelligenceOptions>(
         builder.Configuration.GetSection(ArticleIntelligenceOptions.SectionName));
     builder.Services.Configure<UploadOptions>(builder.Configuration.GetSection(UploadOptions.SectionName));
+    builder.Services.Configure<IngestHealthOptions>(builder.Configuration.GetSection(IngestHealthOptions.SectionName));
     if (builder.Environment.IsDevelopment())
     {
         builder.Services.PostConfigure<UploadOptions>(upload =>
@@ -80,6 +82,11 @@ try
         client.Timeout = TimeSpan.FromSeconds(90);
         client.DefaultRequestHeaders.UserAgent.ParseAdd("NewsFeedIngest/0.1");
     });
+    builder.Services.AddHttpClient("alerts", client =>
+    {
+        client.Timeout = TimeSpan.FromSeconds(10);
+        client.DefaultRequestHeaders.UserAgent.ParseAdd("NewsFeedIngest/0.1");
+    });
     builder.Services.AddSingleton<IIngestionEventBus, IngestionEventBus>();
     builder.Services.AddSingleton<IRssFeedClient, RssFeedClient>();
     builder.Services.AddSingleton<IScrapeHttpClient, ScrapeHttpClient>();
@@ -96,11 +103,14 @@ try
     builder.Services.AddScoped<NewsFeed.Api.Services.IArticlePresentationService, NewsFeed.Api.Services.ArticlePresentationService>();
     builder.Services.AddHostedService<PdfProcessingWorker>();
     builder.Services.AddHostedService<ImageEnrichmentWorker>();
+    builder.Services.AddHostedService<IngestionJobWorker>();
+    builder.Services.AddHostedService<IngestSilenceMonitor>();
 
     var corsOptions = builder.Configuration.GetSection(CorsOptions.SectionName).Get<CorsOptions>() ?? new CorsOptions();
     var rateLimitingOptions = builder.Configuration.GetSection(RateLimitingOptions.SectionName).Get<RateLimitingOptions>()
         ?? new RateLimitingOptions();
     var adminOptions = builder.Configuration.GetSection(AdminOptions.SectionName).Get<AdminOptions>() ?? new AdminOptions();
+    ValidateProductionSecrets(builder.Environment, adminOptions);
 
     builder.Services.Configure<ForwardedHeadersOptions>(options =>
     {
@@ -212,8 +222,9 @@ try
 
     var app = builder.Build();
 
-    using (var scope = app.Services.CreateScope())
+    if (!app.Environment.IsProduction())
     {
+        using var scope = app.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         if (db.Database.IsRelational())
         {
@@ -222,6 +233,15 @@ try
     }
 
     app.UseSerilogRequestLogging();
+    app.Use(async (context, next) =>
+    {
+        var requestId = context.TraceIdentifier;
+        context.Response.Headers["X-Request-ID"] = requestId;
+        using (LogContext.PushProperty("RequestId", requestId))
+        {
+            await next();
+        }
+    });
     app.UseExceptionHandler(errorApp =>
     {
         errorApp.Run(async context =>
@@ -298,6 +318,11 @@ try
     api.MapIngestEndpoints();
     api.MapMaintenanceEndpoints();
 
+    if (app.Environment.IsEnvironment("Testing"))
+    {
+        api.MapGet("/test/unhandled-exception", ThrowTestUnhandledException);
+    }
+
     var admin = api.MapGroup("/admin");
     admin.MapAdminAuthEndpoints();
 
@@ -357,6 +382,32 @@ static void LoadDotEnv()
         }
 
         current = current.Parent;
+    }
+}
+
+static IResult ThrowTestUnhandledException()
+{
+    throw new InvalidOperationException("Sensitive test exception detail must not leak.");
+}
+
+static void ValidateProductionSecrets(IHostEnvironment environment, AdminOptions adminOptions)
+{
+    if (!environment.IsProduction())
+    {
+        return;
+    }
+
+    if (adminOptions.Password.Length < 12
+        || adminOptions.Password.Equals("dev-admin-password", StringComparison.Ordinal)
+        || adminOptions.Password.Equals("password", StringComparison.OrdinalIgnoreCase))
+    {
+        throw new InvalidOperationException("Admin__Password must be a non-default production secret at least 12 characters long.");
+    }
+
+    if (adminOptions.JwtSigningKey.Length < 32
+        || adminOptions.JwtSigningKey.Equals("dev-admin-jwt-signing-key-min-32-chars", StringComparison.Ordinal))
+    {
+        throw new InvalidOperationException("Admin__JwtSigningKey must be a non-default production secret at least 32 characters long.");
     }
 }
 

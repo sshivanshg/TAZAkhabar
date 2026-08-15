@@ -29,12 +29,19 @@ public static class AdminSourcesEndpoints
             .ProducesProblem(StatusCodes.Status401Unauthorized);
 
         admin.MapPost("/sources", async (
-                CreateAdminSourceRequest request,
+                CreateAdminSourceRequest? request,
                 AppDbContext db,
                 CancellationToken cancellationToken) =>
             {
-                if (!Enum.TryParse<SourceType>(request.Type, ignoreCase: true, out var sourceType)
-                    || !Enum.TryParse<SourceKind>(request.Kind, ignoreCase: true, out var sourceKind))
+                if (AdminValidation.ValidateCreateSource(request) is { } validationError)
+                {
+                    return validationError;
+                }
+
+                var validRequest = request!;
+
+                if (!Enum.TryParse<SourceType>(validRequest.Type, ignoreCase: true, out var sourceType)
+                    || !Enum.TryParse<SourceKind>(validRequest.Kind, ignoreCase: true, out var sourceKind))
                 {
                     return Results.Problem(
                         title: "Invalid type or kind",
@@ -44,11 +51,11 @@ public static class AdminSourcesEndpoints
 
                 var validation = await ValidateSourceAsync(
                     db,
-                    request.Name,
-                    request.FeedUrl,
-                    request.City,
+                    validRequest.Name,
+                    validRequest.FeedUrl,
+                    validRequest.City,
                     sourceType,
-                    request.Language,
+                    validRequest.Language,
                     excludeId: null,
                     cancellationToken);
                 if (validation.Error is not null)
@@ -64,7 +71,7 @@ public static class AdminSourcesEndpoints
                     Type = sourceType,
                     Kind = sourceKind,
                     Language = validation.Language!,
-                    IsActive = request.IsActive,
+                    IsActive = validRequest.IsActive!.Value,
                 };
                 db.Sources.Add(source);
                 try
@@ -173,7 +180,6 @@ public static class AdminSourcesEndpoints
                 int id,
                 AppDbContext db,
                 IIngestionEventBus events,
-                IServiceScopeFactory scopeFactory,
                 CancellationToken cancellationToken) =>
             {
                 var source = await db.Sources.AsNoTracking()
@@ -201,41 +207,20 @@ public static class AdminSourcesEndpoints
                 };
                 db.IngestionRuns.Add(run);
                 await db.SaveChangesAsync(cancellationToken);
+                db.IngestionJobs.Add(new IngestionJob
+                {
+                    SourceId = source.Id,
+                    IngestionRunId = run.Id,
+                    Status = IngestionJobStatus.Queued,
+                    CreatedAt = DateTimeOffset.UtcNow,
+                });
+                await db.SaveChangesAsync(cancellationToken);
 
                 IngestionEvents.Emit(
                     events,
                     run.Id,
                     "started",
                     $"{source.Type} run queued · {source.Name}");
-
-                var runId = run.Id;
-                var sourceType = source.Type;
-                _ = Task.Run(async () =>
-                {
-                    try
-                    {
-                        await using var scope = scopeFactory.CreateAsyncScope();
-                        if (sourceType == SourceType.Scrape)
-                        {
-                            var scrape = scope.ServiceProvider.GetRequiredService<ScrapeIngestService>();
-                            await scrape.RunSourceAsync(id, CancellationToken.None, runId);
-                        }
-                        else
-                        {
-                            var rss = scope.ServiceProvider.GetRequiredService<RssIngestService>();
-                            await rss.RunSourceAsync(id, CancellationToken.None, runId);
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        events.Publish(
-                            runId,
-                            new IngestionEventDto(
-                                "error",
-                                HtmlText.Truncate(ex.Message, 500),
-                                DateTimeOffset.UtcNow));
-                    }
-                });
 
                 return Results.Json(ToRunResponse(run), statusCode: StatusCodes.Status202Accepted);
             })
@@ -282,7 +267,7 @@ public static class AdminSourcesEndpoints
             })
             .WithName("AdminStreamIngestionEvents")
             .WithOpenApi()
-            .Produces(StatusCodes.Status200OK)
+            .Produces<IngestionEventDto>(StatusCodes.Status200OK, "text/event-stream")
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status404NotFound);
 

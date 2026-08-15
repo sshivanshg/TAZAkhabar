@@ -31,4 +31,5 @@ public sealed class Article
     public DocumentUpload? DocumentUpload { get; set; }
     public ICollection<ArticleTranslation> Translations { get; set; } = new List<ArticleTranslation>();
     public ICollection<ArticleView> Views { get; set; } = new List<ArticleView>();
+    public ICollection<ArticleAuditLog> AuditLogs { get; set; } = new List<ArticleAuditLog>();
 }

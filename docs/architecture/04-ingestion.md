@@ -1,7 +1,7 @@
 # Ingestion
 
 > **Living doc** — update when pipelines, article status on insert, cron, SSE, or intelligence providers change.  
-> **Last verified against:** 2026-08-14 (daily cron ingests all active RSS/scrape sources without Claude)
+> **Last verified against:** 2026-08-15 (durable manual ingest jobs and silence monitor)
 
 ## Purpose
 
@@ -20,6 +20,7 @@ flowchart TB
   Cron -->|X-Ingest-Key| ScrapeEP[POST /api/ingest/scrape]
   DailyCron[Render cron daily 00:00 IST] -->|X-Ingest-Key| DailyEP[POST /api/ingest/daily]
   Admin[Admin JWT] -->|trigger / uploads| API[Ingest services]
+  API --> Job[IngestionJobWorker]
   RssEP --> RssSvc[RssIngestService]
   ScrapeEP --> ScrapeSvc[ScrapeIngestService]
   DailyEP --> RssSvc
@@ -35,6 +36,7 @@ flowchart TB
   RssSvc --> HTML
   RssSvc --> Feeds[RSS URLs]
   ImgQ[ImageEnrichmentWorker] --> OG[OG image extract]
+  Silence[IngestSilenceMonitor] -->|warn/webhook| Alert[Ops alert]
 ```
 
 ## Components / key types
@@ -42,7 +44,7 @@ flowchart TB
 | Pipeline | Service | Trigger | Insert status (current) |
 |----------|---------|---------|-------------------------|
 | RSS | `RssIngestService.cs` | Cron or admin source trigger | `PendingReview` |
-| Scrape | `ScrapeIngestService.cs` + `HtmlArticleExtractor`, `ScrapeHttpClient` | Cron or admin trigger | `Published` |
+| Scrape | `ScrapeIngestService.cs` + `HtmlArticleExtractor`, `ScrapeHttpClient` | Cron or admin trigger | `PendingReview` |
 | PDF / image | `PdfIngestService.cs`, `PdfTextExtractor` (PdfPig), `PdfProcessingQueue` + `PdfProcessingWorker` | Admin uploads | `PendingReview` |
 | Image OG | `ArticleImageEnrichmentService`, `OgImageExtractor`, `ImageEnrichmentQueue` + worker | After ingest | Updates `ImageUrl` |
 
@@ -52,7 +54,9 @@ flowchart TB
 | Safety | `SafeHttp.cs` (blocks private/localhost targets; scrape re-validates each redirect `Location`) |
 | Events | `IngestionEventBus`, `IngestionEvents.Emit`, `IngestionEventDto` |
 | Run row | `IngestionRun` entity |
+| Durable manual job | `IngestionJob` entity + `IngestionJobWorker` |
 | Result DTO | `IngestRunResponse` |
+| Silence alert | `IngestSilenceMonitor` (`IngestHealth__MaxSilenceMinutes`, optional webhook) |
 
 Categories allowed for intelligence: Local, State, National, Business, Health, Sports.
 
@@ -74,6 +78,8 @@ stateDiagram-v2
 ```
 
 SSE: `GET /api/admin/ingestion-runs/{id}/events` streams `event: ingest` + JSON. Bus keeps ~500 events / 30 min in memory.
+
+Manual admin source triggers create both an `IngestionRun` and a queued `IngestionJob`. `IngestionJobWorker` claims queued jobs, runs the matching RSS/scrape service, and marks the job completed/failed. Jobs left `Running` during process shutdown are requeued on startup rather than silently disappearing.
 
 ### Cron (Render)
 
@@ -117,10 +123,10 @@ Existing rows without body: `POST /api/ingest/backfill-bodies?take=&afterId=` (i
 | `POST /api/ingest/scrape` | `IngestScrape` + ingest key |
 | `POST /api/ingest/daily` | `IngestDaily` + ingest key; RSS + scrape, no RSS summarization |
 | `POST /api/ingest/backfill-bodies` | `IngestBackfillBodies` + ingest key |
-| Admin trigger | `POST /api/admin/sources/{id}/trigger` → 202 |
+| Admin trigger | `POST /api/admin/sources/{id}/trigger` → 202 + durable `IngestionJob` |
 | SSE | `GET /api/admin/ingestion-runs/{id}/events` |
 | Uploads | `POST /api/admin/uploads` multipart |
-| Env | `RssIngest__Secret`, `INGEST_URL` (cron), `ArticleIntelligence__*`, `Upload__RootPath` |
+| Env | `RssIngest__Secret`, `INGEST_URL` (cron), `ArticleIntelligence__*`, `Upload__RootPath`, `IngestHealth__*` |
 
 Event types: `started`, `fetch`, `progress`, `completed`, `error` (terminal: `completed` \| `error`).
 
@@ -129,7 +135,9 @@ Event types: `started`, `fetch`, `progress`, `completed`, `error` (terminal: `co
 - Source site downtime must not break the public feed — log/fail the run, leave published content intact.
 - Outbound fetch must not target private IPs (`SafeHttp`).
 - RSS/scraped HTML is untrusted — store **plain text only**, never raw HTML; sanitize/validate before store and render (security rule).
-- **Status asymmetry:** scrape currently publishes immediately; RSS/PDF go to review — document and preserve or change deliberately.
+- All article-producing ingest paths insert `PendingReview`; only admin publish moves articles into the public feed.
+- `ErrorSummary` stores sanitized categories; full exception details stay in structured logs keyed by `IngestionRunId`.
+- Ingest silence monitor logs or posts a webhook when active RSS/scrape sources have no successful run within the configured window.
 - Ingest key ≠ admin JWT; do not conflate.
 
 ## Related docs

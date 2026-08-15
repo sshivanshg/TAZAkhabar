@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using NewsFeed.Api.Data;
 using NewsFeed.Api.Data.Entities;
+using Serilog.Context;
 
 namespace NewsFeed.Api.Ingest;
 
@@ -68,12 +69,13 @@ public sealed class RssIngestService(
             IngestionEvents.Emit(events, run.Id, "started", $"RSS run started · {source.Name}");
         }
 
+        using var runLogContext = LogContext.PushProperty("IngestionRunId", run.Id);
         try
         {
             if (source.Type != SourceType.Rss || string.IsNullOrWhiteSpace(source.FeedUrl))
             {
                 run.ArticlesFailed = 1;
-                run.ErrorSummary = HtmlText.Truncate("Source is not an active RSS feed with a URL.", 1000);
+                run.ErrorSummary = IngestErrorClassifier.InvalidSource;
                 await CompleteRunAsync(source, run, FetchStatus.Error, run.ErrorSummary, cancellationToken);
                 return run;
             }
@@ -83,8 +85,12 @@ public sealed class RssIngestService(
             if (xml is null)
             {
                 run.ArticlesFailed = 1;
-                run.ErrorSummary = HtmlText.Truncate($"RSS fetch failed for {source.FeedUrl}", 1000);
-                logger.LogWarning("RSS fetch failed for {FeedUrl}", source.FeedUrl);
+                run.ErrorSummary = IngestErrorClassifier.FetchFailed;
+                logger.LogWarning(
+                    "RSS fetch failed for source {SourceId} {FeedUrl} run {IngestionRunId}",
+                    source.Id,
+                    source.FeedUrl,
+                    run.Id);
                 await CompleteRunAsync(source, run, FetchStatus.Error, run.ErrorSummary, cancellationToken);
                 return run;
             }
@@ -105,8 +111,12 @@ public sealed class RssIngestService(
             if (city is null)
             {
                 run.ArticlesSkipped = items.Count;
-                run.ErrorSummary = HtmlText.Truncate($"City id {source.CityId} not found for source {source.Id}", 1000);
-                logger.LogWarning("City id {CityId} not found; skipping feed {FeedUrl}", source.CityId, source.FeedUrl);
+                run.ErrorSummary = IngestErrorClassifier.InvalidSource;
+                logger.LogWarning(
+                    "City id {CityId} not found; skipping feed {FeedUrl} run {IngestionRunId}",
+                    source.CityId,
+                    source.FeedUrl,
+                    run.Id);
                 await CompleteRunAsync(source, run, FetchStatus.Error, run.ErrorSummary, cancellationToken);
                 return run;
             }
@@ -168,13 +178,18 @@ public sealed class RssIngestService(
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "RSS ingest failed for source {SourceId} {FeedUrl}", source.Id, source.FeedUrl);
+            logger.LogError(
+                ex,
+                "RSS ingest failed for source {SourceId} {FeedUrl} run {IngestionRunId}",
+                source.Id,
+                source.FeedUrl,
+                run.Id);
             db.ChangeTracker.Clear();
 
             var trackedRun = await db.IngestionRuns.FirstAsync(r => r.Id == run.Id, CancellationToken.None);
             var trackedSource = await db.Sources.FirstAsync(s => s.Id == source.Id, CancellationToken.None);
             trackedRun.ArticlesFailed = Math.Max(trackedRun.ArticlesFailed, 1);
-            trackedRun.ErrorSummary = HtmlText.Truncate(ex.Message, 1000);
+            trackedRun.ErrorSummary = IngestErrorClassifier.FromException(ex);
             await CompleteRunAsync(trackedSource, trackedRun, FetchStatus.Error, trackedRun.ErrorSummary, CancellationToken.None);
             return trackedRun;
         }
@@ -192,6 +207,14 @@ public sealed class RssIngestService(
         source.LastFetchStatus = status;
         source.LastErrorMessage = error;
         await db.SaveChangesAsync(cancellationToken);
+        logger.LogInformation(
+            "RSS ingest run {IngestionRunId} completed with status {FetchStatus}: found {ArticlesFound}, added {ArticlesAdded}, skipped {ArticlesSkipped}, failed {ArticlesFailed}",
+            run.Id,
+            status,
+            run.ArticlesFound,
+            run.ArticlesAdded,
+            run.ArticlesSkipped,
+            run.ArticlesFailed);
 
         if (status == FetchStatus.Error)
         {

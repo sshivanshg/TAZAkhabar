@@ -1,7 +1,7 @@
 # Data model
 
 > **Living doc** — update when entities, statuses, or migration ownership change.  
-> **Last verified against:** 2026-08-14 (`AddArticleBody` idempotent for drift)
+> **Last verified against:** 2026-08-15 (production migrations are explicit, not boot-time)
 
 ## Purpose
 
@@ -20,8 +20,10 @@ erDiagram
   City ||--o{ Source : has
   Source ||--o{ Article : provides
   Source ||--o{ IngestionRun : runs
+  Source ||--o{ IngestionJob : queues
   Article ||--o{ ArticleTranslation : has
   Article ||--o{ ArticleView : has
+  Article ||--o{ ArticleAuditLog : audits
   DocumentUpload }o--|| IngestionRun : may_link
   DocumentUpload }o--o| Source : may_link
   DocumentUpload }o--o| City : city_hint
@@ -37,9 +39,11 @@ erDiagram
 | `Source` | `sources` | `FeedUrl`, `Type`, `Kind`, `Language`, `IsActive`, fetch status, `ScrapeConfig` |
 | `Article` | `articles` | Headline/summary, optional plain-text `Body` (max ~50k at extract), source fields, `Status`, `IsMock`, review fields, `DetectedLanguage`, `ImageUrl`, unique `SourceUrl` |
 | `IngestionRun` | `ingestion_runs` | Counts found/added/skipped/failed, `ErrorSummary` |
+| `IngestionJob` | `ingestion_jobs` | Durable manual source-trigger job state linked one-to-one to an `IngestionRun` |
 | `DocumentUpload` | `document_uploads` | Path, `Status`, links to run/source/city hint |
 | `ArticleTranslation` | `article_translations` | Target lang + translated headline/summary |
 | `ArticleView` | `article_views` | Anonymous `SessionKey` for trending |
+| `ArticleAuditLog` | `article_audit_logs` | Append-only admin article action history |
 
 ### Enums (`apps/api/Data/`)
 
@@ -49,6 +53,7 @@ erDiagram
 | `SourceType` | `Rss`, `Manual`, `PdfUpload`, `Scrape` |
 | `SourceKind` | `CityEdition`, `Wider` |
 | `FetchStatus` | `Success`, `Error` |
+| `IngestionJobStatus` | `Queued`, `Running`, `Completed`, `Failed` |
 | `DocumentUploadStatus` | `Queued`, `Processing`, `Ready`, `Failed` |
 | `TranslationStatus` | `Completed`, `Failed` |
 
@@ -57,8 +62,10 @@ erDiagram
 ```mermaid
 flowchart LR
   Code[Entity / migration change] --> Mig[infra/migrations new migration]
-  Mig --> Boot[API startup MigrateAsync]
-  Boot --> Neon[(Postgres)]
+  Mig --> SQL[CI migration SQL artifact]
+  SQL --> Review[SQL review]
+  Review --> Apply[Manual production migration workflow]
+  Apply --> Neon[(Postgres)]
 ```
 
 Generate:
@@ -87,7 +94,7 @@ Public feed only exposes **Published** articles (see [02-api](./02-api.md)). Sta
 - Never edit applied migrations; add a new one.
 - Unique `SourceUrl` prevents duplicate ingest inserts.
 - API is the only DB client — no Neon creds in frontends.
-- Startup migration failure prevents healthy boot (Render `/healthz` fails).
+- Production API startup does not apply migrations; deploy code and schema deliberately.
 
 ## Related docs
 

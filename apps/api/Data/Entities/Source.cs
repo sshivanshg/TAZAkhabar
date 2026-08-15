@@ -20,4 +20,5 @@ public sealed class Source
     public City City { get; set; } = null!;
     public ICollection<Article> Articles { get; set; } = new List<Article>();
     public ICollection<IngestionRun> IngestionRuns { get; set; } = new List<IngestionRun>();
+    public ICollection<IngestionJob> IngestionJobs { get; set; } = new List<IngestionJob>();
 }

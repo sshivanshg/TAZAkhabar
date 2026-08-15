@@ -151,7 +151,7 @@ function ProfileBody() {
                   onPress={() => setPreferredLanguage(lang.code)}
                   accessibilityRole="button"
                   accessibilityState={{ selected }}
-                  accessibilityLabel={`Prefer ${lang.label}`}
+                  accessibilityLabel={`Prefer ${lang.accessibilityLabel}`}
                   style={[styles.langChip, selected ? styles.langChipSelected : null]}
                 >
                   <Text

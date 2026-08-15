@@ -42,7 +42,7 @@ public sealed record CreateAdminArticleRequest(
     string Category,
     string SourceName,
     string SourceUrl,
-    bool PublishNow,
+    bool? PublishNow,
     string? DetectedLanguage);
 
 public sealed record AdminSourceResponse(
@@ -66,7 +66,7 @@ public sealed record CreateAdminSourceRequest(
     string Type,
     string Kind,
     string Language,
-    bool IsActive);
+    bool? IsActive);
 
 public sealed record PatchAdminSourceRequest(
     string? Name,

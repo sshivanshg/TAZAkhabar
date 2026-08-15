@@ -1,4 +1,5 @@
 using System.Net;
+using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
@@ -122,7 +123,7 @@ public sealed class IngestEndpointTests : IClassFixture<NewsFeedWebApplicationFa
     }
 
     [Fact]
-    public async Task IngestScrape_ValidKey_ReturnsCounts()
+    public async Task IngestScrape_StoresPendingReview_And_PublicFeedRequiresAdminPublish()
     {
         const string listUrl = "https://www.amarujala.com/uttar-pradesh/jhansi-ingest";
         const string storyUrl = "https://www.amarujala.com/city/story-ingest-scrape";
@@ -179,6 +180,34 @@ public sealed class IngestEndpointTests : IClassFixture<NewsFeedWebApplicationFa
         var body = await response.Content.ReadFromJsonAsync<IngestRunResponse>();
         Assert.True(body!.FeedsAttempted >= 1);
         Assert.True(body.Inserted >= 1);
+
+        int articleId;
+        using (var scope = factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var article = await db.Articles.SingleAsync(a => a.SourceUrl == storyUrl);
+            articleId = article.Id;
+            Assert.Equal(ArticleStatus.PendingReview, article.Status);
+            Assert.Equal(SourceType.Scrape, (await db.Sources.SingleAsync(s => s.Id == article.SourceId)).Type);
+        }
+
+        var publicBefore = await client.GetFromJsonAsync<PagedArticlesResponse>("/api/articles?city=jhansi");
+        Assert.DoesNotContain(publicBefore!.Items, a => a.Id == articleId);
+
+        var login = await client.PostAsJsonAsync("/api/admin/login", new
+        {
+            password = NewsFeedWebApplicationFactory.TestAdminPassword,
+            displayName = "Editor One",
+        });
+        login.EnsureSuccessStatusCode();
+        var token = (await login.Content.ReadFromJsonAsync<AdminLoginResponse>(TestJson.Options))!.Token;
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        var publish = await client.PostAsync($"/api/admin/articles/{articleId}/publish", null);
+        Assert.Equal(HttpStatusCode.OK, publish.StatusCode);
+
+        var publicAfter = await client.GetFromJsonAsync<PagedArticlesResponse>("/api/articles?city=jhansi");
+        Assert.Contains(publicAfter!.Items, a => a.Id == articleId);
     }
 
     [Fact]

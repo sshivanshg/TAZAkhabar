@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "hooks": {
+    "sessionStart": [
+      {
+        "command": ".codex/hooks/session-store.py",
+        "timeout": 10
+      },
+      {
+        "type": "prompt",
+        "prompt": "Before making structural or product-scope changes in this session, read `.codex/rules/architecture.mdc` and `docs/PRD.md`. Remind yourself: API is the only DB client; no auth for MVP; the client is Expo at apps/app (web + native - no separate Vite app); OpenAPI + shared-types must stay in sync. Summarize any relevant constraints for this session in one short paragraph if helpful, then proceed with the user's request.",
+        "timeout": 30
+      }
+    ],
+    "sessionEnd": [
+      {
+        "command": ".codex/hooks/session-store.py",
+        "timeout": 15
+      }
+    ],
+    "stop": [
+      {
+        "command": ".codex/hooks/session-store.py",
+        "timeout": 10
+      }
+    ]
+  }
+}

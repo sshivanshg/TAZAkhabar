@@ -1,7 +1,7 @@
 # Reader app
 
 > **Living doc** — update when Expo routes, city/feed/share behavior, or desktop web layer change.  
-> **Last verified against:** 2026-08-14 (immersive story: translated reads use translated summary instead of original body)
+> **Last verified against:** 2026-08-15 (reader server-state convention + bundle reporting)
 
 ## Purpose
 
@@ -43,6 +43,7 @@ flowchart LR
 | Module | Role |
 |--------|------|
 | `src/api/client.ts` | Typed API calls |
+| `src/api/useAsyncResource.ts` | Shared async lifecycle hook for ordinary server-state reads |
 | `src/storage/cityPreference.ts` | Persisted city |
 | `src/utils/shareToWhatsApp.ts` | Share deep link / intent |
 | `src/components/desktop/*` | Desktop shell / sidebar / hero row |
@@ -51,6 +52,12 @@ flowchart LR
 | `public/manifest.webmanifest`, `public/_headers` | PWA / Pages headers |
 
 Stack: Expo ~54, expo-router, Gluestack UI, Moti, AsyncStorage.
+
+Server state convention: ordinary API reads should go through `useAsyncResource`
+or a feature hook built on it. Keep imperative `useState`/`useEffect` loaders only
+where pagination, swipe prefetching, or fire-and-forget mutations make the flow
+meaningfully different. Revisit TanStack Query when cross-screen caching,
+invalidation, or offline behavior becomes product-critical.
 
 ## Data & control flows
 
@@ -87,6 +94,7 @@ API helpers used: `getHealth`, `getCities`, `getArticles`, `getArticleDates`, `g
 |------|-------|
 | Env | `EXPO_PUBLIC_API_BASE_URL`, `EXPO_PUBLIC_APP_ENV` |
 | Deploy artifact | `pnpm build:web` → `apps/app/dist` |
+| Bundle report | `pnpm --filter @newsfeed/app bundle:report` |
 | Pages project | default `newsfeed-web` |
 | Auth | None for MVP |
 

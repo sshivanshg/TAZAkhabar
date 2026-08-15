@@ -14,7 +14,7 @@ public sealed class ScrapeIngestServiceTests
     private const string Story3Url = "https://www.amarujala.com/city/story-3";
 
     [Fact]
-    public async Task Inserts_Published_Article_And_Skips_DuplicateUrl()
+    public async Task Inserts_PendingReview_Article_And_Skips_DuplicateUrl()
     {
         await using var db = CreateDb();
         var source = await AddScrapeSourceAsync(db, "Amar Ujala Jhansi", ListUrl);
@@ -49,7 +49,7 @@ public sealed class ScrapeIngestServiceTests
         Assert.Equal("Amar Ujala Jhansi", stored.SourceName);
         Assert.Equal(2, stored.CityId);
         Assert.Equal("Local", stored.Category);
-        Assert.Equal(ArticleStatus.Published, stored.Status);
+        Assert.Equal(ArticleStatus.PendingReview, stored.Status);
         Assert.False(stored.IsMock);
         Assert.Equal(source.Id, stored.SourceId);
         Assert.NotNull(stored.IngestedAt);
@@ -109,7 +109,8 @@ public sealed class ScrapeIngestServiceTests
         var run = await service.RunSourceAsync(source.Id, CancellationToken.None);
 
         Assert.True(run.ArticlesFailed >= 1);
-        Assert.False(string.IsNullOrEmpty(run.ErrorSummary));
+        Assert.Equal(IngestErrorClassifier.InvalidSourceUrl, run.ErrorSummary);
+        Assert.DoesNotContain("127.0.0.1", run.ErrorSummary);
         Assert.Empty(await db.Articles.ToListAsync());
         await db.Entry(source).ReloadAsync();
         Assert.Equal(FetchStatus.Error, source.LastFetchStatus);
@@ -133,10 +134,26 @@ public sealed class ScrapeIngestServiceTests
 
         Assert.Equal(0, run.ArticlesFound);
         Assert.True(run.ArticlesFailed >= 1);
-        Assert.Contains("No article links", run.ErrorSummary);
+        Assert.Equal(IngestErrorClassifier.NoArticlesFound, run.ErrorSummary);
+        Assert.DoesNotContain(ListUrl, run.ErrorSummary);
         Assert.Empty(await db.Articles.ToListAsync());
         await db.Entry(source).ReloadAsync();
         Assert.Equal(FetchStatus.Error, source.LastFetchStatus);
+    }
+
+    [Fact]
+    public async Task ListFetchException_StoresSanitizedErrorSummary()
+    {
+        await using var db = CreateDb();
+        var source = await AddScrapeSourceAsync(db, "Missing fixture", ListUrl);
+        var service = CreateService(db, new FakeScrapeHttpClient());
+
+        var run = await service.RunSourceAsync(source.Id, CancellationToken.None);
+
+        Assert.Equal(IngestErrorClassifier.FetchFailed, run.ErrorSummary);
+        Assert.DoesNotContain(ListUrl, run.ErrorSummary);
+        Assert.DoesNotContain("fixture", run.ErrorSummary, StringComparison.OrdinalIgnoreCase);
+        Assert.Empty(await db.Articles.ToListAsync());
     }
 
     private static FakeScrapeHttpClient CreateFixtureClient(bool mapAllStories)

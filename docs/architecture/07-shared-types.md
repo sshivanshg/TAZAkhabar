@@ -1,7 +1,7 @@
 # Shared types
 
 > **Living doc** — update when OpenAPI generation, NSwag config, or contract PR rules change.  
-> **Last verified against:** 2026-08-14 (ArticleResponse.body; IngestBackfillBodies)
+> **Last verified against:** 2026-08-15 (CI OpenAPI drift check)
 
 ## Purpose
 
@@ -45,6 +45,8 @@ pnpm generate:types
 ```
 
 Same PR must include: API change + OpenAPI snapshot + `generated.ts` + consumer updates (`apps/app` and/or `apps/admin`).
+
+CI starts the API after the backend build, fetches `/openapi/v1.json`, and diffs it against `packages/shared-types/openapi/openapi.json`; API contract PRs fail when the committed snapshot is stale.
 
 ## Key files
 

@@ -107,6 +107,20 @@
             }
           },
           {
+            "name": "lang",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "date",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
             "name": "offset",
             "in": "query",
             "schema": {
@@ -121,21 +135,6 @@
               "type": "integer",
               "format": "int32"
             }
-          },
-          {
-            "name": "lang",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "date",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            },
-            "description": "City-local calendar date YYYY-MM-DD"
           }
         ],
         "responses": {
@@ -300,6 +299,59 @@
         }
       }
     },
+    "/api/articles/{id}/view": {
+      "post": {
+        "tags": [
+          "NewsFeed.Api"
+        ],
+        "operationId": "RecordArticleView",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecordArticleViewRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/articles/{id}": {
       "get": {
         "tags": [
@@ -358,59 +410,6 @@
         }
       }
     },
-    "/api/articles/{id}/view": {
-      "post": {
-        "tags": [
-          "NewsFeed.Api"
-        ],
-        "operationId": "RecordArticleView",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/RecordArticleViewRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "204": {
-            "description": "No Content"
-          },
-          "404": {
-            "description": "Not Found",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Too Many Requests",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/ingest/rss": {
       "post": {
         "tags": [
@@ -424,46 +423,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/IngestRunResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Too Many Requests",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/maintenance/purge-old-articles": {
-      "post": {
-        "tags": [
-          "NewsFeed.Api"
-        ],
-        "operationId": "PurgeOldArticles",
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PurgeOldArticlesResponse"
                 }
               }
             }
@@ -531,6 +490,46 @@
         }
       }
     },
+    "/api/ingest/daily": {
+      "post": {
+        "tags": [
+          "NewsFeed.Api"
+        ],
+        "operationId": "IngestDaily",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IngestRunResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/ingest/backfill-bodies": {
       "post": {
         "tags": [
@@ -562,6 +561,46 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ArticleBodyBackfillResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/maintenance/purge-old-articles": {
+      "post": {
+        "tags": [
+          "NewsFeed.Api"
+        ],
+        "operationId": "PurgeOldArticles",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PurgeOldArticlesResponse"
                 }
               }
             }
@@ -732,8 +771,7 @@
                 "$ref": "#/components/schemas/CreateAdminArticleRequest"
               }
             }
-          },
-          "required": true
+          }
         },
         "responses": {
           "200": {
@@ -1077,8 +1115,7 @@
                 "$ref": "#/components/schemas/CreateAdminSourceRequest"
               }
             }
-          },
-          "required": true
+          }
         },
         "responses": {
           "200": {
@@ -1285,7 +1322,14 @@
         ],
         "responses": {
           "200": {
-            "description": "Server-Sent Events stream of IngestionEventDto"
+            "description": "OK",
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "$ref": "#/components/schemas/IngestionEventDto"
+                }
+              }
+            }
           },
           "401": {
             "description": "Unauthorized",
@@ -1682,6 +1726,19 @@
         },
         "additionalProperties": false
       },
+      "ArticleDatesResponse": {
+        "type": "object",
+        "properties": {
+          "dates": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
       "ArticleResponse": {
         "type": "object",
         "properties": {
@@ -1786,7 +1843,8 @@
             "nullable": true
           },
           "publishNow": {
-            "type": "boolean"
+            "type": "boolean",
+            "nullable": true
           },
           "detectedLanguage": {
             "type": "string",
@@ -1823,7 +1881,8 @@
             "nullable": true
           },
           "isActive": {
-            "type": "boolean"
+            "type": "boolean",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -1925,24 +1984,16 @@
         },
         "additionalProperties": false
       },
-      "PurgeOldArticlesResponse": {
-        "type": "object",
-        "properties": {
-          "deleted": {
-            "type": "integer",
-            "format": "int32"
-          }
-        },
-        "additionalProperties": false
-      },
       "IngestionEventDto": {
         "type": "object",
         "properties": {
           "type": {
-            "type": "string"
+            "type": "string",
+            "nullable": true
           },
           "message": {
-            "type": "string"
+            "type": "string",
+            "nullable": true
           },
           "at": {
             "type": "string",
@@ -1968,7 +2019,8 @@
             "format": "int32",
             "nullable": true
           }
-        }
+        },
+        "additionalProperties": false
       },
       "IngestionRunResponseDto": {
         "type": "object",
@@ -2198,16 +2250,23 @@
             "nullable": true
           }
         },
-        "additionalProperties": {}
+        "additionalProperties": { }
       },
-      "ArticleDatesResponse": {
+      "PurgeOldArticlesResponse": {
         "type": "object",
         "properties": {
-          "dates": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            },
+          "deleted": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "RecordArticleViewRequest": {
+        "type": "object",
+        "properties": {
+          "sessionId": {
+            "type": "string",
             "nullable": true
           }
         },
@@ -2221,16 +2280,6 @@
             "items": {
               "$ref": "#/components/schemas/ArticleResponse"
             },
-            "nullable": true
-          }
-        },
-        "additionalProperties": false
-      },
-      "RecordArticleViewRequest": {
-        "type": "object",
-        "properties": {
-          "sessionId": {
-            "type": "string",
             "nullable": true
           }
         },

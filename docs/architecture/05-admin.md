@@ -1,7 +1,7 @@
 # Admin
 
 > **Living doc** — update when admin routes, auth client behavior, or live-ingest UI change.  
-> **Last verified against:** 2026-08-14 (local working tree)
+> **Last verified against:** 2026-08-15 (validation, audit logs, durable source triggers)
 
 ## Purpose
 
@@ -58,6 +58,10 @@ Session keys: `newsfeed_admin_token`, `newsfeed_admin_token_expires`, `newsfeed_
 
 May copy **token values** (colors/spacing) from reader theme; own table/form components — do not embed reader cards.
 
+Admin write payloads are validated server-side before endpoint logic touches values. Article create/publish/reject/archive actions append `ArticleAuditLog` rows; `ReviewedBy`/`ReviewedAt` remain the current-state fields on `Article`.
+
+Source “run now” returns `202` after creating an `IngestionRun` plus durable `IngestionJob`; the background worker completes or fails it and live events stream against the run id.
+
 ## Key files
 
 - `apps/admin/package.json`
@@ -79,6 +83,7 @@ May copy **token values** (colors/spacing) from reader theme; own table/form com
 
 - Do not ship admin routes inside `apps/app`.
 - Shared password is not per-editor identity — `ReviewedBy` uses display name only.
+- Audit history is append-only in `article_audit_logs`; do not rely only on mutable article status fields for action history.
 - Login rate-limited server-side (5/IP/min).
 - Separate Pages origin from reader.
 

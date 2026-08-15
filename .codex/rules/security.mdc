@@ -1,0 +1,32 @@
+---
+description: Security baseline — secrets, rate limits, untrusted content, CORS
+alwaysApply: true
+---
+
+# Security
+
+## Secrets
+
+- **Never commit secrets.** `.env` files are gitignored; only `*.example` templates are checked in.
+- Use Render / platform secrets and Cloudflare env vars for staging and production.
+- No connection strings, API keys, or tokens in source, Dockerfiles, or workflow files (use GitHub Actions secrets).
+
+## Public API (no-auth MVP)
+
+- **Rate limit all public endpoints** — this is the primary abuse control until auth exists.
+- **CORS** allowlist known frontend origins only — never `AllowAnyOrigin` in staging/production.
+- Do not expose admin or debug endpoints without additional protection.
+
+## Content ingestion
+
+- RSS / scraped content is **untrusted input**.
+- Sanitize and validate before store and before render (HTML encoding / sanitizer on output; length and schema checks on input).
+- Never execute or blindly embed raw HTML from sources into the PWA.
+
+## Checklist for new endpoints
+
+1. Input validation + ProblemDetails errors
+2. Rate limiting applied
+3. No secrets in logs
+4. OpenAPI documented
+5. CORS still allowlist-only

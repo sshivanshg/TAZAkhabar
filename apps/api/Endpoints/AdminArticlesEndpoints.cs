@@ -259,8 +259,11 @@ public static class AdminArticlesEndpoints
                 }
 
                 article.Status = ArticleStatus.Archived;
-                article.ReviewedBy = EditorName(user);
-                article.ReviewedAt = DateTimeOffset.UtcNow;
+                var editor = EditorName(user);
+                var now = DateTimeOffset.UtcNow;
+                article.ReviewedBy = editor;
+                article.ReviewedAt = now;
+                AddAudit(db, article.Id, "archive", editor, now);
                 await db.SaveChangesAsync(cancellationToken);
                 return Results.Ok(ToResponse(article));
             })
@@ -272,12 +275,19 @@ public static class AdminArticlesEndpoints
             .ProducesProblem(StatusCodes.Status409Conflict);
 
         admin.MapPost("/articles", async (
-                CreateAdminArticleRequest request,
+                CreateAdminArticleRequest? request,
                 ClaimsPrincipal user,
                 AppDbContext db,
                 CancellationToken cancellationToken) =>
             {
-                if (!IsAllowedCategory(request.Category))
+                if (AdminValidation.ValidateCreateArticle(request) is { } validationError)
+                {
+                    return validationError;
+                }
+
+                var validRequest = request!;
+
+                if (!IsAllowedCategory(validRequest.Category))
                 {
                     return Results.Problem(
                         title: "Invalid category",
@@ -285,7 +295,7 @@ public static class AdminArticlesEndpoints
                         statusCode: StatusCodes.Status400BadRequest);
                 }
 
-                var slug = request.City.Trim().ToLowerInvariant();
+                var slug = validRequest.City.Trim().ToLowerInvariant();
                 var cityEntity = await db.Cities.AsNoTracking()
                     .FirstOrDefaultAsync(c => c.Slug == slug, cancellationToken);
                 if (cityEntity is null)
@@ -296,10 +306,10 @@ public static class AdminArticlesEndpoints
                         statusCode: StatusCodes.Status400BadRequest);
                 }
 
-                var headline = HtmlText.Truncate(request.Headline.Trim(), 300);
-                var summary = HtmlText.Truncate(request.Summary.Trim(), 1000);
-                var sourceName = HtmlText.Truncate(request.SourceName.Trim(), 120);
-                var sourceUrl = HtmlText.Truncate(request.SourceUrl.Trim(), 500);
+                var headline = HtmlText.Truncate(validRequest.Headline.Trim(), 300);
+                var summary = HtmlText.Truncate(validRequest.Summary.Trim(), 1000);
+                var sourceName = HtmlText.Truncate(validRequest.SourceName.Trim(), 120);
+                var sourceUrl = HtmlText.Truncate(validRequest.SourceUrl.Trim(), 500);
                 if (string.IsNullOrWhiteSpace(headline)
                     || string.IsNullOrWhiteSpace(summary)
                     || string.IsNullOrWhiteSpace(sourceName)
@@ -329,20 +339,22 @@ public static class AdminArticlesEndpoints
                     SourceName = sourceName,
                     SourceUrl = sourceUrl,
                     PublishedAt = now,
-                    Category = request.Category.Trim(),
-                    Status = request.PublishNow ? ArticleStatus.Published : ArticleStatus.Draft,
+                    Category = validRequest.Category.Trim(),
+                    Status = validRequest.PublishNow!.Value ? ArticleStatus.Published : ArticleStatus.Draft,
                     IsMock = false,
                     IngestedAt = null,
                     SourceId = null,
-                    ReviewedBy = request.PublishNow ? editor : null,
-                    ReviewedAt = request.PublishNow ? now : null,
+                    ReviewedBy = validRequest.PublishNow.Value ? editor : null,
+                    ReviewedAt = validRequest.PublishNow.Value ? now : null,
                     DetectedLanguage = ArticleLanguageDetector.CoerceOrDetect(
-                        request.DetectedLanguage,
+                        validRequest.DetectedLanguage,
                         headline,
                         summary),
                 };
 
                 db.Articles.Add(article);
+                await db.SaveChangesAsync(cancellationToken);
+                AddAudit(db, article.Id, validRequest.PublishNow.Value ? "create_publish" : "create_draft", editor, now);
                 await db.SaveChangesAsync(cancellationToken);
                 return Results.Ok(ToResponse(article));
             })
@@ -388,12 +400,24 @@ public static class AdminArticlesEndpoints
                 statusCode: StatusCodes.Status409Conflict);
         }
 
+        var editor = EditorName(user);
+        var now = DateTimeOffset.UtcNow;
         article.Status = target;
-        article.ReviewedBy = EditorName(user);
-        article.ReviewedAt = DateTimeOffset.UtcNow;
+        article.ReviewedBy = editor;
+        article.ReviewedAt = now;
+        AddAudit(db, article.Id, target == ArticleStatus.Published ? "publish" : "reject", editor, now);
         await db.SaveChangesAsync(cancellationToken);
         return Results.Ok(ToResponse(article));
     }
+
+    private static void AddAudit(AppDbContext db, int articleId, string action, string actor, DateTimeOffset now) =>
+        db.ArticleAuditLogs.Add(new ArticleAuditLog
+        {
+            ArticleId = articleId,
+            Action = action,
+            Actor = HtmlText.Truncate(actor, 80),
+            OccurredAt = now,
+        });
 
     private static bool IsAllowedCategory(string? category) =>
         !string.IsNullOrWhiteSpace(category)

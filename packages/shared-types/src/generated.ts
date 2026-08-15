@@ -61,6 +61,10 @@ export interface ArticleBodyBackfillResponse {
     nextAfterId?: number | undefined;
 }
 
+export interface ArticleDatesResponse {
+    dates?: string[] | undefined;
+}
+
 export interface ArticleResponse {
     id?: number;
     cityId?: number;
@@ -90,7 +94,7 @@ export interface CreateAdminArticleRequest {
     category?: string | undefined;
     sourceName?: string | undefined;
     sourceUrl?: string | undefined;
-    publishNow?: boolean;
+    publishNow?: boolean | undefined;
     detectedLanguage?: string | undefined;
 }
 
@@ -101,7 +105,7 @@ export interface CreateAdminSourceRequest {
     type?: string | undefined;
     kind?: string | undefined;
     language?: string | undefined;
-    isActive?: boolean;
+    isActive?: boolean | undefined;
 }
 
 export interface DocumentUploadResponseDto {
@@ -132,20 +136,14 @@ export interface IngestRunResponse {
     skipped?: number;
 }
 
-export interface PurgeOldArticlesResponse {
-    deleted?: number;
-}
-
 export interface IngestionEventDto {
-    type?: string;
-    message?: string;
+    type?: string | undefined;
+    message?: string | undefined;
     at?: string;
     found?: number | undefined;
     added?: number | undefined;
     skipped?: number | undefined;
     failed?: number | undefined;
-
-    [key: string]: any;
 }
 
 export interface IngestionRunResponseDto {
@@ -216,16 +214,16 @@ export interface ProblemDetails {
     [key: string]: any;
 }
 
-export interface ArticleDatesResponse {
-    dates?: string[] | undefined;
-}
-
-export interface TrendingArticlesResponse {
-    items?: ArticleResponse[] | undefined;
+export interface PurgeOldArticlesResponse {
+    deleted?: number;
 }
 
 export interface RecordArticleViewRequest {
     sessionId?: string | undefined;
+}
+
+export interface TrendingArticlesResponse {
+    items?: ArticleResponse[] | undefined;
 }
 
 export interface FileParameter {

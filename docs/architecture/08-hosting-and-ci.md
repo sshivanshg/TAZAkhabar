@@ -1,7 +1,7 @@
 # Hosting and CI
 
 > **Living doc** — update when Render, Cloudflare, Neon, Docker, workflows, or env templates change.  
-> **Last verified against:** 2026-08-14 (daily no-AI ingest cron)
+> **Last verified against:** 2026-08-15 (explicit migrations, OpenAPI drift check, ingest silence alert env)
 
 ## Purpose
 
@@ -46,8 +46,9 @@ flowchart TB
 | Optional web nginx preview | `infra/docker/Dockerfile.web`, `nginx.web.conf` |
 | Blueprint | `render.yaml` — web `newsfeed-api` + ingest/purge crons |
 | Local DB | `docker-compose.yml` Postgres 16 |
-| CI | `.github/workflows/ci.yml` — API format/build/test + Postgres; app lint/test/export; admin build |
+| CI | `.github/workflows/ci.yml` — API format/build/test + Postgres, migration SQL artifact, OpenAPI drift check; app lint/test/export; admin build |
 | Deploy | `.github/workflows/deploy.yml` — Pages for web + admin; API via Render auto-deploy |
+| DB migration workflow | `.github/workflows/migrate-production.yml` — manual production EF migration apply |
 | Env templates | `.env.example`, `.env.staging.example`, `.env.production.example`, `apps/app/.env.example`, `apps/admin/.env.example` |
 
 No `wrangler.toml` in-repo — Pages deploy uses `cloudflare/pages-action` (wrangler 3) in Actions. Cache/security headers via each app’s `public/_headers`.
@@ -66,6 +67,7 @@ No `wrangler.toml` in-repo — Pages deploy uses `cloudflare/pages-action` (wran
 - Health: `/healthz`
 - Port: `8080`
 - Secrets in dashboard (`sync: false`): DB, CORS origins, ingest secret, admin password/JWT key, Claude key, upload root.
+- Production API boot does not apply EF migrations. Review the CI SQL artifact, then run `Migrate Production Database` manually.
 
 ## Key files
 
@@ -87,12 +89,14 @@ No `wrangler.toml` in-repo — Pages deploy uses `cloudflare/pages-action` (wran
 | `Admin__Password`, `Admin__JwtSigningKey` | Render |
 | `ArticleIntelligence__ApiKey` / `BaseUrl` / `Model` | Render |
 | `Upload__RootPath` | Render |
+| `IngestHealth__MaxSilenceMinutes`, `IngestHealth__AlertWebhookUrl` | Render |
 | `INGEST_URL` | Cron services |
 | `EXPO_PUBLIC_API_BASE_URL` | GitHub Actions **and** `apps/app/.env.production` (Expo inlines this at export) |
 | `VITE_API_BASE_URL` | GitHub Actions **and** `apps/admin/.env.production` |
 | `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` | GitHub secrets |
 | `CLOUDFLARE_PAGES_PROJECT_NAME` | default `newsfeed-web` |
 | `CLOUDFLARE_PAGES_ADMIN_PROJECT_NAME` | default `newsfeed-admin` |
+| `PRODUCTION_DATABASE_CONNECTION_STRING` | GitHub production environment secret for manual migration workflow |
 
 ## Failure modes & invariants
 
@@ -103,6 +107,8 @@ No `wrangler.toml` in-repo — Pages deploy uses `cloudflare/pages-action` (wran
 - Staging Render/Neon deferred; when added, separate service + Neon branch/project.
 - Never commit real secrets; only `*.example` templates.
 - Local tools must not point at production Neon.
+- Production admin password must be non-default and at least 12 chars; JWT signing key must be non-default and at least 32 chars.
+- Before launch, confirm Neon backup retention in the dashboard and perform a real restore test into a non-production branch/project. Record date, source backup, target branch/project, migration version, and smoke-test result in the PR or release notes.
 
 ## Related docs
 

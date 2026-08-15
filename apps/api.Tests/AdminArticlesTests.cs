@@ -1,5 +1,7 @@
 using System.Net;
+using System.Text;
 using System.Net.Http.Json;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
 using NewsFeed.Api.Data;
 using NewsFeed.Api.Data.Entities;
@@ -55,6 +57,12 @@ public sealed class AdminArticlesTests : IClassFixture<NewsFeedWebApplicationFac
 
         var publicFeed = await client.GetFromJsonAsync<PagedArticlesResponse>("/api/articles?city=jhansi");
         Assert.Contains(publicFeed!.Items, a => a.Id == id);
+
+        using var verifyScope = _factory.Services.CreateScope();
+        var verifyDb = verifyScope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var audit = Assert.Single(verifyDb.ArticleAuditLogs.Where(l => l.ArticleId == id));
+        Assert.Equal("publish", audit.Action);
+        Assert.Equal("Editor One", audit.Actor);
     }
 
     [Fact]
@@ -92,6 +100,12 @@ public sealed class AdminArticlesTests : IClassFixture<NewsFeedWebApplicationFac
         var live = await publishNow.Content.ReadFromJsonAsync<AdminArticleResponse>(TestJson.Options);
         Assert.Equal("Published", live!.Status);
 
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            Assert.Contains(db.ArticleAuditLogs.Where(l => l.ArticleId == live.Id), l => l.Action == "create_publish");
+        }
+
         var publicAfter = await client.GetFromJsonAsync<PagedArticlesResponse>("/api/articles?city=jhansi");
         Assert.Contains(publicAfter!.Items, a => a.Id == live.Id);
     }
@@ -128,6 +142,58 @@ public sealed class AdminArticlesTests : IClassFixture<NewsFeedWebApplicationFac
             sourceUrl = "https://example.com/bad-cat",
             publishNow = false,
         });
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Theory]
+    [InlineData("""{"summary":"s","city":"jhansi","category":"Local","sourceName":"Desk","sourceUrl":"https://example.com/missing-headline","publishNow":false}""", "Headline")]
+    [InlineData("""{"headline":null,"summary":"s","city":"jhansi","category":"Local","sourceName":"Desk","sourceUrl":"https://example.com/null-headline","publishNow":false}""", "Headline")]
+    [InlineData("""{"headline":"   ","summary":"s","city":"jhansi","category":"Local","sourceName":"Desk","sourceUrl":"https://example.com/empty-headline","publishNow":false}""", "Headline")]
+    [InlineData("""{"headline":"Manual","summary":"s","city":"jhansi","category":"Local","sourceName":"Desk","sourceUrl":"https://example.com/missing-publish"}""", "PublishNow")]
+    public async Task CreateArticle_MalformedRequiredFields_ReturnsValidationProblem(string json, string field)
+    {
+        var client = await AdminAuthTests.CreateAuthedClientAsync(_factory);
+        var response = await PostJsonAsync(client, "/api/admin/articles", json);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var problem = await response.Content.ReadFromJsonAsync<ValidationProblemDetails>(TestJson.Options);
+        Assert.NotNull(problem);
+        Assert.Contains(field, problem!.Errors.Keys);
+    }
+
+    [Fact]
+    public async Task CreateArticle_WrongTypedField_Returns400()
+    {
+        var client = await AdminAuthTests.CreateAuthedClientAsync(_factory);
+        var response = await PostJsonAsync(
+            client,
+            "/api/admin/articles",
+            """
+            {"headline":"Manual","summary":"s","city":"jhansi","category":"Local","sourceName":"Desk","sourceUrl":"https://example.com/wrong-publish","publishNow":"yes"}
+            """);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task PatchArticle_EmptySuppliedField_Returns400()
+    {
+        var client = await AdminAuthTests.CreateAuthedClientAsync(_factory);
+        var create = await client.PostAsJsonAsync("/api/admin/articles", new
+        {
+            headline = "Patch me",
+            summary = "Editor written",
+            city = "jhansi",
+            category = "Local",
+            sourceName = "Desk",
+            sourceUrl = "https://example.com/patch-empty-field",
+            publishNow = false,
+        });
+        create.EnsureSuccessStatusCode();
+        var article = await create.Content.ReadFromJsonAsync<AdminArticleResponse>(TestJson.Options);
+
+        var response = await client.PatchAsJsonAsync($"/api/admin/articles/{article!.Id}", new { headline = " " });
+
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
@@ -233,4 +299,7 @@ public sealed class AdminArticlesTests : IClassFixture<NewsFeedWebApplicationFac
         var response = await client.PostAsync($"/api/admin/articles/{id}/archive", null);
         Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
     }
+
+    private static Task<HttpResponseMessage> PostJsonAsync(HttpClient client, string url, string json) =>
+        client.PostAsync(url, new StringContent(json, Encoding.UTF8, "application/json"));
 }

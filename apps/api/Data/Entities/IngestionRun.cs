@@ -13,4 +13,5 @@ public sealed class IngestionRun
     public string? ErrorSummary { get; set; }
 
     public Source Source { get; set; } = null!;
+    public IngestionJob? IngestionJob { get; set; }
 }

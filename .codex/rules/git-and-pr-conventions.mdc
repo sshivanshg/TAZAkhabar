@@ -1,0 +1,41 @@
+---
+description: Git branching, conventional commits, and PR expectations
+alwaysApply: true
+---
+
+# Git and PR conventions
+
+## Commits
+
+Use Conventional Commits:
+
+- `feat:` — new user-facing capability
+- `fix:` — bug fix
+- `chore:` — tooling, deps, busywork
+- `docs:` — documentation / ADRs
+- `refactor:` — no behavior change intended
+- `test:` — tests only
+- `ci:` — workflows
+
+## Branching
+
+- **No direct commits to `main`.** Feature branches + PR review even for a two-person team.
+- **Squash merge** to keep `main` history linear and readable.
+
+## Every PR must include
+
+1. **What** changed
+2. **Why** it changed
+3. **How** it was tested (commands, CI, manual checks)
+4. **Docs** — which `docs/architecture/` pages changed (or N/A with one-line why)
+
+Contract / OpenAPI changes must update `packages/shared-types` and web consumers in the **same PR**.
+
+## Architecture-relevant PRs
+
+When the change touches boundaries, endpoints, data model, ingest, admin, reader routes, OpenAPI/shared-types, or hosting/env:
+
+- [ ] Atlas page(s) updated (or N/A with one-line why)
+- [ ] Mermaid still accurate
+- [ ] “Last verified” bumped on edited pages
+- [ ] Hub index updated if a new page was added

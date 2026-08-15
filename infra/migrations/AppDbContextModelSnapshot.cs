@@ -1030,6 +1030,42 @@ namespace NewsFeed.Api.Migrations
                         });
                 });
 
+            modelBuilder.Entity("NewsFeed.Api.Data.Entities.ArticleAuditLog", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("action");
+
+                    b.Property<string>("Actor")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)")
+                        .HasColumnName("actor");
+
+                    b.Property<int>("ArticleId")
+                        .HasColumnType("integer")
+                        .HasColumnName("article_id");
+
+                    b.Property<DateTimeOffset>("OccurredAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("occurred_at");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ArticleId", "OccurredAt");
+
+                    b.ToTable("article_audit_logs", (string)null);
+                });
+
             modelBuilder.Entity("NewsFeed.Api.Data.Entities.ArticleTranslation", b =>
                 {
                     b.Property<int>("Id")
@@ -1259,6 +1295,62 @@ namespace NewsFeed.Api.Migrations
                     b.ToTable("document_uploads", (string)null);
                 });
 
+            modelBuilder.Entity("NewsFeed.Api.Data.Entities.IngestionJob", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("Attempts")
+                        .HasColumnType("integer")
+                        .HasColumnName("attempts");
+
+                    b.Property<DateTimeOffset?>("CompletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("completed_at");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("ErrorSummary")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("error_summary");
+
+                    b.Property<int>("IngestionRunId")
+                        .HasColumnType("integer")
+                        .HasColumnName("ingestion_run_id");
+
+                    b.Property<int>("SourceId")
+                        .HasColumnType("integer")
+                        .HasColumnName("source_id");
+
+                    b.Property<DateTimeOffset?>("StartedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("started_at");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("status");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IngestionRunId")
+                        .IsUnique();
+
+                    b.HasIndex("SourceId");
+
+                    b.HasIndex("Status", "CreatedAt");
+
+                    b.ToTable("ingestion_jobs", (string)null);
+                });
+
             modelBuilder.Entity("NewsFeed.Api.Data.Entities.IngestionRun", b =>
                 {
                     b.Property<int>("Id")
@@ -1473,12 +1565,12 @@ namespace NewsFeed.Api.Migrations
                         {
                             Id = 9,
                             CityId = 2,
-                            FeedUrl = "https://news.google.com/rss/search?q=Jhansi&hl=hi-IN&gl=IN&ceid=IN:hi",
-                            IsActive = true,
+                            FeedUrl = "https://news.google.com/search?q=Jhansi&hl=hi-IN&gl=IN&ceid=IN:hi",
+                            IsActive = false,
                             Kind = "CityEdition",
                             Language = "hi",
                             Name = "Google News",
-                            Type = "Rss"
+                            Type = "Scrape"
                         },
                         new
                         {
@@ -1495,12 +1587,12 @@ namespace NewsFeed.Api.Migrations
                         {
                             Id = 11,
                             CityId = 3,
-                            FeedUrl = "https://news.google.com/rss/search?q=Kanpur&hl=hi-IN&gl=IN&ceid=IN:hi",
-                            IsActive = true,
+                            FeedUrl = "https://news.google.com/search?q=Kanpur&hl=hi-IN&gl=IN&ceid=IN:hi",
+                            IsActive = false,
                             Kind = "CityEdition",
                             Language = "hi",
                             Name = "Google News",
-                            Type = "Rss"
+                            Type = "Scrape"
                         },
                         new
                         {
@@ -1517,12 +1609,12 @@ namespace NewsFeed.Api.Migrations
                         {
                             Id = 13,
                             CityId = 4,
-                            FeedUrl = "https://news.google.com/rss/search?q=Lucknow&hl=hi-IN&gl=IN&ceid=IN:hi",
-                            IsActive = true,
+                            FeedUrl = "https://news.google.com/search?q=Lucknow&hl=hi-IN&gl=IN&ceid=IN:hi",
+                            IsActive = false,
                             Kind = "CityEdition",
                             Language = "hi",
                             Name = "Google News",
-                            Type = "Rss"
+                            Type = "Scrape"
                         },
                         new
                         {
@@ -1582,12 +1674,12 @@ namespace NewsFeed.Api.Migrations
                         {
                             Id = 19,
                             CityId = 5,
-                            FeedUrl = "https://news.google.com/rss/search?q=Delhi%20OR%20Gurugram%20OR%20Noida&hl=hi-IN&gl=IN&ceid=IN:hi",
-                            IsActive = true,
+                            FeedUrl = "https://news.google.com/search?q=Delhi%20OR%20Gurugram%20OR%20Noida&hl=hi-IN&gl=IN&ceid=IN:hi",
+                            IsActive = false,
                             Kind = "CityEdition",
                             Language = "hi",
                             Name = "Google News",
-                            Type = "Rss"
+                            Type = "Scrape"
                         },
                         new
                         {
@@ -1625,6 +1717,17 @@ namespace NewsFeed.Api.Migrations
                     b.Navigation("DocumentUpload");
 
                     b.Navigation("Source");
+                });
+
+            modelBuilder.Entity("NewsFeed.Api.Data.Entities.ArticleAuditLog", b =>
+                {
+                    b.HasOne("NewsFeed.Api.Data.Entities.Article", "Article")
+                        .WithMany("AuditLogs")
+                        .HasForeignKey("ArticleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Article");
                 });
 
             modelBuilder.Entity("NewsFeed.Api.Data.Entities.ArticleTranslation", b =>
@@ -1673,6 +1776,25 @@ namespace NewsFeed.Api.Migrations
                     b.Navigation("Source");
                 });
 
+            modelBuilder.Entity("NewsFeed.Api.Data.Entities.IngestionJob", b =>
+                {
+                    b.HasOne("NewsFeed.Api.Data.Entities.IngestionRun", "IngestionRun")
+                        .WithOne("IngestionJob")
+                        .HasForeignKey("NewsFeed.Api.Data.Entities.IngestionJob", "IngestionRunId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("NewsFeed.Api.Data.Entities.Source", "Source")
+                        .WithMany("IngestionJobs")
+                        .HasForeignKey("SourceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("IngestionRun");
+
+                    b.Navigation("Source");
+                });
+
             modelBuilder.Entity("NewsFeed.Api.Data.Entities.IngestionRun", b =>
                 {
                     b.HasOne("NewsFeed.Api.Data.Entities.Source", "Source")
@@ -1697,6 +1819,8 @@ namespace NewsFeed.Api.Migrations
 
             modelBuilder.Entity("NewsFeed.Api.Data.Entities.Article", b =>
                 {
+                    b.Navigation("AuditLogs");
+
                     b.Navigation("Translations");
 
                     b.Navigation("Views");
@@ -1714,9 +1838,16 @@ namespace NewsFeed.Api.Migrations
                     b.Navigation("Articles");
                 });
 
+            modelBuilder.Entity("NewsFeed.Api.Data.Entities.IngestionRun", b =>
+                {
+                    b.Navigation("IngestionJob");
+                });
+
             modelBuilder.Entity("NewsFeed.Api.Data.Entities.Source", b =>
                 {
                     b.Navigation("Articles");
+
+                    b.Navigation("IngestionJobs");
 
                     b.Navigation("IngestionRuns");
                 });

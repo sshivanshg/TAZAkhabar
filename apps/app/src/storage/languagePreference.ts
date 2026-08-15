@@ -4,8 +4,8 @@ export const LANGUAGE_STORAGE_KEY = 'newsfeed.preferredReadingLanguage.v1'
 
 /** v1 reading languages — UI list only; API accepts any ISO code. */
 export const READING_LANGUAGES = [
-  { code: 'en', label: 'English' },
-  { code: 'hi', label: 'हिन्दी' },
+  { code: 'en', label: 'English', accessibilityLabel: 'English' },
+  { code: 'hi', label: 'हिन्दी', accessibilityLabel: 'Hindi' },
 ] as const
 
 export type ReadingLanguageCode = (typeof READING_LANGUAGES)[number]['code']

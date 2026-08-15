@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 
 namespace NewsFeed.Api.Tests;
 
@@ -18,11 +19,12 @@ public sealed class NewsFeedWebApplicationFactory : WebApplicationFactory<Progra
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
-        builder.UseEnvironment("Development");
+        builder.UseEnvironment("Testing");
         builder.UseSetting("RssIngest:Secret", TestIngestKey);
         builder.UseSetting("Admin:Password", TestAdminPassword);
         builder.UseSetting("Admin:JwtSigningKey", TestAdminJwtSigningKey);
         builder.UseSetting("Upload:MaxBytes", "8192");
+        builder.UseSetting("Upload:RootPath", Path.Combine(Path.GetTempPath(), $"newsfeed-test-uploads-{Guid.NewGuid():N}"));
 
         builder.ConfigureServices(services =>
         {
@@ -45,6 +47,15 @@ public sealed class NewsFeedWebApplicationFactory : WebApplicationFactory<Progra
             }
 
             services.AddSingleton<IArticleIntelligence, FakeArticleIntelligence>();
+
+            foreach (var descriptor in services
+                         .Where(d => d.ServiceType == typeof(IHostedService)
+                                     && (d.ImplementationType == typeof(IngestionJobWorker)
+                                         || d.ImplementationType == typeof(IngestSilenceMonitor)))
+                         .ToList())
+            {
+                services.Remove(descriptor);
+            }
         });
     }
 

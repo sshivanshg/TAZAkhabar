@@ -9,6 +9,7 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "build:web": "expo export -p web",
+    "bundle:report": "pnpm build:web && node scripts/report-web-bundle.cjs",
     "lint": "tsc --noEmit",
     "test": "jest"
   },

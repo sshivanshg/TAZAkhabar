@@ -49,6 +49,45 @@ jobs:
       - name: Build
         run: dotnet build NewsFeed.sln -c Release --no-restore
 
+      - name: Install EF tool
+        run: dotnet tool install --global dotnet-ef --version 8.*
+
+      - name: Generate migration SQL for review
+        run: |
+          mkdir -p artifacts
+          dotnet ef migrations script \
+            --project apps/api/NewsFeed.Api.csproj \
+            --idempotent \
+            --output artifacts/newsfeed-migrations.sql
+
+      - name: Upload migration SQL artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-migration-sql
+          path: artifacts/newsfeed-migrations.sql
+
+      - name: Check OpenAPI snapshot is current
+        shell: bash
+        env:
+          ASPNETCORE_ENVIRONMENT: Production
+          ASPNETCORE_URLS: http://127.0.0.1:8080
+          ConnectionStrings__Database: Host=localhost;Port=5432;Database=newsfeed_test;Username=newsfeed;Password=newsfeed_test_password
+          Cors__AllowedOrigins__0: http://localhost:8081
+          Admin__Password: ci-admin-password
+          Admin__JwtSigningKey: ci-admin-jwt-signing-key-min-32-chars
+        run: |
+          dotnet run --project apps/api/NewsFeed.Api.csproj -c Release --no-build > api-openapi.log 2>&1 &
+          API_PID=$!
+          trap 'kill $API_PID || true' EXIT
+          for i in {1..30}; do
+            if curl -fsS http://localhost:8080/openapi/v1.json -o /tmp/openapi.json; then
+              break
+            fi
+            sleep 1
+          done
+          test -s /tmp/openapi.json
+          diff -u packages/shared-types/openapi/openapi.json /tmp/openapi.json
+
       - name: Test
         run: dotnet test NewsFeed.sln -c Release --no-build --verbosity normal
 

@@ -27,6 +27,7 @@ public sealed class ArticlePresentationService(
     ILogger<ArticlePresentationService> logger) : IArticlePresentationService
 {
     private const int MaxParallelTranslations = 4;
+    private const int MaxTranslationCallsPerRequest = 5;
 
     public async Task<ArticleResponse> PresentAsync(
         Article article,
@@ -116,10 +117,16 @@ public sealed class ArticlePresentationService(
             return results;
         }
 
+        var cappedToTranslate = toTranslate.Take(MaxTranslationCallsPerRequest).ToList();
+        foreach (var deferred in toTranslate.Skip(MaxTranslationCallsPerRequest))
+        {
+            results[deferred.Index] = ToOriginal(deferred.Article, DetectedOf(deferred.Article), includeBody);
+        }
+
         // Provider calls in parallel; DB writes sequentially (DbContext is not thread-safe).
-        var translationOutcomes = new (int Index, Article Article, string? Headline, string? Summary, bool Ok)[toTranslate.Count];
+        var translationOutcomes = new (int Index, Article Article, string? Headline, string? Summary, bool Ok)[cappedToTranslate.Count];
         await Parallel.ForEachAsync(
-            Enumerable.Range(0, toTranslate.Count),
+            Enumerable.Range(0, cappedToTranslate.Count),
             new ParallelOptions
             {
                 MaxDegreeOfParallelism = MaxParallelTranslations,
@@ -127,7 +134,7 @@ public sealed class ArticlePresentationService(
             },
             async (i, ct) =>
             {
-                var (index, article) = toTranslate[i];
+                var (index, article) = cappedToTranslate[i];
                 var detected = DetectedOf(article);
                 try
                 {

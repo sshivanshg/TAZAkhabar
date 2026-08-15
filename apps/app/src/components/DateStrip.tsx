@@ -74,6 +74,7 @@ export function DateStrip({ selectedDate, availableDates, onSelectDate }: Props)
           onPress={() => setPickerOpen(true)}
           accessibilityRole="button"
           accessibilityLabel="More dates"
+          accessibilityState={{ expanded: pickerOpen }}
           style={({ pressed }) => [styles.moreBtn, pressed && styles.morePressed]}
         >
           <Calendar size={18} color={colors.accent} strokeWidth={iconStroke} />
@@ -86,8 +87,18 @@ export function DateStrip({ selectedDate, availableDates, onSelectDate }: Props)
         animationType="fade"
         onRequestClose={() => setPickerOpen(false)}
       >
-        <Pressable style={styles.scrim} onPress={() => setPickerOpen(false)}>
-          <Pressable style={styles.sheet} onPress={(e) => e.stopPropagation()}>
+        <Pressable
+          style={styles.scrim}
+          onPress={() => setPickerOpen(false)}
+          accessibilityRole="button"
+          accessibilityLabel="Dismiss date picker"
+        >
+          <Pressable
+            style={styles.sheet}
+            onPress={(e) => e.stopPropagation()}
+            accessibilityViewIsModal
+            accessibilityLabel="Choose edition date"
+          >
             <Text
               fontSize={typography.headlineSm.fontSize}
               lineHeight={typography.headlineSm.lineHeight}
@@ -117,6 +128,7 @@ export function DateStrip({ selectedDate, availableDates, onSelectDate }: Props)
                     }}
                     style={[styles.pickerRow, selected && styles.pickerRowSelected]}
                     accessibilityRole="button"
+                    accessibilityLabel={`Choose ${iso === today ? 'Today' : formatPickerDateLabel(iso)}`}
                     accessibilityState={{ selected }}
                   >
                     <Text

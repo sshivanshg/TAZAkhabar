@@ -18,6 +18,7 @@ public sealed class ClaudeArticleIntelligence(
     private const int MaxInputChars = 24_000;
     private const int MaxSummaryChars = 1000;
     private const int MaxTokens = 4096;
+    private const int MaxAttempts = 3;
 
     private static readonly string[] AllowedCategories =
         ["Local", "State", "National", "Business", "Health", "Sports"];
@@ -245,29 +246,54 @@ public sealed class ClaudeArticleIntelligence(
             systemPrompt,
             [new Message("user", userBlocks)]);
 
-        using var request = new HttpRequestMessage(HttpMethod.Post, url);
-        request.Headers.TryAddWithoutValidation("x-api-key", settings.ApiKey);
-        request.Headers.TryAddWithoutValidation("anthropic-version", AnthropicVersion);
-        request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-        request.Content = new StringContent(
-            JsonSerializer.Serialize(payload, JsonOptions),
-            Encoding.UTF8,
-            "application/json");
-
         var client = httpClientFactory.CreateClient(HttpClientName);
-        using var response = await client.SendAsync(request, cancellationToken);
-        var body = await response.Content.ReadAsStringAsync(cancellationToken);
-        if (!response.IsSuccessStatusCode)
+        for (var attempt = 1; attempt <= MaxAttempts; attempt++)
         {
-            logger.LogWarning(
-                "Article intelligence request failed with status {StatusCode}",
-                (int)response.StatusCode);
-            throw new InvalidOperationException(
-                $"Article intelligence request failed with status {(int)response.StatusCode}.");
+            try
+            {
+                using var request = new HttpRequestMessage(HttpMethod.Post, url);
+                request.Headers.TryAddWithoutValidation("x-api-key", settings.ApiKey);
+                request.Headers.TryAddWithoutValidation("anthropic-version", AnthropicVersion);
+                request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+                request.Content = new StringContent(
+                    JsonSerializer.Serialize(payload, JsonOptions),
+                    Encoding.UTF8,
+                    "application/json");
+
+                using var response = await client.SendAsync(request, cancellationToken);
+                var body = await response.Content.ReadAsStringAsync(cancellationToken);
+                if (response.IsSuccessStatusCode)
+                {
+                    return ReadMessageText(body);
+                }
+
+                logger.LogWarning(
+                    "Article intelligence request failed with status {StatusCode}",
+                    (int)response.StatusCode);
+                if (attempt < MaxAttempts && IsTransient((int)response.StatusCode))
+                {
+                    await Task.Delay(TimeSpan.FromMilliseconds(300 * attempt), cancellationToken);
+                    continue;
+                }
+
+                throw new InvalidOperationException(
+                    $"Article intelligence request failed with status {(int)response.StatusCode}.");
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch (HttpRequestException) when (attempt < MaxAttempts)
+            {
+                await Task.Delay(TimeSpan.FromMilliseconds(300 * attempt), cancellationToken);
+            }
         }
 
-        return ReadMessageText(body);
+        throw new InvalidOperationException("Article intelligence request failed.");
     }
+
+    private static bool IsTransient(int statusCode) =>
+        statusCode is 408 or 429 || statusCode >= 500;
 
     private static string NormalizeImageMime(string? contentType)
     {

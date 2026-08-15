@@ -1,0 +1,34 @@
+name: Migrate Production Database
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: migrate-production
+  cancel-in-progress: false
+
+jobs:
+  migrate:
+    name: Apply EF migrations
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      ConnectionStrings__Database: ${{ secrets.PRODUCTION_DATABASE_CONNECTION_STRING }}
+      Cors__AllowedOrigins__0: https://example.com
+      ASPNETCORE_ENVIRONMENT: Production
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Restore
+        run: dotnet restore NewsFeed.sln
+
+      - name: Install EF tool
+        run: dotnet tool install --global dotnet-ef --version 8.*
+
+      - name: Apply migrations
+        run: dotnet ef database update --project apps/api/NewsFeed.Api.csproj

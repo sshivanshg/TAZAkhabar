@@ -71,7 +71,7 @@ export function SwipeStoryCard({
                     key={lang.code}
                     accessibilityRole="button"
                     accessibilityState={{ selected }}
-                    accessibilityLabel={`Prefer ${lang.label}`}
+                    accessibilityLabel={`Prefer ${lang.accessibilityLabel}`}
                     onPress={() => onSelectLanguage(lang.code)}
                     hitSlop={8}
                     style={[styles.langChip, selected ? styles.langChipSelected : null]}

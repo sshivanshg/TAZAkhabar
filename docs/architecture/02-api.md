@@ -1,7 +1,7 @@
 # API
 
 > **Living doc** — update when endpoints, auth, rate limits, CORS, or DI composition change.  
-> **Last verified against:** 2026-08-14 (CORS allows Pages preview hosts)
+> **Last verified against:** 2026-08-15 (request IDs, validation, explicit production migrations)
 
 ## Purpose
 
@@ -31,9 +31,9 @@ flowchart LR
 | Endpoints | `apps/api/Endpoints/` |
 | Options | `apps/api/Options/` (`Cors`, `RateLimiting`, `RssIngest`, `Admin`, `ArticleIntelligence`, `Upload`) |
 | Presentation | `Services/ArticlePresentationService.cs`, `Services/CityCalendar.cs` |
-| Logging | Serilog console |
+| Logging | Serilog console + request/ingestion correlation properties |
 
-Pipeline (order): ExceptionHandler → StatusCodePages → ForwardedHeaders → CORS → AuthN → AuthZ → RateLimiter.
+Pipeline (order): Serilog request logging → RequestId header/log context → ExceptionHandler → StatusCodePages → ForwardedHeaders → CORS → AuthN → AuthZ → RateLimiter.
 
 ## Data & control flows
 
@@ -72,6 +72,7 @@ Pipeline (order): ExceptionHandler → StatusCodePages → ForwardedHeaders → 
 
 - Readers: none ([ADR-002](../adr/002-no-auth-mvp.md)).
 - Admin: shared password + display name → HS256 JWT 8h ([ADR-005](../adr/005-admin-shared-credential.md)).
+- Production startup fails if admin password/JWT signing key are missing, default, or too short.
 - Ingest key is **not** accepted on admin routes.
 - CORS: configured `Cors__AllowedOrigins__*` plus HTTPS hosts under `*.newsfeed-web.pages.dev` / `*.newsfeed-admin.pages.dev` (Cloudflare Git preview aliases). Never `AllowAnyOrigin`.
 
@@ -100,6 +101,9 @@ OpenAPI: `MapSwagger("/openapi/{documentName}.json")` → `/openapi/v1.json`. Sw
 - Empty CORS origins → startup failure (allowlist required).
 - Rate limit all public endpoints until reader auth exists.
 - No secrets in logs; ProblemDetails for errors.
+- Admin write payloads validate required fields before endpoint logic touches them; malformed JSON returns 400 rather than falling into 500s.
+- Responses include `X-Request-ID`, and logs include `RequestId`; ingest logs include `IngestionRunId` where a run exists.
+- Production startup does not apply EF migrations; use the explicit migration workflow.
 - New endpoints must appear in OpenAPI and regenerate shared-types in the same PR.
 
 ## Related docs

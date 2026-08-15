@@ -13,6 +13,7 @@ import {
 } from 'lucide-react-native'
 import type { ArticleResponse, CityResponse } from '@newsfeed/shared-types'
 import { apiClient } from '../../src/api/client'
+import { useAsyncResource } from '../../src/api/useAsyncResource'
 import {
   BottomSheet,
   type BottomSheetSection,
@@ -89,6 +90,10 @@ type WebHoverHandlers = {
   onMouseLeave?: () => void
 }
 
+const EMPTY_CITIES: CityResponse[] = []
+const EMPTY_DATES: string[] = []
+const EMPTY_ARTICLES: ArticleResponse[] = []
+
 function ArticleCardSlot({
   desktop,
   padStyle,
@@ -149,8 +154,6 @@ function HomeFeedBody() {
   )
   /** Session-only edition date (city-local YYYY-MM-DD). Fresh launch always starts on today. */
   const [selectedDate, setSelectedDate] = useState(() => todayCityIso())
-  const [availableDates, setAvailableDates] = useState<string[]>([])
-  const [trending, setTrending] = useState<ArticleResponse[]>([])
   const [trendingEpoch, setTrendingEpoch] = useState(0)
   const [articles, setArticles] = useState<ArticleResponse[]>([])
   const [total, setTotal] = useState(0)
@@ -193,7 +196,9 @@ function HomeFeedBody() {
       const fromParams = params.city
       if (fromParams) {
         if (!cancelled) {
-          setCitySlug(fromParams)
+          if (citySlug !== fromParams) {
+            setCitySlug(fromParams)
+          }
           await setStoredCitySlug(fromParams)
         }
         return
@@ -211,85 +216,64 @@ function HomeFeedBody() {
     return () => {
       cancelled = true
     }
-  }, [params.city, router])
-
-  useEffect(() => {
-    if (!citySlug) {
-      return
-    }
-    let cancelled = false
-    apiClient
-      .getCities()
-      .then((cities) => {
-        if (cancelled) {
-          return
-        }
-        const match = cities.find((c) => c.slug === citySlug) ?? null
-        setCityMeta(match)
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setCityMeta(null)
-        }
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [citySlug])
-
-  useEffect(() => {
-    if (!citySlug) {
-      return
-    }
-    let cancelled = false
-    apiClient
-      .getArticleDates({
-        city: citySlug,
-        category: category === 'All' ? undefined : category,
-      })
-      .then((res) => {
-        if (!cancelled) {
-          setAvailableDates(res.dates ?? [])
-        }
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setAvailableDates([])
-        }
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [citySlug, category])
+  }, [citySlug, params.city, router])
 
   const viewingToday = selectedDate === todayCityIso()
 
+  const cityList = useAsyncResource(
+    () => apiClient.getCities(),
+    [citySlug],
+    {
+      enabled: Boolean(citySlug),
+      initialData: EMPTY_CITIES,
+      onSuccess: (cities) => {
+        setCityMeta(cities.find((c) => c.slug === citySlug) ?? null)
+      },
+      onError: () => setCityMeta(null),
+    },
+  )
+  const cityMetaFromQuery = cityList.data.find((c) => c.slug === citySlug) ?? null
+
   useEffect(() => {
-    if (!citySlug || !languageReady || !viewingToday) {
-      setTrending([])
-      return
-    }
-    let cancelled = false
-    apiClient
-      .getTrendingArticles({
+    setCityMeta(cityMetaFromQuery)
+  }, [cityMetaFromQuery])
+
+  const articleDates = useAsyncResource(
+    async () => {
+      if (!citySlug) {
+        return EMPTY_DATES
+      }
+      const res = await apiClient.getArticleDates({
+        city: citySlug,
+        category: category === 'All' ? undefined : category,
+      })
+      return res.dates ?? EMPTY_DATES
+    },
+    [citySlug, category],
+    {
+      enabled: Boolean(citySlug),
+      initialData: EMPTY_DATES,
+    },
+  )
+
+  const trendingResource = useAsyncResource(
+    async () => {
+      if (!citySlug) {
+        return EMPTY_ARTICLES
+      }
+      const res = await apiClient.getTrendingArticles({
         city: citySlug,
         lang: preferredLanguage,
         limit: 5,
       })
-      .then((res) => {
-        if (!cancelled) {
-          setTrending(res.items ?? [])
-        }
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setTrending([])
-        }
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [citySlug, preferredLanguage, languageReady, viewingToday, selectedDate, trendingEpoch])
+      return res.items ?? EMPTY_ARTICLES
+    },
+    [citySlug, preferredLanguage, languageReady, viewingToday, trendingEpoch],
+    {
+      enabled: Boolean(citySlug && languageReady && viewingToday),
+      initialData: EMPTY_ARTICLES,
+    },
+  )
 
   const loadPage = useCallback(
     async (mode: 'replace' | 'append' | 'refresh') => {
@@ -382,8 +366,8 @@ function HomeFeedBody() {
     [articles, prefs],
   )
   const visibleTrending = useMemo(
-    () => (viewingToday ? prefs.filterArticles(trending) : []),
-    [trending, prefs, viewingToday],
+    () => (viewingToday ? prefs.filterArticles(trendingResource.data) : []),
+    [trendingResource.data, prefs, viewingToday],
   )
   const trendingIds = useMemo(
     () => new Set(visibleTrending.map((a) => a.id).filter((id): id is number => id != null)),
@@ -666,11 +650,11 @@ function HomeFeedBody() {
             }
           }}
         />
-        <DateStrip
-          selectedDate={selectedDate}
-          availableDates={availableDates}
-          onSelectDate={setSelectedDate}
-        />
+          <DateStrip
+            selectedDate={selectedDate}
+          availableDates={articleDates.data}
+            onSelectDate={setSelectedDate}
+          />
 
         {(loading && !showContent) || !prefs.ready ? (
           <Box pt="$2" px="$4">

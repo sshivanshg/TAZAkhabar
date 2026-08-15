@@ -5,6 +5,7 @@ using Microsoft.Extensions.Options;
 using NewsFeed.Api.Data;
 using NewsFeed.Api.Data.Entities;
 using NewsFeed.Api.Options;
+using Serilog.Context;
 
 namespace NewsFeed.Api.Ingest;
 
@@ -90,6 +91,7 @@ public sealed class PdfIngestService(
     {
         var upload = await db.DocumentUploads.FirstOrDefaultAsync(d => d.Id == id, ct)
             ?? throw new InvalidOperationException($"Document upload {id} not found.");
+        using var uploadLogContext = LogContext.PushProperty("DocumentUploadId", upload.Id);
 
         upload.Status = DocumentUploadStatus.Processing;
         upload.ErrorSummary = null;
@@ -123,6 +125,7 @@ public sealed class PdfIngestService(
             upload.IngestionRunId = run.Id;
             await db.SaveChangesAsync(ct);
 
+            using var runLogContext = LogContext.PushProperty("IngestionRunId", run.Id);
             IngestionEvents.Emit(
                 events,
                 run.Id,
@@ -208,7 +211,7 @@ public sealed class PdfIngestService(
             var trackedSource = source is null
                 ? null
                 : await db.Sources.FirstOrDefaultAsync(s => s.Id == source.Id, CancellationToken.None);
-            await FailAsync(trackedUpload, trackedSource, trackedRun, ex.Message, CancellationToken.None);
+            await FailAsync(trackedUpload, trackedSource, trackedRun, IngestErrorClassifier.FromException(ex), CancellationToken.None);
         }
     }
 
@@ -402,6 +405,14 @@ public sealed class PdfIngestService(
         source.LastFetchStatus = status;
         source.LastErrorMessage = error;
         await db.SaveChangesAsync(cancellationToken);
+        logger.LogInformation(
+            "PDF ingest run {IngestionRunId} completed with status {FetchStatus}: found {ArticlesFound}, added {ArticlesAdded}, skipped {ArticlesSkipped}, failed {ArticlesFailed}",
+            run.Id,
+            status,
+            run.ArticlesFound,
+            run.ArticlesAdded,
+            run.ArticlesSkipped,
+            run.ArticlesFailed);
 
         if (status == FetchStatus.Error)
         {

@@ -1,0 +1,39 @@
+---
+description: .NET 8 API conventions — Minimal APIs, EF Core, Serilog, settings
+globs: apps/api/**/*.{cs,csproj}
+alwaysApply: false
+---
+
+# Backend conventions
+
+## Style
+
+- **Minimal APIs only** (no MVC controllers). Keep endpoint maps organized by feature files if the surface grows.
+- **async/await for all I/O.** No `.Result`, `.Wait()`, or blocking DB/HTTP calls.
+- Single project: `apps/api` + `apps/api.Tests`. Do not introduce Clean Architecture layers until pain is real.
+
+## Data
+
+- **EF Core** for data access. Migrations live in `/infra/migrations`.
+- Never edit a migration that has already been applied or merged — always add a new migration.
+- API owns the database connection; connection string via `ConnectionStrings__Database`.
+
+## HTTP contracts
+
+- Validate all input (FluentValidation or built-in minimal API validation).
+- Return **ProblemDetails** (RFC 7807) for errors — consistent envelope, never raw exception text to clients.
+- Document endpoints so OpenAPI stays complete; regenerate `packages/shared-types` after contract changes.
+
+## Cross-cutting
+
+- **Serilog** structured logging only — no `Console.WriteLine`.
+- Config via environment variables + strongly typed options (`IOptions<T>`). Never hardcode secrets or connection strings.
+- Rate-limit public endpoints. CORS allowlist from config — no `*`.
+
+## Example endpoint shape
+
+```csharp
+group.MapGet("/health", () => Results.Ok(new HealthResponse("healthy")))
+    .WithName("GetHealth")
+    .WithOpenApi();
+```

@@ -103,7 +103,8 @@ public sealed class RssIngestServiceTests
 
         var deadRun = Assert.Single(await db.IngestionRuns.Where(r => r.SourceId == dead.Id).ToListAsync());
         Assert.True(deadRun.ArticlesFailed >= 1);
-        Assert.False(string.IsNullOrEmpty(deadRun.ErrorSummary));
+        Assert.Equal(IngestErrorClassifier.FetchFailed, deadRun.ErrorSummary);
+        Assert.DoesNotContain(DeadFeedUrl, deadRun.ErrorSummary);
         Assert.NotNull(deadRun.CompletedAt);
 
         await db.Entry(dead).ReloadAsync();

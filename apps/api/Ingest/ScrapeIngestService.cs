@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using NewsFeed.Api.Data;
 using NewsFeed.Api.Data.Entities;
+using Serilog.Context;
 
 namespace NewsFeed.Api.Ingest;
 
@@ -95,12 +96,13 @@ public sealed class ScrapeIngestService
             IngestionEvents.Emit(_events, run.Id, "started", $"Scrape run started · {source.Name}");
         }
 
+        using var runLogContext = LogContext.PushProperty("IngestionRunId", run.Id);
         try
         {
             if (source.Type != SourceType.Scrape || string.IsNullOrWhiteSpace(source.FeedUrl))
             {
                 run.ArticlesFailed = 1;
-                run.ErrorSummary = HtmlText.Truncate("Source is not an active scrape source with a URL.", 1000);
+                run.ErrorSummary = IngestErrorClassifier.InvalidSource;
                 await CompleteRunAsync(source, run, FetchStatus.Error, run.ErrorSummary, ct);
                 return run;
             }
@@ -108,8 +110,12 @@ public sealed class ScrapeIngestService
             if (!SafeHttp.TryValidatePublicAbsoluteUri(source.FeedUrl, out var listUri, out var urlError))
             {
                 run.ArticlesFailed = 1;
-                run.ErrorSummary = HtmlText.Truncate(urlError, 1000);
-                _logger.LogWarning("Scrape FeedUrl rejected for source {SourceId}: {Error}", source.Id, urlError);
+                run.ErrorSummary = IngestErrorClassifier.InvalidSourceUrl;
+                _logger.LogWarning(
+                    "Scrape FeedUrl rejected for source {SourceId} run {IngestionRunId}: {Error}",
+                    source.Id,
+                    run.Id,
+                    urlError);
                 await CompleteRunAsync(source, run, FetchStatus.Error, run.ErrorSummary, ct);
                 return run;
             }
@@ -127,8 +133,13 @@ public sealed class ScrapeIngestService
             catch (Exception ex)
             {
                 run.ArticlesFailed = 1;
-                run.ErrorSummary = HtmlText.Truncate($"Scrape list fetch failed for {source.FeedUrl}: {ex.Message}", 1000);
-                _logger.LogWarning(ex, "Scrape list fetch failed for {FeedUrl}", source.FeedUrl);
+                run.ErrorSummary = IngestErrorClassifier.FromException(ex);
+                _logger.LogWarning(
+                    ex,
+                    "Scrape list fetch failed for source {SourceId} {FeedUrl} run {IngestionRunId}",
+                    source.Id,
+                    source.FeedUrl,
+                    run.Id);
                 await CompleteRunAsync(source, run, FetchStatus.Error, run.ErrorSummary, ct);
                 return run;
             }
@@ -145,8 +156,12 @@ public sealed class ScrapeIngestService
             if (links.Count == 0)
             {
                 run.ArticlesFailed = 1;
-                run.ErrorSummary = HtmlText.Truncate($"No article links found at {source.FeedUrl}", 1000);
-                _logger.LogWarning("Scrape found zero article links for {FeedUrl}", source.FeedUrl);
+                run.ErrorSummary = IngestErrorClassifier.NoArticlesFound;
+                _logger.LogWarning(
+                    "Scrape found zero article links for source {SourceId} {FeedUrl} run {IngestionRunId}",
+                    source.Id,
+                    source.FeedUrl,
+                    run.Id);
                 await CompleteRunAsync(source, run, FetchStatus.Error, run.ErrorSummary, ct);
                 return run;
             }
@@ -158,8 +173,12 @@ public sealed class ScrapeIngestService
             if (city is null)
             {
                 run.ArticlesSkipped = links.Count;
-                run.ErrorSummary = HtmlText.Truncate($"City id {source.CityId} not found for source {source.Id}", 1000);
-                _logger.LogWarning("City id {CityId} not found; skipping scrape {FeedUrl}", source.CityId, source.FeedUrl);
+                run.ErrorSummary = IngestErrorClassifier.InvalidSource;
+                _logger.LogWarning(
+                    "City id {CityId} not found; skipping scrape {FeedUrl} run {IngestionRunId}",
+                    source.CityId,
+                    source.FeedUrl,
+                    run.Id);
                 await CompleteRunAsync(source, run, FetchStatus.Error, run.ErrorSummary, ct);
                 return run;
             }
@@ -283,13 +302,18 @@ public sealed class ScrapeIngestService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Scrape ingest failed for source {SourceId} {FeedUrl}", source.Id, source.FeedUrl);
+            _logger.LogError(
+                ex,
+                "Scrape ingest failed for source {SourceId} {FeedUrl} run {IngestionRunId}",
+                source.Id,
+                source.FeedUrl,
+                run.Id);
             _db.ChangeTracker.Clear();
 
             var trackedRun = await _db.IngestionRuns.FirstAsync(r => r.Id == run.Id, CancellationToken.None);
             var trackedSource = await _db.Sources.FirstAsync(s => s.Id == source.Id, CancellationToken.None);
             trackedRun.ArticlesFailed = Math.Max(trackedRun.ArticlesFailed, 1);
-            trackedRun.ErrorSummary = HtmlText.Truncate(ex.Message, 1000);
+            trackedRun.ErrorSummary = IngestErrorClassifier.FromException(ex);
             await CompleteRunAsync(trackedSource, trackedRun, FetchStatus.Error, trackedRun.ErrorSummary, CancellationToken.None);
             return trackedRun;
         }
@@ -307,6 +331,14 @@ public sealed class ScrapeIngestService
         source.LastFetchStatus = status;
         source.LastErrorMessage = error;
         await _db.SaveChangesAsync(cancellationToken);
+        _logger.LogInformation(
+            "Scrape ingest run {IngestionRunId} completed with status {FetchStatus}: found {ArticlesFound}, added {ArticlesAdded}, skipped {ArticlesSkipped}, failed {ArticlesFailed}",
+            run.Id,
+            status,
+            run.ArticlesFound,
+            run.ArticlesAdded,
+            run.ArticlesSkipped,
+            run.ArticlesFailed);
 
         if (status == FetchStatus.Error)
         {
@@ -360,7 +392,7 @@ public sealed class ScrapeIngestService
             SourceUrl = sourceUrl,
             PublishedAt = ToUtc(publishedAt ?? now),
             Category = "Local",
-            Status = ArticleStatus.Published,
+            Status = ArticleStatus.PendingReview,
             IsMock = false,
             IngestedAt = now,
             SourceId = source.Id,

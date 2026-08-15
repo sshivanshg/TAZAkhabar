@@ -12,6 +12,8 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     public DbSet<DocumentUpload> DocumentUploads => Set<DocumentUpload>();
     public DbSet<ArticleTranslation> ArticleTranslations => Set<ArticleTranslation>();
     public DbSet<ArticleView> ArticleViews => Set<ArticleView>();
+    public DbSet<IngestionJob> IngestionJobs => Set<IngestionJob>();
+    public DbSet<ArticleAuditLog> ArticleAuditLogs => Set<ArticleAuditLog>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -71,6 +73,35 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
                 .HasForeignKey(r => r.SourceId)
                 .OnDelete(DeleteBehavior.Cascade);
             entity.HasIndex(r => new { r.SourceId, r.StartedAt });
+        });
+
+        modelBuilder.Entity<IngestionJob>(entity =>
+        {
+            entity.ToTable("ingestion_jobs");
+            entity.HasKey(j => j.Id);
+            entity.Property(j => j.Id).HasColumnName("id");
+            entity.Property(j => j.SourceId).HasColumnName("source_id");
+            entity.Property(j => j.IngestionRunId).HasColumnName("ingestion_run_id");
+            entity.Property(j => j.Status)
+                .HasColumnName("status")
+                .HasConversion<string>()
+                .HasMaxLength(32)
+                .IsRequired();
+            entity.Property(j => j.Attempts).HasColumnName("attempts");
+            entity.Property(j => j.CreatedAt).HasColumnName("created_at");
+            entity.Property(j => j.StartedAt).HasColumnName("started_at");
+            entity.Property(j => j.CompletedAt).HasColumnName("completed_at");
+            entity.Property(j => j.ErrorSummary).HasColumnName("error_summary").HasMaxLength(1000);
+            entity.HasOne(j => j.Source)
+                .WithMany(s => s.IngestionJobs)
+                .HasForeignKey(j => j.SourceId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(j => j.IngestionRun)
+                .WithOne(r => r.IngestionJob)
+                .HasForeignKey<IngestionJob>(j => j.IngestionRunId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasIndex(j => new { j.Status, j.CreatedAt });
+            entity.HasIndex(j => j.IngestionRunId).IsUnique();
         });
 
         modelBuilder.Entity<DocumentUpload>(entity =>
@@ -159,6 +190,22 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
                 .HasForeignKey(a => a.DocumentUploadId)
                 .OnDelete(DeleteBehavior.SetNull);
             entity.HasData(SeedData.Articles);
+        });
+
+        modelBuilder.Entity<ArticleAuditLog>(entity =>
+        {
+            entity.ToTable("article_audit_logs");
+            entity.HasKey(l => l.Id);
+            entity.Property(l => l.Id).HasColumnName("id");
+            entity.Property(l => l.ArticleId).HasColumnName("article_id");
+            entity.Property(l => l.Action).HasColumnName("action").HasMaxLength(40).IsRequired();
+            entity.Property(l => l.Actor).HasColumnName("actor").HasMaxLength(80).IsRequired();
+            entity.Property(l => l.OccurredAt).HasColumnName("occurred_at");
+            entity.HasOne(l => l.Article)
+                .WithMany(a => a.AuditLogs)
+                .HasForeignKey(l => l.ArticleId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasIndex(l => new { l.ArticleId, l.OccurredAt });
         });
 
         modelBuilder.Entity<ArticleTranslation>(entity =>

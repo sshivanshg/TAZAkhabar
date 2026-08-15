@@ -44,6 +44,10 @@ services:
         sync: false
       - key: ArticleRetention__Days
         value: "7"
+      - key: IngestHealth__MaxSilenceMinutes
+        value: "180"
+      - key: IngestHealth__AlertWebhookUrl
+        sync: false
 
   - type: cron
     name: newsfeed-rss-ingest
