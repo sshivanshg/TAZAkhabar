@@ -102,45 +102,47 @@ export function SwipeStoryCard({
         </View>
       </View>
 
-      <ScrollView
-        style={styles.body}
-        contentContainerStyle={styles.bodyContent}
-        nestedScrollEnabled
-      >
-        {hasBody
-          ? paragraphs.map((paragraph, paragraphIndex) => (
-              <Text key={paragraphIndex} style={styles.summary}>
-                {paragraph}
-              </Text>
-            ))
-          : <Text style={styles.summary}>{article.summary}</Text>}
-        <View style={styles.metaRow}>
-          <Text style={styles.meta}>
-            {[article.sourceName, time].filter(Boolean).join(' · ')}
-          </Text>
-        </View>
-      </ScrollView>
+      <View style={styles.readerPanel}>
+        <ScrollView
+          style={styles.body}
+          contentContainerStyle={styles.bodyContent}
+          nestedScrollEnabled
+        >
+          {hasBody
+            ? paragraphs.map((paragraph, paragraphIndex) => (
+                <Text key={paragraphIndex} style={styles.summary}>
+                  {paragraph}
+                </Text>
+              ))
+            : <Text style={styles.summary}>{article.summary}</Text>}
+          <View style={styles.metaRow}>
+            <Text style={styles.meta}>
+              {[article.sourceName, time].filter(Boolean).join(' · ')}
+            </Text>
+          </View>
+        </ScrollView>
 
-      <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 12) }]}>
-        <View style={styles.actions}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={shareLabel}
-            onPress={onShare}
-            style={styles.actionBtn}
-          >
-            <Text style={styles.actionText}>{shareLabel}</Text>
-          </Pressable>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={bookmarked ? 'Remove bookmark' : 'Save'}
-            onPress={onToggleBookmark}
-            style={styles.actionBtn}
-          >
-            <Text style={styles.actionText}>{bookmarked ? 'Saved' : 'Save'}</Text>
-          </Pressable>
+        <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 14) }]}>
+          <View style={styles.actions}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={shareLabel}
+              onPress={onShare}
+              style={styles.actionBtn}
+            >
+              <Text style={styles.actionText}>{shareLabel}</Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={bookmarked ? 'Remove bookmark' : 'Save'}
+              onPress={onToggleBookmark}
+              style={styles.actionBtn}
+            >
+              <Text style={styles.actionText}>{bookmarked ? 'Saved' : 'Save'}</Text>
+            </Pressable>
+          </View>
+          {showNextCue ? <Text style={styles.nextCue}>↑ Next story</Text> : null}
         </View>
-        {showNextCue ? <Text style={styles.nextCue}>↑ Next story</Text> : null}
       </View>
     </View>
   )
@@ -238,52 +240,70 @@ const styles = StyleSheet.create({
     height: '36%',
   },
   heroText: {
-    paddingHorizontal: 16,
-    paddingBottom: 16,
+    paddingHorizontal: 18,
+    paddingBottom: 18,
     zIndex: 1,
   },
   eyebrow: {
-    color: readerColors.textMuted,
-    fontSize: 11,
-    fontWeight: '600',
-    letterSpacing: 0.8,
+    color: readerColors.textSecondary,
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 1,
     textTransform: 'uppercase',
     marginBottom: 8,
   },
   headline: {
     color: readerColors.text,
-    fontSize: 22,
-    lineHeight: 28,
-    fontWeight: '700',
+    fontSize: 28,
+    lineHeight: 34,
+    fontWeight: '800',
+    letterSpacing: -0.4,
   },
   body: {
     flex: 1,
-    paddingHorizontal: 16,
-    paddingTop: 16,
+  },
+  readerPanel: {
+    flex: 1,
+    marginTop: -20,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    backgroundColor: readerColors.card,
+    borderTopWidth: 1,
+    borderColor: 'rgba(255,255,255,0.06)',
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOpacity: 0.24,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: -4 },
+    elevation: 10,
   },
   bodyContent: {
-    paddingBottom: 16,
-    gap: 12,
+    paddingHorizontal: 18,
+    paddingTop: 18,
+    paddingBottom: 18,
+    gap: 14,
   },
   summary: {
-    color: readerColors.textSecondary,
+    color: 'rgba(255,255,255,0.84)',
     fontSize: 16,
-    lineHeight: 24,
+    lineHeight: 26,
   },
   metaRow: {
-    marginTop: 2,
+    marginTop: 6,
+    paddingTop: 14,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: 'rgba(255,255,255,0.08)',
   },
   meta: {
     color: readerColors.textMuted,
-    fontSize: 13,
+    fontSize: 12,
+    letterSpacing: 0.2,
   },
   footer: {
-    paddingHorizontal: 16,
-    paddingTop: 8,
+    paddingHorizontal: 18,
+    paddingTop: 14,
     gap: 8,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: readerColors.sheetBorder,
-    backgroundColor: readerColors.canvas,
+    backgroundColor: readerColors.card,
   },
   actions: {
     flexDirection: 'row',
@@ -294,24 +314,24 @@ const styles = StyleSheet.create({
     flexBasis: 0,
     minWidth: 0,
     minHeight: 48,
-    borderRadius: 12,
+    borderRadius: 14,
     borderWidth: 1,
-    borderColor: readerColors.sheetBorder,
-    backgroundColor: readerColors.sheet,
+    borderColor: 'rgba(255,255,255,0.08)',
+    backgroundColor: 'rgba(255,255,255,0.04)',
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 12,
   },
   actionText: {
-    color: readerColors.accent,
+    color: readerColors.text,
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '700',
     textAlign: 'center',
     width: '100%',
   },
   nextCue: {
     textAlign: 'center',
-    color: readerColors.textMuted,
+    color: readerColors.textSecondary,
     fontSize: 12,
     fontWeight: '600',
     paddingBottom: 2,

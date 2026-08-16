@@ -517,7 +517,10 @@ function ArticlePagerBody() {
             />
           )
         }}
-        pagingEnabled
+        snapToInterval={windowHeight}
+        snapToAlignment="start"
+        pagingEnabled={false}
+        decelerationRate="fast"
         disableIntervalMomentum
         showsVerticalScrollIndicator={false}
         getItemLayout={(_, i) => ({
