@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using NewsFeed.Api.Data;
+using Npgsql;
 
 namespace NewsFeed.Api.Ingest;
 
@@ -11,13 +12,27 @@ public sealed class IngestionJobWorker(
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        await RequeueInterruptedJobsAsync(stoppingToken);
-
-        using var timer = new PeriodicTimer(PollInterval);
         while (!stoppingToken.IsCancellationRequested)
         {
-            await ProcessNextQueuedJobAsync(stoppingToken);
-            await timer.WaitForNextTickAsync(stoppingToken);
+            try
+            {
+                await RequeueInterruptedJobsAsync(stoppingToken);
+
+                using var timer = new PeriodicTimer(PollInterval);
+                while (!stoppingToken.IsCancellationRequested)
+                {
+                    await ProcessNextQueuedJobAsync(stoppingToken);
+                    await timer.WaitForNextTickAsync(stoppingToken);
+                }
+            }
+            catch (PostgresException ex) when (ex.SqlState == PostgresErrorCodes.UndefinedTable)
+            {
+                logger.LogWarning(
+                    ex,
+                    "Ingestion job tables are not available yet; waiting for migrations before resuming background processing");
+
+                await Task.Delay(TimeSpan.FromSeconds(30), stoppingToken);
+            }
         }
     }
 

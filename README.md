@@ -103,6 +103,7 @@ Per `docs/adr/004-render-cloudflare-neon-hosting.md` and [docs/architecture/08-h
 - **Admin** → Cloudflare Pages from Vite build → `apps/admin/dist` (separate origin)
 - **DB** → Neon
 - **Native** → EAS Build when you are ready (same `apps/app`)
+- Nightly batch ingest is triggered by `.github/workflows/nightly-ingest.yml`; set `INGEST_URL` and `RssIngest__Secret` in GitHub so it can call `/api/ingest/daily`.
 
 Secrets / vars: Render + Cloudflare credentials, `EXPO_PUBLIC_API_BASE_URL` for the reader web build, and `VITE_API_BASE_URL` for admin. Render must allowlist both Pages origins in `Cors__AllowedOrigins__*`.
 
