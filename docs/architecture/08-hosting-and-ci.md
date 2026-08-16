@@ -1,7 +1,7 @@
 # Hosting and CI
 
 > **Living doc** — update when Render, Cloudflare, Neon, Docker, workflows, or env templates change.  
-> **Last verified against:** 2026-08-15 (explicit migrations, OpenAPI drift check, ingest silence alert env)
+> **Last verified against:** 2026-08-16 (GitHub Actions nightly ingest trigger, explicit migrations, OpenAPI drift check)
 
 ## Purpose
 
@@ -30,7 +30,7 @@ flowchart TB
   Render --> Neon[(Neon Postgres)]
   CronRSS[Render cron RSS] --> Render
   CronScrape[Render cron scrape] --> Render
-  CronDaily[Render cron daily no-AI] --> Render
+  CronDaily[GitHub Actions nightly ingest] --> Render
   Readers[Readers] --> PagesWeb
   Editors[Editors] --> PagesAdmin
   PagesWeb --> CFAPI[CF-proxied api domain]
@@ -60,7 +60,7 @@ No `wrangler.toml` in-repo — Pages deploy uses `cloudflare/pages-action` (wran
 1. Static assets: browser → Cloudflare Pages CDN.
 2. JSON: browser → Cloudflare-proxied `api.<domain>` → Render Docker.
 3. `GET /api/articles` and `GET /api/cities` send `Cache-Control: public, max-age=60` so the edge can cut Neon load ([ADR-004](../adr/004-render-cloudflare-neon-hosting.md)).
-4. Crons every 45m hit individual ingest endpoints with `X-Ingest-Key`; the daily midnight IST cron hits the combined no-AI ingest endpoint.
+4. Render crons hit the 45m ingest endpoints with `X-Ingest-Key`; GitHub Actions runs the nightly midnight IST batch and calls `/api/ingest/daily` with the same key.
 
 ### Render web service
 
@@ -85,12 +85,12 @@ No `wrangler.toml` in-repo — Pages deploy uses `cloudflare/pages-action` (wran
 | `ConnectionStrings__Database` | Render |
 | `Cors__AllowedOrigins__0` / `__1` | Render (reader + admin origins) |
 | `RateLimiting__PermitLimit` / `WindowSeconds` | Render (defaults 60/60) |
-| `RssIngest__Secret` | Render + crons |
+| `RssIngest__Secret` | Render + crons + GitHub Actions nightly ingest |
 | `Admin__Password`, `Admin__JwtSigningKey` | Render |
 | `ArticleIntelligence__ApiKey` / `BaseUrl` / `Model` | Render |
 | `Upload__RootPath` | Render |
 | `IngestHealth__MaxSilenceMinutes`, `IngestHealth__AlertWebhookUrl` | Render |
-| `INGEST_URL` | Cron services |
+| `INGEST_URL` | Render cron services and GitHub Actions `nightly-ingest.yml` |
 | `EXPO_PUBLIC_API_BASE_URL` | GitHub Actions **and** `apps/app/.env.production` (Expo inlines this at export) |
 | `VITE_API_BASE_URL` | GitHub Actions **and** `apps/admin/.env.production` |
 | `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` | GitHub secrets |
@@ -103,7 +103,7 @@ No `wrangler.toml` in-repo — Pages deploy uses `cloudflare/pages-action` (wran
 - API deploys are owned by Render, not the Pages deploy job.
 - **Do not let Cloudflare dashboard Git builds replace Actions without env.** Connecting the repo in Pages Settings starts a second pipeline that does **not** see GitHub `vars.EXPO_PUBLIC_API_BASE_URL`. Expo then ships `EXPO_PUBLIC_API_BASE_URL is not configured`. Prefer: pause Pages automatic deployments and keep `.github/workflows/deploy.yml`. If Git builds stay on, set production env `EXPO_PUBLIC_API_BASE_URL`, build command `corepack enable && pnpm install --frozen-lockfile && pnpm --filter @newsfeed/app build:web`, output `apps/app/dist`.
 - Edge caching implies up to ~60s feed staleness — tune deliberately.
-- `newsfeed-daily-ingest-no-ai` runs at `30 18 * * *` UTC (00:00 IST) and calls `/api/ingest/daily`, which avoids Claude summarization.
+- `.github/workflows/nightly-ingest.yml` runs at `30 18 * * *` UTC (00:00 IST) and calls `/api/ingest/daily`, which avoids Claude summarization.
 - Staging Render/Neon deferred; when added, separate service + Neon branch/project.
 - Never commit real secrets; only `*.example` templates.
 - Local tools must not point at production Neon.

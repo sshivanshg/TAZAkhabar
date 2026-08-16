@@ -1,0 +1,40 @@
+name: Nightly Ingest
+
+on:
+  schedule:
+    - cron: "30 18 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: nightly-ingest
+  cancel-in-progress: false
+
+jobs:
+  run-daily-ingest:
+    name: Trigger daily ingest
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Call ingest endpoint
+        env:
+          INGEST_URL: ${{ vars.INGEST_URL }}
+          RSS_INGEST_SECRET: ${{ secrets.RssIngest__Secret }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${INGEST_URL:-}" ]; then
+            echo "::error::Set repository or environment variable INGEST_URL to the deployed API base URL."
+            exit 1
+          fi
+
+          if [ -z "${RSS_INGEST_SECRET:-}" ]; then
+            echo "::error::Set repository or environment secret RssIngest__Secret."
+            exit 1
+          fi
+
+          curl --fail-with-body --silent --show-error \
+            --request POST \
+            --header "X-Ingest-Key: ${RSS_INGEST_SECRET}" \
+            --header "Accept: application/json" \
+            --max-time 600 \
+            "${INGEST_URL%/}/api/ingest/daily"

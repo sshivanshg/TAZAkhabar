@@ -1,7 +1,7 @@
 # System overview
 
 > **Living doc** — update in the same change when topology, hosting, or cross-app contracts move.  
-> **Last verified against:** 2026-08-14 (local working tree)
+> **Last verified against:** 2026-08-16 (GitHub Actions nightly ingest added)
 
 ## Purpose
 
@@ -30,6 +30,7 @@ flowchart TB
     API[.NET 8 API<br/>apps/api Docker]
     CronRSS[Cron every 45m<br/>POST /api/ingest/rss]
     CronScrape[Cron every 45m<br/>POST /api/ingest/scrape]
+    GHA[GitHub Actions nightly<br/>POST /api/ingest/daily]
   end
 
   subgraph data [Data]
@@ -49,6 +50,7 @@ flowchart TB
   APICF --> API
   CronRSS -->|X-Ingest-Key| API
   CronScrape -->|X-Ingest-Key| API
+  GHA -->|X-Ingest-Key| API
   API --> Neon
   API --> RSS
   API --> HTML
@@ -132,7 +134,7 @@ sequenceDiagram
 |---------|----------|
 | Public API | `/api/*` (no auth); rate limit `public` |
 | Admin API | `/api/admin/*` Bearer JWT (login excepted) |
-| Ingest | `POST /api/ingest/rss\|scrape` + `X-Ingest-Key` |
+| Ingest | `POST /api/ingest/rss\|scrape\|daily` + `X-Ingest-Key` |
 | Reader env | `EXPO_PUBLIC_API_BASE_URL` |
 | Admin env | `VITE_API_BASE_URL` |
 | OpenAPI | `GET /openapi/v1.json` |

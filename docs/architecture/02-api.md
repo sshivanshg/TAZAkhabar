@@ -1,7 +1,7 @@
 # API
 
 > **Living doc** — update when endpoints, auth, rate limits, CORS, or DI composition change.  
-> **Last verified against:** 2026-08-15 (request IDs, validation, explicit production migrations)
+> **Last verified against:** 2026-08-16 (GitHub Actions nightly ingest trigger)
 
 ## Purpose
 
@@ -18,7 +18,7 @@
 flowchart LR
   Reader[Reader] -->|public /api| API[NewsFeed.Api]
   Admin[Admin] -->|/api/admin JWT| API
-  Cron[Render cron] -->|/api/ingest X-Ingest-Key| API
+  Cron[Render cron / GitHub Actions] -->|/api/ingest X-Ingest-Key| API
   API --> Neon[(Neon)]
   API --> OpenAPI["/openapi/v1.json"]
 ```
@@ -51,6 +51,7 @@ Pipeline (order): Serilog request logging → RequestId header/log context → E
 | GET | `/api/articles/{id}` | `GetArticleById` | Published only; includes plain-text `body` when stored |
 | POST | `/api/ingest/rss` | `IngestRss` | `X-Ingest-Key` |
 | POST | `/api/ingest/scrape` | `IngestScrape` | `X-Ingest-Key` |
+| POST | `/api/ingest/daily` | `IngestDaily` | `X-Ingest-Key`; nightly RSS + scrape batch, no RSS summarization |
 | POST | `/api/ingest/backfill-bodies` | `IngestBackfillBodies` | `X-Ingest-Key`; fills missing `body` from source HTML |
 
 ### Admin endpoints
@@ -89,7 +90,7 @@ Pipeline (order): Serilog request logging → RequestId header/log context → E
 | `ConnectionStrings__Database` | Neon / local Postgres |
 | `Cors__AllowedOrigins__*` | Reader + admin Pages origins |
 | `RateLimiting__PermitLimit` / `WindowSeconds` | Public IP fixed window |
-| `RssIngest__Secret` | Ingest header |
+| `RssIngest__Secret` | Ingest header for Render crons and GitHub Actions nightly trigger |
 | `Admin__Password` / `Admin__JwtSigningKey` | Admin login |
 | `ArticleIntelligence__*` | Claude |
 | `Upload__RootPath` | PDF/image storage |
