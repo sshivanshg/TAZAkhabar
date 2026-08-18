@@ -1,7 +1,7 @@
 # Data model
 
 > **Living doc** — update when entities, statuses, or migration ownership change.  
-> **Last verified against:** 2026-08-15 (production migrations are explicit, not boot-time)
+> **Last verified against:** 2026-08-17 (scrape publishes directly; production migrations are explicit, not boot-time)
 
 ## Purpose
 
@@ -87,7 +87,7 @@ Migrations are compiled into the API via csproj include of `infra/migrations/**/
 
 ## Public contracts
 
-Public feed only exposes **Published** articles (see [02-api](./02-api.md)). Status transitions are admin/ingest concerns.
+Public feed only exposes **Published** articles (see [02-api](./02-api.md)). Scrape ingest now writes published rows directly; RSS/PDF/admin flows still use moderation states as needed.
 
 ## Failure modes & invariants
 

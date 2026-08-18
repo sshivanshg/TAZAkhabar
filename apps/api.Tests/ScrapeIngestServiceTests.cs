@@ -14,7 +14,7 @@ public sealed class ScrapeIngestServiceTests
     private const string Story3Url = "https://www.amarujala.com/city/story-3";
 
     [Fact]
-    public async Task Inserts_PendingReview_Article_And_Skips_DuplicateUrl()
+    public async Task Inserts_Published_Article_And_Skips_DuplicateUrl()
     {
         await using var db = CreateDb();
         var source = await AddScrapeSourceAsync(db, "Amar Ujala Jhansi", ListUrl);
@@ -49,7 +49,7 @@ public sealed class ScrapeIngestServiceTests
         Assert.Equal("Amar Ujala Jhansi", stored.SourceName);
         Assert.Equal(2, stored.CityId);
         Assert.Equal("Local", stored.Category);
-        Assert.Equal(ArticleStatus.PendingReview, stored.Status);
+        Assert.Equal(ArticleStatus.Published, stored.Status);
         Assert.False(stored.IsMock);
         Assert.Equal(source.Id, stored.SourceId);
         Assert.NotNull(stored.IngestedAt);

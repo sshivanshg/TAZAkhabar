@@ -1,7 +1,7 @@
 # Ingestion
 
 > **Living doc** — update when pipelines, article status on insert, cron, SSE, or intelligence providers change.  
-> **Last verified against:** 2026-08-16 (GitHub Actions nightly ingest trigger)
+> **Last verified against:** 2026-08-17 (scrape publishes directly to the public feed)
 
 ## Purpose
 
@@ -44,7 +44,7 @@ flowchart TB
 | Pipeline | Service | Trigger | Insert status (current) |
 |----------|---------|---------|-------------------------|
 | RSS | `RssIngestService.cs` | Cron or admin source trigger | `PendingReview` |
-| Scrape | `ScrapeIngestService.cs` + `HtmlArticleExtractor`, `ScrapeHttpClient` | Cron or admin trigger | `PendingReview` |
+| Scrape | `ScrapeIngestService.cs` + `HtmlArticleExtractor`, `ScrapeHttpClient` | Cron or admin trigger | `Published` |
 | PDF / image | `PdfIngestService.cs`, `PdfTextExtractor` (PdfPig), `PdfProcessingQueue` + `PdfProcessingWorker` | Admin uploads | `PendingReview` |
 | Image OG | `ArticleImageEnrichmentService`, `OgImageExtractor`, `ImageEnrichmentQueue` + worker | After ingest | Updates `ImageUrl` |
 
@@ -135,7 +135,7 @@ Event types: `started`, `fetch`, `progress`, `completed`, `error` (terminal: `co
 - Source site downtime must not break the public feed — log/fail the run, leave published content intact.
 - Outbound fetch must not target private IPs (`SafeHttp`).
 - RSS/scraped HTML is untrusted — store **plain text only**, never raw HTML; sanitize/validate before store and render (security rule).
-- All article-producing ingest paths insert `PendingReview`; only admin publish moves articles into the public feed.
+- RSS, PDF, and manual article creation can use moderation states; scrape publishes directly to the public feed.
 - `ErrorSummary` stores sanitized categories; full exception details stay in structured logs keyed by `IngestionRunId`.
 - Ingest silence monitor logs or posts a webhook when active RSS/scrape sources have no successful run within the configured window.
 - Ingest key ≠ admin JWT; do not conflate.

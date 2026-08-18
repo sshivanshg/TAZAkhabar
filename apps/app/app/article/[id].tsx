@@ -63,6 +63,8 @@ type PagerItem =
   | { kind: 'story'; article: ArticleResponse }
   | { kind: 'end'; key: string }
 
+const PAGE_OVERSHOOT_THRESHOLD = 1.05
+
 function ArticlePagerBody() {
   const router = useRouter()
   const { height: windowHeight } = useWindowDimensions()
@@ -125,6 +127,7 @@ function ArticlePagerBody() {
   const [hasMore, setHasMore] = useState(true)
   const offsetRef = useRef(0)
   const loadingMoreRef = useRef(false)
+  const isProgrammaticScrollRef = useRef(false)
   const initialIndexRef = useRef(0)
   const coachCompletedRef = useRef(false)
   const hydratedIdsRef = useRef(new Set<number>())
@@ -383,6 +386,7 @@ function ArticlePagerBody() {
       const clampedIndex = Math.max(startIndex - 1, Math.min(targetIndex, startIndex + 1))
 
       if (clampedIndex !== targetIndex) {
+        isProgrammaticScrollRef.current = true
         listRef.current?.scrollToIndex({
           index: clampedIndex,
           animated: false,
@@ -401,6 +405,7 @@ function ArticlePagerBody() {
   )
 
   const onScrollBeginDrag = useCallback(() => {
+    isProgrammaticScrollRef.current = false
     scrollStartIndexRef.current = currentIndexRef.current
   }, [])
 
@@ -408,8 +413,26 @@ function ArticlePagerBody() {
     scrollStartIndexRef.current = currentIndexRef.current
   }, [])
 
+  const onScroll = useCallback(
+    (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+      if (windowHeight <= 0 || isProgrammaticScrollRef.current) {
+        return
+      }
+
+      const rawIndex = event.nativeEvent.contentOffset.y / windowHeight
+      const startIndex = scrollStartIndexRef.current
+      if (Math.abs(rawIndex - startIndex) <= PAGE_OVERSHOOT_THRESHOLD) {
+        return
+      }
+
+      settlePagerIndex(rawIndex > startIndex ? startIndex + 1 : startIndex - 1)
+    },
+    [windowHeight, settlePagerIndex],
+  )
+
   const onMomentumScrollEnd = useCallback(
     (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+      isProgrammaticScrollRef.current = false
       settlePagerIndex(Math.round(event.nativeEvent.contentOffset.y / windowHeight), true)
     },
     [windowHeight, settlePagerIndex],
@@ -519,9 +542,11 @@ function ArticlePagerBody() {
         }}
         snapToInterval={windowHeight}
         snapToAlignment="start"
-        pagingEnabled={false}
+        pagingEnabled
         decelerationRate="fast"
         disableIntervalMomentum
+        bounces={false}
+        overScrollMode="never"
         showsVerticalScrollIndicator={false}
         getItemLayout={(_, i) => ({
           length: windowHeight,
@@ -532,6 +557,8 @@ function ArticlePagerBody() {
         onScrollToIndexFailed={() => {
           // ignore — FlatList will settle
         }}
+        onScroll={onScroll}
+        scrollEventThrottle={16}
         onMomentumScrollEnd={onMomentumScrollEnd}
         onScrollBeginDrag={onScrollBeginDrag}
         onMomentumScrollBegin={onMomentumScrollBegin}

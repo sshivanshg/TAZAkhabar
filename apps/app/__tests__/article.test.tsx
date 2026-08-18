@@ -1,4 +1,5 @@
 import { render, screen, waitFor } from '@testing-library/react-native'
+import { FlatList } from 'react-native'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import type { ArticleResponse } from '@newsfeed/shared-types'
 import { LanguagePreferenceProvider } from '../src/preferences/LanguagePreferenceContext'
@@ -133,6 +134,19 @@ describe('ArticleScreen', () => {
     renderArticle()
 
     expect(await screen.findByText('Swipe up for the next story')).toBeTruthy()
+  })
+
+  it('uses one-page story paging so fast scrolls cannot skip several stories', async () => {
+    renderArticle()
+
+    await screen.findByText('Fetched headline')
+    const pager = screen.UNSAFE_getByType(FlatList)
+
+    expect(pager.props.pagingEnabled).toBe(true)
+    expect(pager.props.disableIntervalMomentum).toBe(true)
+    expect(pager.props.bounces).toBe(false)
+    expect(pager.props.overScrollMode).toBe('never')
+    expect(pager.props.scrollEventThrottle).toBe(16)
   })
 
   it('hides coach when already completed', async () => {

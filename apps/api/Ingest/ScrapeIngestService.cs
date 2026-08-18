@@ -392,7 +392,7 @@ public sealed class ScrapeIngestService
             SourceUrl = sourceUrl,
             PublishedAt = ToUtc(publishedAt ?? now),
             Category = "Local",
-            Status = ArticleStatus.PendingReview,
+            Status = ArticleStatus.Published,
             IsMock = false,
             IngestedAt = now,
             SourceId = source.Id,
