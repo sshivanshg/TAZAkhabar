@@ -34,10 +34,10 @@ type WebPressableState = PressableStateCallbackType & {
   focused?: boolean
 }
 
-/** Collapsed control is a circle — same size as the previous searchCircle. */
-const SEARCH_COLLAPSED_WIDTH = 36
+/** Collapsed control is a compact button. */
+const SEARCH_COLLAPSED_WIDTH = 40
 /** Fixed expanded width; grows left from the right-aligned icon, does not reflow the rail. */
-const SEARCH_EXPANDED_WIDTH = 340
+const SEARCH_EXPANDED_WIDTH = 280
 const MOTION_MS = 200
 
 /** Desktop home header — city pill + morphing search. */
@@ -166,6 +166,14 @@ export function DesktopTopBar({
             </Text>
           </Pressable>
         ) : null}
+        <Text
+          fontSize={typography.label.fontSize}
+          lineHeight={typography.label.lineHeight}
+          color={colors.textSecondary}
+          numberOfLines={1}
+        >
+          Local editions, polished for reading
+        </Text>
       </View>
 
       <View style={styles.rightCluster}>
@@ -263,7 +271,7 @@ const styles = StyleSheet.create({
   bar: {
     minHeight: HIT_TARGET,
     paddingBottom: space.xs,
-    paddingHorizontal: space.screen,
+    paddingHorizontal: space.screen + 2,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -276,23 +284,24 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'flex-start',
     justifyContent: 'center',
+    gap: 4,
     minWidth: 0,
   },
   rightCluster: {
     flexDirection: 'row',
     alignItems: 'center',
     flexShrink: 0,
-    gap: space.sm,
+    gap: space.xs,
   },
   langRow: {
     flexDirection: 'row',
     gap: 6,
   },
   langChip: {
-    minWidth: 36,
+    minWidth: 38,
     minHeight: 32,
-    paddingHorizontal: 8,
-    borderRadius: radius.full,
+    paddingHorizontal: 10,
+    borderRadius: radius.md,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
     backgroundColor: colors.surface,
@@ -307,10 +316,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: space.xxs,
-    paddingHorizontal: space.xs + 2,
-    paddingVertical: space.xxs + 2,
-    minHeight: 28,
-    borderRadius: radius.full,
+    paddingHorizontal: space.sm,
+    paddingVertical: 6,
+    minHeight: 32,
+    borderRadius: radius.md,
     backgroundColor: colors.accentSoft,
     maxWidth: '100%',
   },
@@ -323,7 +332,7 @@ const styles = StyleSheet.create({
   searchControl: {
     height: SEARCH_COLLAPSED_WIDTH,
     overflow: 'hidden',
-    borderRadius: radius.full,
+    borderRadius: radius.md,
     backgroundColor: colors.surface,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,

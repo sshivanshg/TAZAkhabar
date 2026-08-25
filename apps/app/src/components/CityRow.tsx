@@ -24,22 +24,19 @@ export function CityRow({ city, index, onSelect }: Props) {
         onPress={() => onSelect(city)}
         accessibilityRole="button"
         accessibilityLabel={`Select ${name}, ${state}`}
-        minHeight={56}
-        px="$4"
-        py="$4"
-        borderBottomWidth={StyleSheet.hairlineWidth}
-        borderColor={colors.border}
-        bg={colors.background}
-        $pressed={{ bg: colors.surface }}
+        style={({ pressed }) => [styles.row, pressed ? styles.rowPressed : null]}
       >
-        <VStack space="xs">
-          <Text fontSize={20} lineHeight={28} fontWeight="$bold" color={colors.text}>
+        <VStack space="xs" flex={1}>
+          <Text fontSize={18} lineHeight={24} fontWeight="$semibold" color={colors.text}>
             {name}
           </Text>
-          <Text fontSize={16} lineHeight={24} color={colors.textSecondary}>
+          <Text fontSize={15} lineHeight={22} color={colors.textSecondary}>
             {state}
           </Text>
         </VStack>
+        <Text fontSize={14} lineHeight={20} fontWeight="$semibold" color={colors.accent}>
+          Select
+        </Text>
       </Pressable>
     </MotiView>
   )
@@ -51,7 +48,7 @@ export function CityListSkeleton() {
       {[0, 1, 2, 3].map((i) => (
         <Box
           key={i}
-          minHeight={56}
+          minHeight={72}
           px="$4"
           py="$4"
           borderBottomWidth={StyleSheet.hairlineWidth}
@@ -65,3 +62,20 @@ export function CityListSkeleton() {
     </VStack>
   )
 }
+
+const styles = StyleSheet.create({
+  row: {
+    minHeight: 72,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.border,
+    backgroundColor: colors.background,
+  },
+  rowPressed: {
+    backgroundColor: colors.surface,
+  },
+})

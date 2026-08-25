@@ -43,6 +43,7 @@ import {
 import { ScreenErrorBoundary } from '../../src/components/ScreenErrorBoundary'
 import { TabScreenShell } from '../../src/components/TabScreenShell'
 import { ErrorState } from '../../src/components/ui/ErrorState'
+import { EmptyState } from '../../src/components/ui/EmptyState'
 import { useFeedPreferences } from '../../src/preferences/FeedPreferencesContext'
 import { useLanguagePreference } from '../../src/preferences/LanguagePreferenceContext'
 import {
@@ -385,10 +386,10 @@ function DiscoverBody() {
           </Pressable>
         ) : null}
         <VStack flex={1} pl={showBack ? '$1' : '$2'} pr="$2">
-          <Text fontSize={28} lineHeight={36} fontWeight="$bold" color={colors.text}>
+          <Text fontSize={24} lineHeight={30} fontWeight="$bold" color={colors.text}>
             Discover
           </Text>
-          <Text fontSize={15} lineHeight={22} color={colors.textSecondary} mt="$0.5">
+          <Text fontSize={14} lineHeight={20} color={colors.textSecondary} mt="$0.5">
             News from {cityTitle} and beyond
           </Text>
         </VStack>
@@ -506,18 +507,33 @@ function DiscoverBody() {
             )
           }}
           ListEmptyComponent={
-            <VStack py="$10" space="sm">
-              <Text fontSize={18} lineHeight={28} fontWeight="$bold" color={colors.text}>
-                {debounced ? 'No matches' : 'No stories yet'}
-              </Text>
-              <Text fontSize={16} lineHeight={24} color={colors.textSecondary}>
-                {debounced
-                  ? `No headlines matched “${debounced}” for ${cityTitle}.`
-                  : `We do not have articles for ${cityTitle}${
-                      category !== 'All' ? ` in ${category}` : ''
-                    } right now.`}
-              </Text>
-            </VStack>
+            <View style={styles.emptyWrap}>
+              <EmptyState
+                title={debounced ? 'No matches' : 'No stories yet'}
+                message={
+                  debounced
+                    ? `No headlines matched “${debounced}” for ${cityTitle}.`
+                    : `We do not have articles for ${cityTitle}${
+                        category !== 'All' ? ` in ${category}` : ''
+                      } right now.`
+                }
+                primaryLabel={debounced ? 'Clear search' : 'Browse Home'}
+                onPrimary={
+                  debounced
+                    ? () => {
+                        setQuery('')
+                        setDebounced('')
+                      }
+                    : () => router.replace('/(tabs)')
+                }
+                primaryAccessibilityLabel={debounced ? 'Clear search' : 'Browse Home'}
+                secondaryLabel={debounced ? 'Back to home' : 'Change city'}
+                onSecondary={
+                  debounced ? () => router.replace('/(tabs)') : () => router.push('/city')
+                }
+                secondaryAccessibilityLabel={debounced ? 'Back to home' : 'Change city'}
+              />
+            </View>
           }
         />
       ) : null}
@@ -638,6 +654,9 @@ const styles = StyleSheet.create({
   list: {
     paddingHorizontal: space.screen,
     paddingTop: space.xs,
+    flexGrow: 1,
+  },
+  emptyWrap: {
     flexGrow: 1,
   },
   errorColumn: {

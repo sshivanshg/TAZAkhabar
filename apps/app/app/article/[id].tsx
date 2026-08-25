@@ -509,7 +509,7 @@ function ArticlePagerBody() {
 
   return (
     <View style={styles.root}>
-      <StatusBar style="light" />
+      <StatusBar style="dark" />
       <FlatList
         ref={listRef}
         testID="story-pager"

@@ -121,8 +121,8 @@ const styles = StyleSheet.create({
   },
   brandBlock: {
     paddingHorizontal: space.sm,
-    marginBottom: space.xl,
-    gap: space.md,
+    marginBottom: space.lg,
+    gap: 8,
   },
   brand: {
     fontSize: typography.section.fontSize,
@@ -136,7 +136,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.border,
   },
   list: {
-    gap: space.xxs,
+    gap: 6,
     flexGrow: 0,
   },
   item: {
@@ -144,10 +144,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: space.sm,
-    paddingVertical: space.xs,
+    paddingVertical: 10,
     paddingLeft: space.md,
     paddingRight: space.sm,
-    borderRadius: radius.md,
+    borderRadius: radius.sm,
     overflow: 'hidden',
   },
   itemActive: {

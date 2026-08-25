@@ -34,15 +34,18 @@ export function Badge({ label, variant = 'filled' }: Props) {
 const styles = StyleSheet.create({
   base: {
     alignSelf: 'flex-start',
-    paddingHorizontal: space.xs + 2,
-    paddingVertical: 3,
+    paddingHorizontal: space.xs + 4,
+    paddingVertical: 4,
     borderRadius: radius.full,
     maxWidth: '100%',
+    borderWidth: StyleSheet.hairlineWidth,
   },
   filled: {
     backgroundColor: colors.accent,
+    borderColor: colors.accent,
   },
   soft: {
     backgroundColor: colors.accentSoft,
+    borderColor: 'rgba(36, 76, 255, 0.08)',
   },
 })

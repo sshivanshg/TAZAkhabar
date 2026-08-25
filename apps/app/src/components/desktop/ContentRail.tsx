@@ -25,7 +25,7 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     // Optical: slightly tighter top so the header sits closer to content;
     // extra bottom so the rail doesn't feel cropped above the viewport edge.
-    paddingTop: space.lg,
+    paddingTop: space.md,
     paddingBottom: space.xxl,
     flex: 1,
   },

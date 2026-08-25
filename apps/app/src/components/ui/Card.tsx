@@ -29,16 +29,19 @@ export function Card({ children, style, clipped = false }: Props) {
 
 const styles = StyleSheet.create({
   shadowHost: {
-    borderRadius: radius.md,
+    borderRadius: radius.lg,
     backgroundColor: colors.surface,
+    padding: 0,
   },
   webBorder: {
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 1,
     borderColor: colors.border,
   },
   inner: {
-    borderRadius: radius.md,
+    borderRadius: radius.lg,
     backgroundColor: colors.surface,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
   },
   clipped: {
     overflow: 'hidden',

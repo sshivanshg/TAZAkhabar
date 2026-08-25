@@ -239,6 +239,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     minHeight: HIT_TARGET,
     alignItems: 'center',
+    borderRadius: radius.lg,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
   },
   cardCompact: {
     minHeight: media.thumbDense + space.xs,
@@ -253,13 +256,13 @@ const styles = StyleSheet.create({
     minHeight: media.thumbDense + space.xs,
   },
   cardHover: {
-    backgroundColor: colors.accentSoft,
+    backgroundColor: '#F8FAFF',
   },
   cardPressed: {
-    opacity: 0.92,
+    opacity: 0.94,
   },
   thumbWrap: {
-    borderRadius: radius.sm,
+    borderRadius: radius.md,
     backgroundColor: colors.surfaceRaised,
     overflow: 'hidden',
   },
@@ -277,6 +280,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: space.xxs,
+    borderRadius: radius.md,
   },
   moreBtnCompact: {
     width: 40,
@@ -284,6 +288,5 @@ const styles = StyleSheet.create({
   },
   morePressed: {
     backgroundColor: colors.surfaceRaised,
-    borderRadius: radius.full,
   },
 })

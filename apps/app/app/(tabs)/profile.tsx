@@ -93,16 +93,16 @@ function ProfileBody() {
       >
         <View style={styles.pageHeader}>
           <Text
-            fontSize={typography.section.fontSize}
-            lineHeight={typography.section.lineHeight}
+            fontSize={24}
+            lineHeight={30}
             fontWeight="$bold"
             color={colors.text}
           >
             Profile
           </Text>
           <Text
-            fontSize={typography.summary.fontSize}
-            lineHeight={typography.summary.lineHeight}
+            fontSize={14}
+            lineHeight={20}
             color={colors.textSecondary}
             mt="$1"
           >
@@ -228,18 +228,6 @@ function Section({
 }) {
   return (
     <View style={styles.section}>
-      <View style={styles.sectionHeader}>
-        <Text
-          fontSize={typography.label.fontSize}
-          lineHeight={typography.label.lineHeight}
-          fontWeight="$medium"
-          color={colors.textMuted}
-          letterSpacing={typography.label.letterSpacing}
-          textTransform="uppercase"
-        >
-          {title}
-        </Text>
-      </View>
       <Card>
         <View style={styles.cardBody}>
           <View style={styles.cardTitleRow}>
@@ -352,9 +340,6 @@ const styles = StyleSheet.create({
   },
   section: {
     marginBottom: space.xl,
-  },
-  sectionHeader: {
-    marginBottom: space.sm,
   },
   cardBody: {
     padding: space.md,

@@ -176,9 +176,9 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingHorizontal: space.screen,
-    paddingBottom: space.xs,
+    paddingBottom: 6,
     alignItems: 'center',
-    gap: space.xs,
+    gap: 8,
   },
   dimmed: {
     opacity: 0.45,
@@ -186,11 +186,12 @@ const styles = StyleSheet.create({
   moreBtn: {
     minHeight: HIT_TARGET,
     minWidth: HIT_TARGET,
-    borderRadius: radius.full,
+    borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.border,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: colors.surface,
   },
   morePressed: {
     opacity: 0.85,
@@ -206,6 +207,8 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     padding: space.lg,
     maxHeight: '70%',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
   },
   pickerList: {
     maxHeight: 320,

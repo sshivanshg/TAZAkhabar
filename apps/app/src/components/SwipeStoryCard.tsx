@@ -96,10 +96,14 @@ export function SwipeStoryCard({
           <View style={[StyleSheet.absoluteFillObject, { backgroundColor: readerColors.imageFallback }]} />
         )}
         <ImageBottomFade height={120} />
-        <View style={styles.heroText}>
-          {eyebrow ? <Text style={styles.eyebrow}>{eyebrow}</Text> : null}
-          <Text style={styles.headline}>{article.headline}</Text>
-        </View>
+      </View>
+
+      <View style={styles.storyHeader}>
+        {eyebrow ? <Text style={styles.eyebrow}>{eyebrow}</Text> : null}
+        <Text style={styles.headline}>{article.headline}</Text>
+        <Text style={styles.storyMeta}>
+          {[article.sourceName, time].filter(Boolean).join(' · ')}
+        </Text>
       </View>
 
       <View style={styles.readerPanel}>
@@ -115,11 +119,6 @@ export function SwipeStoryCard({
                 </Text>
               ))
             : <Text style={styles.summary}>{article.summary}</Text>}
-          <View style={styles.metaRow}>
-            <Text style={styles.meta}>
-              {[article.sourceName, time].filter(Boolean).join(' · ')}
-            </Text>
-          </View>
         </ScrollView>
 
         <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 14) }]}>
@@ -208,9 +207,10 @@ const styles = StyleSheet.create({
     minWidth: 36,
     minHeight: 32,
     paddingHorizontal: 8,
-    borderRadius: 8,
+    borderRadius: 10,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.28)',
+    borderColor: readerColors.sheetBorder,
+    backgroundColor: readerColors.sheet,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -224,7 +224,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   langChipTextSelected: {
-    color: readerColors.canvas,
+    color: '#FFFFFF',
   },
   topMeta: {
     color: readerColors.textMuted,
@@ -232,23 +232,34 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   hero: {
-    height: '52%',
+    height: '38%',
     backgroundColor: readerColors.imageFallback,
     justifyContent: 'flex-end',
   },
   heroCompact: {
-    height: '36%',
+    height: '30%',
   },
-  heroText: {
+  storyHeader: {
+    marginHorizontal: 16,
+    marginTop: -20,
     paddingHorizontal: 18,
-    paddingBottom: 18,
-    zIndex: 1,
+    paddingTop: 16,
+    paddingBottom: 16,
+    borderRadius: 18,
+    backgroundColor: readerColors.sheet,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: readerColors.sheetBorder,
+    shadowColor: '#101828',
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 3,
   },
   eyebrow: {
-    color: readerColors.textSecondary,
+    color: readerColors.accent,
     fontSize: 12,
     fontWeight: '700',
-    letterSpacing: 1,
+    letterSpacing: 0.8,
     textTransform: 'uppercase',
     marginBottom: 8,
   },
@@ -257,53 +268,50 @@ const styles = StyleSheet.create({
     fontSize: 28,
     lineHeight: 34,
     fontWeight: '800',
-    letterSpacing: -0.4,
+    letterSpacing: -0.5,
+  },
+  storyMeta: {
+    color: readerColors.textMuted,
+    fontSize: 13,
+    lineHeight: 18,
+    marginTop: 8,
   },
   body: {
     flex: 1,
   },
   readerPanel: {
     flex: 1,
-    marginTop: -20,
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
+    marginTop: 12,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
     backgroundColor: readerColors.card,
-    borderTopWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderColor: readerColors.sheetBorder,
     overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOpacity: 0.24,
+    shadowColor: '#101828',
+    shadowOpacity: 0.08,
     shadowRadius: 18,
     shadowOffset: { width: 0, height: -4 },
-    elevation: 10,
+    elevation: 4,
   },
   bodyContent: {
     paddingHorizontal: 18,
     paddingTop: 18,
     paddingBottom: 18,
-    gap: 14,
+    gap: 16,
   },
   summary: {
-    color: 'rgba(255,255,255,0.84)',
+    color: readerColors.textSecondary,
     fontSize: 16,
     lineHeight: 26,
-  },
-  metaRow: {
-    marginTop: 6,
-    paddingTop: 14,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: 'rgba(255,255,255,0.08)',
-  },
-  meta: {
-    color: readerColors.textMuted,
-    fontSize: 12,
-    letterSpacing: 0.2,
   },
   footer: {
     paddingHorizontal: 18,
     paddingTop: 14,
     gap: 8,
     backgroundColor: readerColors.card,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: readerColors.sheetBorder,
   },
   actions: {
     flexDirection: 'row',
@@ -316,8 +324,8 @@ const styles = StyleSheet.create({
     minHeight: 48,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
-    backgroundColor: 'rgba(255,255,255,0.04)',
+    borderColor: readerColors.sheetBorder,
+    backgroundColor: readerColors.sheet,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 12,

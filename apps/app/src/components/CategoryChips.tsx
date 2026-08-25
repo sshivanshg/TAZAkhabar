@@ -72,8 +72,8 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingHorizontal: space.screen,
-    paddingVertical: space.xs,
+    paddingVertical: 6,
     alignItems: 'center',
-    gap: space.xs,
+    gap: 8,
   },
 })

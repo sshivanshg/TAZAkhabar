@@ -156,14 +156,15 @@ export function BreakingHeroCard({
 
 const styles = StyleSheet.create({
   shadowHost: {
-    // Shared card radius with list `Card` primitive
-    borderRadius: radius.md,
+    borderRadius: radius.lg,
     backgroundColor: colors.surface,
   },
   card: {
-    borderRadius: radius.md,
+    borderRadius: radius.lg,
     overflow: 'hidden',
     backgroundColor: colors.surface,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
   },
   pressed: {
     opacity: 0.94,
@@ -176,7 +177,7 @@ const styles = StyleSheet.create({
   imagePlaceholder: {
     ...StyleSheet.absoluteFillObject,
     // Mid tone so gradient + title still read as media-forward without a photo
-    backgroundColor: '#3A3D46',
+    backgroundColor: '#45506D',
   },
   pillWrap: {
     position: 'absolute',

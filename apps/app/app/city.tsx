@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useState } from 'react'
 import { FlatList } from 'react-native'
 import { useRouter } from 'expo-router'
-import { Box, Button, ButtonText, Text, VStack } from '@gluestack-ui/themed'
+import { Box, Text, VStack } from '@gluestack-ui/themed'
 import { MotiView } from 'moti'
 import type { CityResponse } from '@newsfeed/shared-types'
 import { apiClient } from '../src/api/client'
 import { CityListSkeleton, CityRow } from '../src/components/CityRow'
+import { ErrorState } from '../src/components/ui/ErrorState'
 import { setStoredCitySlug } from '../src/storage/cityPreference'
 import { colors, radius } from '../src/theme/tokens'
 
@@ -51,10 +52,10 @@ export default function CityPickerScreen() {
     >
       <Box flex={1} bg={colors.background}>
         <VStack px="$4" pt="$4" pb="$2" space="sm">
-          <Text fontSize={28} lineHeight={36} fontWeight="$bold" color={colors.text}>
+          <Text fontSize={24} lineHeight={30} fontWeight="$bold" color={colors.text}>
             NewsFeed
           </Text>
-          <Text fontSize={16} lineHeight={26} color={colors.textSecondary}>
+          <Text fontSize={15} lineHeight={22} color={colors.textSecondary}>
             Pick your city to see local news summaries. You can change this anytime from Profile.
           </Text>
         </VStack>
@@ -62,26 +63,26 @@ export default function CityPickerScreen() {
         {loading ? <CityListSkeleton /> : null}
 
         {!loading && error ? (
-          <VStack px="$4" py="$8" space="md" alignItems="flex-start">
-            <Text fontSize={18} lineHeight={28} color={colors.text}>
-              We could not load cities.
-            </Text>
-            <Text fontSize={16} lineHeight={24} color={colors.textSecondary}>
-              {error}
-            </Text>
-            <Button
-              onPress={() => void load()}
-              bg={colors.accent}
-              minHeight={48}
-              px="$5"
-              borderRadius={radius.full}
-              accessibilityLabel="Retry loading cities"
-            >
-              <ButtonText color={colors.textOnAccent} fontSize={16}>
-                Try again
-              </ButtonText>
-            </Button>
-          </VStack>
+          <Box flex={1} px="$4" py="$8">
+            <ErrorState
+              title="We could not load cities."
+              message={`Check your connection and try again. ${error ?? 'We need this list before we can personalize your feed.'}`}
+              onRetry={() => void load()}
+              retryLabel="Try again"
+              retryAccessibilityLabel="Retry loading cities"
+            />
+            {error ? (
+              <Text
+                fontSize={14}
+                lineHeight={20}
+                color={colors.textMuted}
+                mt="$3"
+                textAlign="center"
+              >
+                {error}
+              </Text>
+            ) : null}
+          </Box>
         ) : null}
 
         {!loading && !error ? (

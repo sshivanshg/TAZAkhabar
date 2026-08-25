@@ -40,6 +40,7 @@ import { HomeTopBar } from '../../src/components/HomeTopBar'
 import { ScreenErrorBoundary } from '../../src/components/ScreenErrorBoundary'
 import { TabScreenShell } from '../../src/components/TabScreenShell'
 import { ErrorState } from '../../src/components/ui/ErrorState'
+import { EmptyState } from '../../src/components/ui/EmptyState'
 import { PrimaryButton } from '../../src/components/ui/PrimaryButton'
 import { useFeedPreferences } from '../../src/preferences/FeedPreferencesContext'
 import { useLanguagePreference } from '../../src/preferences/LanguagePreferenceContext'
@@ -747,45 +748,51 @@ function HomeFeedBody() {
                   if (item.kind === 'empty') {
                     const filteredAway =
                       articles.length > 0 && visibleArticles.length === 0
+                    const title = filteredAway
+                      ? 'Stories hidden by your filters'
+                      : viewingToday
+                        ? 'No stories yet'
+                        : `No stories for this date in ${cityTitle}`
+                    const message = filteredAway
+                      ? 'Unblock sources or categories in Profile, or browse Discover for a wider view.'
+                      : viewingToday
+                        ? `We do not have articles for ${cityTitle}${
+                            category !== 'All' ? ` in ${category}` : ''
+                          } right now. Pull down to refresh, or browse Discover.`
+                        : 'Try another date, or switch category. Pull down to refresh.'
+                    const primaryLabel = filteredAway
+                      ? 'Open Profile'
+                      : viewingToday
+                        ? 'Browse Discover'
+                        : 'Back to today'
+                    const secondaryLabel = filteredAway
+                      ? 'Browse Discover'
+                      : viewingToday
+                        ? 'Change city'
+                        : 'Browse Discover'
                     return (
-                      <View style={styles.emptyBlock}>
-                        <Text
-                          fontSize={typography.headlineSm.fontSize}
-                          lineHeight={typography.headlineSm.lineHeight}
-                          fontWeight="$semibold"
-                          color={colors.text}
-                        >
-                          {filteredAway
-                            ? 'Stories hidden by your filters'
+                      <EmptyState
+                        title={title}
+                        message={message}
+                        primaryLabel={primaryLabel}
+                        onPrimary={
+                          filteredAway
+                            ? () => router.push('/(tabs)/profile')
                             : viewingToday
-                              ? 'No stories yet'
-                              : `No stories for this date in ${cityTitle}`}
-                        </Text>
-                        <Text
-                          fontSize={typography.summary.fontSize}
-                          lineHeight={typography.summary.lineHeight}
-                          color={colors.textSecondary}
-                          mt="$2"
-                          mb="$4"
-                        >
-                          {filteredAway
-                            ? 'Unblock sources or categories in Profile, or pull down to refresh.'
+                              ? goDiscover
+                              : () => setSelectedDate(todayCityIso())
+                        }
+                        primaryAccessibilityLabel={primaryLabel}
+                        secondaryLabel={secondaryLabel}
+                        onSecondary={
+                          filteredAway
+                            ? goDiscover
                             : viewingToday
-                              ? `We do not have articles for ${cityTitle}${
-                                  category !== 'All' ? ` in ${category}` : ''
-                                } right now. Pull down to refresh, or browse Discover.`
-                              : `Try another date, or switch category. Pull down to refresh.`}
-                        </Text>
-                        <PrimaryButton
-                          label={viewingToday ? 'Browse Discover' : 'Back to today'}
-                          onPress={
-                            viewingToday ? goDiscover : () => setSelectedDate(todayCityIso())
-                          }
-                          accessibilityLabel={
-                            viewingToday ? 'Browse Discover' : 'Back to today'
-                          }
-                        />
-                      </View>
+                              ? () => router.push('/city')
+                              : goDiscover
+                        }
+                        secondaryAccessibilityLabel={secondaryLabel}
+                      />
                     )
                   }
                   if (item.kind === 'article-row') {

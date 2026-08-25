@@ -5,50 +5,50 @@ import { Platform, type ViewStyle } from 'react-native'
  * Naming kept for existing imports; values match the UI redesign palette.
  */
 export const colors = {
-  /** Page canvas — surfaceAlt */
-  background: '#F5F6FA',
+  /** Page canvas — crisp editorial white */
+  background: '#F4F6FA',
   /** Card / elevated surface */
   surface: '#FFFFFF',
   /** Secondary fill / cancel pill / pressed wash — surfaceAlt */
-  surfaceRaised: '#F5F6FA',
+  surfaceRaised: '#EEF2F6',
   /** Single blue accent — tabs, chips, links, category pills */
-  accent: '#3F5BEA',
+  accent: '#2855E8',
   /** Accent pressed */
-  accentPressed: '#2F49D6',
+  accentPressed: '#1F46C4',
   /** Soft accent wash for selected chip / city pill */
-  accentSoft: '#EEF1FF',
+  accentSoft: '#EAF0FF',
   /** Headline on surface/background */
-  text: '#1A1B1E',
+  text: '#101828',
   /** Supporting body */
-  textSecondary: '#6B6E76',
+  textSecondary: '#667085',
   /** Source / timestamp / muted labels */
-  textMuted: '#6B6E76',
+  textMuted: '#475467',
   /** Text on accent fill */
   textOnAccent: '#FFFFFF',
   /** Overlay text on hero images */
   textOnImage: '#FFFFFF',
   textOnImageMuted: 'rgba(255, 255, 255, 0.85)',
   /** Hairline / chip outline */
-  border: '#ECEDF1',
-  borderSolid: '#ECEDF1',
+  border: '#E4E8EF',
+  borderSolid: '#D8DFE8',
   /** Selected chip fill */
-  chipSelectedBg: '#3F5BEA',
+  chipSelectedBg: '#2855E8',
   chipSelectedText: '#FFFFFF',
   /** Unselected chip */
-  chipInactiveBorder: '#ECEDF1',
-  chipInactiveText: '#6B6E76',
+  chipInactiveBorder: '#DCE2EA',
+  chipInactiveText: '#667085',
   /** Skeleton shimmer base */
-  skeleton: '#E8EAEF',
+  skeleton: '#E9EDF4',
   /** Dark fade under hero overlay text */
   imageFade: '#000000',
   /** Soft card shadow tint */
-  shadow: '#000000',
+  shadow: '#101828',
   /** Destructive / block actions */
   destructive: '#C73535',
   /** Destructive row wash */
   destructiveSoft: '#FCEBEB',
   /** Legacy alias — same as textMuted */
-  muted: '#6B6E76',
+  muted: '#475467',
   /** Scrim behind sheets */
   overlay: 'rgba(0, 0, 0, 0.4)',
 } as const
@@ -58,10 +58,10 @@ export const colors = {
  */
 export const radius = {
   xs: 8,
-  sm: 12,
-  md: 16,
-  lg: 20,
-  xl: 28,
+  sm: 10,
+  md: 14,
+  lg: 18,
+  xl: 24,
   /** Fully pill-shaped controls */
   full: 999,
 } as const
@@ -76,7 +76,7 @@ export const space = {
   xl: 24,
   xxl: 32,
   /** Screen edge inset used by cards / lists */
-  screen: 16,
+  screen: 18,
 } as const
 
 /** Image / media sizing used by cards and heroes. */
@@ -120,8 +120,8 @@ function elevationShadow(
 }
 
 export const shadows = {
-  card: elevationShadow(4, 16, 0.06, 3),
-  tabBar: elevationShadow(6, 16, 0.12, 8),
+  card: elevationShadow(10, 28, 0.08, 4),
+  tabBar: elevationShadow(12, 28, 0.14, 10),
 } as const
 
 /**
@@ -129,22 +129,22 @@ export const shadows = {
  */
 export const typography = {
   /** ~h1 */
-  display: { fontSize: 28, lineHeight: 34, fontWeight: '700' as const },
+  display: { fontSize: 30, lineHeight: 36, fontWeight: '700' as const, letterSpacing: -0.5 },
   /** ~h2 — app title, section titles */
-  section: { fontSize: 22, lineHeight: 28, fontWeight: '700' as const },
+  section: { fontSize: 22, lineHeight: 28, fontWeight: '700' as const, letterSpacing: -0.35 },
   /** ~h3 — hero headline, card section titles */
-  headlineSm: { fontSize: 17, lineHeight: 24, fontWeight: '600' as const },
+  headlineSm: { fontSize: 18, lineHeight: 24, fontWeight: '600' as const, letterSpacing: -0.2 },
   /** Legacy large headline */
-  headline: { fontSize: 22, lineHeight: 28, fontWeight: '700' as const },
+  headline: { fontSize: 21, lineHeight: 28, fontWeight: '700' as const, letterSpacing: -0.35 },
   /** ~body */
-  summary: { fontSize: 15, lineHeight: 22, fontWeight: '400' as const },
-  bodySemibold: { fontSize: 15, lineHeight: 22, fontWeight: '600' as const },
+  summary: { fontSize: 16, lineHeight: 24, fontWeight: '400' as const },
+  bodySemibold: { fontSize: 16, lineHeight: 24, fontWeight: '600' as const },
   /** ~caption */
   meta: { fontSize: 13, lineHeight: 18, fontWeight: '500' as const, letterSpacing: 0.2 },
   /** ~label — chips, badges, uppercase section headers */
   label: { fontSize: 12, lineHeight: 16, fontWeight: '500' as const, letterSpacing: 0.4 },
   chip: { fontSize: 13, lineHeight: 18, fontWeight: '500' as const },
-  button: { fontSize: 15, lineHeight: 20, fontWeight: '600' as const },
+  button: { fontSize: 16, lineHeight: 22, fontWeight: '600' as const },
 } as const
 
 export const CITY_STORAGE_KEY = 'newsfeed.selectedCitySlug'

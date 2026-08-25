@@ -40,7 +40,7 @@ export default function CategoriesScreen() {
         contentContainerStyle={styles.list}
         ListHeaderComponent={
           <VStack px="$4" pt="$2" pb="$4" space="sm">
-            <Text fontSize={16} lineHeight={24} color={colors.textSecondary}>
+            <Text fontSize={14} lineHeight={20} color={colors.textSecondary}>
               Browse by topic. Long-press a category to block it from your feed.
             </Text>
           </VStack>

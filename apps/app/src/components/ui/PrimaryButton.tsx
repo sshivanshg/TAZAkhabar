@@ -101,9 +101,14 @@ const styles = StyleSheet.create({
   base: {
     minHeight: HIT_TARGET,
     paddingHorizontal: space.lg,
-    borderRadius: radius.full,
+    borderRadius: radius.md,
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    elevation: 2,
   },
   fullWidth: {
     alignSelf: 'stretch',
@@ -114,6 +119,7 @@ const styles = StyleSheet.create({
   },
   primaryPressed: {
     backgroundColor: colors.accentPressed,
+    transform: [{ scale: 0.985 }],
   },
   textOnly: {
     backgroundColor: 'transparent',
@@ -122,9 +128,11 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
     borderWidth: 1,
     borderColor: colors.border,
+    shadowOpacity: 0,
+    elevation: 0,
   },
   secondaryPressed: {
-    opacity: 0.7,
+    opacity: 0.78,
   },
   disabled: {
     opacity: 0.5,

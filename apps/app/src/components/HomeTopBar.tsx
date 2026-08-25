@@ -20,7 +20,7 @@ type Props = {
   onSelectLanguage?: (code: ReadingLanguageCode) => void
 }
 
-/** Home top bar — brand + city pill left, language + search right. */
+/** Home top bar — compact editorial brand, city, language, and search. */
 export function HomeTopBar({
   cityTitle,
   onCityPress,
@@ -34,40 +34,60 @@ export function HomeTopBar({
 
   return (
     <View style={[styles.bar, { paddingTop }]}>
-      <View style={styles.left} accessibilityRole="header">
-        <Text
-          fontSize={typography.section.fontSize}
-          lineHeight={typography.section.lineHeight}
-          fontWeight="$bold"
-          color={colors.text}
-          numberOfLines={1}
-        >
-          NewsFeed
-        </Text>
-        {cityTitle ? (
-          <Pressable
-            onPress={onCityPress}
-            accessibilityRole="button"
-            accessibilityLabel={`Change city, currently ${cityTitle}`}
-            hitSlop={4}
-            style={({ pressed }) => [styles.cityPill, pressed ? styles.cityPressed : null]}
+      <View style={styles.topRow}>
+        <View style={styles.left} accessibilityRole="header">
+          <Text
+            fontSize={typography.section.fontSize}
+            lineHeight={typography.section.lineHeight}
+            fontWeight="$bold"
+            color={colors.text}
+            numberOfLines={1}
           >
-            <MapPin size={12} strokeWidth={iconStroke} color={colors.accent} />
-            <Text
-              fontSize={typography.label.fontSize}
-              lineHeight={typography.label.lineHeight}
-              fontWeight="$medium"
-              color={colors.accent}
-              numberOfLines={1}
+            NewsFeed
+          </Text>
+          <Text
+            fontSize={typography.label.fontSize}
+            lineHeight={typography.label.lineHeight}
+            color={colors.textSecondary}
+            numberOfLines={1}
+          >
+            Local stories, clearly ordered
+          </Text>
+          {cityTitle ? (
+            <Pressable
+              onPress={onCityPress}
+              accessibilityRole="button"
+              accessibilityLabel={`Change city, currently ${cityTitle}`}
+              hitSlop={4}
+              style={({ pressed }) => [styles.cityPill, pressed ? styles.pressed : null]}
             >
-              {cityTitle}
-            </Text>
-          </Pressable>
-        ) : null}
+              <MapPin size={12} strokeWidth={iconStroke} color={colors.accent} />
+              <Text
+                fontSize={typography.label.fontSize}
+                lineHeight={typography.label.lineHeight}
+                fontWeight="$medium"
+                color={colors.accent}
+                numberOfLines={1}
+              >
+                {cityTitle}
+              </Text>
+            </Pressable>
+          ) : null}
+        </View>
+
+        <Pressable
+          onPress={onSearchPress}
+          accessibilityRole="button"
+          accessibilityLabel="Search and discover"
+          hitSlop={8}
+          style={({ pressed }) => [styles.searchHit, pressed ? styles.pressed : null]}
+        >
+          <Search size={18} strokeWidth={iconStroke} color={colors.text} />
+        </Pressable>
       </View>
 
-      <View style={styles.right}>
-        {onSelectLanguage ? (
+      {onSelectLanguage ? (
+        <View style={styles.bottomRow}>
           <View style={styles.langRow}>
             {READING_LANGUAGES.map((lang) => {
               const selected = readingLanguage === lang.code
@@ -91,19 +111,8 @@ export function HomeTopBar({
               )
             })}
           </View>
-        ) : null}
-        <Pressable
-          onPress={onSearchPress}
-          accessibilityRole="button"
-          accessibilityLabel="Search and discover"
-          hitSlop={8}
-          style={({ pressed }) => [styles.searchHit, pressed ? styles.searchPressed : null]}
-        >
-          <View style={styles.searchCircle}>
-            <Search size={18} strokeWidth={iconStroke} color={colors.text} />
-          </View>
-        </Pressable>
-      </View>
+        </View>
+      ) : null}
     </View>
   )
 }
@@ -113,36 +122,38 @@ const styles = StyleSheet.create({
     minHeight: HIT_TARGET,
     paddingBottom: space.xs,
     paddingHorizontal: space.screen,
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
+    gap: space.xs,
     backgroundColor: colors.background,
     flexGrow: 0,
     flexShrink: 0,
+  },
+  topRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     gap: space.sm,
   },
   left: {
     flex: 1,
     alignItems: 'flex-start',
     justifyContent: 'center',
-    gap: space.xxs + 2,
-    paddingTop: space.xxs,
+    gap: 2,
+    paddingTop: 2,
   },
-  right: {
+  bottomRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: space.xs,
-    paddingTop: space.xxs,
+    justifyContent: 'flex-start',
   },
   langRow: {
     flexDirection: 'row',
     gap: 6,
+    flexWrap: 'wrap',
   },
   langChip: {
-    minWidth: 36,
+    minWidth: 38,
     minHeight: 32,
-    paddingHorizontal: 8,
-    borderRadius: radius.full,
+    paddingHorizontal: 10,
+    borderRadius: radius.md,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
     backgroundColor: colors.surface,
@@ -157,33 +168,24 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: space.xxs,
-    paddingHorizontal: space.xs + 2,
-    paddingVertical: space.xxs + 2,
-    minHeight: 28,
-    borderRadius: radius.full,
+    paddingHorizontal: space.sm,
+    paddingVertical: 6,
+    minHeight: 32,
+    borderRadius: radius.md,
     backgroundColor: colors.accentSoft,
     maxWidth: '100%',
   },
-  cityPressed: {
-    opacity: 0.85,
-  },
   searchHit: {
-    width: HIT_TARGET,
-    height: HIT_TARGET,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  searchCircle: {
-    width: 36,
-    height: 36,
-    borderRadius: radius.full,
+    width: 40,
+    height: 40,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.surface,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
+    borderRadius: radius.md,
   },
-  searchPressed: {
+  pressed: {
     opacity: 0.85,
   },
 })

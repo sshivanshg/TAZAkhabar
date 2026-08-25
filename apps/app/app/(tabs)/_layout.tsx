@@ -8,8 +8,6 @@ import User from 'lucide-react-native/icons/user'
 import { MotiView } from 'moti'
 import {
   colors,
-  radius,
-  shadows,
   space,
   TAB_BAR_HEIGHT,
 } from '../../src/theme/tokens'
@@ -55,16 +53,16 @@ export default function TabsLayout() {
             // Not absolute — scene layout ends above the bar so content is never covered.
             tabBarStyle: {
               height: TAB_BAR_HEIGHT,
-              marginHorizontal: space.sm,
-              marginBottom: space.xs,
+              marginHorizontal: 0,
+              marginBottom: 0,
               paddingTop: 6,
               paddingBottom: 8,
-              borderRadius: radius.xl,
+              borderRadius: 0,
               backgroundColor: colors.surface,
-              borderTopWidth: 0,
-              borderWidth: StyleSheet.hairlineWidth,
-              borderColor: colors.border,
-              ...shadows.tabBar,
+              borderTopWidth: StyleSheet.hairlineWidth,
+              borderTopColor: colors.border,
+              borderWidth: 0,
+              ...{ shadowOpacity: 0, elevation: 0 },
               ...(Platform.OS === 'web'
                 ? ({ overflow: 'hidden' } as const)
                 : null),
@@ -83,7 +81,7 @@ export default function TabsLayout() {
             tabBarActiveTintColor: colors.accent,
             tabBarInactiveTintColor: colors.textMuted,
             tabBarLabelStyle: {
-              fontSize: 12,
+              fontSize: 11,
               fontWeight: '600',
               letterSpacing: 0.2,
             },

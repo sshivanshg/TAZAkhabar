@@ -65,19 +65,24 @@ const styles = StyleSheet.create({
     minHeight: HIT_TARGET,
     paddingHorizontal: space.md,
     borderWidth: 1,
-    borderRadius: radius.full,
+    borderRadius: radius.md,
     justifyContent: 'center',
     alignItems: 'center',
   },
   selected: {
     borderColor: colors.accent,
     backgroundColor: colors.accent,
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 2,
   },
   unselected: {
     borderColor: colors.border,
-    backgroundColor: 'transparent',
+    backgroundColor: colors.surface,
   },
   pressed: {
-    opacity: 0.9,
+    opacity: 0.96,
   },
 })

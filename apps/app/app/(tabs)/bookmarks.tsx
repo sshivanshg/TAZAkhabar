@@ -14,6 +14,7 @@ import {
 import { ScreenErrorBoundary } from '../../src/components/ScreenErrorBoundary'
 import { TabScreenShell } from '../../src/components/TabScreenShell'
 import type { BottomSheetSection } from '../../src/components/ui/BottomSheet'
+import { EmptyState } from '../../src/components/ui/EmptyState'
 import {
   type BookmarkSnapshot,
   getBookmarks,
@@ -121,14 +122,14 @@ function BookmarksBody() {
         ]}
       >
         <Text
-          fontSize={typography.section.fontSize}
-          lineHeight={typography.section.lineHeight}
+          fontSize={24}
+          lineHeight={30}
           fontWeight="$bold"
           color={colors.text}
         >
           Bookmarks
         </Text>
-        <Text fontSize={15} lineHeight={22} color={colors.textSecondary} mt="$1">
+        <Text fontSize={14} lineHeight={20} color={colors.textSecondary} mt="$1">
           Stories saved on this device
         </Text>
       </View>
@@ -140,28 +141,16 @@ function BookmarksBody() {
           </Text>
         </VStack>
       ) : bookmarks.length === 0 ? (
-        <VStack flex={1} px="$6" justifyContent="center" alignItems="center" space="md">
-          <View style={styles.iconWrap}>
-            <Bookmark size={28} strokeWidth={iconStroke} color={colors.accent} />
-          </View>
-          <Text
-            fontSize={22}
-            lineHeight={30}
-            fontWeight="$bold"
-            color={colors.text}
-            textAlign="center"
-          >
-            No saved stories yet
-          </Text>
-          <Text
-            fontSize={16}
-            lineHeight={24}
-            color={colors.textSecondary}
-            textAlign="center"
-          >
-            Long-press a story or open it and tap Save to bookmark it for later.
-          </Text>
-        </VStack>
+        <EmptyState
+          title="No saved stories yet"
+          message="Long-press a story or open it and tap Save to bookmark it for later."
+          primaryLabel="Browse stories"
+          onPrimary={() => router.replace('/(tabs)')}
+          primaryAccessibilityLabel="Browse stories"
+          secondaryLabel="Change city"
+          onSecondary={() => router.push('/city')}
+          secondaryAccessibilityLabel="Change city"
+        />
       ) : (
         <FlatList
           data={bookmarks}
