@@ -169,7 +169,7 @@ public sealed class ArticlesEndpointTests : IClassFixture<NewsFeedWebApplication
     public async Task GetArticles_DateFilter_UsesCityLocalCalendarDay()
     {
         var client = _factory.CreateSeededClient();
-        var day = new DateOnly(2026, 8, 14);
+        var day = NewsFeed.Api.Services.CityCalendar.TodayLocal().AddDays(-1);
         var (start, end) = NewsFeed.Api.Services.CityCalendar.UtcBoundsForLocalDate(day);
         InsertJhansiArticles(
             Published("On day early UTC", "https://example.com/date-early", start.AddHours(1)),
@@ -177,7 +177,7 @@ public sealed class ArticlesEndpointTests : IClassFixture<NewsFeedWebApplication
             Published("Previous local day", "https://example.com/date-prev", start.AddMinutes(-30)),
             Published("Next local day", "https://example.com/date-next", end.AddMinutes(30)));
 
-        var response = await client.GetAsync("/api/articles?city=jhansi&date=2026-08-14");
+        var response = await client.GetAsync($"/api/articles?city=jhansi&date={day:yyyy-MM-dd}");
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var payload = await response.Content.ReadFromJsonAsync<PagedArticlesResponse>();

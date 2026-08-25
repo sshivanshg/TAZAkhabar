@@ -1,11 +1,29 @@
 # Ingestion
 
 > **Living doc** — update when pipelines, article status on insert, cron, SSE, or intelligence providers change.  
-> **Last verified against:** 2026-08-17 (scrape publishes directly to the public feed)
+> **Last verified against:** 2026-08-25 (expanded city source catalog for daily fill)
 
 ## Purpose
 
 Bring external news into Postgres: RSS, HTML scrape, PDF/image upload, optional Claude intelligence, background image enrichment, and live run events for admin.
+
+## Daily source strategy
+
+The daily feed is filled from a layered source mix rather than a single publisher:
+
+1. **Primary:** official RSS feeds from local or city editions when available.
+2. **Secondary:** official city pages scraped into plain text when RSS is absent or too thin.
+3. **Discovery backfill:** Google News RSS city queries to catch late-breaking items and widen coverage.
+4. **Editorial safety net:** the admin review queue and manual uploads remain available when a city is sparse or a source goes dark.
+
+The seeded pilot catalog currently favors Agra, Jhansi, Kanpur, Lucknow, and Delhi, with a mix of:
+
+- local publisher RSS where it exists,
+- TOI city pages for scrape fallback,
+- Google News RSS search feeds for discovery,
+- and the existing no-AI nightly batch to keep ingestion cheap and repeatable.
+
+Public output still stays conservative: headline, short summary, source attribution, and a link back to the original article. Raw HTML is never stored.
 
 ## Boundaries
 

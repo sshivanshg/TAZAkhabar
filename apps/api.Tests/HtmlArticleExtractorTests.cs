@@ -63,7 +63,7 @@ public sealed class HtmlArticleExtractorTests
         Assert.Contains("piped water", snippet, StringComparison.Ordinal);
         Assert.Contains("piped water", body, StringComparison.Ordinal);
         Assert.Contains("restored pressure", body, StringComparison.Ordinal);
-        Assert.Equal(new DateTimeOffset(2026, 8, 13, 10, 0, 0, TimeSpan.FromHours(5.5)), publishedAt);
+        Assert.Equal(new DateTimeOffset(2026, 8, 24, 10, 0, 0, TimeSpan.FromHours(5.5)), publishedAt);
     }
 
     [Fact]

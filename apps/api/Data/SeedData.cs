@@ -250,6 +250,94 @@ public static class SeedData
             Language = "hi",
             IsActive = true,
         },
+        new()
+        {
+            Id = 21,
+            Name = "Times of India Agra",
+            FeedUrl = "https://timesofindia.indiatimes.com/city/agra",
+            CityId = 1,
+            Type = SourceType.Scrape,
+            Kind = SourceKind.CityEdition,
+            Language = "en",
+            IsActive = true,
+        },
+        new()
+        {
+            Id = 22,
+            Name = "Times of India Delhi",
+            FeedUrl = "https://timesofindia.indiatimes.com/city/delhi",
+            CityId = 5,
+            Type = SourceType.Scrape,
+            Kind = SourceKind.CityEdition,
+            Language = "en",
+            IsActive = true,
+        },
+        new()
+        {
+            Id = 23,
+            Name = "Times of India Kanpur",
+            FeedUrl = "https://timesofindia.indiatimes.com/city/kanpur",
+            CityId = 3,
+            Type = SourceType.Scrape,
+            Kind = SourceKind.CityEdition,
+            Language = "en",
+            IsActive = true,
+        },
+        new()
+        {
+            Id = 24,
+            Name = "Times of India Lucknow",
+            FeedUrl = "https://timesofindia.indiatimes.com/city/lucknow",
+            CityId = 4,
+            Type = SourceType.Scrape,
+            Kind = SourceKind.CityEdition,
+            Language = "en",
+            IsActive = true,
+        },
+        new()
+        {
+            Id = 25,
+            Name = "Google News Agra",
+            FeedUrl = "https://news.google.com/rss/search?q=Agra&hl=hi-IN&gl=IN&ceid=IN:hi",
+            CityId = 1,
+            Type = SourceType.Rss,
+            Kind = SourceKind.CityEdition,
+            Language = "hi",
+            IsActive = true,
+        },
+        new()
+        {
+            Id = 26,
+            Name = "Google News Kanpur",
+            FeedUrl = "https://news.google.com/rss/search?q=Kanpur&hl=hi-IN&gl=IN&ceid=IN:hi",
+            CityId = 3,
+            Type = SourceType.Rss,
+            Kind = SourceKind.CityEdition,
+            Language = "hi",
+            IsActive = true,
+        },
+        new()
+        {
+            Id = 27,
+            Name = "Google News Lucknow",
+            FeedUrl = "https://news.google.com/rss/search?q=Lucknow&hl=hi-IN&gl=IN&ceid=IN:hi",
+            CityId = 4,
+            Type = SourceType.Rss,
+            Kind = SourceKind.CityEdition,
+            Language = "hi",
+            IsActive = true,
+        },
+        new()
+        {
+            Id = 28,
+            Name = "Google News Delhi NCR",
+            FeedUrl = "https://news.google.com/rss/search?q=Delhi%20OR%20Gurugram%20OR%20Noida%20OR%20NCR&hl=hi-IN&gl=IN&ceid=IN:hi",
+            CityId = 5,
+            Type = SourceType.Rss,
+            Kind = SourceKind.CityEdition,
+            Language = "hi",
+            IsActive = true,
+        },
     ];
 
     public static readonly Article[] Articles = BuildArticles();
