@@ -1,7 +1,7 @@
 # Reader app
 
 > **Living doc** — update when Expo routes, city/feed/share behavior, or desktop web layer change.  
-> **Last verified against:** 2026-08-15 (article pager momentum clamp)
+> **Last verified against:** 2026-08-25 (article pager nested scroll fix)
 
 ## Purpose
 
@@ -120,6 +120,7 @@ Manual verification still required before claiming a comprehensive a11y sweep is
 - No login — city preference is device-local only.
 - List payloads omit `body`; the swipe card shows full plain-text `body` when `GET /api/articles/{id}` returns it, otherwise the summary. For translated reads, the API suppresses original-language `body` so the card shows translated headline/summary rather than mixing languages.
 - Article pager scroll settling clamps each gesture to one adjacent story so fast wheel/trackpad/touch momentum cannot skip multiple pages.
+- Article reader body scroll uses a shrinkable flex column (`minHeight: 0`) and a nested-scroll pager so the article text can scroll inside the card on web and Android.
 
 ## Related docs
 

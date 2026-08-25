@@ -545,6 +545,7 @@ function ArticlePagerBody() {
         pagingEnabled
         decelerationRate="fast"
         disableIntervalMomentum
+        nestedScrollEnabled
         bounces={false}
         overScrollMode="never"
         showsVerticalScrollIndicator={false}

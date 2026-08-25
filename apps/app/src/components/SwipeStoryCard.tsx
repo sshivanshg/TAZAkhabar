@@ -278,9 +278,11 @@ const styles = StyleSheet.create({
   },
   body: {
     flex: 1,
+    minHeight: 0,
   },
   readerPanel: {
     flex: 1,
+    minHeight: 0,
     marginTop: 12,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,

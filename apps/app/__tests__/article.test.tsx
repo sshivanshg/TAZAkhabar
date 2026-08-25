@@ -144,6 +144,7 @@ describe('ArticleScreen', () => {
 
     expect(pager.props.pagingEnabled).toBe(true)
     expect(pager.props.disableIntervalMomentum).toBe(true)
+    expect(pager.props.nestedScrollEnabled).toBe(true)
     expect(pager.props.bounces).toBe(false)
     expect(pager.props.overScrollMode).toBe('never')
     expect(pager.props.scrollEventThrottle).toBe(16)
