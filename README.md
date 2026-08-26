@@ -53,11 +53,69 @@ pnpm install
 pnpm dev:web
 ```
 
-- Expo web: http://localhost:8081 (port may vary; check terminal)
+- Expo web: http://localhost:19006 (hosted API-compatible local dev origin)
 - API health: http://localhost:8080/api/health
 - OpenAPI: http://localhost:8080/openapi/v1.json
 
 Native later: `pnpm --filter @newsfeed/app ios` / `android` (same app).
+
+## Build an Android APK
+
+Use an APK when you want to install a test build directly on an Android phone or emulator. The `preview` build profile is already configured in [`apps/app/eas.json`](apps/app/eas.json) for this purpose. The `production` profile generates an AAB for Google Play instead.
+
+1. Create an [Expo account](https://expo.dev/signup), then install dependencies and sign in from the Expo app directory:
+
+   ```bash
+   pnpm install
+   cd apps/app
+   pnpm dlx eas-cli login
+   pnpm dlx eas-cli init
+   ```
+
+   `eas init` creates or links the Expo project and writes its non-secret project ID to `app.json`. Commit that change when this is the shared project for the repository.
+
+2. Point the build at a deployed, publicly reachable API. Do not use `http://localhost:8080`: that address refers to the phone itself, not your development machine. Replace the example URL with the staging or production API URL:
+
+   ```bash
+   pnpm dlx eas-cli env:set \
+     --name EXPO_PUBLIC_API_BASE_URL \
+     --value https://api.example.com \
+     --environment preview \
+     --visibility plaintext
+   pnpm dlx eas-cli env:set \
+     --name EXPO_PUBLIC_APP_ENV \
+     --value staging \
+     --environment preview \
+     --visibility plaintext
+   ```
+
+   `EXPO_PUBLIC_*` values are bundled into the app, so never put secrets in them.
+
+3. Start the cloud build. On the first run, EAS may ask to create Android signing credentials; accept the prompts for a new project.
+
+   ```bash
+   pnpm dlx eas-cli build --platform android --profile preview
+   ```
+
+4. When the build finishes, open the URL printed by EAS, download the `.apk`, and install it on the Android device. Android may ask you to allow installs from the browser or file manager you used. Alternatively, with USB debugging enabled:
+
+   ```bash
+   adb install path/to/newsfeed.apk
+   ```
+
+To install the latest EAS build on a running Android emulator, use:
+
+```bash
+cd apps/app
+pnpm dlx eas-cli build:run --platform android --latest
+```
+
+For a Google Play release, build an AAB instead:
+
+```bash
+cd apps/app
+pnpm dlx eas-cli build --platform android --profile production
+```
 
 ### Mock-data flow (no login)
 

@@ -12,7 +12,7 @@ Light shell (`#FAFAFA`) with a single blue accent (`#1D7BFF`). No auth — pick 
 ```bash
 pnpm install
 cp apps/app/.env.example apps/app/.env
-# Set EXPO_PUBLIC_API_BASE_URL (default local: http://localhost:8080)
+# The default uses the hosted API, so no local backend, database, or Docker is needed.
 pnpm dev:web
 pnpm build:web
 
@@ -21,10 +21,17 @@ pnpm --filter @newsfeed/app ios
 pnpm --filter @newsfeed/app android
 ```
 
+The web dev server runs at `http://localhost:19006`, an origin allowlisted by
+the hosted API.
+
 | Variable | Purpose |
 |----------|---------|
 | `EXPO_PUBLIC_API_BASE_URL` | API origin (no trailing slash), e.g. `http://localhost:8080` |
 | `EXPO_PUBLIC_APP_ENV` | `local` / `staging` / `production` |
+
+When working on the API itself, temporarily set the local `.env` to
+`EXPO_PUBLIC_API_BASE_URL=http://localhost:8080` and
+`EXPO_PUBLIC_APP_ENV=local`, then restart Expo. Do not commit a local override.
 
 ## PWA / web export
 

@@ -1,7 +1,7 @@
 # Reader app
 
 > **Living doc** — update when Expo routes, city/feed/share behavior, or desktop web layer change.  
-> **Last verified against:** 2026-08-25 (article pager nested scroll fix)
+> **Last verified against:** 2026-08-26 (hosted API is the default local reader configuration)
 
 ## Purpose
 
@@ -84,6 +84,7 @@ API helpers used: `getHealth`, `getCities`, `getArticles`, `getArticleDates`, `g
 ## Key files
 
 - `apps/app/package.json`, `app.json` / Expo config
+- `apps/app/eas.json` — EAS `preview` APK and production AAB profiles
 - `apps/app/src/api/client.ts`
 - `apps/app/app/**`
 - `apps/app/.env.example`
@@ -95,8 +96,16 @@ API helpers used: `getHealth`, `getCities`, `getArticles`, `getArticleDates`, `g
 | Env | `EXPO_PUBLIC_API_BASE_URL`, `EXPO_PUBLIC_APP_ENV` |
 | Deploy artifact | `pnpm build:web` → `apps/app/dist` |
 | Bundle report | `pnpm --filter @newsfeed/app bundle:report` |
+| Android test binary | EAS `preview` profile → internal-distribution APK |
+| Android Play binary | EAS `production` profile → AAB |
 | Pages project | default `newsfeed-web` |
 | Auth | None for MVP |
+
+For ordinary reader UI development, `apps/app/.env.example` targets the hosted
+Render API. This avoids requiring a local .NET API, Postgres, or Docker. API
+work can opt into `http://localhost:8080` in the ignored local `.env`, followed
+by an Expo restart. The `web` script uses port `19006`, which is allowlisted by
+the hosted API for browser development.
 
 ## Frontend quality baselines
 
