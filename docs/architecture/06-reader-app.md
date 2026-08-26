@@ -1,7 +1,7 @@
 # Reader app
 
 > **Living doc** — update when Expo routes, city/feed/share behavior, or desktop web layer change.  
-> **Last verified against:** 2026-08-26 (hosted API is the default local reader configuration)
+> **Last verified against:** 2026-08-26 (city picker rows, search, and selected-state redesign)
 
 ## Purpose
 
@@ -33,7 +33,7 @@ flowchart LR
 | File | Role |
 |------|------|
 | `index.tsx` | Boot: stored city → tabs else `/city` |
-| `city.tsx` | City picker |
+| `city.tsx` | City picker (search, selected row, onboarding vs change-city copy) |
 | `(tabs)/index.tsx` | Home feed |
 | `(tabs)/search.tsx` | Discover / search |
 | `(tabs)/bookmarks.tsx` | Local bookmarks |
@@ -48,7 +48,9 @@ flowchart LR
 |--------|------|
 | `src/api/client.ts` | Typed API calls |
 | `src/api/useAsyncResource.ts` | Shared async lifecycle hook for ordinary server-state reads |
-| `src/storage/cityPreference.ts` | Persisted city |
+| `src/storage/cityPreference.ts` | Persisted city (`AsyncStorage`; device-local, no account) |
+| `src/components/CityListItem.tsx` | Tappable city row + list skeleton |
+| `src/components/CitySearch.tsx` | Live city/state filter field |
 | `src/utils/shareToWhatsApp.ts` | Share deep link / intent |
 | `src/components/desktop/*` | Desktop shell / sidebar / hero row |
 | `src/storage/viewSession.ts` | Anonymous view sessions for trending |

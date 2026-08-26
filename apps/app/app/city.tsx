@@ -1,107 +1,310 @@
-import { useCallback, useEffect, useState } from 'react'
-import { FlatList } from 'react-native'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
-import { Box, Text, VStack } from '@gluestack-ui/themed'
+import { Text } from '@gluestack-ui/themed'
 import { MotiView } from 'moti'
+import ArrowLeft from 'lucide-react-native/icons/arrow-left'
 import type { CityResponse } from '@newsfeed/shared-types'
 import { apiClient } from '../src/api/client'
-import { CityListSkeleton, CityRow } from '../src/components/CityRow'
+import { useAsyncResource } from '../src/api/useAsyncResource'
+import { CityListItem, CityListSkeleton } from '../src/components/CityListItem'
+import { CitySearch, filterCities } from '../src/components/CitySearch'
 import { ErrorState } from '../src/components/ui/ErrorState'
-import { setStoredCitySlug } from '../src/storage/cityPreference'
-import { colors, radius } from '../src/theme/tokens'
+import { getStoredCitySlug, setStoredCitySlug } from '../src/storage/cityPreference'
+import { colors, HIT_TARGET, radius, space, typography } from '../src/theme/tokens'
+import { iconStroke } from '../src/theme/categoryIcons'
+
+const EMPTY_CITIES: CityResponse[] = []
+const CONTENT_MAX = 560
+const TEST_CITY_SLUG = 'emptyville'
+
+function isSelectableCity(city: CityResponse): boolean {
+  return Boolean(city.slug && city.slug !== TEST_CITY_SLUG)
+}
 
 export default function CityPickerScreen() {
   const router = useRouter()
-  const [cities, setCities] = useState<CityResponse[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const insets = useSafeAreaInsets()
+  const canGoBack = router.canGoBack()
+  const [query, setQuery] = useState('')
+  const [storedSlug, setStoredSlug] = useState<string | null>(null)
+  const [savingSlug, setSavingSlug] = useState<string | null>(null)
 
-  const load = useCallback(async () => {
-    setLoading(true)
-    setError(null)
-    try {
-      const result = await apiClient.getCities()
-      // Hide test-only empty city from the picker
-      setCities(result.filter((c) => c.slug && c.slug !== 'emptyville'))
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not load cities')
-      setCities([])
-    } finally {
-      setLoading(false)
+  const citiesResource = useAsyncResource(
+    () => apiClient.getCities().then((result) => result.filter(isSelectableCity)),
+    [],
+    { initialData: EMPTY_CITIES },
+  )
+
+  useEffect(() => {
+    let cancelled = false
+    void getStoredCitySlug().then((slug) => {
+      if (!cancelled) {
+        setStoredSlug(slug)
+      }
+    })
+    return () => {
+      cancelled = true
     }
   }, [])
 
-  useEffect(() => {
-    void load()
-  }, [load])
+  const isChangingCity = Boolean(storedSlug)
+  const showBack = canGoBack && isChangingCity
+  const cities = citiesResource.data
+  const matches = useMemo(() => filterCities(cities, query), [cities, query])
+  const searching = query.trim().length > 0
 
-  const onSelect = async (city: CityResponse) => {
-    if (!city.slug) {
-      return
-    }
-    await setStoredCitySlug(city.slug)
-    router.replace({ pathname: '/(tabs)', params: { city: city.slug } })
-  }
+  const selectedMatch = useMemo(
+    () => (storedSlug ? matches.find((city) => city.slug === storedSlug) : undefined),
+    [matches, storedSlug],
+  )
+  const otherMatches = useMemo(
+    () => (storedSlug ? matches.filter((city) => city.slug !== storedSlug) : matches),
+    [matches, storedSlug],
+  )
+  const showYourCity = Boolean(!searching && selectedMatch)
+
+  const onSelect = useCallback(
+    async (city: CityResponse) => {
+      if (!city.slug || savingSlug) {
+        return
+      }
+      setSavingSlug(city.slug)
+      try {
+        await setStoredCitySlug(city.slug)
+        router.replace({ pathname: '/(tabs)', params: { city: city.slug } })
+      } catch {
+        setSavingSlug(null)
+      }
+    },
+    [router, savingSlug],
+  )
+
+  const heading = isChangingCity ? 'Change city' : 'Choose your city'
+  const description = isChangingCity
+    ? "Choose which city's local news appears in your feed."
+    : "We'll personalize your local news feed around this city. You can change this anytime from Profile."
+
+  const topPad = Math.max(insets.top, space.xs) + space.lg
+  const bottomPad = Math.max(insets.bottom, space.sm) + space.xl
 
   return (
     <MotiView
-      from={{ opacity: 0, translateY: 12 }}
+      from={{ opacity: 0, translateY: 8 }}
       animate={{ opacity: 1, translateY: 0 }}
-      transition={{ type: 'timing', duration: 240 }}
-      style={{ flex: 1, backgroundColor: colors.background }}
+      transition={{ type: 'timing', duration: 200 }}
+      style={styles.root}
     >
-      <Box flex={1} bg={colors.background}>
-        <VStack px="$4" pt="$4" pb="$2" space="sm">
-          <Text fontSize={24} lineHeight={30} fontWeight="$bold" color={colors.text}>
-            NewsFeed
-          </Text>
-          <Text fontSize={15} lineHeight={22} color={colors.textSecondary}>
-            Pick your city to see local news summaries. You can change this anytime from Profile.
-          </Text>
-        </VStack>
+      <ScrollView
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+        contentContainerStyle={[
+          styles.content,
+          {
+            paddingTop: topPad,
+            paddingBottom: bottomPad,
+          },
+        ]}
+      >
+        {showBack ? (
+          <Pressable
+            onPress={() => router.back()}
+            accessibilityRole="button"
+            accessibilityLabel="Go back"
+            hitSlop={4}
+            style={({ pressed }) => [styles.backBtn, pressed ? styles.backPressed : null]}
+          >
+            <ArrowLeft size={22} strokeWidth={iconStroke} color={colors.text} />
+          </Pressable>
+        ) : null}
 
-        {loading ? <CityListSkeleton /> : null}
+        <Text
+          fontSize={13}
+          lineHeight={18}
+          fontWeight="$semibold"
+          color={colors.textMuted}
+          letterSpacing={0.4}
+          accessibilityRole="header"
+        >
+          NewsFeed
+        </Text>
+        <Text
+          fontSize={typography.section.fontSize}
+          lineHeight={typography.section.lineHeight}
+          fontWeight="$bold"
+          color={colors.text}
+          mt="$2"
+          accessibilityRole="header"
+        >
+          {heading}
+        </Text>
+        <Text
+          fontSize={16}
+          lineHeight={24}
+          color={colors.textSecondary}
+          mt="$2"
+          style={styles.description}
+        >
+          {description}
+        </Text>
 
-        {!loading && error ? (
-          <Box flex={1} px="$4" py="$8">
+        {citiesResource.loading ? <CityListSkeleton /> : null}
+
+        {!citiesResource.loading && citiesResource.error ? (
+          <View style={styles.errorWrap}>
             <ErrorState
-              title="We could not load cities."
-              message={`Check your connection and try again. ${error ?? 'We need this list before we can personalize your feed.'}`}
-              onRetry={() => void load()}
-              retryLabel="Try again"
+              title="Couldn't load cities"
+              message="Check your connection and try again."
+              onRetry={() => citiesResource.reload()}
+              retryLabel="Retry"
               retryAccessibilityLabel="Retry loading cities"
             />
-            {error ? (
-              <Text
-                fontSize={14}
-                lineHeight={20}
-                color={colors.textMuted}
-                mt="$3"
-                textAlign="center"
-              >
-                {error}
-              </Text>
-            ) : null}
-          </Box>
+          </View>
         ) : null}
 
-        {!loading && !error ? (
-          <FlatList
-            data={cities}
-            keyExtractor={(item) => String(item.id ?? item.slug)}
-            renderItem={({ item, index }) => (
-              <CityRow city={item} index={index} onSelect={(c) => void onSelect(c)} />
-            )}
-            ListEmptyComponent={
-              <Box px="$4" py="$8">
-                <Text fontSize={16} lineHeight={24} color={colors.textSecondary}>
-                  No cities are available yet. Please try again later.
+        {!citiesResource.loading && !citiesResource.error ? (
+          <View style={styles.body}>
+            <CitySearch value={query} onChange={setQuery} />
+
+            {matches.length === 0 ? (
+              <View style={styles.emptySearch} accessibilityRole="text">
+                <Text
+                  fontSize={18}
+                  lineHeight={24}
+                  fontWeight="$semibold"
+                  color={colors.text}
+                >
+                  {cities.length === 0 ? 'No cities available yet.' : 'No cities found'}
                 </Text>
-              </Box>
-            }
-          />
+                <Text
+                  fontSize={16}
+                  lineHeight={24}
+                  color={colors.textSecondary}
+                  mt="$1"
+                >
+                  {cities.length === 0
+                    ? 'Please try again later.'
+                    : 'Try a different city name.'}
+                </Text>
+              </View>
+            ) : (
+              <>
+                {showYourCity && selectedMatch ? (
+                  <View style={styles.section}>
+                    <Text
+                      fontSize={15}
+                      lineHeight={20}
+                      fontWeight="$semibold"
+                      color={colors.textMuted}
+                      mb="$2"
+                    >
+                      Your city
+                    </Text>
+                    <CityListItem
+                      city={selectedMatch}
+                      selected
+                      saving={savingSlug === selectedMatch.slug}
+                      disabled={Boolean(savingSlug)}
+                      statusLabel={
+                        savingSlug === selectedMatch.slug
+                          ? `Setting up your ${selectedMatch.name ?? 'city'} feed…`
+                          : 'Current city'
+                      }
+                      onSelect={(city) => void onSelect(city)}
+                    />
+                  </View>
+                ) : null}
+
+                {otherMatches.length > 0 ? (
+                  <View style={styles.section}>
+                    <Text
+                      fontSize={15}
+                      lineHeight={20}
+                      fontWeight="$semibold"
+                      color={colors.textMuted}
+                      mb="$2"
+                    >
+                      {showYourCity ? 'Other cities' : 'Available cities'}
+                    </Text>
+                    <View style={styles.list}>
+                      {otherMatches.map((city) => {
+                        const selected = city.slug === storedSlug
+                        const saving = city.slug === savingSlug
+                        return (
+                          <CityListItem
+                            key={String(city.id ?? city.slug)}
+                            city={city}
+                            selected={selected}
+                            saving={saving}
+                            disabled={Boolean(savingSlug)}
+                            statusLabel={
+                              saving
+                                ? `Setting up your ${city.name ?? 'city'} feed…`
+                                : selected
+                                  ? 'Selected'
+                                  : undefined
+                            }
+                            onSelect={(next) => void onSelect(next)}
+                          />
+                        )
+                      })}
+                    </View>
+                  </View>
+                ) : null}
+              </>
+            )}
+          </View>
         ) : null}
-      </Box>
+      </ScrollView>
     </MotiView>
   )
 }
+
+const styles = StyleSheet.create({
+  root: {
+    flex: 1,
+    backgroundColor: colors.background,
+    ...(Platform.OS === 'web' ? { minHeight: '100dvh' as unknown as number } : {}),
+  },
+  content: {
+    width: '100%',
+    maxWidth: CONTENT_MAX,
+    alignSelf: 'center',
+    paddingHorizontal: space.xl,
+    flexGrow: 1,
+  },
+  backBtn: {
+    width: HIT_TARGET,
+    height: HIT_TARGET,
+    marginLeft: -space.xs,
+    marginBottom: space.xs,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: radius.full,
+  },
+  backPressed: {
+    backgroundColor: colors.surfaceRaised,
+  },
+  description: {
+    marginBottom: space.xl,
+    maxWidth: 480,
+  },
+  body: {
+    gap: space.sm,
+  },
+  section: {
+    marginTop: space.lg,
+  },
+  list: {
+    gap: 10,
+  },
+  emptySearch: {
+    marginTop: space.xl,
+    paddingVertical: space.lg,
+  },
+  errorWrap: {
+    flexGrow: 1,
+    minHeight: 280,
+  },
+})
