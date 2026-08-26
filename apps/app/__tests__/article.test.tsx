@@ -123,11 +123,13 @@ describe('ArticleScreen', () => {
     expect(mockGetArticle).toHaveBeenCalled()
   })
 
-  it('shows source attribution and a read-original action', async () => {
+  it('shows a single read-original action per story', async () => {
     renderArticle()
 
     expect(await screen.findAllByText('Read original article ↗')).toHaveLength(2)
-    expect(screen.getAllByText('Source: City Times ↗').length).toBeGreaterThan(0)
+    expect(screen.queryByText(/Source: City Times/)).toBeNull()
+    expect(screen.queryByText('View full article ↗')).toBeNull()
+    expect(screen.queryByText('Read Source')).toBeNull()
     expect(screen.getAllByText(/reporting published by City Times/).length).toBeGreaterThan(0)
     expect(screen.queryByText(/Source: undefined/)).toBeNull()
   })
@@ -185,6 +187,6 @@ describe('ArticleScreen', () => {
 
     expect(await screen.findByText('Fetched headline')).toBeTruthy()
     expect(screen.queryByText('Read original article ↗')).toBeNull()
-    expect(screen.getByText('Source: City Desk')).toBeTruthy()
+    expect(screen.getAllByText(/City Desk/).length).toBeGreaterThan(0)
   })
 })

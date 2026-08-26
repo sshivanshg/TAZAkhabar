@@ -502,7 +502,6 @@ function ArticleFeedBody() {
   const storyTotal = Math.max(total, stack.length)
   const storyPosition = Math.min(storyTotal, feedStart + activeLocalIndex + 1)
   const cityLabel = formatLocationLabel(citySlug)
-  const activeSource = isHttpsUrl(activeArticle?.sourceUrl)
   const listBottomPad =
     (compact ? ARTICLE_BOTTOM_BAR_HEIGHT + Math.max(insets.bottom, 8) : 24) + 28
 
@@ -611,7 +610,6 @@ function ArticleFeedBody() {
         <ArticleBottomBar
           visible={showBottomBar}
           bookmarked={activeArticle?.id != null && bookmarkedIds.has(activeArticle.id)}
-          hasSource={activeSource}
           onShare={() => {
             if (activeArticle) {
               void onShare(activeArticle)
@@ -622,11 +620,6 @@ function ArticleFeedBody() {
               void onToggleBookmark(activeArticle)
             }
           }}
-          onReadSource={
-            activeArticle
-              ? () => onReadSource(activeArticle, feedStart + activeLocalIndex)
-              : undefined
-          }
         />
       ) : null}
 
