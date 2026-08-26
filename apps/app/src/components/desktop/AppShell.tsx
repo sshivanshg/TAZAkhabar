@@ -12,6 +12,7 @@ type Props = {
 /**
  * Root desktop chrome switch. Compact (mobile/tablet) returns children
  * with no extra layout wrapper so phone-width flex behavior is unchanged.
+ * Desktop/wide keeps the sidebar + centered content rail.
  */
 export function AppShell({ children, sidebar }: Props): ReactNode {
   const bp = useBreakpoint()

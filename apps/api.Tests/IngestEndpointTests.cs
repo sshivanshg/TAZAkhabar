@@ -188,8 +188,14 @@ public sealed class IngestEndpointTests : IClassFixture<NewsFeedWebApplicationFa
             var article = await db.Articles.SingleAsync(a => a.SourceUrl == storyUrl);
             articleId = article.Id;
             Assert.Equal(ArticleStatus.Published, article.Status);
+            Assert.Equal("Rewritten: Jhansi water supply restored", article.Headline);
+            Assert.Equal("Original digest summary for Jhansi water supply restored.", article.Summary);
+            Assert.Contains("Original digest body for Jhansi water supply restored.", article.Body, StringComparison.Ordinal);
             Assert.Equal(SourceType.Scrape, (await db.Sources.SingleAsync(s => s.Id == article.SourceId)).Type);
         }
+
+        var rewriter = (FakeArticleRewriter)factory.Services.GetRequiredService<IArticleRewriter>();
+        Assert.Equal(1, rewriter.RewriteCallCount);
 
         var publicBefore = await client.GetFromJsonAsync<PagedArticlesResponse>("/api/articles?city=jhansi");
         Assert.Contains(publicBefore!.Items, a => a.Id == articleId);
@@ -306,10 +312,16 @@ public sealed class IngestEndpointTests : IClassFixture<NewsFeedWebApplicationFa
         var fake = (FakeArticleIntelligence)factory.Services.GetRequiredService<IArticleIntelligence>();
         Assert.Equal(0, fake.SummarizeCallCount);
 
+        var rewriter = (FakeArticleRewriter)factory.Services.GetRequiredService<IArticleRewriter>();
+        Assert.Equal(0, rewriter.RewriteCallCount);
+
         using var verifyScope = factory.Services.CreateScope();
         var verifyDb = verifyScope.ServiceProvider.GetRequiredService<AppDbContext>();
         var rssArticle = await verifyDb.Articles.SingleAsync(a => a.SourceUrl.Contains("daily-rss"));
         Assert.Equal("Feed supplied summary", rssArticle.Summary);
+        var scrapeArticle = await verifyDb.Articles.SingleAsync(a => a.SourceUrl == storyUrl);
+        Assert.Equal("Jhansi water supply restored", scrapeArticle.Headline);
+        Assert.Contains("piped water", scrapeArticle.Summary, StringComparison.Ordinal);
     }
 
     [Fact]

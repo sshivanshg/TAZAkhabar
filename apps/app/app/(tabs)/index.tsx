@@ -18,7 +18,6 @@ import {
 } from '../../src/components/ui/BottomSheet'
 import { BreakingNewsCarousel } from '../../src/components/BreakingNewsCarousel'
 import { CategoryChipRow } from '../../src/components/CategoryChips'
-import { DateStrip } from '../../src/components/DateStrip'
 import {
   CompactArticleCard,
   CompactArticleCardSkeleton,
@@ -67,7 +66,6 @@ import {
 import { useTabBarClearance } from '../../src/theme/useTabBarClearance'
 import { isDesktopLayout, useBreakpoint } from '../../src/hooks/useBreakpoint'
 import { articleRouteParams } from '../../src/utils/articleRouteParams'
-import { todayCityIso } from '../../src/utils/cityCalendar'
 import { shareArticleToWhatsApp } from '../../src/utils/shareToWhatsApp'
 
 type ListRow =
@@ -90,7 +88,6 @@ type WebHoverHandlers = {
 }
 
 const EMPTY_CITIES: CityResponse[] = []
-const EMPTY_DATES: string[] = []
 const EMPTY_ARTICLES: ArticleResponse[] = []
 
 function ArticleCardSlot({
@@ -151,8 +148,6 @@ function HomeFeedBody() {
   const [category, setCategory] = useState<FeedCategory>(() =>
     isFeedCategory(params.category) ? params.category : 'All',
   )
-  /** Session-only edition date (city-local YYYY-MM-DD). Fresh launch always starts on today. */
-  const [selectedDate, setSelectedDate] = useState(() => todayCityIso())
   const [trendingEpoch, setTrendingEpoch] = useState(0)
   const [articles, setArticles] = useState<ArticleResponse[]>([])
   const [total, setTotal] = useState(0)
@@ -217,8 +212,6 @@ function HomeFeedBody() {
     }
   }, [citySlug, params.city, router])
 
-  const viewingToday = selectedDate === todayCityIso()
-
   const cityList = useAsyncResource(
     () => apiClient.getCities(),
     [citySlug],
@@ -237,24 +230,6 @@ function HomeFeedBody() {
     setCityMeta(cityMetaFromQuery)
   }, [cityMetaFromQuery])
 
-  const articleDates = useAsyncResource(
-    async () => {
-      if (!citySlug) {
-        return EMPTY_DATES
-      }
-      const res = await apiClient.getArticleDates({
-        city: citySlug,
-        category: category === 'All' ? undefined : category,
-      })
-      return res.dates ?? EMPTY_DATES
-    },
-    [citySlug, category],
-    {
-      enabled: Boolean(citySlug),
-      initialData: EMPTY_DATES,
-    },
-  )
-
   const trendingResource = useAsyncResource(
     async () => {
       if (!citySlug) {
@@ -267,9 +242,9 @@ function HomeFeedBody() {
       })
       return res.items ?? EMPTY_ARTICLES
     },
-    [citySlug, preferredLanguage, languageReady, viewingToday, trendingEpoch],
+    [citySlug, preferredLanguage, languageReady, trendingEpoch],
     {
-      enabled: Boolean(citySlug && languageReady && viewingToday),
+      enabled: Boolean(citySlug && languageReady),
       initialData: EMPTY_ARTICLES,
     },
   )
@@ -304,13 +279,10 @@ function HomeFeedBody() {
 
       try {
         const offset = mode === 'append' ? offsetRef.current : 0
-        const isToday = selectedDate === todayCityIso()
         const result = await apiClient.getArticles({
           city: citySlug,
           category: category === 'All' ? undefined : category,
           lang: preferredLanguage,
-          // Past editions filter by city-local day; "Today" keeps newest-first default.
-          date: isToday ? undefined : selectedDate,
           offset,
           limit: PAGE_SIZE,
         })
@@ -350,14 +322,14 @@ function HomeFeedBody() {
         }
       }
     },
-    [citySlug, category, preferredLanguage, selectedDate],
+    [citySlug, category, preferredLanguage],
   )
 
   useEffect(() => {
     if (citySlug && languageReady) {
       void loadPage('replace')
     }
-  }, [citySlug, category, preferredLanguage, languageReady, selectedDate, loadPage])
+  }, [citySlug, category, preferredLanguage, languageReady, loadPage])
 
   const cityTitle = cityMeta?.name ?? citySlug ?? 'Your city'
   const visibleArticles = useMemo(
@@ -365,8 +337,8 @@ function HomeFeedBody() {
     [articles, prefs],
   )
   const visibleTrending = useMemo(
-    () => (viewingToday ? prefs.filterArticles(trendingResource.data) : []),
-    [trendingResource.data, prefs, viewingToday],
+    () => prefs.filterArticles(trendingResource.data),
+    [trendingResource.data, prefs],
   )
   const trendingIds = useMemo(
     () => new Set(visibleTrending.map((a) => a.id).filter((id): id is number => id != null)),
@@ -382,14 +354,12 @@ function HomeFeedBody() {
   )
 
   const breaking = useMemo(
-    () => (viewingToday ? visibleArticles.slice(0, BREAKING_NEWS_COUNT) : []),
-    [visibleArticles, viewingToday],
+    () => visibleArticles.slice(0, BREAKING_NEWS_COUNT),
+    [visibleArticles],
   )
-  const listStart = viewingToday
-    ? desktop
-      ? desktopHeroVisibleCount(estimateDesktopRailWidth(windowWidth))
-      : BREAKING_NEWS_COUNT
-    : 0
+  const listStart = desktop
+    ? desktopHeroVisibleCount(estimateDesktopRailWidth(windowWidth))
+    : BREAKING_NEWS_COUNT
   const recommendations = useMemo(
     () =>
       visibleArticles
@@ -442,11 +412,9 @@ function HomeFeedBody() {
 
   const openArticle = useCallback(
     (article: ArticleResponse) => {
-      const isToday = selectedDate === todayCityIso()
       const params = articleRouteParams(article, {
         city: citySlug ?? undefined,
         feedCategory: category === 'All' ? undefined : category,
-        date: isToday ? undefined : selectedDate,
         lang: preferredLanguage,
       })
       if (!params) {
@@ -457,7 +425,7 @@ function HomeFeedBody() {
         params,
       })
     },
-    [router, citySlug, category, selectedDate, preferredLanguage],
+    [router, citySlug, category, preferredLanguage],
   )
 
   const goDiscover = useCallback(() => {
@@ -649,11 +617,6 @@ function HomeFeedBody() {
             }
           }}
         />
-          <DateStrip
-            selectedDate={selectedDate}
-          availableDates={articleDates.data}
-            onSelectDate={setSelectedDate}
-          />
 
         {(loading && !showContent) || !prefs.ready ? (
           <Box pt="$2" px="$4">
@@ -698,7 +661,7 @@ function HomeFeedBody() {
                     return (
                       <View style={styles.sectionBlock}>
                         <SectionHeader
-                          title="Breaking News"
+                          title="Top stories"
                           actionLabel="View all"
                           onAction={goDiscover}
                         />
@@ -713,7 +676,7 @@ function HomeFeedBody() {
                   if (item.kind === 'trending') {
                     return (
                       <View style={styles.sectionBlock}>
-                        <SectionHeader title={`Trending in ${cityTitle}`} />
+                        <SectionHeader title="Picks for you" />
                         {visibleTrending.map((article, index) => (
                           <View key={String(article.id ?? index)} style={styles.trendingRow}>
                             <Text
@@ -738,7 +701,7 @@ function HomeFeedBody() {
                     return (
                       <View style={styles.sectionPad}>
                         <SectionHeader
-                          title={viewingToday ? 'Latest for you' : 'Stories that day'}
+                          title="For you"
                           actionLabel="View all"
                           onAction={goDiscover}
                         />
@@ -750,26 +713,18 @@ function HomeFeedBody() {
                       articles.length > 0 && visibleArticles.length === 0
                     const title = filteredAway
                       ? 'Stories hidden by your filters'
-                      : viewingToday
-                        ? 'No stories yet'
-                        : `No stories for this date in ${cityTitle}`
+                      : 'No stories yet'
                     const message = filteredAway
                       ? 'Unblock sources or categories in Profile, or browse Discover for a wider view.'
-                      : viewingToday
-                        ? `We do not have articles for ${cityTitle}${
-                            category !== 'All' ? ` in ${category}` : ''
-                          } right now. Pull down to refresh, or browse Discover.`
-                        : 'Try another date, or switch category. Pull down to refresh.'
+                      : `We do not have articles for ${cityTitle}${
+                          category !== 'All' ? ` in ${category}` : ''
+                        } right now. Pull down to refresh, or browse Discover.`
                     const primaryLabel = filteredAway
                       ? 'Open Profile'
-                      : viewingToday
-                        ? 'Browse Discover'
-                        : 'Back to today'
+                      : 'Browse Discover'
                     const secondaryLabel = filteredAway
                       ? 'Browse Discover'
-                      : viewingToday
-                        ? 'Change city'
-                        : 'Browse Discover'
+                      : 'Change city'
                     return (
                       <EmptyState
                         title={title}
@@ -778,18 +733,14 @@ function HomeFeedBody() {
                         onPrimary={
                           filteredAway
                             ? () => router.push('/(tabs)/profile')
-                            : viewingToday
-                              ? goDiscover
-                              : () => setSelectedDate(todayCityIso())
+                            : goDiscover
                         }
                         primaryAccessibilityLabel={primaryLabel}
                         secondaryLabel={secondaryLabel}
                         onSecondary={
                           filteredAway
                             ? goDiscover
-                            : viewingToday
-                              ? () => router.push('/city')
-                              : goDiscover
+                            : () => router.push('/city')
                         }
                         secondaryAccessibilityLabel={secondaryLabel}
                       />
@@ -924,23 +875,23 @@ function SectionHeader({
   actionLabel?: string
   onAction?: () => void
 }) {
-  // Quieter than hero/list titles so the lead story stays the dominant type above the fold.
+  // Soft accent section label (Google News “Top stories” rhythm).
   return (
     <HStack
       px="$4"
+      mt="$3"
       mb="$2"
       alignItems="center"
       justifyContent="space-between"
       minHeight={36}
     >
       <Text
-        fontSize={typography.meta.fontSize}
-        lineHeight={typography.meta.lineHeight}
+        fontSize={18}
+        lineHeight={24}
         fontWeight="$semibold"
-        letterSpacing={0.6}
-        color={colors.textSecondary}
+        letterSpacing={-0.2}
+        color={colors.accent}
         flex={1}
-        textTransform="uppercase"
       >
         {title}
       </Text>

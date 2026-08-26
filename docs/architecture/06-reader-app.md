@@ -7,6 +7,10 @@
 
 Universal Expo client (`apps/app`) for readers: web/PWA now, native later. Phone-first localized feed with WhatsApp share ([ADR-003](../adr/003-expo-universal-client.md)).
 
+Build **mobile-first** (touch targets, feed density, bottom tabs) while keeping breakpoint responsiveness: tablet pairing and desktop sidebar/rail remain active from `useBreakpoint`.
+
+Feed chrome follows a Google News–like structure on light surfaces: centered brand top bar, pill category chips, image-above-text top stories, thumb-right list rows, accent section titles.
+
 ## Boundaries
 
 - **In scope:** Expo Router screens, API client, city preference, share, desktop layout, theme tokens, PWA assets.
@@ -29,7 +33,7 @@ flowchart LR
 | File | Role |
 |------|------|
 | `index.tsx` | Boot: stored city → tabs else `/city` |
-| `city.tsx` | City picker |
+| `city.tsx` | City picker (search, selected row, onboarding vs change-city copy) |
 | `(tabs)/index.tsx` | Home feed |
 | `(tabs)/search.tsx` | Discover / search |
 | `(tabs)/bookmarks.tsx` | Local bookmarks |
@@ -44,14 +48,15 @@ flowchart LR
 |--------|------|
 | `src/api/client.ts` | Typed API calls |
 | `src/api/useAsyncResource.ts` | Shared async lifecycle hook for ordinary server-state reads |
-| `src/storage/cityPreference.ts` | Persisted city |
-| `src/utils/shareToWhatsApp.ts` | WhatsApp deep link / intent (optional share destination) |
-| `src/utils/shareArticle.ts` | Web Share / native Share / copy-link |
-| `src/utils/openArticleSource.ts` | Safe https source open (`noopener` on web) |
-| `src/components/article/*` | Reader chrome: sticky top bar, story, source CTA, actions, next-story divider |
+| `src/storage/cityPreference.ts` | Persisted city (`AsyncStorage`; device-local, no account) |
+| `src/components/CityListItem.tsx` | Tappable city row + list skeleton |
+| `src/components/CitySearch.tsx` | Live city/state filter field |
+| `src/utils/shareToWhatsApp.ts` | Share deep link / intent |
 | `src/components/desktop/*` | Desktop shell / sidebar / hero row |
 | `src/storage/viewSession.ts` | Anonymous view sessions for trending |
-| `src/theme/tokens.ts` | Light shell `#FAFAFA`, accent `#1D7BFF` |
+| `src/theme/tokens.ts` | Light shell `#F4F6FA`, accent `#2855E8` |
+| `src/components/CompactArticleCard.tsx` | Feed row: source, headline, thumb-right, time + more |
+| `src/components/BreakingHeroCard.tsx` | Top story: rounded image above source/headline/time |
 | `public/manifest.webmanifest`, `public/_headers` | PWA / Pages headers |
 
 Stack: Expo ~54, expo-router, Gluestack UI, Moti, AsyncStorage.
@@ -87,6 +92,7 @@ API helpers used: `getHealth`, `getCities`, `getArticles`, `getArticleDates`, `g
 ## Key files
 
 - `apps/app/package.json`, `app.json` / Expo config
+- `apps/app/eas.json` — EAS `preview` APK and production AAB profiles
 - `apps/app/src/api/client.ts`
 - `apps/app/app/**`
 - `apps/app/.env.example`
@@ -98,8 +104,16 @@ API helpers used: `getHealth`, `getCities`, `getArticles`, `getArticleDates`, `g
 | Env | `EXPO_PUBLIC_API_BASE_URL`, `EXPO_PUBLIC_APP_ENV` |
 | Deploy artifact | `pnpm build:web` → `apps/app/dist` |
 | Bundle report | `pnpm --filter @newsfeed/app bundle:report` |
+| Android test binary | EAS `preview` profile → internal-distribution APK |
+| Android Play binary | EAS `production` profile → AAB |
 | Pages project | default `newsfeed-web` |
 | Auth | None for MVP |
+
+For ordinary reader UI development, `apps/app/.env.example` targets the hosted
+Render API. This avoids requiring a local .NET API, Postgres, or Docker. API
+work can opt into `http://localhost:8080` in the ignored local `.env`, followed
+by an Expo restart. The `web` script uses port `19006`, which is allowlisted by
+the hosted API for browser development.
 
 ## Frontend quality baselines
 

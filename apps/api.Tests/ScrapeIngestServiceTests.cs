@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using NewsFeed.Api.Data;
 using NewsFeed.Api.Data.Entities;
 using NewsFeed.Api.Ingest;
+using NewsFeed.Api.Options;
 
 namespace NewsFeed.Api.Tests;
 
@@ -65,6 +66,136 @@ public sealed class ScrapeIngestServiceTests
         Assert.True(second.ArticlesSkipped >= 1);
         Assert.Equal(1, await db.Articles.CountAsync());
         Assert.Equal(2, await db.IngestionRuns.CountAsync(r => r.SourceId == source.Id));
+    }
+
+    [Fact]
+    public async Task RewriteOn_StoresRewriterOutput_AsPublished()
+    {
+        await using var db = CreateDb();
+        var source = await AddScrapeSourceAsync(db, "Amar Ujala Jhansi", ListUrl);
+        var http = new FakeScrapeHttpClient
+        {
+            Responses =
+            {
+                [ListUrl] = """
+                    <html><body><ul>
+                      <li><a href="/city/story-1">Story one</a></li>
+                    </ul></body></html>
+                    """,
+                [Story1Url] = File.ReadAllText(FixturePath("scrape-article.html")),
+            },
+        };
+        var rewriter = new FakeArticleRewriter();
+        var service = CreateService(db, http, rewriter);
+
+        var run = await service.RunSourceAsync(source.Id, CancellationToken.None, useRewrite: true);
+
+        Assert.Equal(1, run.ArticlesAdded);
+        Assert.Equal(1, rewriter.RewriteCallCount);
+        var stored = Assert.Single(await db.Articles.ToListAsync());
+        Assert.Equal("Rewritten: Jhansi water supply restored", stored.Headline);
+        Assert.Equal("Original digest summary for Jhansi water supply restored.", stored.Summary);
+        Assert.Contains("Original digest body for Jhansi water supply restored.", stored.Body, StringComparison.Ordinal);
+        Assert.Equal(ArticleStatus.Published, stored.Status);
+        Assert.Equal(Story1Url, stored.SourceUrl);
+    }
+
+    [Fact]
+    public async Task RewriteThrows_FallsBackToExtract_AndStaysPublished()
+    {
+        await using var db = CreateDb();
+        var source = await AddScrapeSourceAsync(db, "Amar Ujala Jhansi", ListUrl);
+        var http = new FakeScrapeHttpClient
+        {
+            Responses =
+            {
+                [ListUrl] = """
+                    <html><body><ul>
+                      <li><a href="/city/story-1">Story one</a></li>
+                    </ul></body></html>
+                    """,
+                [Story1Url] = File.ReadAllText(FixturePath("scrape-article.html")),
+            },
+        };
+        var rewriter = new FakeArticleRewriter
+        {
+            ThrowOnRewrite = new InvalidOperationException("OpenAI down"),
+        };
+        var service = CreateService(db, http, rewriter);
+
+        var run = await service.RunSourceAsync(source.Id, CancellationToken.None, useRewrite: true);
+
+        Assert.Equal(1, run.ArticlesAdded);
+        Assert.Equal(1, rewriter.RewriteCallCount);
+        var stored = Assert.Single(await db.Articles.ToListAsync());
+        Assert.Equal("Jhansi water supply restored", stored.Headline);
+        Assert.Contains("piped water", stored.Summary, StringComparison.Ordinal);
+        Assert.Contains("piped water", stored.Body, StringComparison.Ordinal);
+        Assert.Equal(ArticleStatus.Published, stored.Status);
+    }
+
+    [Fact]
+    public async Task UseRewriteFalse_NeverCallsRewriter()
+    {
+        await using var db = CreateDb();
+        var source = await AddScrapeSourceAsync(db, "Amar Ujala Jhansi", ListUrl);
+        var http = new FakeScrapeHttpClient
+        {
+            Responses =
+            {
+                [ListUrl] = """
+                    <html><body><ul>
+                      <li><a href="/city/story-1">Story one</a></li>
+                    </ul></body></html>
+                    """,
+                [Story1Url] = File.ReadAllText(FixturePath("scrape-article.html")),
+            },
+        };
+        var rewriter = new FakeArticleRewriter();
+        var service = CreateService(db, http, rewriter);
+
+        var run = await service.RunSourceAsync(source.Id, CancellationToken.None, useRewrite: false);
+
+        Assert.Equal(1, run.ArticlesAdded);
+        Assert.Equal(0, rewriter.RewriteCallCount);
+        var stored = Assert.Single(await db.Articles.ToListAsync());
+        Assert.Equal("Jhansi water supply restored", stored.Headline);
+        Assert.Contains("piped water", stored.Summary, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task EnvEnabledFalse_StoresExtract_AndNeverCallsRewriter()
+    {
+        await using var db = CreateDb();
+        var source = await AddScrapeSourceAsync(db, "Amar Ujala Jhansi", ListUrl);
+        var http = new FakeScrapeHttpClient
+        {
+            Responses =
+            {
+                [ListUrl] = """
+                    <html><body><ul>
+                      <li><a href="/city/story-1">Story one</a></li>
+                    </ul></body></html>
+                    """,
+                [Story1Url] = File.ReadAllText(FixturePath("scrape-article.html")),
+            },
+        };
+        var rewriter = new FakeArticleRewriter();
+        var service = CreateService(
+            db,
+            http,
+            rewriter,
+            new OpenAiRewriteOptions { Enabled = false, ApiKey = "present-but-disabled" });
+
+        var run = await service.RunSourceAsync(source.Id, CancellationToken.None, useRewrite: true);
+
+        Assert.Equal(1, run.ArticlesAdded);
+        Assert.Equal(0, rewriter.RewriteCallCount);
+        var stored = Assert.Single(await db.Articles.ToListAsync());
+        Assert.Equal("Jhansi water supply restored", stored.Headline);
+        Assert.Contains("piped water", stored.Summary, StringComparison.Ordinal);
+        Assert.Contains("piped water", stored.Body, StringComparison.Ordinal);
+        Assert.Equal(ArticleStatus.Published, stored.Status);
     }
 
     [Fact]
@@ -222,8 +353,20 @@ public sealed class ScrapeIngestServiceTests
         return source;
     }
 
-    private static ScrapeIngestService CreateService(AppDbContext db, FakeScrapeHttpClient http) =>
-        new(db, http, new IngestionEventBus(), new ImageEnrichmentQueue(), NullLogger<ScrapeIngestService>.Instance, TimeSpan.Zero);
+    private static ScrapeIngestService CreateService(
+        AppDbContext db,
+        FakeScrapeHttpClient http,
+        IArticleRewriter? rewriter = null,
+        OpenAiRewriteOptions? rewriteOptions = null) =>
+        new(
+            db,
+            http,
+            rewriter ?? new FakeArticleRewriter { Handler = (_, _, _) => null },
+            Microsoft.Extensions.Options.Options.Create(rewriteOptions ?? new OpenAiRewriteOptions()),
+            new IngestionEventBus(),
+            new ImageEnrichmentQueue(),
+            NullLogger<ScrapeIngestService>.Instance,
+            TimeSpan.Zero);
 
     private static string FixturePath(string fileName) =>
         Path.Combine(AppContext.BaseDirectory, "Fixtures", fileName);

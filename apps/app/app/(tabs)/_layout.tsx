@@ -24,8 +24,12 @@ function TabIcon({
 }) {
   return (
     <MotiView
-      animate={{ opacity: focused ? 1 : 0.72, scale: focused ? 1 : 0.96 }}
+      animate={{
+        opacity: focused ? 1 : 0.72,
+        scale: focused ? 1 : 0.96,
+      }}
       transition={{ type: 'timing', duration: 200 }}
+      style={[styles.tabIconWrap, focused ? styles.tabIconActive : null]}
     >
       <Icon
         size={22}
@@ -141,5 +145,16 @@ const styles = StyleSheet.create({
   shell: {
     flex: 1,
     backgroundColor: colors.background,
+  },
+  tabIconWrap: {
+    minWidth: 56,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 16,
+    paddingHorizontal: 12,
+  },
+  tabIconActive: {
+    backgroundColor: colors.accentSoft,
   },
 })

@@ -1,11 +1,11 @@
 import { Pressable, StyleSheet, View, type ViewStyle } from 'react-native'
-import { Image, Text, VStack } from '@gluestack-ui/themed'
+import { Image, Text } from '@gluestack-ui/themed'
+import Ellipsis from 'lucide-react-native/icons/ellipsis'
 import { MotiView } from 'moti'
 import type { ArticleResponse } from '@newsfeed/shared-types'
-import { colors, media, radius, shadows, space, typography } from '../theme/tokens'
+import { colors, media, radius, space, typography } from '../theme/tokens'
+import { iconStroke } from '../theme/categoryIcons'
 import { formatRelativeTime } from '../utils/relativeTime'
-import { Badge } from './ui/Badge'
-import { ImageBottomFade } from './ImageBottomFade'
 
 const CARD_GAP = space.sm
 
@@ -16,13 +16,8 @@ type Props = {
   index: number
   width: number
   onPress: (article: ArticleResponse) => void
+  onMorePress?: (article: ArticleResponse) => void
   style?: ViewStyle
-  /**
-   * Visual weight within the shared media-forward card system.
-   * `default` — mobile carousel (dominant full-bleed).
-   * `primary` — desktop lead (~60% width).
-   * `secondary` — desktop stacked companions.
-   */
   size?: HeroCardSize
 }
 
@@ -30,55 +25,47 @@ function heroMetrics(size: HeroCardSize) {
   switch (size) {
     case 'primary':
       return {
-        height: media.heroPrimaryHeight,
+        imageHeight: media.heroPrimaryHeight,
         titleSize: typography.headline.fontSize,
         titleLine: typography.headline.lineHeight,
-        titleWeight: '$bold' as const,
         titleLines: 3,
-        fadePeak: 0.82,
-        fadeRatio: 0.65,
       }
     case 'secondary':
       return {
-        height: media.heroSecondaryHeight,
-        titleSize: typography.meta.fontSize + 1,
-        titleLine: typography.summary.lineHeight - 2,
-        titleWeight: '$semibold' as const,
-        titleLines: 2,
-        fadePeak: 0.78,
-        fadeRatio: 0.7,
+        imageHeight: media.heroSecondaryHeight,
+        titleSize: 14,
+        titleLine: 18,
+        titleLines: 3,
       }
     default:
       return {
-        height: media.heroHeight,
-        titleSize: 19,
-        titleLine: 24,
-        titleWeight: '$bold' as const,
-        titleLines: 2,
-        fadePeak: 0.82,
-        fadeRatio: 0.62,
+        imageHeight: media.heroHeight,
+        titleSize: 20,
+        titleLine: 26,
+        titleLines: 3,
       }
   }
 }
 
-/** Media-forward card — image + gradient + badge + title. Same radius/badge as list cards. */
+/**
+ * Featured story — Google News style: large rounded image, then source / headline / time.
+ * Light surfaces; no text overlay on the photo.
+ */
 export function BreakingHeroCard({
   article,
   index,
   width,
   onPress,
+  onMorePress,
   style,
   size = 'default',
 }: Props) {
   const headline = article.headline ?? 'Untitled'
   const source = article.sourceName ?? 'Unknown source'
   const relative = formatRelativeTime(article.publishedAt)
-  const category = article.category?.trim()
-  const displayCategory = category?.toLowerCase() === 'local' ? undefined : category
   const imageUrl = article.imageUrl
   const metrics = heroMetrics(size)
-  const fadeHeight = Math.round(metrics.height * metrics.fadeRatio)
-  const showMeta = size !== 'secondary'
+  const compact = size === 'secondary'
 
   return (
     <MotiView
@@ -90,63 +77,67 @@ export function BreakingHeroCard({
       <Pressable
         onPress={() => onPress(article)}
         accessibilityRole="button"
-        accessibilityLabel={`Breaking: ${headline}. ${source}. ${relative}`}
-        style={({ pressed }) => [styles.shadowHost, shadows.card, pressed ? styles.pressed : null]}
+        accessibilityLabel={`Top story: ${headline}. ${source}. ${relative}`}
+        style={({ pressed }) => [styles.card, pressed ? styles.pressed : null]}
       >
-        <View style={styles.card}>
-          <View style={[styles.imageWrap, { height: metrics.height }]}>
-            {imageUrl ? (
-              <Image
-                source={{ uri: imageUrl }}
-                alt=""
-                w="$full"
-                h={metrics.height}
-                resizeMode="cover"
-              />
-            ) : (
-              <View style={styles.imagePlaceholder} />
-            )}
-            <ImageBottomFade height={fadeHeight} peakOpacity={metrics.fadePeak} />
-            {displayCategory ? (
-              <View style={styles.pillWrap}>
-                <Badge label={displayCategory} variant="filled" />
-              </View>
-            ) : null}
-            <VStack style={styles.overlay} space="xs">
-              {showMeta ? (
-                <Text
-                  fontSize={typography.label.fontSize}
-                  lineHeight={typography.label.lineHeight}
-                  fontWeight="$medium"
-                  color={colors.textOnImageMuted}
-                  numberOfLines={1}
-                >
-                  {source}
-                  {relative ? `  ·  ${relative}` : ''}
-                </Text>
-              ) : null}
+        <View style={[styles.imageWrap, { height: metrics.imageHeight }]}>
+          {imageUrl ? (
+            <Image
+              source={{ uri: imageUrl }}
+              alt=""
+              w="$full"
+              h={metrics.imageHeight}
+              resizeMode="cover"
+              style={styles.image}
+            />
+          ) : (
+            <View style={styles.imagePlaceholder} />
+          )}
+        </View>
+        <View style={[styles.body, compact ? styles.bodyCompact : null]}>
+          <Text
+            fontSize={typography.label.fontSize}
+            lineHeight={typography.label.lineHeight}
+            fontWeight="$medium"
+            color={colors.textMuted}
+            numberOfLines={1}
+          >
+            {source}
+          </Text>
+          <Text
+            fontSize={metrics.titleSize}
+            lineHeight={metrics.titleLine}
+            fontWeight="$bold"
+            color={colors.text}
+            numberOfLines={metrics.titleLines}
+            letterSpacing={-0.25}
+          >
+            {headline}
+          </Text>
+          <View style={styles.metaRow}>
+            {relative ? (
               <Text
-                fontSize={metrics.titleSize}
-                lineHeight={metrics.titleLine}
-                fontWeight={metrics.titleWeight}
-                color={colors.textOnImage}
-                numberOfLines={metrics.titleLines}
+                fontSize={typography.label.fontSize}
+                lineHeight={typography.label.lineHeight}
+                fontWeight="$medium"
+                color={colors.textMuted}
               >
-                {headline}
+                {relative}
               </Text>
-              {!showMeta ? (
-                <Text
-                  fontSize={typography.label.fontSize - 1}
-                  lineHeight={typography.label.lineHeight}
-                  fontWeight="$medium"
-                  color={colors.textOnImageMuted}
-                  numberOfLines={1}
-                >
-                  {source}
-                  {relative ? ` · ${relative}` : ''}
-                </Text>
-              ) : null}
-            </VStack>
+            ) : (
+              <View />
+            )}
+            {onMorePress ? (
+              <Pressable
+                onPress={() => onMorePress(article)}
+                accessibilityRole="button"
+                accessibilityLabel={`More options for ${headline}`}
+                hitSlop={10}
+                style={({ pressed }) => [styles.moreBtn, pressed ? styles.morePressed : null]}
+              >
+                <Ellipsis size={18} strokeWidth={iconStroke} color={colors.textSecondary} />
+              </Pressable>
+            ) : null}
           </View>
         </View>
       </Pressable>
@@ -155,41 +146,49 @@ export function BreakingHeroCard({
 }
 
 const styles = StyleSheet.create({
-  shadowHost: {
-    borderRadius: radius.lg,
-    backgroundColor: colors.surface,
-  },
   card: {
-    borderRadius: radius.lg,
-    overflow: 'hidden',
-    backgroundColor: colors.surface,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
+    backgroundColor: colors.background,
   },
   pressed: {
     opacity: 0.94,
   },
   imageWrap: {
     width: '100%',
-    position: 'relative',
+    borderRadius: radius.lg,
+    overflow: 'hidden',
     backgroundColor: colors.surfaceRaised,
+  },
+  image: {
+    width: '100%',
+    height: '100%',
   },
   imagePlaceholder: {
     ...StyleSheet.absoluteFillObject,
-    // Mid tone so gradient + title still read as media-forward without a photo
-    backgroundColor: '#45506D',
+    backgroundColor: colors.skeleton,
   },
-  pillWrap: {
-    position: 'absolute',
-    top: space.sm,
-    left: space.sm,
-    zIndex: 2,
+  body: {
+    paddingTop: space.sm + 2,
+    gap: 6,
   },
-  overlay: {
-    position: 'absolute',
-    left: space.sm,
-    right: space.sm,
-    bottom: space.sm,
-    zIndex: 2,
+  bodyCompact: {
+    paddingTop: space.xs + 2,
+    gap: 4,
+  },
+  metaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 2,
+    minHeight: 28,
+  },
+  moreBtn: {
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: radius.full,
+  },
+  morePressed: {
+    backgroundColor: colors.surfaceRaised,
   },
 })

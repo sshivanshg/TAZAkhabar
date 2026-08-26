@@ -50,7 +50,7 @@ public static class IngestEndpoints
                         statusCode: StatusCodes.Status401Unauthorized);
                 }
 
-                var result = await ingest.RunAllActiveAsync(cancellationToken);
+                var result = await ingest.RunAllActiveAsync(cancellationToken, useRewrite: true);
                 return Results.Ok(new IngestRunResponse(
                     result.FeedsAttempted,
                     result.FeedsFailed,
@@ -79,7 +79,7 @@ public static class IngestEndpoints
                 }
 
                 var rss = await rssIngest.RunAsync(cancellationToken, useIntelligence: false);
-                var scrape = await scrapeIngest.RunAllActiveAsync(cancellationToken);
+                var scrape = await scrapeIngest.RunAllActiveAsync(cancellationToken, useRewrite: false);
                 return Results.Ok(new IngestRunResponse(
                     rss.FeedsAttempted + scrape.FeedsAttempted,
                     rss.FeedsFailed + scrape.FeedsFailed,

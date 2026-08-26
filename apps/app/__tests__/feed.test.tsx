@@ -10,7 +10,6 @@ const mockPush = jest.fn()
 const mockReplace = jest.fn()
 const mockGetArticles = jest.fn()
 const mockGetCities = jest.fn()
-const mockGetArticleDates = jest.fn()
 
 jest.mock('expo-router', () => {
   const React = require('react')
@@ -33,7 +32,6 @@ jest.mock('../src/api/client', () => ({
   apiClient: {
     getArticles: (...args: unknown[]) => mockGetArticles(...args),
     getCities: (...args: unknown[]) => mockGetCities(...args),
-    getArticleDates: (...args: unknown[]) => mockGetArticleDates(...args),
     getTrendingArticles: jest.fn(async () => ({ items: [] })),
   },
 }))
@@ -193,7 +191,6 @@ describe('FeedScreen', () => {
     jest.clearAllMocks()
     useBreakpoint.mockReturnValue('mobile')
     mockGetCities.mockResolvedValue(cities)
-    mockGetArticleDates.mockResolvedValue({ dates: [] })
     // Need more than BREAKING_NEWS_COUNT so recommendation list has the sample headline
     mockGetArticles.mockResolvedValue(paged(makeArticles(6)))
   })
@@ -204,8 +201,8 @@ describe('FeedScreen', () => {
     expect(
       await screen.findByText('[MOCK] Local municipal budget approved for FY26'),
     ).toBeTruthy()
-    expect(screen.getByText('Breaking News')).toBeTruthy()
-    expect(screen.getByText('Latest for you')).toBeTruthy()
+    expect(screen.getByText('Top stories')).toBeTruthy()
+    expect(screen.getByText('For you')).toBeTruthy()
     expect(screen.getByLabelText(/Change city/)).toBeTruthy()
     expect(screen.queryByTestId('article-row')).toBeNull()
   })
@@ -288,7 +285,7 @@ describe('FeedScreen', () => {
   it('opens city picker from city pill', async () => {
     renderFeed()
 
-    await screen.findByText('Breaking News')
+    await screen.findByText('Top stories')
     fireEvent.press(screen.getByLabelText(/Change city/))
 
     expect(mockPush).toHaveBeenCalledWith('/city')
