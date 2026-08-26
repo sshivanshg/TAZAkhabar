@@ -187,16 +187,6 @@ export const breakpoints = {
   wide: 1440,
 } as const
 
-/**
- * Temporary product gate: ship the phone reader only.
- * Desktop sidebar / rail / compact density stay in the tree but are inactive
- * until this flips back to `false`.
- */
-export const FORCE_MOBILE_LAYOUT = true
-
-/** Centered phone column width when previewing the mobile app on wide web viewports. */
-export const MOBILE_STAGE_MAX_WIDTH = 430
-
 export const SIDEBAR_WIDTH = 240
 export const CONTENT_RAIL_MAX = 720
 export const ERROR_COLUMN_MAX = 400

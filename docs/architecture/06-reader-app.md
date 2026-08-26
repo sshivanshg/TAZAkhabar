@@ -1,13 +1,13 @@
 # Reader app
 
 > **Living doc** — update when Expo routes, city/feed/share behavior, or desktop web layer change.  
-> **Last verified against:** 2026-08-26 (mobile-only layout gate)
+> **Last verified against:** 2026-08-26 (main feed card: summary on list + hero; responsive shell restored)
 
 ## Purpose
 
 Universal Expo client (`apps/app`) for readers: web/PWA now, native later. Phone-first localized feed with WhatsApp share ([ADR-003](../adr/003-expo-universal-client.md)).
 
-**Current ship gate:** `FORCE_MOBILE_LAYOUT = true` in `src/theme/tokens.ts`. Desktop sidebar / content rail stay in code but are inactive; web preview centers a ~430px phone column. Flip the flag when desktop polish is ready.
+Build **mobile-first** (touch targets, feed density, bottom tabs) while keeping breakpoint responsiveness: tablet pairing and desktop sidebar/rail remain active from `useBreakpoint`.
 
 ## Boundaries
 

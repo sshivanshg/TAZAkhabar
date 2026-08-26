@@ -1,5 +1,4 @@
 import { breakpointFromWidth, isCompactNav, isDesktopLayout } from '../src/hooks/useBreakpoint'
-import { FORCE_MOBILE_LAYOUT } from '../src/theme/tokens'
 
 describe('breakpointFromWidth', () => {
   it('maps boundaries', () => {
@@ -20,9 +19,5 @@ describe('breakpointFromWidth', () => {
     expect(isCompactNav('mobile')).toBe(true)
     expect(isCompactNav('tablet')).toBe(true)
     expect(isCompactNav('desktop')).toBe(false)
-  })
-
-  it('keeps FORCE_MOBILE_LAYOUT on until desktop ships', () => {
-    expect(FORCE_MOBILE_LAYOUT).toBe(true)
   })
 })
