@@ -204,8 +204,8 @@ describe('FeedScreen', () => {
     expect(
       await screen.findByText('[MOCK] Local municipal budget approved for FY26'),
     ).toBeTruthy()
-    expect(screen.getByText('Breaking News')).toBeTruthy()
-    expect(screen.getByText('Latest for you')).toBeTruthy()
+    expect(screen.getByText('Top stories')).toBeTruthy()
+    expect(screen.getByText('For you')).toBeTruthy()
     expect(screen.getByLabelText(/Change city/)).toBeTruthy()
     expect(screen.queryByTestId('article-row')).toBeNull()
   })
@@ -288,7 +288,7 @@ describe('FeedScreen', () => {
   it('opens city picker from city pill', async () => {
     renderFeed()
 
-    await screen.findByText('Breaking News')
+    await screen.findByText('Top stories')
     fireEvent.press(screen.getByLabelText(/Change city/))
 
     expect(mockPush).toHaveBeenCalledWith('/city')

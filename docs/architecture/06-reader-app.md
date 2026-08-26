@@ -1,13 +1,15 @@
 # Reader app
 
 > **Living doc** — update when Expo routes, city/feed/share behavior, or desktop web layer change.  
-> **Last verified against:** 2026-08-26 (main feed card: summary on list + hero; responsive shell restored)
+> **Last verified against:** 2026-08-26 (Google News–inspired feed chrome; light + blue)
 
 ## Purpose
 
 Universal Expo client (`apps/app`) for readers: web/PWA now, native later. Phone-first localized feed with WhatsApp share ([ADR-003](../adr/003-expo-universal-client.md)).
 
 Build **mobile-first** (touch targets, feed density, bottom tabs) while keeping breakpoint responsiveness: tablet pairing and desktop sidebar/rail remain active from `useBreakpoint`.
+
+Feed chrome follows a Google News–like structure on light surfaces: centered brand top bar, pill category chips, image-above-text top stories, thumb-right list rows, accent section titles.
 
 ## Boundaries
 
@@ -51,8 +53,8 @@ flowchart LR
 | `src/components/desktop/*` | Desktop shell / sidebar / hero row |
 | `src/storage/viewSession.ts` | Anonymous view sessions for trending |
 | `src/theme/tokens.ts` | Light shell `#F4F6FA`, accent `#2855E8` |
-| `src/components/CompactArticleCard.tsx` | Primary feed row: thumbnail, headline, 2–3 line summary, source/time |
-| `src/components/BreakingHeroCard.tsx` | Breaking/hero media card with optional summary teaser |
+| `src/components/CompactArticleCard.tsx` | Feed row: source, headline, thumb-right, time + more |
+| `src/components/BreakingHeroCard.tsx` | Top story: rounded image above source/headline/time |
 | `public/manifest.webmanifest`, `public/_headers` | PWA / Pages headers |
 
 Stack: Expo ~54, expo-router, Gluestack UI, Moti, AsyncStorage.

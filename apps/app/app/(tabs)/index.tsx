@@ -698,7 +698,7 @@ function HomeFeedBody() {
                     return (
                       <View style={styles.sectionBlock}>
                         <SectionHeader
-                          title="Breaking News"
+                          title="Top stories"
                           actionLabel="View all"
                           onAction={goDiscover}
                         />
@@ -713,7 +713,7 @@ function HomeFeedBody() {
                   if (item.kind === 'trending') {
                     return (
                       <View style={styles.sectionBlock}>
-                        <SectionHeader title={`Trending in ${cityTitle}`} />
+                        <SectionHeader title="Picks for you" />
                         {visibleTrending.map((article, index) => (
                           <View key={String(article.id ?? index)} style={styles.trendingRow}>
                             <Text
@@ -738,7 +738,7 @@ function HomeFeedBody() {
                     return (
                       <View style={styles.sectionPad}>
                         <SectionHeader
-                          title={viewingToday ? 'Latest for you' : 'Stories that day'}
+                          title={viewingToday ? 'For you' : 'Stories that day'}
                           actionLabel="View all"
                           onAction={goDiscover}
                         />
@@ -924,24 +924,23 @@ function SectionHeader({
   actionLabel?: string
   onAction?: () => void
 }) {
-  // Section label — secondary to story headlines, clear enough to scan between blocks.
+  // Soft accent section label (Google News “Top stories” rhythm).
   return (
     <HStack
       px="$4"
-      mt="$2"
-      mb="$3"
+      mt="$3"
+      mb="$2"
       alignItems="center"
       justifyContent="space-between"
-      minHeight={40}
+      minHeight={36}
     >
       <Text
-        fontSize={typography.meta.fontSize}
-        lineHeight={typography.meta.lineHeight}
-        fontWeight="$bold"
-        letterSpacing={0.7}
-        color={colors.text}
+        fontSize={18}
+        lineHeight={24}
+        fontWeight="$semibold"
+        letterSpacing={-0.2}
+        color={colors.accent}
         flex={1}
-        textTransform="uppercase"
       >
         {title}
       </Text>

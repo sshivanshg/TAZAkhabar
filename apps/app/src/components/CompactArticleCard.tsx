@@ -1,13 +1,11 @@
 import { Platform, Pressable, StyleSheet, View, type PressableStateCallbackType } from 'react-native'
-import { Box, HStack, Image, Text, VStack } from '@gluestack-ui/themed'
+import { Box, Image, Text } from '@gluestack-ui/themed'
 import Ellipsis from 'lucide-react-native/icons/ellipsis'
 import { MotiView } from 'moti'
 import type { ArticleResponse } from '@newsfeed/shared-types'
 import { colors, HIT_TARGET, media, radius, space, typography } from '../theme/tokens'
 import { iconStroke } from '../theme/categoryIcons'
 import { formatRelativeTime } from '../utils/relativeTime'
-import { Badge } from './ui/Badge'
-import { Card } from './ui/Card'
 
 type Density = 'default' | 'compact'
 
@@ -16,12 +14,7 @@ type Props = {
   index: number
   onPress: (article: ArticleResponse) => void
   onLongPress?: (article: ArticleResponse) => void
-  /** Explicit overflow/actions control — preferred on web where long-press is awkward. */
   onMorePress?: (article: ArticleResponse) => void
-  /**
-   * `default` — mobile/tablet (touch ≥44).
-   * `compact` — denser desktop rows; same structure, tighter padding/type.
-   */
   density?: Density
 }
 
@@ -30,8 +23,8 @@ type WebPressableState = PressableStateCallbackType & {
 }
 
 /**
- * Primary feed list card — thumbnail, category, headline, 2–3 line summary, source/time.
- * Matches PRD feed row: headline + short summary + source.
+ * Google News–inspired list row: source → headline + thumb (right) → time + more.
+ * Light theme + single blue accent preserved.
  */
 export function CompactArticleCard({
   article,
@@ -44,153 +37,104 @@ export function CompactArticleCard({
   const compact = density === 'compact'
   const thumb = compact ? media.thumbDense : media.thumb
   const headline = article.headline?.trim() || 'Untitled'
-  const summary = article.summary?.trim() || ''
   const source = article.sourceName?.trim() || 'Unknown source'
   const relative = formatRelativeTime(article.publishedAt)
-  const category = article.category?.trim()
-  const displayCategory = category?.toLowerCase() === 'local' ? undefined : category
   const imageUrl = article.imageUrl
   const showMore = Boolean(onMorePress ?? onLongPress)
   const openMore = onMorePress ?? onLongPress
-  const titleSize = compact ? 15 : typography.bodySemibold.fontSize
-  const titleLine = compact ? 20 : typography.bodySemibold.lineHeight
-  const summarySize = compact ? 13 : typography.meta.fontSize
-  const summaryLine = compact ? 18 : typography.meta.lineHeight
-  const summaryLines = compact ? 2 : 3
-  const metaSize = compact ? 11 : typography.label.fontSize
-  const metaLine = compact ? 14 : typography.label.lineHeight
-
-  const a11yBits = [headline, summary || undefined, displayCategory, source, relative].filter(Boolean)
+  const titleSize = compact ? 15 : 17
+  const titleLine = compact ? 20 : 23
 
   return (
     <MotiView
-      from={{ opacity: 0, translateY: 6 }}
+      from={{ opacity: 0, translateY: 4 }}
       animate={{ opacity: 1, translateY: 0 }}
-      transition={{ type: 'timing', duration: 220, delay: Math.min(index * 28, 168) }}
+      transition={{ type: 'timing', duration: 200, delay: Math.min(index * 24, 144) }}
       style={[styles.wrap, compact ? styles.wrapCompact : null]}
     >
-      <Card clipped>
-        <View style={[styles.card, compact ? styles.cardCompact : null]}>
-          <Pressable
-            onPress={() => onPress(article)}
-            onLongPress={onLongPress ? () => onLongPress(article) : undefined}
-            delayLongPress={380}
-            accessibilityRole="button"
-            accessibilityLabel={`${a11yBits.join('. ')}.${
-              showMore ? ' Open options for more actions.' : ''
-            }`}
-            style={(state) => {
-              const { pressed, hovered } = state as WebPressableState
-              return [
-                styles.cardMain,
-                compact ? styles.cardMainCompact : null,
-                { minHeight: Math.max(HIT_TARGET, thumb + (compact ? space.sm : space.md)) },
-                hovered && Platform.OS === 'web' ? styles.cardHover : null,
-                pressed ? styles.cardPressed : null,
-              ]
-            }}
+      <Pressable
+        onPress={() => onPress(article)}
+        onLongPress={onLongPress ? () => onLongPress(article) : undefined}
+        delayLongPress={380}
+        accessibilityRole="button"
+        accessibilityLabel={`${[headline, source, relative].filter(Boolean).join('. ')}.${
+          showMore ? ' Open options for more actions.' : ''
+        }`}
+        style={(state) => {
+          const { pressed, hovered } = state as WebPressableState
+          return [
+            styles.row,
+            compact ? styles.rowCompact : null,
+            hovered && Platform.OS === 'web' ? styles.rowHover : null,
+            pressed ? styles.rowPressed : null,
+          ]
+        }}
+      >
+        <View style={styles.textCol}>
+          <Text
+            fontSize={typography.label.fontSize}
+            lineHeight={typography.label.lineHeight}
+            fontWeight="$medium"
+            color={colors.textMuted}
+            numberOfLines={1}
           >
-            <View
-              style={[
-                styles.thumbWrap,
-                {
-                  width: thumb,
-                  height: thumb,
-                  marginLeft: compact ? space.sm : space.md,
-                  marginVertical: compact ? space.sm : space.md,
-                },
-              ]}
-            >
-              {imageUrl ? (
-                <Image
-                  source={{ uri: imageUrl }}
-                  alt=""
-                  w="$full"
-                  h="$full"
-                  resizeMode="cover"
-                  style={styles.thumbImage}
-                />
-              ) : (
-                <View style={styles.thumbPlaceholder} />
-              )}
-            </View>
-            <VStack
-              flex={1}
-              justifyContent="center"
-              style={{
-                paddingRight: showMore ? space.xxs : space.md,
-                paddingLeft: space.sm,
-                paddingVertical: compact ? space.sm : space.md,
-                gap: compact ? 3 : 5,
-              }}
-            >
-              <HStack space="sm" alignItems="center" flexWrap="wrap">
-                {displayCategory ? <Badge label={displayCategory} variant="soft" /> : null}
-                {relative ? (
-                  <Text
-                    fontSize={metaSize}
-                    lineHeight={metaLine}
-                    fontWeight="$medium"
-                    color={colors.textMuted}
-                    numberOfLines={1}
-                  >
-                    {relative}
-                  </Text>
-                ) : null}
-              </HStack>
+            {source}
+          </Text>
+          <Text
+            fontSize={titleSize}
+            lineHeight={titleLine}
+            fontWeight="$semibold"
+            color={colors.text}
+            numberOfLines={compact ? 3 : 4}
+            letterSpacing={-0.2}
+            style={styles.headline}
+          >
+            {headline}
+          </Text>
+          <View style={styles.metaRow}>
+            {relative ? (
               <Text
-                fontSize={titleSize}
-                lineHeight={titleLine}
-                fontWeight="$semibold"
-                color={colors.text}
-                numberOfLines={2}
-                letterSpacing={-0.15}
-              >
-                {headline}
-              </Text>
-              {summary ? (
-                <Text
-                  fontSize={summarySize}
-                  lineHeight={summaryLine}
-                  fontWeight="$normal"
-                  color={colors.textSecondary}
-                  numberOfLines={summaryLines}
-                >
-                  {summary}
-                </Text>
-              ) : null}
-              <Text
-                fontSize={metaSize}
-                lineHeight={metaLine}
+                fontSize={typography.label.fontSize}
+                lineHeight={typography.label.lineHeight}
                 fontWeight="$medium"
                 color={colors.textMuted}
                 numberOfLines={1}
+                style={styles.metaTime}
               >
-                {source}
+                {relative}
               </Text>
-            </VStack>
-          </Pressable>
-          {showMore && openMore ? (
-            <Pressable
-              onPress={() => openMore(article)}
-              accessibilityRole="button"
-              accessibilityLabel={`More options for ${headline}`}
-              hitSlop={8}
-              style={({ pressed }) => [
-                styles.moreBtn,
-                compact ? styles.moreBtnCompact : null,
-                pressed ? styles.morePressed : null,
-              ]}
-            >
-              <Ellipsis
-                size={compact ? 18 : 20}
-                strokeWidth={iconStroke}
-                color={colors.textSecondary}
-              />
-            </Pressable>
-          ) : null}
+            ) : (
+              <View style={styles.metaTime} />
+            )}
+            {showMore && openMore ? (
+              <Pressable
+                onPress={() => openMore(article)}
+                accessibilityRole="button"
+                accessibilityLabel={`More options for ${headline}`}
+                hitSlop={10}
+                style={({ pressed }) => [styles.moreBtn, pressed ? styles.morePressed : null]}
+              >
+                <Ellipsis size={18} strokeWidth={iconStroke} color={colors.textSecondary} />
+              </Pressable>
+            ) : null}
+          </View>
         </View>
-      </Card>
+        <View style={[styles.thumbWrap, { width: thumb, height: thumb }]}>
+          {imageUrl ? (
+            <Image
+              source={{ uri: imageUrl }}
+              alt=""
+              w="$full"
+              h="$full"
+              resizeMode="cover"
+              style={styles.thumbImage}
+            />
+          ) : (
+            <View style={styles.thumbPlaceholder} />
+          )}
+        </View>
+      </Pressable>
+      <View style={styles.divider} />
     </MotiView>
   )
 }
@@ -208,92 +152,80 @@ export function CompactArticleCardSkeleton({
     <MotiView
       from={{ opacity: 0.4 }}
       animate={{ opacity: 0.85 }}
-      transition={{
-        type: 'timing',
-        duration: 780,
-        loop: true,
-        delay: index * 80,
-      }}
+      transition={{ type: 'timing', duration: 780, loop: true, delay: index * 80 }}
       style={[styles.wrap, compact ? styles.wrapCompact : null]}
     >
-      <Card clipped>
-        <View style={[styles.card, compact ? styles.cardCompact : null, styles.skeletonRow]}>
-          <View
-            style={[
-              styles.thumbWrap,
-              {
-                width: thumb,
-                height: thumb,
-                marginLeft: compact ? space.sm : space.md,
-                marginVertical: compact ? space.sm : space.md,
-                backgroundColor: colors.skeleton,
-              },
-            ]}
-          />
-          <VStack
-            flex={1}
-            justifyContent="center"
-            style={{
-              paddingHorizontal: space.sm,
-              paddingVertical: compact ? space.sm : space.md,
-              gap: compact ? 4 : 6,
-              paddingRight: space.md,
-            }}
-          >
-            <Box h={compact ? 12 : 14} w={72} bg={colors.skeleton} borderRadius={radius.full} />
-            <Box h={compact ? 14 : 16} w="94%" bg={colors.skeleton} borderRadius={radius.xs} />
-            <Box h={compact ? 14 : 16} w="72%" bg={colors.skeleton} borderRadius={radius.xs} />
-            <Box h={compact ? 10 : 12} w="100%" bg={colors.skeleton} borderRadius={radius.xs} />
-            <Box h={compact ? 10 : 12} w="88%" bg={colors.skeleton} borderRadius={radius.xs} />
-            <Box h={compact ? 10 : 12} w="36%" bg={colors.skeleton} borderRadius={radius.xs} />
-          </VStack>
+      <View style={[styles.row, compact ? styles.rowCompact : null]}>
+        <View style={styles.textCol}>
+          <Box h={12} w={88} bg={colors.skeleton} borderRadius={radius.xs} />
+          <Box h={compact ? 14 : 16} w="96%" bg={colors.skeleton} borderRadius={radius.xs} mt="$2" />
+          <Box h={compact ? 14 : 16} w="78%" bg={colors.skeleton} borderRadius={radius.xs} mt="$1" />
+          <Box h={12} w={48} bg={colors.skeleton} borderRadius={radius.xs} mt="$3" />
         </View>
-      </Card>
+        <View
+          style={[
+            styles.thumbWrap,
+            { width: thumb, height: thumb, backgroundColor: colors.skeleton },
+          ]}
+        />
+      </View>
+      <View style={styles.divider} />
     </MotiView>
   )
 }
 
 const styles = StyleSheet.create({
-  wrap: {
-    marginBottom: space.sm,
-  },
-  wrapCompact: {
-    marginBottom: space.xs + 2,
-  },
-  card: {
-    flexDirection: 'row',
-    backgroundColor: colors.surface,
-    minHeight: HIT_TARGET,
-    alignItems: 'stretch',
-    borderRadius: radius.lg,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
-  },
-  cardCompact: {
-    minHeight: media.thumbDense + space.md,
-  },
-  skeletonRow: {
-    alignItems: 'center',
-  },
-  cardMain: {
-    flex: 1,
+  wrap: {},
+  wrapCompact: {},
+  row: {
     flexDirection: 'row',
     alignItems: 'flex-start',
+    gap: space.md,
+    paddingVertical: space.md,
     minHeight: HIT_TARGET,
   },
-  cardMainCompact: {
-    minHeight: media.thumbDense + space.md,
+  rowCompact: {
+    paddingVertical: space.sm + 2,
+    gap: space.sm,
   },
-  cardHover: {
-    backgroundColor: '#F8FAFF',
+  rowHover: {
+    backgroundColor: colors.accentSoft,
   },
-  cardPressed: {
-    opacity: 0.94,
+  rowPressed: {
+    opacity: 0.92,
+  },
+  textCol: {
+    flex: 1,
+    minWidth: 0,
+    gap: 6,
+  },
+  headline: {
+    marginTop: 2,
+  },
+  metaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 4,
+    minHeight: 28,
+  },
+  metaTime: {
+    flex: 1,
+  },
+  moreBtn: {
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: radius.full,
+  },
+  morePressed: {
+    backgroundColor: colors.surfaceRaised,
   },
   thumbWrap: {
     borderRadius: radius.md,
-    backgroundColor: colors.surfaceRaised,
     overflow: 'hidden',
+    backgroundColor: colors.surfaceRaised,
     flexShrink: 0,
   },
   thumbImage: {
@@ -304,18 +236,8 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     backgroundColor: colors.skeleton,
   },
-  moreBtn: {
-    width: HIT_TARGET,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: space.xxs,
-    alignSelf: 'stretch',
-    borderRadius: radius.md,
-  },
-  moreBtnCompact: {
-    width: 40,
-  },
-  morePressed: {
-    backgroundColor: colors.surfaceRaised,
+  divider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: colors.border,
   },
 })
