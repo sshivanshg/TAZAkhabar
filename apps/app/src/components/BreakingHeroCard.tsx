@@ -71,6 +71,7 @@ export function BreakingHeroCard({
   size = 'default',
 }: Props) {
   const headline = article.headline ?? 'Untitled'
+  const summary = article.summary?.trim() || ''
   const source = article.sourceName ?? 'Unknown source'
   const relative = formatRelativeTime(article.publishedAt)
   const category = article.category?.trim()
@@ -79,6 +80,7 @@ export function BreakingHeroCard({
   const metrics = heroMetrics(size)
   const fadeHeight = Math.round(metrics.height * metrics.fadeRatio)
   const showMeta = size !== 'secondary'
+  const showSummary = size !== 'secondary' && Boolean(summary)
 
   return (
     <MotiView
@@ -90,7 +92,7 @@ export function BreakingHeroCard({
       <Pressable
         onPress={() => onPress(article)}
         accessibilityRole="button"
-        accessibilityLabel={`Breaking: ${headline}. ${source}. ${relative}`}
+        accessibilityLabel={`Breaking: ${headline}. ${summary ? `${summary}. ` : ''}${source}. ${relative}`}
         style={({ pressed }) => [styles.shadowHost, shadows.card, pressed ? styles.pressed : null]}
       >
         <View style={styles.card}>
@@ -134,6 +136,17 @@ export function BreakingHeroCard({
               >
                 {headline}
               </Text>
+              {showSummary ? (
+                <Text
+                  fontSize={size === 'primary' ? typography.meta.fontSize : typography.label.fontSize}
+                  lineHeight={size === 'primary' ? typography.meta.lineHeight : typography.label.lineHeight}
+                  fontWeight="$normal"
+                  color={colors.textOnImageMuted}
+                  numberOfLines={size === 'primary' ? 2 : 1}
+                >
+                  {summary}
+                </Text>
+              ) : null}
               {!showMeta ? (
                 <Text
                   fontSize={typography.label.fontSize - 1}

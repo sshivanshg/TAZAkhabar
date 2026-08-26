@@ -1,7 +1,7 @@
 # Reader app
 
 > **Living doc** — update when Expo routes, city/feed/share behavior, or desktop web layer change.  
-> **Last verified against:** 2026-08-25 (article pager nested scroll fix)
+> **Last verified against:** 2026-08-26 (main feed card: summary on list + hero)
 
 ## Purpose
 
@@ -48,7 +48,9 @@ flowchart LR
 | `src/utils/shareToWhatsApp.ts` | Share deep link / intent |
 | `src/components/desktop/*` | Desktop shell / sidebar / hero row |
 | `src/storage/viewSession.ts` | Anonymous view sessions for trending |
-| `src/theme/tokens.ts` | Light shell `#FAFAFA`, accent `#1D7BFF` |
+| `src/theme/tokens.ts` | Light shell `#F4F6FA`, accent `#2855E8` |
+| `src/components/CompactArticleCard.tsx` | Primary feed row: thumbnail, headline, 2–3 line summary, source/time |
+| `src/components/BreakingHeroCard.tsx` | Breaking/hero media card with optional summary teaser |
 | `public/manifest.webmanifest`, `public/_headers` | PWA / Pages headers |
 
 Stack: Expo ~54, expo-router, Gluestack UI, Moti, AsyncStorage.

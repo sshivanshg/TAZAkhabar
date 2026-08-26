@@ -29,7 +29,10 @@ type WebPressableState = PressableStateCallbackType & {
   hovered?: boolean
 }
 
-/** Compact horizontal list card — thumbnail + badge + title + meta. */
+/**
+ * Primary feed list card — thumbnail, category, headline, 2–3 line summary, source/time.
+ * Matches PRD feed row: headline + short summary + source.
+ */
 export function CompactArticleCard({
   article,
   index,
@@ -40,26 +43,30 @@ export function CompactArticleCard({
 }: Props) {
   const compact = density === 'compact'
   const thumb = compact ? media.thumbDense : media.thumb
-  const headline = article.headline ?? 'Untitled'
-  const source = article.sourceName ?? 'Unknown source'
+  const headline = article.headline?.trim() || 'Untitled'
+  const summary = article.summary?.trim() || ''
+  const source = article.sourceName?.trim() || 'Unknown source'
   const relative = formatRelativeTime(article.publishedAt)
   const category = article.category?.trim()
   const displayCategory = category?.toLowerCase() === 'local' ? undefined : category
   const imageUrl = article.imageUrl
   const showMore = Boolean(onMorePress ?? onLongPress)
   const openMore = onMorePress ?? onLongPress
-  const titleSize = compact ? 14 : typography.bodySemibold.fontSize
-  const titleLine = compact ? 18 : typography.bodySemibold.lineHeight
+  const titleSize = compact ? 15 : typography.bodySemibold.fontSize
+  const titleLine = compact ? 20 : typography.bodySemibold.lineHeight
+  const summarySize = compact ? 13 : typography.meta.fontSize
+  const summaryLine = compact ? 18 : typography.meta.lineHeight
+  const summaryLines = compact ? 2 : 3
   const metaSize = compact ? 11 : typography.label.fontSize
   const metaLine = compact ? 14 : typography.label.lineHeight
-  const textPadH = compact ? space.sm : space.sm
-  const textPadV = compact ? space.xs : space.xs + 2
+
+  const a11yBits = [headline, summary || undefined, displayCategory, source, relative].filter(Boolean)
 
   return (
     <MotiView
-      from={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ type: 'timing', duration: 200, delay: Math.min(index * 30, 180) }}
+      from={{ opacity: 0, translateY: 6 }}
+      animate={{ opacity: 1, translateY: 0 }}
+      transition={{ type: 'timing', duration: 220, delay: Math.min(index * 28, 168) }}
       style={[styles.wrap, compact ? styles.wrapCompact : null]}
     >
       <Card clipped>
@@ -69,7 +76,7 @@ export function CompactArticleCard({
             onLongPress={onLongPress ? () => onLongPress(article) : undefined}
             delayLongPress={380}
             accessibilityRole="button"
-            accessibilityLabel={`${[headline, displayCategory, source, relative].filter(Boolean).join('. ')}.${
+            accessibilityLabel={`${a11yBits.join('. ')}.${
               showMore ? ' Open options for more actions.' : ''
             }`}
             style={(state) => {
@@ -77,7 +84,7 @@ export function CompactArticleCard({
               return [
                 styles.cardMain,
                 compact ? styles.cardMainCompact : null,
-                { minHeight: Math.max(HIT_TARGET, thumb + (compact ? space.xs : space.md)) },
+                { minHeight: Math.max(HIT_TARGET, thumb + (compact ? space.sm : space.md)) },
                 hovered && Platform.OS === 'web' ? styles.cardHover : null,
                 pressed ? styles.cardPressed : null,
               ]
@@ -89,7 +96,8 @@ export function CompactArticleCard({
                 {
                   width: thumb,
                   height: thumb,
-                  marginLeft: compact ? space.xs + 2 : space.sm,
+                  marginLeft: compact ? space.sm : space.md,
+                  marginVertical: compact ? space.sm : space.md,
                 },
               ]}
             >
@@ -109,43 +117,57 @@ export function CompactArticleCard({
             <VStack
               flex={1}
               justifyContent="center"
-              space="xs"
               style={{
-                paddingHorizontal: textPadH,
-                paddingVertical: textPadV,
-                gap: compact ? 2 : undefined,
+                paddingRight: showMore ? space.xxs : space.md,
+                paddingLeft: space.sm,
+                paddingVertical: compact ? space.sm : space.md,
+                gap: compact ? 3 : 5,
               }}
             >
-              {displayCategory ? (
-                <HStack space="xs" alignItems="center" flexWrap="wrap">
-                  <Badge label={displayCategory} variant="soft" />
-                </HStack>
-              ) : null}
+              <HStack space="sm" alignItems="center" flexWrap="wrap">
+                {displayCategory ? <Badge label={displayCategory} variant="soft" /> : null}
+                {relative ? (
+                  <Text
+                    fontSize={metaSize}
+                    lineHeight={metaLine}
+                    fontWeight="$medium"
+                    color={colors.textMuted}
+                    numberOfLines={1}
+                  >
+                    {relative}
+                  </Text>
+                ) : null}
+              </HStack>
               <Text
                 fontSize={titleSize}
                 lineHeight={titleLine}
                 fontWeight="$semibold"
                 color={colors.text}
                 numberOfLines={2}
+                letterSpacing={-0.15}
               >
                 {headline}
               </Text>
-              <HStack space="sm" alignItems="center" flexWrap="wrap">
+              {summary ? (
                 <Text
-                  fontSize={metaSize}
-                  lineHeight={metaLine}
-                  fontWeight="$medium"
-                  color={colors.textMuted}
-                  numberOfLines={1}
+                  fontSize={summarySize}
+                  lineHeight={summaryLine}
+                  fontWeight="$normal"
+                  color={colors.textSecondary}
+                  numberOfLines={summaryLines}
                 >
-                  {source}
+                  {summary}
                 </Text>
-                {relative ? (
-                  <Text fontSize={metaSize} lineHeight={metaLine} color={colors.textMuted}>
-                    · {relative}
-                  </Text>
-                ) : null}
-              </HStack>
+              ) : null}
+              <Text
+                fontSize={metaSize}
+                lineHeight={metaLine}
+                fontWeight="$medium"
+                color={colors.textMuted}
+                numberOfLines={1}
+              >
+                {source}
+              </Text>
             </VStack>
           </Pressable>
           {showMore && openMore ? (
@@ -195,31 +217,35 @@ export function CompactArticleCardSkeleton({
       style={[styles.wrap, compact ? styles.wrapCompact : null]}
     >
       <Card clipped>
-        <View style={[styles.card, compact ? styles.cardCompact : null]}>
+        <View style={[styles.card, compact ? styles.cardCompact : null, styles.skeletonRow]}>
           <View
             style={[
               styles.thumbWrap,
               {
                 width: thumb,
                 height: thumb,
-                marginLeft: compact ? space.xs + 2 : space.sm,
+                marginLeft: compact ? space.sm : space.md,
+                marginVertical: compact ? space.sm : space.md,
                 backgroundColor: colors.skeleton,
               },
             ]}
           />
           <VStack
             flex={1}
-            space={compact ? 'xs' : 'sm'}
             justifyContent="center"
             style={{
-              paddingHorizontal: compact ? space.sm : space.sm + 4,
-              paddingVertical: compact ? space.xs : space.sm,
+              paddingHorizontal: space.sm,
+              paddingVertical: compact ? space.sm : space.md,
+              gap: compact ? 4 : 6,
+              paddingRight: space.md,
             }}
           >
-            <Box h={compact ? 14 : 18} w={64} bg={colors.skeleton} borderRadius={radius.full} />
-            <Box h={compact ? 14 : 16} w="92%" bg={colors.skeleton} borderRadius={radius.xs} />
-            <Box h={compact ? 12 : 16} w="70%" bg={colors.skeleton} borderRadius={radius.xs} />
-            <Box h={compact ? 10 : 12} w="40%" bg={colors.skeleton} borderRadius={radius.xs} />
+            <Box h={compact ? 12 : 14} w={72} bg={colors.skeleton} borderRadius={radius.full} />
+            <Box h={compact ? 14 : 16} w="94%" bg={colors.skeleton} borderRadius={radius.xs} />
+            <Box h={compact ? 14 : 16} w="72%" bg={colors.skeleton} borderRadius={radius.xs} />
+            <Box h={compact ? 10 : 12} w="100%" bg={colors.skeleton} borderRadius={radius.xs} />
+            <Box h={compact ? 10 : 12} w="88%" bg={colors.skeleton} borderRadius={radius.xs} />
+            <Box h={compact ? 10 : 12} w="36%" bg={colors.skeleton} borderRadius={radius.xs} />
           </VStack>
         </View>
       </Card>
@@ -229,31 +255,34 @@ export function CompactArticleCardSkeleton({
 
 const styles = StyleSheet.create({
   wrap: {
-    marginBottom: space.xs + 2,
+    marginBottom: space.sm,
   },
   wrapCompact: {
-    marginBottom: space.xs,
+    marginBottom: space.xs + 2,
   },
   card: {
     flexDirection: 'row',
     backgroundColor: colors.surface,
     minHeight: HIT_TARGET,
-    alignItems: 'center',
+    alignItems: 'stretch',
     borderRadius: radius.lg,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
   },
   cardCompact: {
-    minHeight: media.thumbDense + space.xs,
+    minHeight: media.thumbDense + space.md,
+  },
+  skeletonRow: {
+    alignItems: 'center',
   },
   cardMain: {
     flex: 1,
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     minHeight: HIT_TARGET,
   },
   cardMainCompact: {
-    minHeight: media.thumbDense + space.xs,
+    minHeight: media.thumbDense + space.md,
   },
   cardHover: {
     backgroundColor: '#F8FAFF',
@@ -265,6 +294,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     backgroundColor: colors.surfaceRaised,
     overflow: 'hidden',
+    flexShrink: 0,
   },
   thumbImage: {
     width: '100%',
@@ -276,15 +306,14 @@ const styles = StyleSheet.create({
   },
   moreBtn: {
     width: HIT_TARGET,
-    height: HIT_TARGET,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: space.xxs,
+    alignSelf: 'stretch',
     borderRadius: radius.md,
   },
   moreBtnCompact: {
     width: 40,
-    height: 40,
   },
   morePressed: {
     backgroundColor: colors.surfaceRaised,

@@ -924,21 +924,22 @@ function SectionHeader({
   actionLabel?: string
   onAction?: () => void
 }) {
-  // Quieter than hero/list titles so the lead story stays the dominant type above the fold.
+  // Section label — secondary to story headlines, clear enough to scan between blocks.
   return (
     <HStack
       px="$4"
-      mb="$2"
+      mt="$2"
+      mb="$3"
       alignItems="center"
       justifyContent="space-between"
-      minHeight={36}
+      minHeight={40}
     >
       <Text
         fontSize={typography.meta.fontSize}
         lineHeight={typography.meta.lineHeight}
-        fontWeight="$semibold"
-        letterSpacing={0.6}
-        color={colors.textSecondary}
+        fontWeight="$bold"
+        letterSpacing={0.7}
+        color={colors.text}
         flex={1}
         textTransform="uppercase"
       >

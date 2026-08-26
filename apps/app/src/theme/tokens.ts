@@ -81,14 +81,14 @@ export const space = {
 
 /** Image / media sizing used by cards and heroes. */
 export const media = {
-  /** List card thumbnail (default / mobile) */
-  thumb: 56,
+  /** List card thumbnail (default / mobile) — sized for headline + summary rows */
+  thumb: 88,
   /** Denser list thumbnail (desktop compact rows) */
-  thumbDense: 48,
-  /** Full-bleed / carousel hero */
-  heroHeight: 220,
+  thumbDense: 64,
+  /** Full-bleed / carousel hero — room for title + one-line summary */
+  heroHeight: 248,
   /** Desktop lead hero (dominant above-the-fold card) */
-  heroPrimaryHeight: 280,
+  heroPrimaryHeight: 300,
   /** Each stacked secondary beside the lead */
   heroSecondaryHeight: 134,
   articleHeroHeight: 260,
