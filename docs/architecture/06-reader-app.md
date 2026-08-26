@@ -7,6 +7,10 @@
 
 Universal Expo client (`apps/app`) for readers: web/PWA now, native later. Phone-first localized feed with WhatsApp share ([ADR-003](../adr/003-expo-universal-client.md)).
 
+Build **mobile-first** (touch targets, feed density, bottom tabs) while keeping breakpoint responsiveness: tablet pairing and desktop sidebar/rail remain active from `useBreakpoint`.
+
+Feed chrome follows a Google News–like structure on light surfaces: centered brand top bar, pill category chips, image-above-text top stories, thumb-right list rows, accent section titles.
+
 ## Boundaries
 
 - **In scope:** Expo Router screens, API client, city preference, share, desktop layout, theme tokens, PWA assets.
@@ -48,7 +52,9 @@ flowchart LR
 | `src/utils/shareToWhatsApp.ts` | Share deep link / intent |
 | `src/components/desktop/*` | Desktop shell / sidebar / hero row |
 | `src/storage/viewSession.ts` | Anonymous view sessions for trending |
-| `src/theme/tokens.ts` | Light shell `#FAFAFA`, accent `#1D7BFF` |
+| `src/theme/tokens.ts` | Light shell `#F4F6FA`, accent `#2855E8` |
+| `src/components/CompactArticleCard.tsx` | Feed row: source, headline, thumb-right, time + more |
+| `src/components/BreakingHeroCard.tsx` | Top story: rounded image above source/headline/time |
 | `public/manifest.webmanifest`, `public/_headers` | PWA / Pages headers |
 
 Stack: Expo ~54, expo-router, Gluestack UI, Moti, AsyncStorage.
