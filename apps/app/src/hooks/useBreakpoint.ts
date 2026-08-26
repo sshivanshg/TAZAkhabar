@@ -1,5 +1,5 @@
 import { useWindowDimensions } from 'react-native'
-import { breakpoints } from '../theme/tokens'
+import { breakpoints, FORCE_MOBILE_LAYOUT } from '../theme/tokens'
 
 export type Breakpoint = 'mobile' | 'tablet' | 'desktop' | 'wide'
 
@@ -12,6 +12,9 @@ export function breakpointFromWidth(width: number): Breakpoint {
 
 export function useBreakpoint(): Breakpoint {
   const { width } = useWindowDimensions()
+  if (FORCE_MOBILE_LAYOUT) {
+    return 'mobile'
+  }
   return breakpointFromWidth(width)
 }
 
