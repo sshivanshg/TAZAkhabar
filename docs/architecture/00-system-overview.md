@@ -1,7 +1,7 @@
 # System overview
 
 > **Living doc** — update in the same change when topology, hosting, or cross-app contracts move.  
-> **Last verified against:** 2026-08-16 (GitHub Actions nightly ingest added)
+> **Last verified against:** 2026-08-26 (OpenAI scrape rewrite alongside Claude)
 
 ## Purpose
 
@@ -9,7 +9,7 @@ End-to-end picture of NewsFeed: who talks to whom, where code lives, and why the
 
 ## Boundaries
 
-- **In scope:** Reader ↔ API ↔ Neon; admin ↔ API; Cloudflare Pages + proxied API; Render API + ingest crons; outbound RSS/HTML/Claude.
+- **In scope:** Reader ↔ API ↔ Neon; admin ↔ API; Cloudflare Pages + proxied API; Render API + ingest crons; outbound RSS/HTML/Claude/OpenAI.
 - **Out of scope:** Marketing site, native EAS store details, future multi-editor identity.
 
 ## Context diagram
@@ -41,6 +41,7 @@ flowchart TB
     RSS[RSS feeds]
     HTML[Newspaper HTML]
     Claude[Anthropic Claude]
+    OpenAI[OpenAI scrape rewrite]
   end
 
   Reader --> CDN
@@ -55,6 +56,7 @@ flowchart TB
   API --> RSS
   API --> HTML
   API --> Claude
+  API --> OpenAI
 ```
 
 ## Components / key types
@@ -95,13 +97,13 @@ sequenceDiagram
   participant C as Render cron / Admin
   participant A as API
   participant S as RSS or HTML or upload
-  participant AI as Claude
+  participant AI as Claude or OpenAI
   participant N as Neon
   participant E as Admin SSE
   C->>A: Trigger ingest (key or JWT)
   A->>N: create IngestionRun
   A->>S: fetch content
-  A->>AI: summarize / extract / translate
+  A->>AI: summarize / rewrite / extract / translate
   A->>N: insert articles
   A-->>E: ingest events stream
 ```
@@ -118,6 +120,7 @@ sequenceDiagram
 | **Shared admin password + JWT** | Editorial writes without a user table ([ADR-005](../adr/005-admin-shared-credential.md)) |
 | **Render + Cloudflare Pages + Neon** | Docker API auto-deploy; static CDNs; edge-cache feed GETs to cut Neon cost ([ADR-004](../adr/004-render-cloudflare-neon-hosting.md)) |
 | **Claude (`ArticleIntelligence`)** | Summarize, PDF/image story extract, translate |
+| **OpenAI (`OpenAiRewrite`)** | Rewrite scraped articles into original digest summary + body |
 | **Light UI + single blue accent** | Defer branding without UI rebuild |
 
 ## Key files

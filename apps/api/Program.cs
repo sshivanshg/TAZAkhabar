@@ -43,6 +43,8 @@ try
     builder.Services.Configure<AdminOptions>(builder.Configuration.GetSection(AdminOptions.SectionName));
     builder.Services.Configure<ArticleIntelligenceOptions>(
         builder.Configuration.GetSection(ArticleIntelligenceOptions.SectionName));
+    builder.Services.Configure<OpenAiRewriteOptions>(
+        builder.Configuration.GetSection(OpenAiRewriteOptions.SectionName));
     builder.Services.Configure<UploadOptions>(builder.Configuration.GetSection(UploadOptions.SectionName));
     builder.Services.Configure<IngestHealthOptions>(builder.Configuration.GetSection(IngestHealthOptions.SectionName));
     if (builder.Environment.IsDevelopment())
@@ -82,6 +84,11 @@ try
         client.Timeout = TimeSpan.FromSeconds(90);
         client.DefaultRequestHeaders.UserAgent.ParseAdd("NewsFeedIngest/0.1");
     });
+    builder.Services.AddHttpClient(OpenAiArticleRewriter.HttpClientName, client =>
+    {
+        client.Timeout = TimeSpan.FromSeconds(60);
+        client.DefaultRequestHeaders.UserAgent.ParseAdd("NewsFeedIngest/0.1");
+    });
     builder.Services.AddHttpClient("alerts", client =>
     {
         client.Timeout = TimeSpan.FromSeconds(10);
@@ -92,6 +99,7 @@ try
     builder.Services.AddSingleton<IScrapeHttpClient, ScrapeHttpClient>();
     builder.Services.AddSingleton<IArticleImageHtmlClient, ArticleImageHtmlClient>();
     builder.Services.AddSingleton<IArticleIntelligence, ClaudeArticleIntelligence>();
+    builder.Services.AddSingleton<IArticleRewriter, OpenAiArticleRewriter>();
     builder.Services.AddSingleton<PdfProcessingQueue>();
     builder.Services.AddSingleton<ImageEnrichmentQueue>();
     builder.Services.AddScoped<RssIngestService>();

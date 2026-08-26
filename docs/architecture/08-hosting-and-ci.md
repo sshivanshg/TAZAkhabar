@@ -1,7 +1,7 @@
 # Hosting and CI
 
 > **Living doc** — update when Render, Cloudflare, Neon, Docker, workflows, or env templates change.  
-> **Last verified against:** 2026-08-16 (GitHub Actions nightly ingest trigger, explicit migrations, OpenAPI drift check)
+> **Last verified against:** 2026-08-26 (OpenAI scrape rewrite secrets)
 
 ## Purpose
 
@@ -66,7 +66,7 @@ No `wrangler.toml` in-repo — Pages deploy uses `cloudflare/pages-action` (wran
 
 - Health: `/healthz`
 - Port: `8080`
-- Secrets in dashboard (`sync: false`): DB, CORS origins, ingest secret, admin password/JWT key, Claude key, upload root.
+- Secrets in dashboard (`sync: false`): DB, CORS origins, ingest secret, admin password/JWT key, Claude key, OpenAI rewrite key, upload root.
 - Production API boot does not apply EF migrations. Review the CI SQL artifact, then run `Migrate Production Database` manually.
 
 ## Key files
@@ -88,6 +88,7 @@ No `wrangler.toml` in-repo — Pages deploy uses `cloudflare/pages-action` (wran
 | `RssIngest__Secret` | Render + crons + GitHub Actions nightly ingest |
 | `Admin__Password`, `Admin__JwtSigningKey` | Render |
 | `ArticleIntelligence__ApiKey` / `BaseUrl` / `Model` | Render |
+| `OpenAiRewrite__ApiKey` / `BaseUrl` / `Model` | Render |
 | `Upload__RootPath` | Render |
 | `IngestHealth__MaxSilenceMinutes`, `IngestHealth__AlertWebhookUrl` | Render |
 | `INGEST_URL` | Render cron services and GitHub Actions `nightly-ingest.yml` |
@@ -103,7 +104,7 @@ No `wrangler.toml` in-repo — Pages deploy uses `cloudflare/pages-action` (wran
 - API deploys are owned by Render, not the Pages deploy job.
 - **Do not let Cloudflare dashboard Git builds replace Actions without env.** Connecting the repo in Pages Settings starts a second pipeline that does **not** see GitHub `vars.EXPO_PUBLIC_API_BASE_URL`. Expo then ships `EXPO_PUBLIC_API_BASE_URL is not configured`. Prefer: pause Pages automatic deployments and keep `.github/workflows/deploy.yml`. If Git builds stay on, set production env `EXPO_PUBLIC_API_BASE_URL`, build command `corepack enable && pnpm install --frozen-lockfile && pnpm --filter @newsfeed/app build:web`, output `apps/app/dist`.
 - Edge caching implies up to ~60s feed staleness — tune deliberately.
-- `.github/workflows/nightly-ingest.yml` runs at `30 18 * * *` UTC (00:00 IST) and calls `/api/ingest/daily`, which avoids Claude summarization.
+- `.github/workflows/nightly-ingest.yml` runs at `30 18 * * *` UTC (00:00 IST) and calls `/api/ingest/daily`, which avoids Claude summarization and OpenAI scrape rewrite.
 - Staging Render/Neon deferred; when added, separate service + Neon branch/project.
 - Never commit real secrets; only `*.example` templates.
 - Local tools must not point at production Neon.

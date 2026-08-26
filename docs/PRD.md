@@ -39,7 +39,7 @@ Differentiation: (1) UX explicitly designed for 40+ readability (larger text, si
 Web app (mobile-responsive), used as the MVP surface before native app
 Coverage: 3-4 pilot cities
 Content sourced via RSS (where available) from local newspapers, or direct partnership with 1-2 local outlets per pilot city
-Original short-form summaries for RSS/PDF (Claude); scrape stores extracted plain-text body in-app (with source attribution and link-back)
+Original short-form summaries for RSS/PDF (Claude); scrape stores an OpenAI-rewritten digest (summary + body) with source attribution and link-back (falls back to extracted plain text when rewrite is unavailable)
 City/locality selection on first use (manual selection; no GPS requirement for MVP)
 Feed view: headline + 2-4 line summary + source attribution; tap opens an in-app swipe reader (full body when stored)
 Share button → WhatsApp (deep link / share intent)
@@ -66,7 +66,7 @@ FR-1
 System ingests articles via RSS/scraping pipeline per source, tagged by city
 Must
 FR-2
-System generates a short original summary for RSS/PDF (review queue). Scrape uses the publisher snippet as summary and stores extracted plain-text body.
+System generates a short original summary for RSS/PDF (review queue). Scrape rewrites extracted content via OpenAI into an original digest summary + body (auto-published; falls back to extract on failure).
 Must
 FR-3
 User can select/change their city on the web app
@@ -98,11 +98,11 @@ Could
 Performance: Feed loads in under 2 seconds on 4G
 Accessibility: Large tap targets, minimum 16px base font, WCAG AA contrast — critical given the 40+ target audience
 Reliability: Content pipeline must handle source site downtime/layout changes gracefully (fallback/error logging, not a broken feed)
-Legal/Compliance: Always attribute and link to source; maintain a takedown process if a publisher objects. Scrape stores plain-text body extracted from already-fetched HTML (not raw HTML). RSS/PDF remain digest-first with editorial review.
+Legal/Compliance: Always attribute and link to source; maintain a takedown process if a publisher objects. Scrape stores plain-text digests (OpenAI rewrite or extracted body from already-fetched HTML — never raw HTML). RSS/PDF remain digest-first with editorial review.
 9. Content Sourcing & Legal Notes
 Prioritize sources with public RSS feeds
 For sources without RSS, scrape list pages and store extracted plain text for in-app reading; keep a takedown process
-RSS/PDF summaries are independently written (Claude); scrape summaries are the extracted snippet, not a second Claude rewrite
+RSS/PDF summaries are independently written (Claude); scrape digests are independently rewritten (OpenAI) from extracted plain text, with extract fallback when rewrite is off or fails
 Keep an editorial log of source-to-article mapping in case of publisher disputes
 10. Tech Stack (as decided)
 Frontend (MVP): Web app, mobile-responsive (PWA-capable for "Add to Home Screen" flow)

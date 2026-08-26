@@ -1,11 +1,11 @@
 # Ingestion
 
 > **Living doc** — update when pipelines, article status on insert, cron, SSE, or intelligence providers change.  
-> **Last verified against:** 2026-08-25 (expanded city source catalog for daily fill)
+> **Last verified against:** 2026-08-26 (OpenAI scrape rewrite layer)
 
 ## Purpose
 
-Bring external news into Postgres: RSS, HTML scrape, PDF/image upload, optional Claude intelligence, background image enrichment, and live run events for admin.
+Bring external news into Postgres: RSS, HTML scrape, PDF/image upload, optional Claude intelligence, OpenAI scrape rewrite, background image enrichment, and live run events for admin.
 
 ## Daily source strategy
 
@@ -50,6 +50,7 @@ flowchart TB
   Bus --> SSE[SSE /ingestion-runs/id/events]
   RssSvc --> Claude[ClaudeArticleIntelligence]
   PdfSvc --> Claude
+  ScrapeSvc --> OpenAI[OpenAiArticleRewriter]
   ScrapeSvc --> HTML[SafeHttp + HtmlArticleExtractor]
   RssSvc --> HTML
   RssSvc --> Feeds[RSS URLs]
@@ -62,13 +63,14 @@ flowchart TB
 | Pipeline | Service | Trigger | Insert status (current) |
 |----------|---------|---------|-------------------------|
 | RSS | `RssIngestService.cs` | Cron or admin source trigger | `PendingReview` |
-| Scrape | `ScrapeIngestService.cs` + `HtmlArticleExtractor`, `ScrapeHttpClient` | Cron or admin trigger | `Published` |
+| Scrape | `ScrapeIngestService.cs` + `HtmlArticleExtractor`, `ScrapeHttpClient`, `OpenAiArticleRewriter` | Cron or admin trigger | `Published` |
 | PDF / image | `PdfIngestService.cs`, `PdfTextExtractor` (PdfPig), `PdfProcessingQueue` + `PdfProcessingWorker` | Admin uploads | `PendingReview` |
 | Image OG | `ArticleImageEnrichmentService`, `OgImageExtractor`, `ImageEnrichmentQueue` + worker | After ingest | Updates `ImageUrl` |
 
 | Piece | Path / type |
 |-------|-------------|
 | Intelligence | `IArticleIntelligence` → `ClaudeArticleIntelligence` |
+| Scrape rewrite | `IArticleRewriter` → `OpenAiArticleRewriter` |
 | Safety | `SafeHttp.cs` (blocks private/localhost targets; scrape re-validates each redirect `Location`) |
 | Events | `IngestionEventBus`, `IngestionEvents.Emit`, `IngestionEventDto` |
 | Run row | `IngestionRun` entity |
@@ -109,19 +111,21 @@ Every 45 minutes (`render.yaml`):
 Nightly at midnight IST (`30 18 * * *` UTC):
 
 - `nightly-ingest.yml` → `POST {INGEST_URL}/api/ingest/daily`
-- Runs all active RSS sources with Claude summarization disabled, then all active scrape sources.
+- Runs all active RSS sources with Claude summarization disabled, then all active scrape sources with OpenAI rewrite disabled.
 
 Render crons and the GitHub Actions job send header `X-Ingest-Key: RssIngest__Secret`.
 
 ### Intelligence calls
 
-Claude via `ArticleIntelligence__ApiKey`, `BaseUrl` (default `https://api.anthropic.com`), `Model` (default `claude-sonnet-4-5`):
+Claude via `ArticleIntelligence__ApiKey`, `BaseUrl`, `Model` (Anthropic Messages API).
 
-| Pipeline | Claude | Stored `summary` | Stored `body` |
-|----------|--------|------------------|---------------|
-| **Scrape** | None | Extracted snippet (plain text) | `HtmlArticleExtractor.ExtractBody` (~50k chars, never raw HTML) |
-| **RSS** | `SummarizeArticleAsync` (fallback to feed snippet on failure); disabled for `/api/ingest/daily` | Claude digest, or feed snippet in daily no-AI cron | Fetched HTML body when the link is reachable |
-| **PDF** | `ExtractStoriesAsync` / image extract | Claude story summary | PdfPig plain text (shared across stories from that file) |
+OpenAI scrape rewrite via `OpenAiRewrite__ApiKey`, `BaseUrl` (default `https://api.openai.com/v1`), `Model` (default `gpt-4o-mini`):
+
+| Pipeline | LLM | Stored `summary` | Stored `body` |
+|----------|-----|------------------|---------------|
+| **Scrape** | `OpenAiArticleRewriter.RewriteScrapedArticleAsync` (fallback to extract on missing key/failure); disabled for `/api/ingest/daily` | OpenAI digest, or extracted snippet | OpenAI digest body, or `HtmlArticleExtractor.ExtractBody` (~50k chars, never raw HTML) |
+| **RSS** | Claude `SummarizeArticleAsync` (fallback to feed snippet on failure); disabled for `/api/ingest/daily` | Claude digest, or feed snippet in daily no-AI cron | Fetched HTML body when the link is reachable |
+| **PDF** | Claude `ExtractStoriesAsync` / image extract | Claude story summary | PdfPig plain text (shared across stories from that file) |
 
 Translate still runs on read for headline/summary when `?lang=` differs from detected language. Body is not translated.
 
@@ -139,12 +143,12 @@ Existing rows without body: `POST /api/ingest/backfill-bodies?take=&afterId=` (i
 |----------|--------|
 | `POST /api/ingest/rss` | `IngestRss` + ingest key |
 | `POST /api/ingest/scrape` | `IngestScrape` + ingest key |
-| `POST /api/ingest/daily` | `IngestDaily` + ingest key; nightly RSS + scrape batch, no RSS summarization |
+| `POST /api/ingest/daily` | `IngestDaily` + ingest key; nightly RSS + scrape batch, no Claude summarization and no OpenAI rewrite |
 | `POST /api/ingest/backfill-bodies` | `IngestBackfillBodies` + ingest key |
 | Admin trigger | `POST /api/admin/sources/{id}/trigger` → 202 + durable `IngestionJob` |
 | SSE | `GET /api/admin/ingestion-runs/{id}/events` |
 | Uploads | `POST /api/admin/uploads` multipart |
-| Env | `RssIngest__Secret`, `INGEST_URL` (Render cron), `ArticleIntelligence__*`, `Upload__RootPath`, `IngestHealth__*` |
+| Env | `RssIngest__Secret`, `INGEST_URL` (Render cron), `ArticleIntelligence__*`, `OpenAiRewrite__*`, `Upload__RootPath`, `IngestHealth__*` |
 
 Event types: `started`, `fetch`, `progress`, `completed`, `error` (terminal: `completed` \| `error`).
 

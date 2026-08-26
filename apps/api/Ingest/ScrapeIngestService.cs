@@ -11,6 +11,7 @@ public sealed class ScrapeIngestService
 
     private readonly AppDbContext _db;
     private readonly IScrapeHttpClient _http;
+    private readonly IArticleRewriter _rewriter;
     private readonly IIngestionEventBus _events;
     private readonly ImageEnrichmentQueue _imageEnrichmentQueue;
     private readonly ILogger<ScrapeIngestService> _logger;
@@ -19,16 +20,18 @@ public sealed class ScrapeIngestService
     public ScrapeIngestService(
         AppDbContext db,
         IScrapeHttpClient http,
+        IArticleRewriter rewriter,
         IIngestionEventBus events,
         ImageEnrichmentQueue imageEnrichmentQueue,
         ILogger<ScrapeIngestService> logger)
-        : this(db, http, events, imageEnrichmentQueue, logger, TimeSpan.FromMilliseconds(300))
+        : this(db, http, rewriter, events, imageEnrichmentQueue, logger, TimeSpan.FromMilliseconds(300))
     {
     }
 
     public ScrapeIngestService(
         AppDbContext db,
         IScrapeHttpClient http,
+        IArticleRewriter rewriter,
         IIngestionEventBus events,
         ImageEnrichmentQueue imageEnrichmentQueue,
         ILogger<ScrapeIngestService> logger,
@@ -36,13 +39,14 @@ public sealed class ScrapeIngestService
     {
         _db = db;
         _http = http;
+        _rewriter = rewriter;
         _events = events;
         _imageEnrichmentQueue = imageEnrichmentQueue;
         _logger = logger;
         _delay = delayBetweenRequests;
     }
 
-    public async Task<IngestRunResult> RunAllActiveAsync(CancellationToken ct)
+    public async Task<IngestRunResult> RunAllActiveAsync(CancellationToken ct, bool useRewrite = true)
     {
         var sources = await _db.Sources
             .AsNoTracking()
@@ -58,7 +62,7 @@ public sealed class ScrapeIngestService
         foreach (var source in sources)
         {
             attempted++;
-            var run = await RunSourceAsync(source.Id, ct);
+            var run = await RunSourceAsync(source.Id, ct, useRewrite: useRewrite);
             inserted += run.ArticlesAdded;
             skipped += run.ArticlesSkipped;
             if (run.ArticlesFailed > 0 || !string.IsNullOrEmpty(run.ErrorSummary))
@@ -73,7 +77,8 @@ public sealed class ScrapeIngestService
     public async Task<IngestionRun> RunSourceAsync(
         int sourceId,
         CancellationToken ct,
-        int? existingRunId = null)
+        int? existingRunId = null,
+        bool useRewrite = true)
     {
         var source = await _db.Sources.FirstOrDefaultAsync(s => s.Id == sourceId, ct)
             ?? throw new InvalidOperationException($"Source {sourceId} not found.");
@@ -242,6 +247,65 @@ public sealed class ScrapeIngestService
                     }
 
                     var storedBody = string.IsNullOrWhiteSpace(body) ? null : body;
+                    var rewriteInput = !string.IsNullOrWhiteSpace(body) ? body : summary;
+
+                    if (useRewrite)
+                    {
+                        try
+                        {
+                            IngestionEvents.Emit(
+                                _events,
+                                run.Id,
+                                "progress",
+                                $"Rewriting · {HtmlText.Truncate(headline, 80)}");
+                            var rewritten = await _rewriter.RewriteScrapedArticleAsync(
+                                headline,
+                                rewriteInput,
+                                city.Slug,
+                                ct);
+                            if (rewritten is not null)
+                            {
+                                if (!string.IsNullOrWhiteSpace(rewritten.Headline))
+                                {
+                                    headline = HtmlText.Truncate(rewritten.Headline.Trim(), 300);
+                                }
+
+                                if (!string.IsNullOrWhiteSpace(rewritten.Summary))
+                                {
+                                    summary = rewritten.Summary;
+                                }
+
+                                if (!string.IsNullOrWhiteSpace(rewritten.Body))
+                                {
+                                    storedBody = rewritten.Body;
+                                }
+                            }
+                        }
+                        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+                        {
+                            throw;
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogWarning(
+                                ex,
+                                "OpenAI scrape rewrite failed for {SourceUrl}; using extract",
+                                sourceUrl);
+                            IngestionEvents.Emit(
+                                _events,
+                                run.Id,
+                                "progress",
+                                $"Rewrite failed · using extract · {HtmlText.Truncate(headline, 80)}");
+                        }
+                    }
+                    else
+                    {
+                        IngestionEvents.Emit(
+                            _events,
+                            run.Id,
+                            "progress",
+                            $"Using extract · {HtmlText.Truncate(headline, 80)}");
+                    }
 
                     if (await TryInsertAsync(city.Id, source, headline, summary, storedBody, sourceUrl, publishedAt, ct))
                     {

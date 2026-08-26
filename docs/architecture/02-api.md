@@ -1,7 +1,7 @@
 # API
 
 > **Living doc** — update when endpoints, auth, rate limits, CORS, or DI composition change.  
-> **Last verified against:** 2026-08-16 (GitHub Actions nightly ingest trigger)
+> **Last verified against:** 2026-08-26 (OpenAI scrape rewrite options)
 
 ## Purpose
 
@@ -29,7 +29,7 @@ flowchart LR
 |------|----------|
 | Entry | `apps/api/Program.cs` |
 | Endpoints | `apps/api/Endpoints/` |
-| Options | `apps/api/Options/` (`Cors`, `RateLimiting`, `RssIngest`, `Admin`, `ArticleIntelligence`, `Upload`) |
+| Options | `apps/api/Options/` (`Cors`, `RateLimiting`, `RssIngest`, `Admin`, `ArticleIntelligence`, `OpenAiRewrite`, `Upload`) |
 | Presentation | `Services/ArticlePresentationService.cs`, `Services/CityCalendar.cs` |
 | Logging | Serilog console + request/ingestion correlation properties |
 
@@ -51,7 +51,7 @@ Pipeline (order): Serilog request logging → RequestId header/log context → E
 | GET | `/api/articles/{id}` | `GetArticleById` | Published only; includes plain-text `body` when stored |
 | POST | `/api/ingest/rss` | `IngestRss` | `X-Ingest-Key` |
 | POST | `/api/ingest/scrape` | `IngestScrape` | `X-Ingest-Key` |
-| POST | `/api/ingest/daily` | `IngestDaily` | `X-Ingest-Key`; nightly RSS + scrape batch, no RSS summarization |
+| POST | `/api/ingest/daily` | `IngestDaily` | `X-Ingest-Key`; nightly RSS + scrape batch, no Claude summarization and no OpenAI rewrite |
 | POST | `/api/ingest/backfill-bodies` | `IngestBackfillBodies` | `X-Ingest-Key`; fills missing `body` from source HTML |
 
 ### Admin endpoints
@@ -93,6 +93,7 @@ Pipeline (order): Serilog request logging → RequestId header/log context → E
 | `RssIngest__Secret` | Ingest header for Render crons and GitHub Actions nightly trigger |
 | `Admin__Password` / `Admin__JwtSigningKey` | Admin login |
 | `ArticleIntelligence__*` | Claude |
+| `OpenAiRewrite__*` | OpenAI scrape rewrite |
 | `Upload__RootPath` | PDF/image storage |
 
 OpenAPI: `MapSwagger("/openapi/{documentName}.json")` → `/openapi/v1.json`. Swagger UI in Development only.
