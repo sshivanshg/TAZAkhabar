@@ -107,7 +107,7 @@ export function CityListItem({
           </Text>
         ) : null}
       </View>
-      <View style={styles.indicator} accessibilityElementsHidden>
+      <View style={styles.indicator}>
         {saving ? (
           <ActivityIndicator color={colors.accent} size="small" />
         ) : selected ? (
@@ -191,6 +191,7 @@ const styles = StyleSheet.create({
     minHeight: HIT_TARGET,
     alignItems: 'center',
     justifyContent: 'center',
+    pointerEvents: 'none',
   },
   checkWrap: {
     width: 28,
