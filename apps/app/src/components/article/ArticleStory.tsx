@@ -1,0 +1,453 @@
+import { memo, useMemo, useState } from 'react'
+import {
+  Image,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  useWindowDimensions,
+  View,
+} from 'react-native'
+import Newspaper from 'lucide-react-native/icons/newspaper'
+import type { ArticleResponse } from '@newsfeed/shared-types'
+import { iconStroke } from '../../theme/categoryIcons'
+import {
+  ARTICLE_COLUMN_MAX,
+  ARTICLE_HEADLINE_MAX,
+  readerColors,
+} from '../../theme/readerTokens'
+import { formatRelativeTime } from '../../utils/relativeTime'
+import { estimateReadingMinutes, formatReadingTime } from '../../utils/readingTime'
+import { isHttpsUrl } from '../../utils/shareToWhatsApp'
+import { parseArticleBlocks } from '../../utils/splitArticleBody'
+import { ArticleActions } from './ArticleActions'
+import { pressableState, webFocusRing } from './focusStyle'
+
+type Props = {
+  article: ArticleResponse
+  cityLabel?: string
+  bookmarked: boolean
+  priorityImage?: boolean
+  onShare: () => void
+  onSave: () => void
+  onReadSource: () => void
+  onRetry?: () => void
+}
+
+function publisherName(article: ArticleResponse): string | undefined {
+  const name = article.sourceName?.trim()
+  return name || undefined
+}
+
+function ArticleHero({
+  uri,
+  headline,
+  priority,
+}: {
+  uri: string | null
+  headline: string
+  priority: boolean
+}) {
+  const [failed, setFailed] = useState(false)
+  const [loaded, setLoaded] = useState(false)
+  const showImage = Boolean(uri) && !failed
+
+  return (
+    <View style={styles.hero} accessibilityRole="image" accessibilityLabel={headline}>
+      {showImage ? (
+        <Image
+          source={{ uri: uri! }}
+          style={StyleSheet.absoluteFillObject}
+          resizeMode="cover"
+          accessibilityIgnoresInvertColors
+          onLoad={() => setLoaded(true)}
+          onError={() => setFailed(true)}
+          {...(Platform.OS === 'web'
+            ? ({ loading: priority ? 'eager' : 'lazy' } as object)
+            : null)}
+        />
+      ) : (
+        <View style={styles.heroFallback} accessibilityElementsHidden>
+          <Newspaper size={28} strokeWidth={iconStroke} color={readerColors.textMuted} />
+        </View>
+      )}
+      {showImage && !loaded ? <View style={styles.heroPlaceholder} /> : null}
+    </View>
+  )
+}
+
+function SourceLink({
+  label,
+  url,
+  onPress,
+}: {
+  label: string
+  url?: string
+  onPress: () => void
+}) {
+  const clickable = Boolean(url)
+
+  if (clickable) {
+    return (
+      <Pressable
+        accessibilityRole="link"
+        accessibilityLabel={`Source: ${label}`}
+        onPress={onPress}
+        style={(state) => {
+          const { pressed, focused } = pressableState(state)
+          return [
+            styles.sourcePress,
+            pressed ? styles.pressed : null,
+            webFocusRing(Boolean(focused)),
+          ]
+        }}
+      >
+        <Text style={styles.sourceLink}>Source: {label} ↗</Text>
+      </Pressable>
+    )
+  }
+
+  return <Text style={styles.meta}>Source: {label}</Text>
+}
+
+function ArticleStoryBase({
+  article,
+  cityLabel,
+  bookmarked,
+  priorityImage = false,
+  onShare,
+  onSave,
+  onReadSource,
+  onRetry,
+}: Props) {
+  const { width } = useWindowDimensions()
+  const imageUri = article.imageUrl && isHttpsUrl(article.imageUrl) ? article.imageUrl : null
+  const category = article.category?.trim()
+  const displayCategory = category?.toLowerCase() === 'local' ? undefined : category
+  const location = cityLabel?.trim() || displayCategory
+  const publisher = publisherName(article)
+  const sourceUrl = isHttpsUrl(article.sourceUrl) ? article.sourceUrl!.trim() : undefined
+  const time = article.publishedAt ? formatRelativeTime(article.publishedAt) : null
+  const bodyText = (article.body ?? '').trim() || (article.summary ?? '').trim()
+  const blocks = useMemo(() => parseArticleBlocks(bodyText), [bodyText])
+  const readingTime = formatReadingTime(estimateReadingMinutes(bodyText))
+  const metaParts = [publisher, time, readingTime].filter(Boolean)
+  const headline = (article.headline ?? '').trim() || 'Untitled story'
+  const headlineSize = width >= 768 ? 36 : 30
+  const headlineLine = width >= 768 ? 40 : 34
+  const hasContent = blocks.length > 0
+
+  return (
+    <View
+      {...(Platform.OS === 'web' ? ({ role: 'article' } as object) : null)}
+      style={styles.root}
+    >
+      <ArticleHero uri={imageUri} headline={headline} priority={priorityImage} />
+
+      <View style={styles.column}>
+        <View
+          accessibilityRole="header"
+          {...(Platform.OS === 'web' ? ({ role: 'header' } as object) : null)}
+          style={styles.header}
+        >
+          {location ? <Text style={styles.eyebrow}>{location}</Text> : null}
+          <Text
+            style={[
+              styles.headline,
+              { fontSize: headlineSize, lineHeight: headlineLine },
+            ]}
+          >
+            {headline}
+          </Text>
+          {metaParts.length > 0 ? (
+            <Text style={styles.meta}>{metaParts.join(' · ')}</Text>
+          ) : null}
+          {publisher ? (
+            <SourceLink label={publisher} url={sourceUrl} onPress={onReadSource} />
+          ) : null}
+        </View>
+
+        {sourceUrl ? (
+          <Pressable
+            testID="read-original"
+            accessibilityRole="link"
+            accessibilityLabel={`Read original article from ${publisher ?? 'the publisher'}`}
+            onPress={onReadSource}
+            style={(state) => {
+              const { pressed, focused } = pressableState(state)
+              return [
+                styles.originalCta,
+                pressed ? styles.pressed : null,
+                webFocusRing(Boolean(focused)),
+              ]
+            }}
+          >
+            <Text style={styles.originalCtaText}>Read original article ↗</Text>
+          </Pressable>
+        ) : null}
+
+        <View style={styles.body}>
+          {hasContent ? (
+            blocks.map((block, index) => {
+              if (block.type === 'ul') {
+                return (
+                  <View key={`ul-${index}`} style={styles.list}>
+                    {block.items.map((item, itemIndex) => (
+                      <View key={itemIndex} style={styles.listItem}>
+                        <Text style={styles.bullet}>•</Text>
+                        <Text style={styles.paragraph}>{item}</Text>
+                      </View>
+                    ))}
+                  </View>
+                )
+              }
+              if (block.type === 'quote') {
+                return (
+                  <View key={`q-${index}`} style={styles.quote}>
+                    <Text style={styles.quoteText}>{block.text}</Text>
+                  </View>
+                )
+              }
+              return (
+                <Text key={`p-${index}`} style={styles.paragraph}>
+                  {block.text}
+                </Text>
+              )
+            })
+          ) : (
+            <View style={styles.emptyBody}>
+              <Text style={styles.emptyTitle}>Unable to load this story.</Text>
+              {onRetry ? (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Retry loading this story"
+                  onPress={onRetry}
+                  style={(state) => {
+                    const { pressed, focused } = pressableState(state)
+                    return [
+                      styles.retry,
+                      pressed ? styles.pressed : null,
+                      webFocusRing(Boolean(focused)),
+                    ]
+                  }}
+                >
+                  <Text style={styles.retryLabel}>Retry</Text>
+                </Pressable>
+              ) : null}
+            </View>
+          )}
+        </View>
+
+        {publisher || sourceUrl ? (
+          <View style={styles.attribution}>
+            <Text style={styles.attributionKicker}>Original reporting</Text>
+            <Text style={styles.attributionBody}>
+              {publisher
+                ? `This story is based on reporting published by ${publisher}.`
+                : 'This story is based on the original publisher’s reporting.'}
+            </Text>
+            {sourceUrl ? (
+              <Pressable
+                accessibilityRole="link"
+                accessibilityLabel={`View full article from ${publisher ?? 'the publisher'}`}
+                onPress={onReadSource}
+                style={(state) => {
+                  const { pressed, focused } = pressableState(state)
+                  return [
+                    styles.attrLink,
+                    pressed ? styles.pressed : null,
+                    webFocusRing(Boolean(focused)),
+                  ]
+                }}
+              >
+                <Text style={styles.attrLinkText}>View full article ↗</Text>
+              </Pressable>
+            ) : null}
+          </View>
+        ) : null}
+
+        <ArticleActions
+          bookmarked={bookmarked}
+          hasSource={Boolean(sourceUrl)}
+          onShare={onShare}
+          onSave={onSave}
+          onReadSource={onReadSource}
+        />
+      </View>
+    </View>
+  )
+}
+
+export const ArticleStory = memo(ArticleStoryBase)
+
+const styles = StyleSheet.create({
+  root: {
+    width: '100%',
+    maxWidth: ARTICLE_HEADLINE_MAX,
+    alignSelf: 'center',
+    backgroundColor: readerColors.canvas,
+  },
+  hero: {
+    width: '100%',
+    aspectRatio: 16 / 9,
+    backgroundColor: readerColors.imageFallback,
+    overflow: 'hidden',
+  },
+  heroFallback: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: readerColors.imageFallback,
+  },
+  heroPlaceholder: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: readerColors.imageFallback,
+  },
+  column: {
+    width: '100%',
+    maxWidth: ARTICLE_COLUMN_MAX,
+    alignSelf: 'center',
+    paddingHorizontal: 22,
+    paddingTop: 22,
+    paddingBottom: 12,
+  },
+  header: {
+    gap: 8,
+  },
+  eyebrow: {
+    color: readerColors.accent,
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+  },
+  headline: {
+    color: readerColors.text,
+    fontWeight: '800',
+    letterSpacing: -0.6,
+  },
+  meta: {
+    color: readerColors.textMuted,
+    fontSize: 15,
+    lineHeight: 22,
+    marginTop: 4,
+  },
+  sourcePress: {
+    alignSelf: 'flex-start',
+    minHeight: 32,
+    justifyContent: 'center',
+  },
+  sourceLink: {
+    color: readerColors.accent,
+    fontSize: 15,
+    lineHeight: 22,
+    fontWeight: '600',
+  },
+  originalCta: {
+    alignSelf: 'flex-start',
+    marginTop: 20,
+    marginBottom: 4,
+    minHeight: 44,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    backgroundColor: readerColors.accentSoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  originalCtaText: {
+    color: readerColors.accent,
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  body: {
+    marginTop: 28,
+    gap: 18,
+  },
+  paragraph: {
+    color: readerColors.text,
+    fontSize: 18,
+    lineHeight: 29,
+  },
+  list: {
+    gap: 8,
+  },
+  listItem: {
+    flexDirection: 'row',
+    gap: 10,
+    paddingRight: 8,
+  },
+  bullet: {
+    color: readerColors.text,
+    fontSize: 18,
+    lineHeight: 29,
+    width: 14,
+  },
+  quote: {
+    borderLeftWidth: 3,
+    borderLeftColor: readerColors.accent,
+    paddingLeft: 14,
+    paddingVertical: 4,
+  },
+  quoteText: {
+    color: readerColors.textSecondary,
+    fontSize: 18,
+    lineHeight: 28,
+    fontStyle: 'italic',
+  },
+  emptyBody: {
+    gap: 12,
+  },
+  emptyTitle: {
+    color: readerColors.textSecondary,
+    fontSize: 16,
+    lineHeight: 24,
+  },
+  retry: {
+    alignSelf: 'flex-start',
+    minHeight: 44,
+    paddingHorizontal: 14,
+    borderRadius: 10,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: readerColors.sheetBorder,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  retryLabel: {
+    color: readerColors.accent,
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  attribution: {
+    marginTop: 32,
+    marginBottom: 8,
+    padding: 16,
+    borderRadius: 12,
+    backgroundColor: readerColors.attribution,
+    gap: 6,
+  },
+  attributionKicker: {
+    color: readerColors.textSecondary,
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
+  },
+  attributionBody: {
+    color: readerColors.textSecondary,
+    fontSize: 14,
+    lineHeight: 21,
+  },
+  attrLink: {
+    alignSelf: 'flex-start',
+    minHeight: 36,
+    justifyContent: 'center',
+  },
+  attrLinkText: {
+    color: readerColors.accent,
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  pressed: {
+    opacity: 0.78,
+  },
+})

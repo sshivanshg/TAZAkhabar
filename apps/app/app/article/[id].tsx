@@ -2,11 +2,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   ActivityIndicator,
   FlatList,
+  Image,
   Platform,
   Pressable,
   StyleSheet,
   Text,
-  useWindowDimensions,
   View,
   type NativeScrollEvent,
   type NativeSyntheticEvent,
@@ -14,10 +14,22 @@ import {
 } from 'react-native'
 import { StatusBar } from 'expo-status-bar'
 import { useLocalSearchParams, useRouter } from 'expo-router'
+import Copy from 'lucide-react-native/icons/copy'
+import MessageCircle from 'lucide-react-native/icons/message-circle'
 import type { ArticleResponse } from '@newsfeed/shared-types'
 import { apiClient } from '../../src/api/client'
-import { CaughtUpCard, SwipeStoryCard } from '../../src/components/SwipeStoryCard'
+import {
+  ArticleBottomBar,
+  ArticleSkeleton,
+  ArticleStory,
+  ArticleTopBar,
+  CaughtUpFooter,
+  FeedSentinel,
+  StoryDivider,
+} from '../../src/components/article'
 import { ScreenErrorBoundary } from '../../src/components/ScreenErrorBoundary'
+import { BottomSheet } from '../../src/components/ui/BottomSheet'
+import { isCompactNav, useBreakpoint } from '../../src/hooks/useBreakpoint'
 import { useLanguagePreference } from '../../src/preferences/LanguagePreferenceContext'
 import {
   addBookmark,
@@ -26,20 +38,28 @@ import {
   removeBookmark,
 } from '../../src/storage/bookmarks'
 import { getStoredCitySlug } from '../../src/storage/cityPreference'
-import {
-  hasCompletedSwipeCoach,
-  markSwipeCoachCompleted,
-} from '../../src/storage/swipeCoach'
 import { getViewSessionId } from '../../src/storage/viewSession'
 import { PAGE_SIZE } from '../../src/theme/tokens'
-import { readerColors } from '../../src/theme/readerTokens'
+import {
+  ARTICLE_BOTTOM_BAR_HEIGHT,
+  readerColors,
+} from '../../src/theme/readerTokens'
 import { todayCityIso } from '../../src/utils/cityCalendar'
-import { shareArticleToWhatsApp } from '../../src/utils/shareToWhatsApp'
+import { formatLocationLabel } from '../../src/utils/formatLocationLabel'
+import { openArticleSource } from '../../src/utils/openArticleSource'
+import {
+  articleShareUrl,
+  copyTextToClipboard,
+  shareArticle,
+} from '../../src/utils/shareArticle'
+import { shareArticleToWhatsApp, isHttpsUrl } from '../../src/utils/shareToWhatsApp'
+import { replaceArticlePathId } from '../../src/utils/syncArticleUrl'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 export default function ArticleScreen() {
   return (
     <ScreenErrorBoundary name="article">
-      <ArticlePagerBody />
+      <ArticleFeedBody />
     </ScreenErrorBoundary>
   )
 }
@@ -59,15 +79,14 @@ function paramsLookComplete(params: {
   return Boolean(params.headline?.trim() && params.summary?.trim())
 }
 
-type PagerItem =
-  | { kind: 'story'; article: ArticleResponse }
-  | { kind: 'end'; key: string }
+const HERO_ELEVATE_AFTER = 120
+const BOTTOM_BAR_AFTER = 240
 
-const PAGE_OVERSHOOT_THRESHOLD = 1.05
-
-function ArticlePagerBody() {
+function ArticleFeedBody() {
   const router = useRouter()
-  const { height: windowHeight } = useWindowDimensions()
+  const insets = useSafeAreaInsets()
+  const breakpoint = useBreakpoint()
+  const compact = isCompactNav(breakpoint)
   const raw = useLocalSearchParams<{
     id?: string
     headline?: string
@@ -119,22 +138,25 @@ function ArticlePagerBody() {
     initialFromParams ? [initialFromParams] : [],
   )
   const [total, setTotal] = useState(initialFromParams ? 1 : 0)
-  const [index, setIndex] = useState(0)
+  const [feedStart, setFeedStart] = useState(0)
+  const [activeLocalIndex, setActiveLocalIndex] = useState(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [showCoach, setShowCoach] = useState(false)
+  const [loadMoreError, setLoadMoreError] = useState(false)
   const [bookmarkedIds, setBookmarkedIds] = useState<Set<number>>(new Set())
   const [hasMore, setHasMore] = useState(true)
+  const [headerElevated, setHeaderElevated] = useState(false)
+  const [showBottomBar, setShowBottomBar] = useState(false)
+  const [notice, setNotice] = useState<string | null>(null)
+  const [shareTarget, setShareTarget] = useState<ArticleResponse | null>(null)
   const offsetRef = useRef(0)
   const loadingMoreRef = useRef(false)
-  const isProgrammaticScrollRef = useRef(false)
-  const initialIndexRef = useRef(0)
-  const coachCompletedRef = useRef(false)
   const hydratedIdsRef = useRef(new Set<number>())
-  const listRef = useRef<FlatList<PagerItem>>(null)
-  const currentIndexRef = useRef(0)
-  const scrollStartIndexRef = useRef(0)
-  const shareLabel = Platform.OS === 'web' ? 'Share on WhatsApp' : 'Share'
+  const listRef = useRef<FlatList<ArticleResponse>>(null)
+  const activeIndexRef = useRef(0)
+  const headerElevatedRef = useRef(false)
+  const showBottomBarRef = useRef(false)
+  const noticeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -153,19 +175,6 @@ function ArticlePagerBody() {
     }
   }, [routeCity])
 
-  useEffect(() => {
-    let cancelled = false
-    void hasCompletedSwipeCoach().then((done) => {
-      if (!cancelled) {
-        coachCompletedRef.current = done
-        setShowCoach(!done)
-      }
-    })
-    return () => {
-      cancelled = true
-    }
-  }, [])
-
   const loadStack = useCallback(async () => {
     if (!citySlug) {
       if (!id) {
@@ -177,6 +186,7 @@ function ArticlePagerBody() {
 
     setLoading(true)
     setError(null)
+    setLoadMoreError(false)
     try {
       const isToday = !routeDate || routeDate === todayCityIso()
       const first = await apiClient.getArticles({
@@ -215,24 +225,28 @@ function ArticlePagerBody() {
         return
       }
 
+      const safeStart = Math.max(0, startIndex)
       offsetRef.current = items.length
-      initialIndexRef.current = Math.max(0, startIndex)
       hydratedIdsRef.current = new Set()
       setStack(items)
+      setFeedStart(safeStart)
       setTotal(Math.max(pageTotal, items.length))
       setHasMore(items.length < pageTotal)
-      setIndex(Math.max(0, startIndex))
-      currentIndexRef.current = Math.max(0, startIndex)
-      scrollStartIndexRef.current = Math.max(0, startIndex)
+      setActiveLocalIndex(0)
+      activeIndexRef.current = 0
+      setHeaderElevated(false)
+      headerElevatedRef.current = false
+      setShowBottomBar(false)
+      showBottomBarRef.current = false
       setLoading(false)
     } catch (err) {
       if (initialFromParams) {
         setStack([initialFromParams])
+        setFeedStart(0)
         setTotal(1)
         setHasMore(false)
-        setIndex(0)
-        currentIndexRef.current = 0
-        scrollStartIndexRef.current = 0
+        setActiveLocalIndex(0)
+        activeIndexRef.current = 0
         setLoading(false)
         return
       }
@@ -250,6 +264,7 @@ function ArticlePagerBody() {
       return
     }
     loadingMoreRef.current = true
+    setLoadMoreError(false)
     try {
       const isToday = !routeDate || routeDate === todayCityIso()
       const result = await apiClient.getArticles({
@@ -279,18 +294,24 @@ function ArticlePagerBody() {
       })
       setTotal(result.total ?? offsetRef.current)
     } catch {
-      // Soft fail — stay on current cards.
+      setLoadMoreError(true)
     } finally {
       loadingMoreRef.current = false
     }
   }, [citySlug, feedCategory, lang, routeDate, hasMore])
+
+  const visibleStack = useMemo(() => stack.slice(feedStart), [stack, feedStart])
 
   useEffect(() => {
     hydratedIdsRef.current = new Set()
   }, [lang])
 
   useEffect(() => {
-    const nearby = [stack[index], stack[index + 1], stack[index - 1]]
+    const nearby = [
+      visibleStack[activeLocalIndex],
+      visibleStack[activeLocalIndex + 1],
+      visibleStack[activeLocalIndex + 2],
+    ]
     for (const article of nearby) {
       if (article?.id == null) {
         continue
@@ -312,13 +333,20 @@ function ArticlePagerBody() {
           hydratedIdsRef.current.delete(article.id!)
         })
     }
-  }, [index, stack, lang])
+  }, [activeLocalIndex, visibleStack, lang])
 
   useEffect(() => {
-    if (index >= stack.length - 3 && hasMore) {
+    if (activeLocalIndex >= visibleStack.length - 2 && hasMore) {
       void loadMore()
     }
-  }, [index, stack.length, hasMore, loadMore])
+  }, [activeLocalIndex, visibleStack.length, hasMore, loadMore])
+
+  useEffect(() => {
+    const next = visibleStack[activeLocalIndex + 1]
+    if (next?.imageUrl && isHttpsUrl(next.imageUrl)) {
+      void Image.prefetch(next.imageUrl)
+    }
+  }, [activeLocalIndex, visibleStack])
 
   const recordView = useCallback(async (articleId: number | string | undefined) => {
     if (articleId == null) {
@@ -328,164 +356,155 @@ function ArticlePagerBody() {
     await apiClient.recordArticleView(String(articleId), sessionId)
   }, [])
 
-  useEffect(() => {
-    const current = stack[index]
-    if (current?.id != null) {
-      void recordView(current.id)
-      void isBookmarked(current.id).then((value) => {
-        setBookmarkedIds((prev) => {
-          const next = new Set(prev)
-          if (value) {
-            next.add(current.id!)
-          } else {
-            next.delete(current.id!)
-          }
-          return next
-        })
-      })
-    }
-  }, [index, stack, recordView])
+  const activeArticle = visibleStack[activeLocalIndex] ?? visibleStack[0] ?? null
 
-  const dismissCoachIfNeeded = useCallback(async (nextIndex: number) => {
-    if (coachCompletedRef.current) {
+  useEffect(() => {
+    if (activeArticle?.id == null) {
       return
     }
-    if (nextIndex !== initialIndexRef.current) {
-      coachCompletedRef.current = true
-      setShowCoach(false)
-      await markSwipeCoachCompleted()
-    }
-  }, [])
-
-  const pagerItems: PagerItem[] = useMemo(() => {
-    const items: PagerItem[] = stack.map((article) => ({ kind: 'story', article }))
-    if (!hasMore && stack.length > 0) {
-      items.push({ kind: 'end', key: 'caught-up' })
-    }
-    return items
-  }, [stack, hasMore])
-
-  const setPagerIndex = useCallback(
-    (nextIndex: number) => {
-      currentIndexRef.current = nextIndex
-      setIndex(nextIndex)
-      void dismissCoachIfNeeded(nextIndex)
-    },
-    [dismissCoachIfNeeded],
-  )
-
-  const settlePagerIndex = useCallback(
-    (rawIndex: number, resetScrollStart = false) => {
-      if (!Number.isFinite(rawIndex) || pagerItems.length === 0) {
-        return
-      }
-
-      const maxIndex = pagerItems.length - 1
-      const startIndex = Math.max(0, Math.min(scrollStartIndexRef.current, maxIndex))
-      const targetIndex = Math.max(0, Math.min(rawIndex, maxIndex))
-      const clampedIndex = Math.max(startIndex - 1, Math.min(targetIndex, startIndex + 1))
-
-      if (clampedIndex !== targetIndex) {
-        isProgrammaticScrollRef.current = true
-        listRef.current?.scrollToIndex({
-          index: clampedIndex,
-          animated: false,
-        })
-      }
-
-      if (clampedIndex !== currentIndexRef.current) {
-        setPagerIndex(clampedIndex)
-      }
-
-      if (resetScrollStart) {
-        scrollStartIndexRef.current = clampedIndex
-      }
-    },
-    [pagerItems.length, setPagerIndex],
-  )
-
-  const onScrollBeginDrag = useCallback(() => {
-    isProgrammaticScrollRef.current = false
-    scrollStartIndexRef.current = currentIndexRef.current
-  }, [])
-
-  const onMomentumScrollBegin = useCallback(() => {
-    scrollStartIndexRef.current = currentIndexRef.current
-  }, [])
-
-  const onScroll = useCallback(
-    (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-      if (windowHeight <= 0 || isProgrammaticScrollRef.current) {
-        return
-      }
-
-      const rawIndex = event.nativeEvent.contentOffset.y / windowHeight
-      const startIndex = scrollStartIndexRef.current
-      if (Math.abs(rawIndex - startIndex) <= PAGE_OVERSHOOT_THRESHOLD) {
-        return
-      }
-
-      settlePagerIndex(rawIndex > startIndex ? startIndex + 1 : startIndex - 1)
-    },
-    [windowHeight, settlePagerIndex],
-  )
-
-  const onMomentumScrollEnd = useCallback(
-    (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-      isProgrammaticScrollRef.current = false
-      settlePagerIndex(Math.round(event.nativeEvent.contentOffset.y / windowHeight), true)
-    },
-    [windowHeight, settlePagerIndex],
-  )
-
-  const settlePagerIndexRef = useRef(settlePagerIndex)
-
-  useEffect(() => {
-    settlePagerIndexRef.current = settlePagerIndex
-  }, [settlePagerIndex])
-
-  const onViewableItemsChanged = useRef(
-    ({ viewableItems }: { viewableItems: ViewToken[] }) => {
-      const first = viewableItems[0]
-      if (first?.index != null && first.index !== currentIndexRef.current) {
-        settlePagerIndexRef.current(first.index)
-      }
-    },
-  ).current
-
-  const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 80 }).current
-
-  const storyTotal = Math.max(total, stack.length)
+    void recordView(activeArticle.id)
+    void isBookmarked(activeArticle.id).then((value) => {
+      setBookmarkedIds((prev) => {
+        const next = new Set(prev)
+        if (value) {
+          next.add(activeArticle.id!)
+        } else {
+          next.delete(activeArticle.id!)
+        }
+        return next
+      })
+    })
+    replaceArticlePathId(activeArticle.id)
+  }, [activeArticle, recordView])
 
   const onBack = useCallback(() => {
     router.back()
   }, [router])
 
-  const onShare = useCallback(async (article: ArticleResponse) => {
-    await shareArticleToWhatsApp(article)
+  const flashNotice = useCallback((message: string) => {
+    setNotice(message)
+    if (noticeTimerRef.current) {
+      clearTimeout(noticeTimerRef.current)
+    }
+    noticeTimerRef.current = setTimeout(() => setNotice(null), 2200)
   }, [])
 
-  const onToggleBookmark = useCallback(async (article: ArticleResponse) => {
-    if (article.id == null) {
-      return
+  useEffect(() => {
+    return () => {
+      if (noticeTimerRef.current) {
+        clearTimeout(noticeTimerRef.current)
+      }
     }
-    const snapshot = articleToBookmark(article)
-    if (!snapshot) {
-      return
-    }
-    const currently = bookmarkedIds.has(article.id)
-    if (currently) {
-      await removeBookmark(article.id)
-      setBookmarkedIds((prev) => {
-        const next = new Set(prev)
-        next.delete(article.id!)
-        return next
+  }, [])
+
+  const onShare = useCallback(
+    async (article: ArticleResponse) => {
+      const result = await shareArticle(article)
+      if (result === 'copied') {
+        flashNotice('Link copied')
+        return
+      }
+      if (result === 'unavailable') {
+        setShareTarget(article)
+      }
+    },
+    [flashNotice],
+  )
+
+  const onToggleBookmark = useCallback(
+    async (article: ArticleResponse) => {
+      if (article.id == null) {
+        return
+      }
+      const snapshot = articleToBookmark(article, citySlug || undefined)
+      if (!snapshot) {
+        return
+      }
+      const currently = bookmarkedIds.has(article.id)
+      if (currently) {
+        await removeBookmark(article.id)
+        setBookmarkedIds((prev) => {
+          const next = new Set(prev)
+          next.delete(article.id!)
+          return next
+        })
+      } else {
+        await addBookmark(snapshot)
+        setBookmarkedIds((prev) => new Set(prev).add(article.id!))
+      }
+    },
+    [bookmarkedIds, citySlug],
+  )
+
+  const onReadSource = useCallback(
+    (article: ArticleResponse, storyIndex: number) => {
+      void openArticleSource(article.sourceUrl, {
+        articleId: article.id,
+        publisher: article.sourceName,
+        storyIndex,
       })
-    } else {
-      await addBookmark(snapshot)
-      setBookmarkedIds((prev) => new Set(prev).add(article.id!))
+    },
+    [],
+  )
+
+  const retryArticle = useCallback(
+    async (article: ArticleResponse) => {
+      if (article.id == null) {
+        return
+      }
+      hydratedIdsRef.current.delete(article.id)
+      try {
+        const full = await apiClient.getArticle(String(article.id), lang)
+        hydratedIdsRef.current.add(full.id!)
+        setStack((prev) => prev.map((item) => (item.id === full.id ? { ...item, ...full } : item)))
+      } catch {
+        hydratedIdsRef.current.delete(article.id)
+      }
+    },
+    [lang],
+  )
+
+  const onScroll = useCallback((event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const y = event.nativeEvent.contentOffset.y
+    const elevated = y > HERO_ELEVATE_AFTER
+    if (elevated !== headerElevatedRef.current) {
+      headerElevatedRef.current = elevated
+      setHeaderElevated(elevated)
     }
-  }, [bookmarkedIds])
+    const bar = y > BOTTOM_BAR_AFTER
+    if (bar !== showBottomBarRef.current) {
+      showBottomBarRef.current = bar
+      setShowBottomBar(bar)
+    }
+  }, [])
+
+  const onViewableItemsChanged = useRef(
+    ({ viewableItems }: { viewableItems: ViewToken[] }) => {
+      const visible = viewableItems.filter((token) => token.isViewable && token.index != null)
+      if (visible.length === 0) {
+        return
+      }
+      const top = visible.reduce((best, token) =>
+        (token.index ?? 0) < (best.index ?? 0) ? token : best,
+      )
+      if (top.index != null && top.index !== activeIndexRef.current) {
+        activeIndexRef.current = top.index
+        setActiveLocalIndex(top.index)
+      }
+    },
+  ).current
+
+  const viewabilityConfig = useRef({
+    itemVisiblePercentThreshold: 45,
+    minimumViewTime: 160,
+  }).current
+
+  const storyTotal = Math.max(total, stack.length)
+  const storyPosition = Math.min(storyTotal, feedStart + activeLocalIndex + 1)
+  const cityLabel = formatLocationLabel(citySlug)
+  const activeSource = isHttpsUrl(activeArticle?.sourceUrl)
+  const listBottomPad =
+    (compact ? ARTICLE_BOTTOM_BAR_HEIGHT + Math.max(insets.bottom, 8) : 24) + 28
 
   if (loading && stack.length === 0) {
     return (
@@ -500,7 +519,12 @@ function ArticlePagerBody() {
       <View style={styles.center}>
         <Text style={styles.errorTitle}>Story unavailable</Text>
         <Text style={styles.errorBody}>{error}</Text>
-        <Pressable accessibilityRole="button" accessibilityLabel="Go back" onPress={onBack} style={styles.errorBtn}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Go back"
+          onPress={onBack}
+          style={styles.errorBtn}
+        >
           <Text style={styles.errorBtnText}>Back</Text>
         </Pressable>
       </View>
@@ -508,74 +532,147 @@ function ArticlePagerBody() {
   }
 
   return (
-    <View style={styles.root}>
+    <View
+      style={styles.root}
+      {...(Platform.OS === 'web' ? ({ role: 'main' } as object) : null)}
+    >
       <StatusBar style="dark" />
       <FlatList
         ref={listRef}
-        testID="story-pager"
-        data={pagerItems}
-        keyExtractor={(item) =>
-          item.kind === 'end' ? item.key : String(item.article.id ?? item.article.headline)
-        }
+        testID="article-feed"
+        data={visibleStack}
+        keyExtractor={(item) => String(item.id ?? item.headline)}
+        extraData={{ activeLocalIndex, bookmarkedIds, lang }}
         renderItem={({ item, index: itemIndex }) => {
-          if (item.kind === 'end') {
-            return <CaughtUpCard height={windowHeight} onBack={onBack} />
-          }
-          const article = item.article
+          const globalIndex = feedStart + itemIndex
           return (
-            <SwipeStoryCard
-              article={article}
-              index={itemIndex}
-              total={storyTotal}
-              height={windowHeight}
-              cityLabel={citySlug || undefined}
-              bookmarked={article.id != null && bookmarkedIds.has(article.id)}
-              shareLabel={shareLabel}
-              onBack={onBack}
-              onShare={() => void onShare(article)}
-              onToggleBookmark={() => void onToggleBookmark(article)}
-              showNextCue={hasMore || itemIndex < pagerItems.length - 2}
-              readingLanguage={preferredLanguage}
-              onSelectLanguage={setPreferredLanguage}
-            />
+            <View>
+              {itemIndex > 0 ? <StoryDivider /> : null}
+              <ArticleStory
+                article={item}
+                cityLabel={cityLabel}
+                bookmarked={item.id != null && bookmarkedIds.has(item.id)}
+                priorityImage={itemIndex <= 1}
+                onShare={() => void onShare(item)}
+                onSave={() => void onToggleBookmark(item)}
+                onReadSource={() => onReadSource(item, globalIndex)}
+                onRetry={() => void retryArticle(item)}
+              />
+            </View>
           )
         }}
-        snapToInterval={windowHeight}
-        snapToAlignment="start"
-        pagingEnabled
-        decelerationRate="fast"
-        disableIntervalMomentum
-        nestedScrollEnabled
-        bounces={false}
-        overScrollMode="never"
+        ListFooterComponent={
+          <View>
+            {hasMore ? (
+              <>
+                <StoryDivider />
+                <ArticleSkeleton />
+                {loadMoreError ? (
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Retry loading the next story"
+                    onPress={() => void loadMore()}
+                    style={styles.retryMore}
+                  >
+                    <Text style={styles.retryMoreText}>Couldn’t load the next story. Retry</Text>
+                  </Pressable>
+                ) : null}
+                <FeedSentinel disabled={!hasMore} onVisible={() => void loadMore()} />
+              </>
+            ) : (
+              <CaughtUpFooter onBack={onBack} />
+            )}
+          </View>
+        }
         showsVerticalScrollIndicator={false}
-        getItemLayout={(_, i) => ({
-          length: windowHeight,
-          offset: windowHeight * i,
-          index: i,
-        })}
-        initialScrollIndex={Math.min(initialIndexRef.current, Math.max(pagerItems.length - 1, 0))}
-        onScrollToIndexFailed={() => {
-          // ignore — FlatList will settle
-        }}
         onScroll={onScroll}
         scrollEventThrottle={16}
-        onMomentumScrollEnd={onMomentumScrollEnd}
-        onScrollBeginDrag={onScrollBeginDrag}
-        onMomentumScrollBegin={onMomentumScrollBegin}
+        onEndReached={() => void loadMore()}
+        onEndReachedThreshold={0.7}
         onViewableItemsChanged={onViewableItemsChanged}
         viewabilityConfig={viewabilityConfig}
+        windowSize={5}
+        maxToRenderPerBatch={2}
+        initialNumToRender={2}
+        removeClippedSubviews={false}
+        contentContainerStyle={{ paddingBottom: listBottomPad }}
       />
 
-      {showCoach ? (
-        <View style={styles.coachOverlay} pointerEvents="box-none">
-          <View style={styles.coachSheet}>
-            <Text style={styles.coachArrow}>↑</Text>
-            <Text style={styles.coachTitle}>Swipe up for the next story</Text>
-            <Text style={styles.coachBody}>Shown until you swipe once</Text>
-          </View>
+      <ArticleTopBar
+        elevated={headerElevated}
+        position={storyPosition}
+        total={storyTotal}
+        readingLanguage={preferredLanguage}
+        onSelectLanguage={setPreferredLanguage}
+        onBack={onBack}
+      />
+
+      {compact ? (
+        <ArticleBottomBar
+          visible={showBottomBar}
+          bookmarked={activeArticle?.id != null && bookmarkedIds.has(activeArticle.id)}
+          hasSource={activeSource}
+          onShare={() => {
+            if (activeArticle) {
+              void onShare(activeArticle)
+            }
+          }}
+          onSave={() => {
+            if (activeArticle) {
+              void onToggleBookmark(activeArticle)
+            }
+          }}
+          onReadSource={
+            activeArticle
+              ? () => onReadSource(activeArticle, feedStart + activeLocalIndex)
+              : undefined
+          }
+        />
+      ) : null}
+
+      {notice ? (
+        <View
+          style={[styles.notice, { bottom: compact && showBottomBar ? listBottomPad : 24 }]}
+          accessibilityLiveRegion="polite"
+        >
+          <Text style={styles.noticeText}>{notice}</Text>
         </View>
       ) : null}
+
+      <BottomSheet
+        visible={shareTarget != null}
+        title="Share story"
+        onClose={() => setShareTarget(null)}
+        items={
+          shareTarget
+            ? [
+                {
+                  key: 'copy',
+                  label: 'Copy link',
+                  Icon: Copy,
+                  onPress: () => {
+                    const url = articleShareUrl(shareTarget)
+                    if (url) {
+                      void copyTextToClipboard(url).then((ok) => {
+                        if (ok) {
+                          flashNotice('Link copied')
+                        }
+                      })
+                    }
+                  },
+                },
+                {
+                  key: 'whatsapp',
+                  label: 'WhatsApp',
+                  Icon: MessageCircle,
+                  onPress: () => {
+                    void shareArticleToWhatsApp(shareTarget)
+                  },
+                },
+              ]
+            : []
+        }
+      />
     </View>
   )
 }
@@ -618,37 +715,34 @@ const styles = StyleSheet.create({
     color: readerColors.accent,
     fontWeight: '600',
   },
-  coachOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: readerColors.overlay,
-    justifyContent: 'flex-end',
-    padding: 20,
-  },
-  coachSheet: {
-    backgroundColor: readerColors.sheet,
-    borderColor: readerColors.sheetBorder,
-    borderWidth: 1,
-    borderRadius: 16,
-    padding: 20,
+  retryMore: {
+    alignSelf: 'center',
+    minHeight: 44,
+    paddingHorizontal: 16,
+    marginBottom: 16,
     alignItems: 'center',
-    marginBottom: 24,
+    justifyContent: 'center',
   },
-  coachArrow: {
-    color: readerColors.text,
-    fontSize: 28,
-    fontWeight: '700',
+  retryMoreText: {
+    color: readerColors.accent,
+    fontSize: 14,
+    fontWeight: '600',
   },
-  coachTitle: {
-    marginTop: 8,
-    color: readerColors.text,
-    fontSize: 16,
-    fontWeight: '700',
-    textAlign: 'center',
+  notice: {
+    position: 'absolute',
+    left: 24,
+    right: 24,
+    alignItems: 'center',
+    zIndex: 30,
   },
-  coachBody: {
-    marginTop: 6,
-    color: readerColors.textMuted,
+  noticeText: {
+    backgroundColor: readerColors.text,
+    color: '#FFFFFF',
+    overflow: 'hidden',
+    borderRadius: 999,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
     fontSize: 13,
-    textAlign: 'center',
+    fontWeight: '600',
   },
 })

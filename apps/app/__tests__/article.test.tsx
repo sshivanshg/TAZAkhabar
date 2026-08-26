@@ -30,11 +30,6 @@ jest.mock('../src/storage/cityPreference', () => ({
   getStoredCitySlug: jest.fn(async () => 'jhansi'),
 }))
 
-jest.mock('../src/storage/swipeCoach', () => ({
-  hasCompletedSwipeCoach: jest.fn(async () => false),
-  markSwipeCoachCompleted: jest.fn(async () => undefined),
-}))
-
 jest.mock('@react-native-async-storage/async-storage', () => ({
   getItem: jest.fn(async () => null),
   setItem: jest.fn(async () => undefined),
@@ -59,7 +54,6 @@ jest.mock('react-native-svg', () => {
 })
 
 import ArticleScreen from '../app/article/[id]'
-import { hasCompletedSwipeCoach } from '../src/storage/swipeCoach'
 
 const listed: ArticleResponse = {
   id: 7,
@@ -116,7 +110,6 @@ describe('ArticleScreen', () => {
       limit: 20,
     })
     mockGetArticle.mockResolvedValue(fetched)
-    ;(hasCompletedSwipeCoach as jest.Mock).mockResolvedValue(false)
   })
 
   it('loads the feed stack and shows the opened story', async () => {
@@ -130,34 +123,41 @@ describe('ArticleScreen', () => {
     expect(mockGetArticle).toHaveBeenCalled()
   })
 
-  it('shows swipe coach until completed', async () => {
+  it('shows source attribution and a read-original action', async () => {
     renderArticle()
 
-    expect(await screen.findByText('Swipe up for the next story')).toBeTruthy()
+    expect(await screen.findAllByText('Read original article ↗')).toHaveLength(2)
+    expect(screen.getAllByText('Source: City Times ↗').length).toBeGreaterThan(0)
+    expect(screen.getAllByText(/reporting published by City Times/).length).toBeGreaterThan(0)
+    expect(screen.queryByText(/Source: undefined/)).toBeNull()
   })
 
-  it('uses one-page story paging so fast scrolls cannot skip several stories', async () => {
+  it('uses a continuous feed instead of snap paging', async () => {
     renderArticle()
 
     await screen.findByText('Fetched headline')
-    const pager = screen.UNSAFE_getByType(FlatList)
+    const feed = screen.UNSAFE_getByType(FlatList)
 
-    expect(pager.props.pagingEnabled).toBe(true)
-    expect(pager.props.disableIntervalMomentum).toBe(true)
-    expect(pager.props.nestedScrollEnabled).toBe(true)
-    expect(pager.props.bounces).toBe(false)
-    expect(pager.props.overScrollMode).toBe('never')
-    expect(pager.props.scrollEventThrottle).toBe(16)
+    expect(feed.props.pagingEnabled).toBeUndefined()
+    expect(feed.props.snapToInterval).toBeUndefined()
+    expect(feed.props.disableIntervalMomentum).toBeUndefined()
+    expect(feed.props.testID).toBe('article-feed')
   })
 
-  it('hides coach when already completed', async () => {
-    ;(hasCompletedSwipeCoach as jest.Mock).mockResolvedValue(true)
+  it('shows next-story continuation instead of a swipe-up cue', async () => {
     renderArticle()
 
-    await screen.findByText('Fetched headline')
-    await waitFor(() => {
-      expect(screen.queryByText('Swipe up for the next story')).toBeNull()
-    })
+    expect(await screen.findByText('NEXT STORY')).toBeTruthy()
+    expect(screen.queryByText('↑ Next story')).toBeNull()
+    expect(screen.queryByText('Swipe up for the next story')).toBeNull()
+  })
+
+  it('shows story position in the sticky header', async () => {
+    renderArticle()
+
+    expect(await screen.findByLabelText('Story 1 of 2')).toBeTruthy()
+    expect(screen.getByText('1 of 2')).toBeTruthy()
+    expect(screen.getAllByText('JHANSI').length).toBeGreaterThan(0)
   })
 
   it('shows unavailable state when article cannot be loaded', async () => {
@@ -166,5 +166,25 @@ describe('ArticleScreen', () => {
     renderArticle()
 
     expect(await screen.findByText('Story unavailable')).toBeTruthy()
+  })
+
+  it('does not render a source CTA when the publisher URL is missing', async () => {
+    mockGetArticles.mockResolvedValue({
+      items: [{ ...listed, sourceUrl: undefined, sourceName: 'City Desk' }],
+      total: 1,
+      offset: 0,
+      limit: 20,
+    })
+    mockGetArticle.mockResolvedValue({
+      ...fetched,
+      sourceUrl: undefined,
+      sourceName: 'City Desk',
+    })
+
+    renderArticle()
+
+    expect(await screen.findByText('Fetched headline')).toBeTruthy()
+    expect(screen.queryByText('Read original article ↗')).toBeNull()
+    expect(screen.getByText('Source: City Desk')).toBeTruthy()
   })
 })

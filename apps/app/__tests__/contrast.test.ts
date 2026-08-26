@@ -64,6 +64,9 @@ describe('theme contrast', () => {
     ['reader muted on canvas', readerColors.textMuted, readerColors.canvas],
     ['reader secondary on canvas', readerColors.textSecondary, readerColors.canvas],
     ['reader accent on canvas', readerColors.accent, readerColors.canvas],
+    ['reader text on card', readerColors.text, readerColors.card],
+    ['reader secondary on attribution', readerColors.textSecondary, readerColors.attribution],
+    ['reader accent on accent soft', readerColors.accent, readerColors.accentSoft],
   ] as const
 
   it.each(normalTextPairs)('%s is WCAG AA for normal text', (_name, fg, bg) => {
