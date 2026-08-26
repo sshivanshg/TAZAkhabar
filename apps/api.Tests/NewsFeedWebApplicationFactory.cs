@@ -48,6 +48,13 @@ public sealed class NewsFeedWebApplicationFactory : WebApplicationFactory<Progra
 
             services.AddSingleton<IArticleIntelligence, FakeArticleIntelligence>();
 
+            foreach (var descriptor in services.Where(d => d.ServiceType == typeof(IArticleRewriter)).ToList())
+            {
+                services.Remove(descriptor);
+            }
+
+            services.AddSingleton<IArticleRewriter, FakeArticleRewriter>();
+
             foreach (var descriptor in services
                          .Where(d => d.ServiceType == typeof(IHostedService)
                                      && (d.ImplementationType == typeof(IngestionJobWorker)
