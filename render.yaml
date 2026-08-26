@@ -40,6 +40,8 @@ services:
         value: "https://api.anthropic.com"
       - key: ArticleIntelligence__Model
         value: "claude-sonnet-4-5"
+      - key: OpenAiRewrite__Enabled
+        value: "true"
       - key: OpenAiRewrite__ApiKey
         sync: false
       - key: OpenAiRewrite__BaseUrl

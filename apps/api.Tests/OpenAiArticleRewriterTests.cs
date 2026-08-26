@@ -57,6 +57,27 @@ public sealed class OpenAiArticleRewriterTests
     }
 
     [Fact]
+    public async Task RewriteScrapedArticleAsync_ReturnsNull_WhenDisabled()
+    {
+        var rewriter = new OpenAiArticleRewriter(
+            new UnusedHttpClientFactory(),
+            Microsoft.Extensions.Options.Options.Create(new OpenAiRewriteOptions
+            {
+                Enabled = false,
+                ApiKey = "test-openai-key",
+            }),
+            NullLogger<OpenAiArticleRewriter>.Instance);
+
+        var result = await rewriter.RewriteScrapedArticleAsync(
+            "Title",
+            "Body text",
+            "jhansi",
+            CancellationToken.None);
+
+        Assert.Null(result);
+    }
+
+    [Fact]
     public async Task RewriteScrapedArticleAsync_SendsChatCompletionsJsonObject()
     {
         string? capturedBody = null;

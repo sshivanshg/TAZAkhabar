@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using NewsFeed.Api.Data;
 using NewsFeed.Api.Data.Entities;
 using NewsFeed.Api.Ingest;
+using NewsFeed.Api.Options;
 
 namespace NewsFeed.Api.Tests;
 
@@ -163,6 +164,41 @@ public sealed class ScrapeIngestServiceTests
     }
 
     [Fact]
+    public async Task EnvEnabledFalse_StoresExtract_AndNeverCallsRewriter()
+    {
+        await using var db = CreateDb();
+        var source = await AddScrapeSourceAsync(db, "Amar Ujala Jhansi", ListUrl);
+        var http = new FakeScrapeHttpClient
+        {
+            Responses =
+            {
+                [ListUrl] = """
+                    <html><body><ul>
+                      <li><a href="/city/story-1">Story one</a></li>
+                    </ul></body></html>
+                    """,
+                [Story1Url] = File.ReadAllText(FixturePath("scrape-article.html")),
+            },
+        };
+        var rewriter = new FakeArticleRewriter();
+        var service = CreateService(
+            db,
+            http,
+            rewriter,
+            new OpenAiRewriteOptions { Enabled = false, ApiKey = "present-but-disabled" });
+
+        var run = await service.RunSourceAsync(source.Id, CancellationToken.None, useRewrite: true);
+
+        Assert.Equal(1, run.ArticlesAdded);
+        Assert.Equal(0, rewriter.RewriteCallCount);
+        var stored = Assert.Single(await db.Articles.ToListAsync());
+        Assert.Equal("Jhansi water supply restored", stored.Headline);
+        Assert.Contains("piped water", stored.Summary, StringComparison.Ordinal);
+        Assert.Contains("piped water", stored.Body, StringComparison.Ordinal);
+        Assert.Equal(ArticleStatus.Published, stored.Status);
+    }
+
+    [Fact]
     public async Task UnmappedArticle_DoesNotAbort_OtherInserts()
     {
         await using var db = CreateDb();
@@ -320,11 +356,13 @@ public sealed class ScrapeIngestServiceTests
     private static ScrapeIngestService CreateService(
         AppDbContext db,
         FakeScrapeHttpClient http,
-        IArticleRewriter? rewriter = null) =>
+        IArticleRewriter? rewriter = null,
+        OpenAiRewriteOptions? rewriteOptions = null) =>
         new(
             db,
             http,
             rewriter ?? new FakeArticleRewriter { Handler = (_, _, _) => null },
+            Microsoft.Extensions.Options.Options.Create(rewriteOptions ?? new OpenAiRewriteOptions()),
             new IngestionEventBus(),
             new ImageEnrichmentQueue(),
             NullLogger<ScrapeIngestService>.Instance,

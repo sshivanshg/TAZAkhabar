@@ -1,7 +1,7 @@
 # Hosting and CI
 
 > **Living doc** — update when Render, Cloudflare, Neon, Docker, workflows, or env templates change.  
-> **Last verified against:** 2026-08-26 (OpenAI scrape rewrite secrets)
+> **Last verified against:** 2026-08-26 (OpenAiRewrite Enabled flag)
 
 ## Purpose
 
@@ -88,7 +88,7 @@ No `wrangler.toml` in-repo — Pages deploy uses `cloudflare/pages-action` (wran
 | `RssIngest__Secret` | Render + crons + GitHub Actions nightly ingest |
 | `Admin__Password`, `Admin__JwtSigningKey` | Render |
 | `ArticleIntelligence__ApiKey` / `BaseUrl` / `Model` | Render |
-| `OpenAiRewrite__ApiKey` / `BaseUrl` / `Model` | Render |
+| `OpenAiRewrite__ApiKey` / `BaseUrl` / `Model` / `Enabled` | Render |
 | `Upload__RootPath` | Render |
 | `IngestHealth__MaxSilenceMinutes`, `IngestHealth__AlertWebhookUrl` | Render |
 | `INGEST_URL` | Render cron services and GitHub Actions `nightly-ingest.yml` |

@@ -1,7 +1,7 @@
 # API
 
 > **Living doc** — update when endpoints, auth, rate limits, CORS, or DI composition change.  
-> **Last verified against:** 2026-08-26 (OpenAI scrape rewrite options)
+> **Last verified against:** 2026-08-26 (OpenAiRewrite Enabled flag)
 
 ## Purpose
 
@@ -93,7 +93,7 @@ Pipeline (order): Serilog request logging → RequestId header/log context → E
 | `RssIngest__Secret` | Ingest header for Render crons and GitHub Actions nightly trigger |
 | `Admin__Password` / `Admin__JwtSigningKey` | Admin login |
 | `ArticleIntelligence__*` | Claude |
-| `OpenAiRewrite__*` | OpenAI scrape rewrite |
+| `OpenAiRewrite__*` | OpenAI scrape rewrite (`Enabled` + key); `Enabled=false` or empty key stores extract as-is |
 | `Upload__RootPath` | PDF/image storage |
 
 OpenAPI: `MapSwagger("/openapi/{documentName}.json")` → `/openapi/v1.json`. Swagger UI in Development only.

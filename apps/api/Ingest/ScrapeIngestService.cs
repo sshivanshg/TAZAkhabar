@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using NewsFeed.Api.Data;
 using NewsFeed.Api.Data.Entities;
+using NewsFeed.Api.Options;
 using Serilog.Context;
 
 namespace NewsFeed.Api.Ingest;
@@ -12,6 +14,7 @@ public sealed class ScrapeIngestService
     private readonly AppDbContext _db;
     private readonly IScrapeHttpClient _http;
     private readonly IArticleRewriter _rewriter;
+    private readonly IOptions<OpenAiRewriteOptions> _rewriteOptions;
     private readonly IIngestionEventBus _events;
     private readonly ImageEnrichmentQueue _imageEnrichmentQueue;
     private readonly ILogger<ScrapeIngestService> _logger;
@@ -21,10 +24,11 @@ public sealed class ScrapeIngestService
         AppDbContext db,
         IScrapeHttpClient http,
         IArticleRewriter rewriter,
+        IOptions<OpenAiRewriteOptions> rewriteOptions,
         IIngestionEventBus events,
         ImageEnrichmentQueue imageEnrichmentQueue,
         ILogger<ScrapeIngestService> logger)
-        : this(db, http, rewriter, events, imageEnrichmentQueue, logger, TimeSpan.FromMilliseconds(300))
+        : this(db, http, rewriter, rewriteOptions, events, imageEnrichmentQueue, logger, TimeSpan.FromMilliseconds(300))
     {
     }
 
@@ -32,6 +36,7 @@ public sealed class ScrapeIngestService
         AppDbContext db,
         IScrapeHttpClient http,
         IArticleRewriter rewriter,
+        IOptions<OpenAiRewriteOptions> rewriteOptions,
         IIngestionEventBus events,
         ImageEnrichmentQueue imageEnrichmentQueue,
         ILogger<ScrapeIngestService> logger,
@@ -40,6 +45,7 @@ public sealed class ScrapeIngestService
         _db = db;
         _http = http;
         _rewriter = rewriter;
+        _rewriteOptions = rewriteOptions;
         _events = events;
         _imageEnrichmentQueue = imageEnrichmentQueue;
         _logger = logger;
@@ -248,8 +254,9 @@ public sealed class ScrapeIngestService
 
                     var storedBody = string.IsNullOrWhiteSpace(body) ? null : body;
                     var rewriteInput = !string.IsNullOrWhiteSpace(body) ? body : summary;
+                    var rewriteEnabled = useRewrite && _rewriteOptions.Value.Enabled;
 
-                    if (useRewrite)
+                    if (rewriteEnabled)
                     {
                         try
                         {
@@ -300,11 +307,14 @@ public sealed class ScrapeIngestService
                     }
                     else
                     {
+                        var reason = !useRewrite
+                            ? "batch flag"
+                            : "OpenAiRewrite__Enabled=false";
                         IngestionEvents.Emit(
                             _events,
                             run.Id,
                             "progress",
-                            $"Using extract · {HtmlText.Truncate(headline, 80)}");
+                            $"Using extract · {reason} · {HtmlText.Truncate(headline, 80)}");
                     }
 
                     if (await TryInsertAsync(city.Id, source, headline, summary, storedBody, sourceUrl, publishedAt, ct))

@@ -1,7 +1,7 @@
 # Ingestion
 
 > **Living doc** — update when pipelines, article status on insert, cron, SSE, or intelligence providers change.  
-> **Last verified against:** 2026-08-26 (OpenAI scrape rewrite layer)
+> **Last verified against:** 2026-08-26 (OpenAI scrape rewrite + Enabled flag)
 
 ## Purpose
 
@@ -119,7 +119,7 @@ Render crons and the GitHub Actions job send header `X-Ingest-Key: RssIngest__Se
 
 Claude via `ArticleIntelligence__ApiKey`, `BaseUrl`, `Model` (Anthropic Messages API).
 
-OpenAI scrape rewrite via `OpenAiRewrite__ApiKey`, `BaseUrl` (default `https://api.openai.com/v1`), `Model` (default `gpt-4o-mini`):
+OpenAI scrape rewrite via `OpenAiRewrite__Enabled` (default `true`), `OpenAiRewrite__ApiKey`, `BaseUrl` (default `https://api.openai.com/v1`), `Model` (default `gpt-4o-mini`). Set `OpenAiRewrite__Enabled=false` (or leave `ApiKey` empty) to publish extracted headline/summary/body as-is with no OpenAI call.
 
 | Pipeline | LLM | Stored `summary` | Stored `body` |
 |----------|-----|------------------|---------------|

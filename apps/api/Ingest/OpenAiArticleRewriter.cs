@@ -45,6 +45,11 @@ public sealed class OpenAiArticleRewriter(
         string citySlug,
         CancellationToken cancellationToken)
     {
+        if (!options.Value.Enabled)
+        {
+            return null;
+        }
+
         if (string.IsNullOrWhiteSpace(options.Value.ApiKey))
         {
             return null;
