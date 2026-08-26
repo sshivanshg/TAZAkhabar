@@ -1,7 +1,7 @@
 # Reader app
 
 > **Living doc** — update when Expo routes, city/feed/share behavior, or desktop web layer change.  
-> **Last verified against:** 2026-08-26 (Google News–inspired feed chrome; light + blue)
+> **Last verified against:** 2026-08-26 (date strip removed from home feed)
 
 ## Purpose
 

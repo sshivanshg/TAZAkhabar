@@ -10,7 +10,6 @@ const mockPush = jest.fn()
 const mockReplace = jest.fn()
 const mockGetArticles = jest.fn()
 const mockGetCities = jest.fn()
-const mockGetArticleDates = jest.fn()
 
 jest.mock('expo-router', () => {
   const React = require('react')
@@ -33,7 +32,6 @@ jest.mock('../src/api/client', () => ({
   apiClient: {
     getArticles: (...args: unknown[]) => mockGetArticles(...args),
     getCities: (...args: unknown[]) => mockGetCities(...args),
-    getArticleDates: (...args: unknown[]) => mockGetArticleDates(...args),
     getTrendingArticles: jest.fn(async () => ({ items: [] })),
   },
 }))
@@ -193,7 +191,6 @@ describe('FeedScreen', () => {
     jest.clearAllMocks()
     useBreakpoint.mockReturnValue('mobile')
     mockGetCities.mockResolvedValue(cities)
-    mockGetArticleDates.mockResolvedValue({ dates: [] })
     // Need more than BREAKING_NEWS_COUNT so recommendation list has the sample headline
     mockGetArticles.mockResolvedValue(paged(makeArticles(6)))
   })
