@@ -59,63 +59,47 @@ pnpm dev:web
 
 Native later: `pnpm --filter @tazakhabar/app ios` / `android` (same app).
 
-## Build an Android APK
+## Build an Android APK (local Gradle)
 
-Use an APK when you want to install a test build directly on an Android phone or emulator. The `preview` build profile is already configured in [`apps/app/eas.json`](apps/app/eas.json) for this purpose. The `production` profile generates an AAB for Google Play instead.
+Builds run on your machine with Expo prebuild + Gradle — no EAS/Expo cloud account required.
 
-1. Create an [Expo account](https://expo.dev/signup), then install dependencies and sign in from the Expo app directory:
+### Prerequisites
 
-   ```bash
-   pnpm install
-   cd apps/app
-   pnpm dlx eas-cli login
-   pnpm dlx eas-cli init
-   ```
+- Node 20+, pnpm 9
+- JDK 17
+- Android SDK (Android Studio is the usual install), with `ANDROID_HOME` set
 
-   `eas init` creates or links the Expo project and writes its non-secret project ID to `app.json`. Commit that change when this is the shared project for the repository.
+### Env file to give the builder
 
-2. Point the build at a deployed, publicly reachable API. Do not use `http://localhost:8080`: that address refers to the phone itself, not your development machine. Replace the example URL with the staging or production API URL:
-
-   ```bash
-   pnpm dlx eas-cli env:set \
-     --name EXPO_PUBLIC_API_BASE_URL \
-     --value https://api.example.com \
-     --environment preview \
-     --visibility plaintext
-   pnpm dlx eas-cli env:set \
-     --name EXPO_PUBLIC_APP_ENV \
-     --value staging \
-     --environment preview \
-     --visibility plaintext
-   ```
-
-   `EXPO_PUBLIC_*` values are bundled into the app, so never put secrets in them.
-
-3. Start the cloud build. On the first run, EAS may ask to create Android signing credentials; accept the prompts for a new project.
-
-   ```bash
-   pnpm dlx eas-cli build --platform android --profile preview
-   ```
-
-4. When the build finishes, open the URL printed by EAS, download the `.apk`, and install it on the Android device. Android may ask you to allow installs from the browser or file manager you used. Alternatively, with USB debugging enabled:
-
-   ```bash
-   adb install path/to/tazakhabar.apk
-   ```
-
-To install the latest EAS build on a running Android emulator, use:
+Copy into `apps/app/.env` (must match production API; do **not** use `localhost` — that is the phone itself):
 
 ```bash
-cd apps/app
-pnpm dlx eas-cli build:run --platform android --latest
+EXPO_PUBLIC_API_BASE_URL=https://buildy-140j.onrender.com
+EXPO_PUBLIC_APP_ENV=production
 ```
 
-For a Google Play release, build an AAB instead:
+Same values are already in the committed `apps/app/.env.production`. `EXPO_PUBLIC_*` is inlined into the binary — never put secrets there.
+
+### Build
 
 ```bash
-cd apps/app
-pnpm dlx eas-cli build --platform android --profile production
+pnpm install
+pnpm build:apk
 ```
+
+That regenerates `apps/app/android/` (gitignored) and runs `./gradlew assembleRelease`. APK path:
+
+`apps/app/android/app/build/outputs/apk/release/app-release.apk`
+
+Release is signed with the Android debug keystore for sideload/testing (fine for internal installs; use a real keystore before Play Store).
+
+Install:
+
+```bash
+adb install apps/app/android/app/build/outputs/apk/release/app-release.apk
+```
+
+Or open `apps/app/android` in Android Studio → Build → Build APK(s) / Bundle.
 
 ### Mock-data flow (no login)
 

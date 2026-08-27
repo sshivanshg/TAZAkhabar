@@ -16,9 +16,9 @@ cp apps/app/.env.example apps/app/.env
 pnpm dev:web
 pnpm build:web
 
-# later:
-pnpm --filter @tazakhabar/app ios
+# native (local machine):
 pnpm --filter @tazakhabar/app android
+pnpm build:apk   # prebuild + Gradle assembleRelease → android/app/build/outputs/apk/release/
 ```
 
 The web dev server runs at `http://localhost:19006`, an origin allowlisted by
@@ -26,12 +26,14 @@ the hosted API.
 
 | Variable | Purpose |
 |----------|---------|
-| `EXPO_PUBLIC_API_BASE_URL` | API origin (no trailing slash), e.g. `http://localhost:8080` |
+| `EXPO_PUBLIC_API_BASE_URL` | API origin (no trailing slash). For APK/device builds use the hosted API, not localhost |
 | `EXPO_PUBLIC_APP_ENV` | `local` / `staging` / `production` |
 
 When working on the API itself, temporarily set the local `.env` to
 `EXPO_PUBLIC_API_BASE_URL=http://localhost:8080` and
 `EXPO_PUBLIC_APP_ENV=local`, then restart Expo. Do not commit a local override.
+
+For a device/emulator APK, keep the hosted URL from `.env.example` / `.env.production`.
 
 ## PWA / web export
 

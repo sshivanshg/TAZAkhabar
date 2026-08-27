@@ -23,6 +23,7 @@
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "package": "app.tazakhabar.mobile",
+      "versionCode": 1,
       "predictiveBackGestureEnabled": false,
       "usesCleartextTraffic": true
     },

@@ -5,10 +5,12 @@
   "main": "expo-router/entry",
   "scripts": {
     "start": "expo start",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
     "web": "expo start --web --port 19006",
     "build:web": "expo export -p web",
+    "prebuild:android": "expo prebuild --platform android",
+    "build:apk": "expo prebuild --platform android && cd android && ./gradlew assembleRelease",
     "bundle:report": "pnpm build:web && node scripts/report-web-bundle.cjs",
     "lint": "tsc --noEmit",
     "test": "jest"

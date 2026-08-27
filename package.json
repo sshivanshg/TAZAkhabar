@@ -7,6 +7,7 @@
     "dev:app": "pnpm --filter @tazakhabar/app start",
     "dev:web": "pnpm --filter @tazakhabar/app web",
     "build:web": "pnpm --filter @tazakhabar/app build:web",
+    "build:apk": "pnpm --filter @tazakhabar/app build:apk",
     "lint:app": "pnpm --filter @tazakhabar/app lint",
     "test:app": "pnpm --filter @tazakhabar/app test",
     "generate:types": "pnpm --filter @tazakhabar/shared-types generate",

@@ -1,7 +1,7 @@
 # Reader app
 
 > **Living doc** — update when Expo routes, city/feed/share behavior, or desktop web layer change.  
-> **Last verified against:** 2026-08-27 (one article per viewport page)
+> **Last verified against:** 2026-08-27 (local Gradle APK via expo prebuild)
 
 ## Purpose
 
@@ -105,10 +105,10 @@ API helpers used: `getHealth`, `getCities`, `getArticles`, `getArticleDates`, `g
 ## Key files
 
 - `apps/app/package.json`, `app.json` / Expo config
-- `apps/app/eas.json` — EAS `preview` APK and production AAB profiles
+- `apps/app/eas.json` — optional EAS profiles (local Gradle is the default APK path)
 - `apps/app/src/api/client.ts`
 - `apps/app/app/**`
-- `apps/app/.env.example`
+- `apps/app/.env.example`, `apps/app/.env.production`
 
 ## Public contracts
 
@@ -117,8 +117,8 @@ API helpers used: `getHealth`, `getCities`, `getArticles`, `getArticleDates`, `g
 | Env | `EXPO_PUBLIC_API_BASE_URL`, `EXPO_PUBLIC_APP_ENV` |
 | Deploy artifact | `pnpm build:web` → `apps/app/dist` |
 | Bundle report | `pnpm --filter @tazakhabar/app bundle:report` |
-| Android test binary | EAS `preview` profile → internal-distribution APK |
-| Android Play binary | EAS `production` profile → AAB |
+| Android APK (local) | `pnpm build:apk` → `expo prebuild` + `gradlew assembleRelease` → `apps/app/android/app/build/outputs/apk/release/app-release.apk` |
+| Native project | `apps/app/android/` generated, gitignored; regenerate with `pnpm --filter @tazakhabar/app prebuild:android` |
 | Pages project | default `tazakhabar-web` |
 | Auth | None for MVP |
 

@@ -1,7 +1,7 @@
 # Monorepo
 
 > **Living doc** — update when workspace packages, root scripts, or layout change.  
-> **Last verified against:** 2026-08-27 (githooks + Cursor verify-build)
+> **Last verified against:** 2026-08-27 (local Gradle `pnpm build:apk`)
 
 ## Purpose
 
@@ -53,6 +53,7 @@ Root scripts (see root `package.json`):
 | `pnpm prepare` | Sets `core.hooksPath` to `.githooks` (local git hooks) |
 | `pnpm dev:web` | Expo web reader |
 | `pnpm build:web` | `expo export -p web` → `apps/app/dist` |
+| `pnpm build:apk` | Expo prebuild + Gradle `assembleRelease` → sideload APK under `apps/app/android/` |
 | `pnpm lint:app` | Expo app `tsc --noEmit` |
 | `pnpm dev:admin` | Vite admin |
 | `pnpm generate:types` | NSwag generate from OpenAPI snapshot |
