@@ -5,11 +5,11 @@ import { Text } from '@gluestack-ui/themed'
 import { useTheme } from '../preferences/ThemePreferenceContext'
 import { radius, space, typography, type AppColors } from '../theme/tokens'
 import { getStoredCitySlug } from '../storage/cityPreference'
+import { shouldOfferAddToHome } from '../utils/shouldOfferAddToHome'
 
 const A2HS_DISMISSED_KEY = 'tazakhabar.a2hs.dismissed.v1'
 
 function installHintCopy(): string {
-  // Heuristic: iOS Safari vs other browsers (Chrome install / menu).
   if (Platform.OS !== 'web' || typeof navigator === 'undefined') {
     return 'Add TazaKhabar to your home screen for quick access'
   }
@@ -22,8 +22,9 @@ function installHintCopy(): string {
 }
 
 /**
- * Soft install hint after city selection. Dismissed once (persisted).
- * Mount under HomeTopBar on web only.
+ * Soft install hint after city selection. Web mobile browser only;
+ * hidden when already installed as PWA, on desktop, and on Expo native.
+ * Dismissed once (persisted).
  */
 export function AddToHomeBanner() {
   const [visible, setVisible] = useState(false)
@@ -31,6 +32,11 @@ export function AddToHomeBanner() {
   const styles = useMemo(() => createStyles(colors), [colors])
 
   useEffect(() => {
+    if (!shouldOfferAddToHome()) {
+      setVisible(false)
+      return
+    }
+
     let cancelled = false
     void (async () => {
       try {

@@ -1,7 +1,7 @@
 # Reader app
 
 > **Living doc** — update when Expo routes, city/feed/share behavior, or desktop web layer change.  
-> **Last verified against:** 2026-08-27 (theme via `useTheme` / ThemePreferenceProvider)
+> **Last verified against:** 2026-08-27 (A2HS banner: mobile browser web only; hidden when installed PWA / Expo native)
 
 ## Purpose
 
@@ -73,6 +73,8 @@ flowchart LR
 | `src/components/RelatedStoriesStrip.tsx` | Horizontal related cluster under a featured card |
 | `src/utils/feedLayout.ts` | Mixed mobile feed (featured / related / compact) |
 | `public/manifest.webmanifest`, `public/_headers` | PWA / Pages headers |
+| `src/components/AddToHomeBanner.tsx` | Soft install hint after city pick; gated by `shouldOfferAddToHome` |
+| `src/utils/shouldOfferAddToHome.ts` | A2HS only on **mobile web browsers**; never Expo native; never installed PWA (`display-mode: standalone` / iOS `navigator.standalone`) |
 
 Stack: Expo ~54, expo-router, Gluestack UI, Moti, AsyncStorage.
 
