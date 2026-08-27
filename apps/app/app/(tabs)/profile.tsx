@@ -17,6 +17,7 @@ import { ScreenErrorBoundary } from '../../src/components/ScreenErrorBoundary'
 import { TabScreenShell } from '../../src/components/TabScreenShell'
 import { Card } from '../../src/components/ui/Card'
 import { PrimaryButton } from '../../src/components/ui/PrimaryButton'
+import { PublicLinks } from '../../src/components/PublicLinks'
 import { useFeedPreferences } from '../../src/preferences/FeedPreferencesContext'
 import { useLanguagePreference } from '../../src/preferences/LanguagePreferenceContext'
 import { useTheme } from '../../src/preferences/ThemePreferenceContext'
@@ -279,6 +280,7 @@ function ProfileBody() {
           >
             Version {version}
           </Text>
+          <PublicLinks />
         </Section>
       </ScrollView>
     </MotiView>

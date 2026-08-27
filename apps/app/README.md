@@ -28,6 +28,7 @@ the hosted API.
 |----------|---------|
 | `EXPO_PUBLIC_API_BASE_URL` | API origin (no trailing slash). For APK/device builds use the hosted API, not localhost |
 | `EXPO_PUBLIC_APP_ENV` | `local` / `staging` / `production` |
+| `EXPO_PUBLIC_SUPPORT_EMAIL` | Public support address shown on privacy, support, and corrections pages |
 
 When working on the API itself, temporarily set the local `.env` to
 `EXPO_PUBLIC_API_BASE_URL=http://localhost:8080` and
@@ -39,8 +40,8 @@ For a device/emulator APK, keep the hosted URL from `.env.example` / `.env.produ
 
 - Config: `app.json` → `web.themeColor` (`#FAFAFA`), `backgroundColor`, name/shortName/description; splash via `splash-icon.png`.
 - Static files in `public/` are copied into `dist/` by `expo export -p web`:
-  - `manifest.webmanifest` — `display: standalone`, icons, theme/background
-  - `_headers` — Cloudflare Pages security headers (copied with the export)
+  - `manifest.webmanifest` — `display: standalone`, correctly sized icons, theme/background
+  - `_headers` — Cloudflare Pages security headers, CSP, and HSTS (copied with the export)
   - `index.html` — links the manifest + theme-color meta
 - Hosting: Cloudflare Pages publishes `apps/app/dist` (see ADR-004).
 

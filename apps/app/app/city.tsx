@@ -11,6 +11,7 @@ import { useAsyncResource } from '../src/api/useAsyncResource'
 import { CityListItem, CityListSkeleton } from '../src/components/CityListItem'
 import { CitySearch, filterCities } from '../src/components/CitySearch'
 import { ErrorState } from '../src/components/ui/ErrorState'
+import { PublicLinks } from '../src/components/PublicLinks'
 import { getStoredCitySlug, setStoredCitySlug } from '../src/storage/cityPreference'
 import { useTheme } from '../src/preferences/ThemePreferenceContext'
 import { HIT_TARGET, radius, space, typography, type AppColors } from '../src/theme/tokens'
@@ -259,6 +260,17 @@ export default function CityPickerScreen() {
             )}
           </View>
         ) : null}
+        <View style={styles.publicFooter}>
+          <Text
+            fontSize={typography.meta.fontSize}
+            lineHeight={typography.meta.lineHeight}
+            color={colors.textMuted}
+            textAlign="center"
+          >
+            No login. Choose your city and start reading.
+          </Text>
+          <PublicLinks compact />
+        </View>
       </ScrollView>
     </MotiView>
   )
@@ -310,6 +322,10 @@ function createStyles(c: AppColors) {
     errorWrap: {
       flexGrow: 1,
       minHeight: 280,
+    },
+    publicFooter: {
+      marginTop: 'auto',
+      paddingTop: space.xxl,
     },
   })
 }

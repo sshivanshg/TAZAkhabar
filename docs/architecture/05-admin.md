@@ -1,7 +1,7 @@
 # Admin
 
 > **Living doc** — update when admin routes, auth client behavior, or live-ingest UI change.  
-> **Last verified against:** 2026-08-27 (validation, audit logs, durable source triggers)
+> **Last verified against:** 2026-08-27 (actual Cloudflare Pages admin project name)
 
 ## Purpose
 
@@ -16,7 +16,7 @@ Internal Vite + React SPA for editors: review queue, sources, uploads, ingestion
 
 ```mermaid
 flowchart LR
-  Editor[Editor browser] --> Pages[Cloudflare Pages<br/>tazakhabar-admin]
+  Editor[Editor browser] --> Pages[Cloudflare Pages<br/>newsfeed-admin]
   Pages --> SPA[Vite React SPA]
   SPA -->|VITE_API_BASE_URL<br/>Bearer JWT| API[TazaKhabar.Api]
   SPA -->|SSE ingest events| API
@@ -76,7 +76,7 @@ Source “run now” returns `202` after creating an `IngestionRun` plus durable
 |------|-------|
 | Env | `VITE_API_BASE_URL` (default `http://localhost:8080`) |
 | Login | `POST /api/admin/login` `{ password, displayName }` |
-| Deploy | Cloudflare Pages project default `tazakhabar-admin` → `apps/admin/dist` |
+| Deploy | Cloudflare Pages project `newsfeed-admin` → `apps/admin/dist` |
 | CORS | Admin origin must be in `Cors__AllowedOrigins__*` |
 
 ## Failure modes & invariants

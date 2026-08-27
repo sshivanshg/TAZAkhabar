@@ -1,7 +1,7 @@
 # Reader app
 
 > **Living doc** — update when Expo routes, city/feed/share behavior, or desktop web layer change.  
-> **Last verified against:** 2026-08-27 (Android PWA install: SW + beforeinstallprompt; feed cache 45m TTL)
+> **Last verified against:** 2026-08-27 (public trust/support routes; Android PWA install; feed cache 45m TTL)
 
 ## Purpose
 
@@ -36,7 +36,7 @@ reader beyond the intended responsive scale.
 
 ```mermaid
 flowchart LR
-  User[Reader] --> Pages[Cloudflare Pages<br/>tazakhabar-web]
+  User[Reader] --> Pages[Cloudflare Pages<br/>newsfeed-web]
   Pages --> Expo[Expo RN Web export]
   Expo -->|EXPO_PUBLIC_API_BASE_URL<br/>no auth| API[TazaKhabar.Api]
   Expo --> Storage[AsyncStorage city + theme + prefs + feed cache]
@@ -56,6 +56,8 @@ flowchart LR
 | `(tabs)/profile.tsx` | Settings: city, appearance (Light/Dark/System), language, blocks |
 | `(tabs)/categories.tsx` | Hidden (`href: null`) |
 | `article/[id].tsx` | Continuous editorial article feed; hydrates `body` via `getArticle`; Back returns to Home |
+| `about.tsx`, `privacy.tsx`, `terms.tsx` | Public product, privacy, and legal information |
+| `support.tsx`, `corrections.tsx` | Reader support plus editorial correction/takedown process |
 | `feed.tsx` | Legacy redirect → tabs |
 
 ### Modules
@@ -83,6 +85,7 @@ flowchart LR
 | `src/pwa/installPrompt.ts` | Captures Chromium install event; `promptInstall()` opens the native dialog |
 | `src/pwa/registerWebServiceWorker.ts` | Registers `/sw.js` on web only (never Expo native) |
 | `src/utils/shouldOfferAddToHome.ts` | A2HS only on **mobile web browsers**; never Expo native; never installed PWA (`display-mode: standalone` / iOS `navigator.standalone`) |
+| `src/components/PublicInfoScreen.tsx`, `src/content/publicPages.ts` | Shared native-safe public information pages and launch policy copy |
 
 Stack: Expo ~54, expo-router, Gluestack UI, Moti, AsyncStorage.
 
@@ -135,12 +138,12 @@ API helpers used: `getHealth`, `getCities`, `getArticles`, `getArticleDates`, `g
 
 | Item | Value |
 |------|-------|
-| Env | `EXPO_PUBLIC_API_BASE_URL`, `EXPO_PUBLIC_APP_ENV` |
+| Env | `EXPO_PUBLIC_API_BASE_URL`, `EXPO_PUBLIC_APP_ENV`, `EXPO_PUBLIC_SUPPORT_EMAIL` |
 | Deploy artifact | `pnpm build:web` → `apps/app/dist` |
 | Bundle report | `pnpm --filter @tazakhabar/app bundle:report` |
 | Android APK (local) | `pnpm build:apk` → `expo prebuild` + `gradlew assembleRelease` → `apps/app/android/app/build/outputs/apk/release/app-release.apk` |
 | Native project | `apps/app/android/` generated, gitignored; regenerate with `pnpm --filter @tazakhabar/app prebuild:android` |
-| Pages project | default `tazakhabar-web` |
+| Pages project | `newsfeed-web` |
 | Auth | None for MVP |
 
 For ordinary reader UI development, `apps/app/.env.example` targets the hosted

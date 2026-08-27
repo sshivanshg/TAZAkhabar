@@ -1,7 +1,7 @@
 # System overview
 
 > **Living doc** — update in the same change when topology, hosting, or cross-app contracts move.  
-> **Last verified against:** 2026-08-27 (reader Light/Dark/System appearance)
+> **Last verified against:** 2026-08-27 (actual Cloudflare Pages project names)
 
 ## Purpose
 
@@ -63,8 +63,8 @@ flowchart TB
 
 | Component | Path / host | Role |
 |-----------|-------------|------|
-| Reader | `apps/app` → Cloudflare Pages `tazakhabar-web` | City feed, search, share, PWA |
-| Admin | `apps/admin` → Cloudflare Pages `tazakhabar-admin` | Review queue, sources, uploads, live ingest |
+| Reader | `apps/app` → Cloudflare Pages `newsfeed-web` | City feed, search, share, PWA |
+| Admin | `apps/admin` → Cloudflare Pages `newsfeed-admin` | Review queue, sources, uploads, live ingest |
 | API | `apps/api` → Render `tazakhabar-api` | Sole DB client; public + admin + ingest |
 | Shared types | `packages/shared-types` | OpenAPI → NSwag DTOs |
 | DB | Neon Postgres | Production data; local Docker Postgres |

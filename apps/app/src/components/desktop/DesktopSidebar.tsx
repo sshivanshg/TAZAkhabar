@@ -4,13 +4,14 @@ import { usePathname, useRouter, type Href } from 'expo-router'
 import Bookmark from 'lucide-react-native/icons/bookmark'
 import Home from 'lucide-react-native/icons/house'
 import User from 'lucide-react-native/icons/user'
+import Info from 'lucide-react-native/icons/info'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useTheme } from '../../preferences/ThemePreferenceContext'
 import { iconStroke, type AppIcon } from '../../theme/categoryIcons'
 import { HIT_TARGET, radius, space, typography, type AppColors } from '../../theme/tokens'
 
 type NavItem = {
-  id: 'home' | 'bookmarks' | 'profile'
+  id: 'home' | 'bookmarks' | 'profile' | 'about'
   label: string
   href: Href
   testID: string
@@ -21,6 +22,7 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'home', label: 'Home', href: '/(tabs)', testID: 'sidebar-nav-home', Icon: Home },
   { id: 'bookmarks', label: 'Bookmarks', href: '/(tabs)/bookmarks', testID: 'sidebar-nav-bookmarks', Icon: Bookmark },
   { id: 'profile', label: 'Profile', href: '/(tabs)/profile', testID: 'sidebar-nav-profile', Icon: User },
+  { id: 'about', label: 'About & help', href: '/about', testID: 'sidebar-nav-about', Icon: Info },
 ]
 
 type WebPressableState = PressableStateCallbackType & {
@@ -105,6 +107,24 @@ export function DesktopSidebar() {
 
       <View style={styles.footer} testID="sidebar-footer">
         <View style={styles.footerRule} />
+        <View style={styles.footerLinks}>
+          <Pressable
+            onPress={() => router.push('/privacy')}
+            accessibilityRole="link"
+            accessibilityLabel="Privacy"
+            style={({ pressed }) => [styles.footerLink, pressed ? styles.itemPressed : null]}
+          >
+            <Text style={styles.footerLinkText}>Privacy</Text>
+          </Pressable>
+          <Pressable
+            onPress={() => router.push('/support')}
+            accessibilityRole="link"
+            accessibilityLabel="Support"
+            style={({ pressed }) => [styles.footerLink, pressed ? styles.itemPressed : null]}
+          >
+            <Text style={styles.footerLinkText}>Support</Text>
+          </Pressable>
+        </View>
         <Text style={styles.footerText} accessibilityLabel="TazaKhabar version 0.1">
           TazaKhabar v0.1
         </Text>
@@ -208,6 +228,23 @@ function createStyles(c: AppColors) {
       lineHeight: typography.label.lineHeight,
       fontWeight: typography.label.fontWeight,
       letterSpacing: typography.label.letterSpacing,
+      color: c.textMuted,
+    },
+    footerLinks: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: space.xxs,
+    },
+    footerLink: {
+      minHeight: HIT_TARGET,
+      justifyContent: 'center',
+      paddingHorizontal: space.xs,
+      borderRadius: radius.sm,
+    },
+    footerLinkText: {
+      fontSize: typography.meta.fontSize,
+      lineHeight: typography.meta.lineHeight,
+      fontWeight: '600',
       color: c.textMuted,
     },
   })

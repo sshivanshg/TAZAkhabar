@@ -67,6 +67,14 @@ function RootNavigation() {
               fullScreenGestureEnabled: true,
             }}
           />
+          <Stack.Screen name="about" options={{ headerShown: false, title: 'About TazaKhabar' }} />
+          <Stack.Screen name="privacy" options={{ headerShown: false, title: 'Privacy — TazaKhabar' }} />
+          <Stack.Screen name="terms" options={{ headerShown: false, title: 'Terms — TazaKhabar' }} />
+          <Stack.Screen name="support" options={{ headerShown: false, title: 'Support — TazaKhabar' }} />
+          <Stack.Screen
+            name="corrections"
+            options={{ headerShown: false, title: 'Corrections & takedown — TazaKhabar' }}
+          />
         </Stack>
       </AppShell>
     </>
