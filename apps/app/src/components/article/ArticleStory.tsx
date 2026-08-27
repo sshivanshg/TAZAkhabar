@@ -20,16 +20,12 @@ import { formatRelativeTime } from '../../utils/relativeTime'
 import { estimateReadingMinutes, formatReadingTime } from '../../utils/readingTime'
 import { isHttpsUrl } from '../../utils/shareToWhatsApp'
 import { parseArticleBlocks } from '../../utils/splitArticleBody'
-import { ArticleActions } from './ArticleActions'
 import { pressableState, webFocusRing } from './focusStyle'
 
 type Props = {
   article: ArticleResponse
   cityLabel?: string
-  bookmarked: boolean
   priorityImage?: boolean
-  onShare: () => void
-  onSave: () => void
   onReadSource: () => void
   onRetry?: () => void
 }
@@ -79,10 +75,7 @@ function ArticleHero({
 function ArticleStoryBase({
   article,
   cityLabel,
-  bookmarked,
   priorityImage = false,
-  onShare,
-  onSave,
   onReadSource,
   onRetry,
 }: Props) {
@@ -94,14 +87,20 @@ function ArticleStoryBase({
   const publisher = publisherName(article)
   const sourceUrl = isHttpsUrl(article.sourceUrl) ? article.sourceUrl!.trim() : undefined
   const time = article.publishedAt ? formatRelativeTime(article.publishedAt) : null
-  const bodyText = (article.body ?? '').trim() || (article.summary ?? '').trim()
+  const rawBody = (article.body ?? '').trim()
+  const rawSummary = (article.summary ?? '').trim()
+  const bodyText = rawBody || rawSummary
   const blocks = useMemo(() => parseArticleBlocks(bodyText), [bodyText])
-  const readingTime = formatReadingTime(estimateReadingMinutes(bodyText))
+  const readableText = blocks
+    .map((block) => (block.type === 'ul' ? block.items.join(' ') : block.text))
+    .join(' ')
+  const readingTime = formatReadingTime(estimateReadingMinutes(readableText))
   const metaParts = [publisher, time, readingTime].filter(Boolean)
   const headline = (article.headline ?? '').trim() || 'Untitled story'
   const headlineSize = width >= 768 ? 36 : 30
   const headlineLine = width >= 768 ? 40 : 34
   const hasContent = blocks.length > 0
+  const showLoadError = !hasContent && !rawBody && !rawSummary
 
   return (
     <View
@@ -149,57 +148,59 @@ function ArticleStoryBase({
           </Pressable>
         ) : null}
 
-        <View style={styles.body}>
-          {hasContent ? (
-            blocks.map((block, index) => {
-              if (block.type === 'ul') {
+        {hasContent || showLoadError ? (
+          <View style={styles.body}>
+            {hasContent ? (
+              blocks.map((block, index) => {
+                if (block.type === 'ul') {
+                  return (
+                    <View key={`ul-${index}`} style={styles.list}>
+                      {block.items.map((item, itemIndex) => (
+                        <View key={itemIndex} style={styles.listItem}>
+                          <Text style={styles.bullet}>•</Text>
+                          <Text style={styles.paragraph}>{item}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  )
+                }
+                if (block.type === 'quote') {
+                  return (
+                    <View key={`q-${index}`} style={styles.quote}>
+                      <Text style={styles.quoteText}>{block.text}</Text>
+                    </View>
+                  )
+                }
                 return (
-                  <View key={`ul-${index}`} style={styles.list}>
-                    {block.items.map((item, itemIndex) => (
-                      <View key={itemIndex} style={styles.listItem}>
-                        <Text style={styles.bullet}>•</Text>
-                        <Text style={styles.paragraph}>{item}</Text>
-                      </View>
-                    ))}
-                  </View>
+                  <Text key={`p-${index}`} style={styles.paragraph}>
+                    {block.text}
+                  </Text>
                 )
-              }
-              if (block.type === 'quote') {
-                return (
-                  <View key={`q-${index}`} style={styles.quote}>
-                    <Text style={styles.quoteText}>{block.text}</Text>
-                  </View>
-                )
-              }
-              return (
-                <Text key={`p-${index}`} style={styles.paragraph}>
-                  {block.text}
-                </Text>
-              )
-            })
-          ) : (
-            <View style={styles.emptyBody}>
-              <Text style={styles.emptyTitle}>Unable to load this story.</Text>
-              {onRetry ? (
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="Retry loading this story"
-                  onPress={onRetry}
-                  style={(state) => {
-                    const { pressed, focused } = pressableState(state)
-                    return [
-                      styles.retry,
-                      pressed ? styles.pressed : null,
-                      webFocusRing(Boolean(focused)),
-                    ]
-                  }}
-                >
-                  <Text style={styles.retryLabel}>Retry</Text>
-                </Pressable>
-              ) : null}
-            </View>
-          )}
-        </View>
+              })
+            ) : (
+              <View style={styles.emptyBody}>
+                <Text style={styles.emptyTitle}>Unable to load this story.</Text>
+                {onRetry ? (
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Retry loading this story"
+                    onPress={onRetry}
+                    style={(state) => {
+                      const { pressed, focused } = pressableState(state)
+                      return [
+                        styles.retry,
+                        pressed ? styles.pressed : null,
+                        webFocusRing(Boolean(focused)),
+                      ]
+                    }}
+                  >
+                    <Text style={styles.retryLabel}>Retry</Text>
+                  </Pressable>
+                ) : null}
+              </View>
+            )}
+          </View>
+        ) : null}
 
         {publisher || sourceUrl ? (
           <View style={styles.attribution}>
@@ -211,8 +212,6 @@ function ArticleStoryBase({
             </Text>
           </View>
         ) : null}
-
-        <ArticleActions bookmarked={bookmarked} onShare={onShare} onSave={onSave} />
       </View>
     </View>
   )

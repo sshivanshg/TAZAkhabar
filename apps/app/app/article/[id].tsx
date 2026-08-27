@@ -8,6 +8,7 @@ import {
   StyleSheet,
   Text,
   View,
+  useWindowDimensions,
   type NativeScrollEvent,
   type NativeSyntheticEvent,
   type ViewToken,
@@ -20,16 +21,15 @@ import type { ArticleResponse } from '@tazakhabar/shared-types'
 import { apiClient } from '../../src/api/client'
 import {
   ArticleBottomBar,
+  ArticlePage,
   ArticleSkeleton,
   ArticleStory,
   ArticleTopBar,
   CaughtUpFooter,
   FeedSentinel,
-  StoryDivider,
 } from '../../src/components/article'
 import { ScreenErrorBoundary } from '../../src/components/ScreenErrorBoundary'
 import { BottomSheet } from '../../src/components/ui/BottomSheet'
-import { isCompactNav, useBreakpoint } from '../../src/hooks/useBreakpoint'
 import { useLanguagePreference } from '../../src/preferences/LanguagePreferenceContext'
 import {
   addBookmark,
@@ -41,7 +41,8 @@ import { getStoredCitySlug } from '../../src/storage/cityPreference'
 import { getViewSessionId } from '../../src/storage/viewSession'
 import { PAGE_SIZE } from '../../src/theme/tokens'
 import {
-  ARTICLE_BOTTOM_BAR_HEIGHT,
+  articleChromeBottom,
+  articleChromeTop,
   readerColors,
 } from '../../src/theme/readerTokens'
 import { todayCityIso } from '../../src/utils/cityCalendar'
@@ -80,13 +81,12 @@ function paramsLookComplete(params: {
 }
 
 const HERO_ELEVATE_AFTER = 120
-const BOTTOM_BAR_AFTER = 240
 
 function ArticleFeedBody() {
   const router = useRouter()
   const insets = useSafeAreaInsets()
-  const breakpoint = useBreakpoint()
-  const compact = isCompactNav(breakpoint)
+  const { height: windowHeight } = useWindowDimensions()
+  const [viewportHeight, setViewportHeight] = useState(0)
   const raw = useLocalSearchParams<{
     id?: string
     headline?: string
@@ -146,7 +146,6 @@ function ArticleFeedBody() {
   const [bookmarkedIds, setBookmarkedIds] = useState<Set<number>>(new Set())
   const [hasMore, setHasMore] = useState(true)
   const [headerElevated, setHeaderElevated] = useState(false)
-  const [showBottomBar, setShowBottomBar] = useState(false)
   const [notice, setNotice] = useState<string | null>(null)
   const [shareTarget, setShareTarget] = useState<ArticleResponse | null>(null)
   const offsetRef = useRef(0)
@@ -155,7 +154,6 @@ function ArticleFeedBody() {
   const listRef = useRef<FlatList<ArticleResponse>>(null)
   const activeIndexRef = useRef(0)
   const headerElevatedRef = useRef(false)
-  const showBottomBarRef = useRef(false)
   const noticeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
@@ -236,8 +234,6 @@ function ArticleFeedBody() {
       activeIndexRef.current = 0
       setHeaderElevated(false)
       headerElevatedRef.current = false
-      setShowBottomBar(false)
-      showBottomBarRef.current = false
       setLoading(false)
     } catch (err) {
       if (initialFromParams) {
@@ -378,7 +374,8 @@ function ArticleFeedBody() {
   }, [activeArticle, recordView])
 
   const onBack = useCallback(() => {
-    router.back()
+    // Always return to Home — never Discover or another tab left in history.
+    router.replace('/(tabs)')
   }, [router])
 
   const flashNotice = useCallback((message: string) => {
@@ -471,11 +468,6 @@ function ArticleFeedBody() {
       headerElevatedRef.current = elevated
       setHeaderElevated(elevated)
     }
-    const bar = y > BOTTOM_BAR_AFTER
-    if (bar !== showBottomBarRef.current) {
-      showBottomBarRef.current = bar
-      setShowBottomBar(bar)
-    }
   }, [])
 
   const onViewableItemsChanged = useRef(
@@ -502,8 +494,10 @@ function ArticleFeedBody() {
   const storyTotal = Math.max(total, stack.length)
   const storyPosition = Math.min(storyTotal, feedStart + activeLocalIndex + 1)
   const cityLabel = formatLocationLabel(citySlug)
-  const listBottomPad =
-    (compact ? ARTICLE_BOTTOM_BAR_HEIGHT + Math.max(insets.bottom, 8) : 24) + 28
+  const pageHeight = viewportHeight > 0 ? viewportHeight : windowHeight
+  const padTop = articleChromeTop(insets.top)
+  const padBottom = articleChromeBottom(insets.bottom)
+  const listBottomPad = padBottom + 8
 
   if (loading && stack.length === 0) {
     return (
@@ -533,38 +527,45 @@ function ArticleFeedBody() {
   return (
     <View
       style={styles.root}
+      onLayout={(event) => {
+        const next = Math.round(event.nativeEvent.layout.height)
+        if (next > 0 && next !== viewportHeight) {
+          setViewportHeight(next)
+        }
+      }}
       {...(Platform.OS === 'web' ? ({ role: 'main' } as object) : null)}
     >
       <StatusBar style="dark" />
       <FlatList
         ref={listRef}
         testID="article-feed"
+        style={styles.list}
         data={visibleStack}
         keyExtractor={(item) => String(item.id ?? item.headline)}
-        extraData={{ activeLocalIndex, bookmarkedIds, lang }}
+        extraData={{ activeLocalIndex, lang }}
         renderItem={({ item, index: itemIndex }) => {
           const globalIndex = feedStart + itemIndex
           return (
-            <View>
-              {itemIndex > 0 ? <StoryDivider /> : null}
+            <ArticlePage
+              height={pageHeight}
+              padTop={padTop}
+              padBottom={padBottom}
+              showNextLabel={itemIndex > 0}
+            >
               <ArticleStory
                 article={item}
                 cityLabel={cityLabel}
-                bookmarked={item.id != null && bookmarkedIds.has(item.id)}
                 priorityImage={itemIndex <= 1}
-                onShare={() => void onShare(item)}
-                onSave={() => void onToggleBookmark(item)}
                 onReadSource={() => onReadSource(item, globalIndex)}
                 onRetry={() => void retryArticle(item)}
               />
-            </View>
+            </ArticlePage>
           )
         }}
         ListFooterComponent={
-          <View>
+          <ArticlePage height={pageHeight} padTop={padTop} padBottom={padBottom}>
             {hasMore ? (
               <>
-                <StoryDivider />
                 <ArticleSkeleton />
                 {loadMoreError ? (
                   <Pressable
@@ -581,9 +582,19 @@ function ArticleFeedBody() {
             ) : (
               <CaughtUpFooter onBack={onBack} />
             )}
-          </View>
+          </ArticlePage>
         }
         showsVerticalScrollIndicator={false}
+        pagingEnabled
+        snapToInterval={pageHeight}
+        snapToAlignment="start"
+        disableIntervalMomentum
+        decelerationRate="fast"
+        getItemLayout={(_, index) => ({
+          length: pageHeight,
+          offset: pageHeight * index,
+          index,
+        })}
         onScroll={onScroll}
         scrollEventThrottle={16}
         onEndReached={() => void loadMore()}
@@ -594,7 +605,6 @@ function ArticleFeedBody() {
         maxToRenderPerBatch={2}
         initialNumToRender={2}
         removeClippedSubviews={false}
-        contentContainerStyle={{ paddingBottom: listBottomPad }}
       />
 
       <ArticleTopBar
@@ -606,26 +616,23 @@ function ArticleFeedBody() {
         onBack={onBack}
       />
 
-      {compact ? (
-        <ArticleBottomBar
-          visible={showBottomBar}
-          bookmarked={activeArticle?.id != null && bookmarkedIds.has(activeArticle.id)}
-          onShare={() => {
-            if (activeArticle) {
-              void onShare(activeArticle)
-            }
-          }}
-          onSave={() => {
-            if (activeArticle) {
-              void onToggleBookmark(activeArticle)
-            }
-          }}
-        />
-      ) : null}
+      <ArticleBottomBar
+        bookmarked={activeArticle?.id != null && bookmarkedIds.has(activeArticle.id)}
+        onShare={() => {
+          if (activeArticle) {
+            void onShare(activeArticle)
+          }
+        }}
+        onSave={() => {
+          if (activeArticle) {
+            void onToggleBookmark(activeArticle)
+          }
+        }}
+      />
 
       {notice ? (
         <View
-          style={[styles.notice, { bottom: compact && showBottomBar ? listBottomPad : 24 }]}
+          style={[styles.notice, { bottom: listBottomPad }]}
           accessibilityLiveRegion="polite"
         >
           <Text style={styles.noticeText}>{notice}</Text>
@@ -674,6 +681,17 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
     backgroundColor: readerColors.canvas,
+    // Keep top/bottom chrome viewport-fixed; only the FlatList scrolls.
+    overflow: 'hidden',
+    ...(Platform.OS === 'web'
+      ? ({ height: '100%', maxHeight: '100vh' } as object)
+      : null),
+  },
+  list: {
+    flex: 1,
+    ...(Platform.OS === 'web'
+      ? ({ scrollSnapType: 'y mandatory' } as object)
+      : null),
   },
   center: {
     flex: 1,

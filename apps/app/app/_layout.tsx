@@ -28,19 +28,28 @@ export default function RootLayout() {
                   headerShadowVisible: false,
                   contentStyle: { backgroundColor: colors.background },
                   animation: 'slide_from_right',
-                  animationDuration: 220,
+                  animationDuration: 260,
                 }}
               >
                 <Stack.Screen name="index" options={{ headerShown: false }} />
-                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                <Stack.Screen name="(tabs)" options={{ headerShown: false, animation: 'fade' }} />
                 <Stack.Screen name="feed" options={{ headerShown: false }} />
-                <Stack.Screen name="city" options={{ headerShown: false }} />
+                <Stack.Screen
+                  name="city"
+                  options={{
+                    headerShown: false,
+                    animation: 'slide_from_right',
+                    animationDuration: 280,
+                  }}
+                />
                 <Stack.Screen
                   name="article/[id]"
                   options={{
                     headerShown: false,
                     animation: 'fade_from_bottom',
-                    animationDuration: 280,
+                    animationDuration: 320,
+                    gestureEnabled: true,
+                    fullScreenGestureEnabled: true,
                   }}
                 />
               </Stack>

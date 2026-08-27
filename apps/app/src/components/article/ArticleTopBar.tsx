@@ -1,4 +1,4 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native'
+import { Platform, Pressable, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import ArrowLeft from 'lucide-react-native/icons/arrow-left'
 import { HIT_TARGET } from '../../theme/tokens'
@@ -88,7 +88,7 @@ export function ArticleTopBar({
 
 const styles = StyleSheet.create({
   wrap: {
-    position: 'absolute',
+    position: Platform.OS === 'web' ? ('fixed' as 'absolute') : 'absolute',
     top: 0,
     left: 0,
     right: 0,

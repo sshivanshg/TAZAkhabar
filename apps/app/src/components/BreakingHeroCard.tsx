@@ -6,6 +6,7 @@ import type { ArticleResponse } from '@tazakhabar/shared-types'
 import { colors, media, radius, space, typography } from '../theme/tokens'
 import { iconStroke } from '../theme/categoryIcons'
 import { formatRelativeTime } from '../utils/relativeTime'
+import { SourceAvatar } from './SourceAvatar'
 
 const CARD_GAP = space.sm
 
@@ -93,17 +94,26 @@ export function BreakingHeroCard({
           ) : (
             <View style={styles.imagePlaceholder} />
           )}
+          {!compact ? (
+            <View style={styles.logoOverlay} pointerEvents="none">
+              <SourceAvatar name={source} size={28} shape="circle" />
+            </View>
+          ) : null}
         </View>
         <View style={[styles.body, compact ? styles.bodyCompact : null]}>
-          <Text
-            fontSize={typography.label.fontSize}
-            lineHeight={typography.label.lineHeight}
-            fontWeight="$medium"
-            color={colors.textMuted}
-            numberOfLines={1}
-          >
-            {source}
-          </Text>
+          <View style={styles.sourceRow}>
+            {compact ? <SourceAvatar name={source} size={16} /> : null}
+            <Text
+              fontSize={typography.label.fontSize}
+              lineHeight={typography.label.lineHeight}
+              fontWeight="$medium"
+              color={colors.textMuted}
+              numberOfLines={1}
+              style={styles.sourceName}
+            >
+              {source}
+            </Text>
+          </View>
           <Text
             fontSize={metrics.titleSize}
             lineHeight={metrics.titleLine}
@@ -157,6 +167,23 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     overflow: 'hidden',
     backgroundColor: colors.surfaceRaised,
+  },
+  logoOverlay: {
+    position: 'absolute',
+    top: space.sm,
+    right: space.sm,
+    borderWidth: 2,
+    borderColor: colors.surface,
+    borderRadius: radius.full,
+  },
+  sourceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  sourceName: {
+    flex: 1,
+    minWidth: 0,
   },
   image: {
     width: '100%',

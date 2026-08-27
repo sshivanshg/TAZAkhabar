@@ -36,8 +36,11 @@ export function Chip({
     >
       {({ pressed }) => (
         <MotiView
-          animate={{ scale: selected ? 1 : 0.98 }}
-          transition={{ type: 'timing', duration: 160 }}
+          animate={{
+            scale: selected ? 1 : 0.98,
+            backgroundColor: selected ? colors.accent : 'transparent',
+          }}
+          transition={{ type: 'timing', duration: 180 }}
           style={[
             styles.chip,
             selected ? styles.selected : styles.unselected,

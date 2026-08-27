@@ -19,4 +19,12 @@ describe('parseArticleBlocks', () => {
       { type: 'ul', items: ['Alpha', 'Beta'] },
     ])
   })
+
+  it('drops publisher download CTAs', () => {
+    expect(
+      parseArticleBlocks(
+        'Download in high quality\n\nहाई क्वालिटी में डाउनलोड करें\n\nThe actual story.',
+      ),
+    ).toEqual([{ type: 'p', text: 'The actual story.' }])
+  })
 })

@@ -95,8 +95,8 @@ No `wrangler.toml` in-repo — Pages deploy uses `cloudflare/pages-action` (wran
 | `EXPO_PUBLIC_API_BASE_URL` | GitHub Actions **and** `apps/app/.env.production` (Expo inlines this at export) |
 | `VITE_API_BASE_URL` | GitHub Actions **and** `apps/admin/.env.production` |
 | `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` | GitHub secrets |
-| `CLOUDFLARE_PAGES_PROJECT_NAME` | default `tazakhabar-web` |
-| `CLOUDFLARE_PAGES_ADMIN_PROJECT_NAME` | default `tazakhabar-admin` |
+| `CLOUDFLARE_PAGES_PROJECT_NAME` | default `newsfeed-web` (existing Cloudflare Pages project) |
+| `CLOUDFLARE_PAGES_ADMIN_PROJECT_NAME` | default `newsfeed-admin` (existing Cloudflare Pages project) |
 | `PRODUCTION_DATABASE_CONNECTION_STRING` | GitHub production environment secret for manual migration workflow |
 
 ## Failure modes & invariants

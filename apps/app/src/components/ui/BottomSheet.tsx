@@ -1,4 +1,4 @@
-import { type ComponentType, type ReactNode } from 'react'
+import { type ComponentType } from 'react'
 import { Modal, Pressable, StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Text } from '@gluestack-ui/themed'
@@ -13,6 +13,7 @@ export type BottomSheetItem = {
   label: string
   onPress: () => void
   destructive?: boolean
+  detail?: string
   Icon?: ComponentType<IconProps>
 }
 
@@ -30,9 +31,10 @@ type Props = {
   items?: BottomSheetItem[]
   onClose: () => void
   cancelLabel?: string
+  showCancel?: boolean
 }
 
-/** Branded bottom sheet shell — drag handle, grouped actions, detached cancel. */
+/** Full-bleed overflow sheet — large top radius, icon rows, scrim dismiss. */
 export function BottomSheet({
   visible,
   title,
@@ -40,6 +42,7 @@ export function BottomSheet({
   items,
   onClose,
   cancelLabel = 'Cancel',
+  showCancel = false,
 }: Props) {
   const insets = useSafeAreaInsets()
   const resolvedSections: BottomSheetSection[] =
@@ -58,15 +61,15 @@ export function BottomSheet({
           <MotiView
             from={{ opacity: 0 }}
             animate={{ opacity: visible ? 1 : 0 }}
-            transition={{ type: 'timing', duration: 200 }}
+            transition={{ type: 'timing', duration: 220 }}
             style={styles.overlay}
           />
         </Pressable>
 
         <MotiView
-          from={{ opacity: 0, translateY: 28 }}
-          animate={{ opacity: visible ? 1 : 0, translateY: visible ? 0 : 28 }}
-          transition={{ type: 'timing', duration: 220 }}
+          from={{ opacity: 0, translateY: 40 }}
+          animate={{ opacity: visible ? 1 : 0, translateY: visible ? 0 : 40 }}
+          transition={{ type: 'timing', duration: 280 }}
           style={[styles.sheetWrap, { paddingBottom: Math.max(insets.bottom, space.md) }]}
         >
           <View style={styles.sheet}>
@@ -96,7 +99,9 @@ export function BottomSheet({
                         requestAnimationFrame(() => item.onPress())
                       }}
                       accessibilityRole="button"
-                      accessibilityLabel={item.label}
+                      accessibilityLabel={
+                        item.detail ? `${item.label}. ${item.detail}` : item.label
+                      }
                       style={({ pressed }) => [
                         styles.row,
                         item.destructive ? styles.rowDanger : null,
@@ -109,23 +114,34 @@ export function BottomSheet({
                     >
                       {Icon ? (
                         <Icon
-                          size={18}
+                          size={22}
                           strokeWidth={iconStroke}
-                          color={item.destructive ? colors.destructive : colors.textSecondary}
+                          color={item.destructive ? colors.destructive : colors.text}
                           style={styles.rowIcon}
                         />
                       ) : (
                         <View style={styles.rowIconSpacer} />
                       )}
-                      <Text
-                        fontSize={typography.summary.fontSize}
-                        lineHeight={typography.summary.lineHeight}
-                        fontWeight="$medium"
-                        color={item.destructive ? colors.destructive : colors.text}
-                        style={styles.rowLabel}
-                      >
-                        {item.label}
-                      </Text>
+                      <View style={styles.rowCopy}>
+                        <Text
+                          fontSize={typography.summary.fontSize}
+                          lineHeight={typography.summary.lineHeight}
+                          fontWeight="$medium"
+                          color={item.destructive ? colors.destructive : colors.text}
+                          style={styles.rowLabel}
+                        >
+                          {item.label}
+                        </Text>
+                        {item.detail ? (
+                          <Text
+                            fontSize={typography.label.fontSize}
+                            lineHeight={typography.label.lineHeight}
+                            color={colors.textMuted}
+                          >
+                            {item.detail}
+                          </Text>
+                        ) : null}
+                      </View>
                     </Pressable>
                   )
                 })}
@@ -133,21 +149,23 @@ export function BottomSheet({
             ))}
           </View>
 
-          <Pressable
-            onPress={onClose}
-            accessibilityRole="button"
-            accessibilityLabel={cancelLabel}
-            style={({ pressed }) => [styles.cancel, pressed ? styles.cancelPressed : null]}
-          >
-            <Text
-              fontSize={typography.button.fontSize}
-              lineHeight={typography.button.lineHeight}
-              fontWeight="$semibold"
-              color={colors.text}
+          {showCancel ? (
+            <Pressable
+              onPress={onClose}
+              accessibilityRole="button"
+              accessibilityLabel={cancelLabel}
+              style={({ pressed }) => [styles.cancel, pressed ? styles.cancelPressed : null]}
             >
-              {cancelLabel}
-            </Text>
-          </Pressable>
+              <Text
+                fontSize={typography.button.fontSize}
+                lineHeight={typography.button.lineHeight}
+                fontWeight="$semibold"
+                color={colors.text}
+              >
+                {cancelLabel}
+              </Text>
+            </Pressable>
+          ) : null}
         </MotiView>
       </View>
     </Modal>
@@ -164,7 +182,7 @@ export function ActionSheet(props: {
   sections?: BottomSheetSection[]
   onClose: () => void
 }) {
-  return <BottomSheet {...props} />
+  return <BottomSheet showCancel {...props} />
 }
 
 const styles = StyleSheet.create({
@@ -175,78 +193,77 @@ const styles = StyleSheet.create({
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(20, 20, 22, 0.38)',
+    backgroundColor: 'rgba(16, 24, 40, 0.42)',
   },
   sheetWrap: {
-    paddingHorizontal: space.sm,
+    paddingHorizontal: 0,
     gap: space.xs,
   },
   sheet: {
     backgroundColor: colors.surface,
-    borderTopLeftRadius: radius.lg,
-    borderTopRightRadius: radius.lg,
-    borderBottomLeftRadius: radius.lg,
-    borderBottomRightRadius: radius.lg,
+    borderTopLeftRadius: radius.sheet,
+    borderTopRightRadius: radius.sheet,
     overflow: 'hidden',
-    paddingBottom: space.xs,
-    borderWidth: 1,
-    borderColor: colors.border,
+    paddingBottom: space.sm,
   },
   handle: {
     alignSelf: 'center',
-    width: 44,
+    width: 36,
     height: 4,
     borderRadius: radius.full,
-    backgroundColor: colors.accentSoft,
+    backgroundColor: colors.borderSolid,
     marginTop: space.sm,
     marginBottom: space.xs,
   },
   title: {
-    paddingHorizontal: space.md,
+    paddingHorizontal: space.lg,
     paddingBottom: space.sm,
   },
   sectionDivider: {
     height: StyleSheet.hairlineWidth,
     backgroundColor: colors.border,
     marginVertical: space.xxs,
-    marginHorizontal: space.md,
+    marginHorizontal: space.lg,
   },
   row: {
-    minHeight: 48,
-    paddingHorizontal: space.md,
+    minHeight: 52,
+    paddingHorizontal: space.lg,
+    paddingVertical: space.xs,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: space.sm,
+    gap: space.md,
   },
   rowDanger: {
-    backgroundColor: colors.destructiveSoft,
-    marginHorizontal: space.xs,
-    borderRadius: radius.sm,
+    backgroundColor: 'transparent',
   },
   rowPressed: {
     backgroundColor: colors.surfaceRaised,
   },
   rowDangerPressed: {
-    opacity: 0.88,
+    backgroundColor: colors.destructiveSoft,
   },
   rowIcon: {
     marginRight: 0,
   },
   rowIconSpacer: {
-    width: 18,
+    width: 22,
+  },
+  rowCopy: {
+    flex: 1,
+    minWidth: 0,
+    gap: 2,
   },
   rowLabel: {
-    flex: 1,
+    flexShrink: 1,
   },
   cancel: {
     minHeight: HIT_TARGET,
+    marginHorizontal: space.sm,
     borderRadius: radius.full,
     backgroundColor: colors.surfaceRaised,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: space.md,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
   },
   cancelPressed: {
     opacity: 0.85,

@@ -1,4 +1,5 @@
 import { Platform, StyleSheet, type ViewStyle } from 'react-native'
+import { HIT_TARGET } from './tokens'
 
 /** Light editorial palette for the article reader. */
 export const readerColors = {
@@ -13,8 +14,8 @@ export const readerColors = {
   sheet: '#FFFFFF',
   sheetBorder: '#E4E8EF',
   imageFallback: '#D7DEE9',
-  header: 'rgba(255, 255, 255, 0.78)',
-  headerSolid: 'rgba(255, 255, 255, 0.94)',
+  header: 'rgba(255, 255, 255, 0.94)',
+  headerSolid: 'rgba(255, 255, 255, 0.96)',
   progressTrack: '#E4E8EF',
   progressFill: '#2855E8',
   attribution: '#EEF2F6',
@@ -23,6 +24,16 @@ export const readerColors = {
 export const ARTICLE_COLUMN_MAX = 720
 export const ARTICLE_HEADLINE_MAX = 800
 export const ARTICLE_BOTTOM_BAR_HEIGHT = 58
+/** Row minHeight + row paddingBottom + progress track — keep in sync with ArticleTopBar. */
+export const ARTICLE_TOP_BAR_BODY = HIT_TARGET + 6 + 2
+
+export function articleChromeTop(insetTop: number): number {
+  return Math.max(insetTop, 8) + ARTICLE_TOP_BAR_BODY
+}
+
+export function articleChromeBottom(insetBottom: number): number {
+  return ARTICLE_BOTTOM_BAR_HEIGHT + Math.max(insetBottom, 8)
+}
 
 export function readerHeaderChrome(elevated: boolean, reducedMotion: boolean): ViewStyle {
   const web: ViewStyle =

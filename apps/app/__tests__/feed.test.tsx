@@ -202,10 +202,11 @@ describe('FeedScreen', () => {
       await screen.findByText('[MOCK] Local municipal budget approved for FY26'),
     ).toBeTruthy()
     expect(screen.queryByText('Top stories')).toBeNull()
-    expect(screen.queryByText('For you')).toBeNull()
-    expect(screen.getAllByText('Read original')).toHaveLength(6)
-    expect(screen.getAllByText('Save')).toHaveLength(6)
-    expect(screen.getAllByText('Share')).toHaveLength(6)
+    expect(screen.getByLabelText('Filter For you')).toBeTruthy()
+    // Actions live in the overflow sheet — Google News–style clean card face.
+    expect(screen.queryByText('Read original')).toBeNull()
+    expect(screen.queryAllByText('Save')).toHaveLength(0)
+    expect(screen.queryAllByText('Share')).toHaveLength(0)
     expect(screen.getByLabelText(/Change city/)).toBeTruthy()
     expect(screen.queryByTestId('article-row')).toBeNull()
   })
@@ -294,6 +295,16 @@ describe('FeedScreen', () => {
     expect(mockPush).toHaveBeenCalledWith('/city')
   })
 
+  it('opens Discover for the publisher from See more', async () => {
+    renderFeed()
+    await screen.findByText('[MOCK] Local municipal budget approved for FY26')
+    fireEvent.press(screen.getAllByLabelText('See more from Dainik Jagran')[0])
+    expect(mockPush).toHaveBeenCalledWith({
+      pathname: '/(tabs)/search',
+      params: { from: 'home', q: 'Dainik Jagran' },
+    })
+  })
+
   it('opens story actions on long press of a mobile feed card', async () => {
     renderFeed()
 
@@ -302,10 +313,10 @@ describe('FeedScreen', () => {
     )
     fireEvent(card, 'onLongPress')
 
-    expect(await screen.findByText('Story options')).toBeTruthy()
+    expect(await screen.findByLabelText('Save for later')).toBeTruthy()
     expect(screen.getByLabelText('Share')).toBeTruthy()
-    expect(screen.getByLabelText('Save')).toBeTruthy()
-    expect(screen.getByText('Show more like this')).toBeTruthy()
-    expect(screen.getByText('Block this source')).toBeTruthy()
+    expect(screen.getByLabelText('Go to Dainik Jagran')).toBeTruthy()
+    expect(screen.getByLabelText('I like this')).toBeTruthy()
+    expect(screen.getByLabelText(/Hide all stories from Dainik Jagran/)).toBeTruthy()
   })
 })

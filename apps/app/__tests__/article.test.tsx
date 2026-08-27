@@ -1,10 +1,11 @@
-import { render, screen, waitFor } from '@testing-library/react-native'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react-native'
 import { FlatList } from 'react-native'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import type { ArticleResponse } from '@tazakhabar/shared-types'
 import { LanguagePreferenceProvider } from '../src/preferences/LanguagePreferenceContext'
 
 const mockBack = jest.fn()
+const mockReplace = jest.fn()
 const mockGetArticle = jest.fn()
 const mockGetArticles = jest.fn()
 const mockParams: Record<string, string> = { id: '7', city: 'jhansi' }
@@ -13,7 +14,7 @@ jest.mock('expo-router', () => ({
   useRouter: () => ({
     back: mockBack,
     push: jest.fn(),
-    replace: jest.fn(),
+    replace: mockReplace,
   }),
   useLocalSearchParams: () => mockParams,
 }))
@@ -117,7 +118,9 @@ describe('ArticleScreen', () => {
 
     expect(await screen.findByText('Fetched headline')).toBeTruthy()
     expect(await screen.findByText('Full story from the publisher.')).toBeTruthy()
-    expect(screen.getAllByLabelText('Share').length).toBeGreaterThan(0)
+    expect(screen.getByTestId('article-bottom-bar')).toBeTruthy()
+    expect(screen.getByLabelText('Share')).toBeTruthy()
+    expect(screen.getByLabelText('Save')).toBeTruthy()
     expect(screen.getAllByLabelText('Prefer English').length).toBeGreaterThan(0)
     expect(mockGetArticles).toHaveBeenCalled()
     expect(mockGetArticle).toHaveBeenCalled()
@@ -134,16 +137,48 @@ describe('ArticleScreen', () => {
     expect(screen.queryByText(/Source: undefined/)).toBeNull()
   })
 
-  it('uses a continuous feed instead of snap paging', async () => {
+  it('snaps vertical scrolling one page at a time', async () => {
     renderArticle()
 
     await screen.findByText('Fetched headline')
     const feed = screen.UNSAFE_getByType(FlatList)
+    const pageHeight = feed.props.snapToInterval as number
+    const secondPage = feed.props.getItemLayout(null, 1)
 
-    expect(feed.props.pagingEnabled).toBeUndefined()
-    expect(feed.props.snapToInterval).toBeUndefined()
-    expect(feed.props.disableIntervalMomentum).toBeUndefined()
+    expect(feed.props.pagingEnabled).toBe(true)
+    expect(feed.props.disableIntervalMomentum).toBe(true)
+    expect(feed.props.decelerationRate).toBe('fast')
     expect(feed.props.testID).toBe('article-feed')
+    expect(pageHeight).toBeGreaterThan(0)
+    expect(secondPage).toEqual({
+      length: pageHeight,
+      offset: pageHeight,
+      index: 1,
+    })
+    expect(screen.getAllByTestId('article-page').length).toBeGreaterThanOrEqual(2)
+    // Constrained flex list so chrome stays viewport-fixed while stories scroll.
+    expect(feed.props.style).toEqual(expect.objectContaining({ flex: 1 }))
+  })
+
+  it('hides publisher download CTAs from story copy', async () => {
+    mockGetArticle.mockResolvedValue({
+      ...fetched,
+      body: 'Download in high quality\n\nFull story from the publisher.',
+    })
+    mockGetArticles.mockResolvedValue({
+      items: [
+        { ...listed, summary: 'Download in high quality' },
+        second,
+      ],
+      total: 2,
+      offset: 0,
+      limit: 20,
+    })
+
+    renderArticle()
+
+    expect(await screen.findByText('Full story from the publisher.')).toBeTruthy()
+    expect(screen.queryByText('Download in high quality')).toBeNull()
   })
 
   it('shows next-story continuation instead of a swipe-up cue', async () => {
@@ -160,6 +195,16 @@ describe('ArticleScreen', () => {
     expect(await screen.findByLabelText('Story 1 of 2')).toBeTruthy()
     expect(screen.getByText('1 of 2')).toBeTruthy()
     expect(screen.getAllByText('JHANSI').length).toBeGreaterThan(0)
+  })
+
+  it('returns to Home when Back is pressed', async () => {
+    renderArticle()
+
+    await screen.findByText('Fetched headline')
+    fireEvent.press(screen.getByLabelText('Go back'))
+
+    expect(mockReplace).toHaveBeenCalledWith('/(tabs)')
+    expect(mockBack).not.toHaveBeenCalled()
   })
 
   it('shows unavailable state when article cannot be loaded', async () => {

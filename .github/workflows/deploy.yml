@@ -53,7 +53,7 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          projectName: ${{ vars.CLOUDFLARE_PAGES_PROJECT_NAME || 'tazakhabar-web' }}
+          projectName: ${{ vars.CLOUDFLARE_PAGES_PROJECT_NAME || 'newsfeed-web' }}
           directory: apps/app/dist
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
           wranglerVersion: "3"
@@ -100,7 +100,7 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          projectName: ${{ vars.CLOUDFLARE_PAGES_ADMIN_PROJECT_NAME || 'tazakhabar-admin' }}
+          projectName: ${{ vars.CLOUDFLARE_PAGES_ADMIN_PROJECT_NAME || 'newsfeed-admin' }}
           directory: apps/admin/dist
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
           wranglerVersion: "3"

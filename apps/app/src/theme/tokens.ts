@@ -62,6 +62,8 @@ export const radius = {
   md: 14,
   lg: 18,
   xl: 24,
+  /** Overflow sheet top corners (Google News–scale rounding) */
+  sheet: 28,
   /** Fully pill-shaped controls */
   full: 999,
 } as const
@@ -159,6 +161,16 @@ export const FEED_CATEGORIES = [
 ] as const
 
 export type FeedCategory = (typeof FEED_CATEGORIES)[number]
+
+/** Reader-facing labels — "All" reads as Google News "For you". */
+export const FEED_CATEGORY_LABELS: Record<FeedCategory, string> = {
+  All: 'For you',
+  Local: 'Local',
+  Health: 'Health',
+  Sports: 'Sports',
+  Business: 'Business',
+  State: 'State',
+}
 
 export function isFeedCategory(value: string | undefined | null): value is FeedCategory {
   return value != null && (FEED_CATEGORIES as readonly string[]).includes(value)

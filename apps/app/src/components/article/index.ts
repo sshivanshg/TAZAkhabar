@@ -1,4 +1,5 @@
 export { ArticleTopBar } from './ArticleTopBar'
+export { ArticlePage } from './ArticlePage'
 export { ArticleStory } from './ArticleStory'
 export { ArticleActions } from './ArticleActions'
 export { ArticleBottomBar } from './ArticleBottomBar'

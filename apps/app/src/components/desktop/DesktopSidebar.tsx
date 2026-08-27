@@ -1,7 +1,6 @@
 import { Platform, Pressable, StyleSheet, Text, View, type AccessibilityRole, type PressableStateCallbackType } from 'react-native'
 import { usePathname, useRouter, type Href } from 'expo-router'
 import Bookmark from 'lucide-react-native/icons/bookmark'
-import Globe from 'lucide-react-native/icons/globe'
 import Home from 'lucide-react-native/icons/house'
 import User from 'lucide-react-native/icons/user'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -9,7 +8,7 @@ import { iconStroke, type AppIcon } from '../../theme/categoryIcons'
 import { colors, HIT_TARGET, radius, space, typography } from '../../theme/tokens'
 
 type NavItem = {
-  id: 'home' | 'search' | 'bookmarks' | 'profile'
+  id: 'home' | 'bookmarks' | 'profile'
   label: string
   href: Href
   testID: string
@@ -18,7 +17,6 @@ type NavItem = {
 
 const NAV_ITEMS: NavItem[] = [
   { id: 'home', label: 'Home', href: '/(tabs)', testID: 'sidebar-nav-home', Icon: Home },
-  { id: 'search', label: 'Discover', href: '/(tabs)/search', testID: 'sidebar-nav-search', Icon: Globe },
   { id: 'bookmarks', label: 'Bookmarks', href: '/(tabs)/bookmarks', testID: 'sidebar-nav-bookmarks', Icon: Bookmark },
   { id: 'profile', label: 'Profile', href: '/(tabs)/profile', testID: 'sidebar-nav-profile', Icon: User },
 ]
