@@ -15,6 +15,8 @@ import { ScreenErrorBoundary } from '../src/components/ScreenErrorBoundary'
 import { AppShell, DesktopSidebar } from '../src/components/desktop'
 import { tazakhabarConfig } from '../src/theme/gluestack-config'
 import { applyWebColorScheme } from '../src/theme/applyWebColorScheme'
+import { registerWebServiceWorker } from '../src/pwa/registerWebServiceWorker'
+import { getDeferredInstallPrompt } from '../src/pwa/installPrompt'
 
 function RootNavigation() {
   const { colorScheme, colors } = useTheme()
@@ -22,6 +24,12 @@ function RootNavigation() {
   useEffect(() => {
     applyWebColorScheme(colorScheme, colors)
   }, [colorScheme, colors])
+
+  useEffect(() => {
+    registerWebServiceWorker()
+    // Start listening for beforeinstallprompt as early as possible.
+    getDeferredInstallPrompt()
+  }, [])
 
   return (
     <>

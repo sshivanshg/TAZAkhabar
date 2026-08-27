@@ -47,7 +47,10 @@ function TabIcon({
 export default function TabsLayout() {
   const insets = useSafeAreaInsets()
   const desktop = isDesktopLayout(useBreakpoint())
-  const bottomPad = desktop ? 0 : Math.max(insets.bottom, space.xs)
+  // The web tab bar already ends at the viewport edge. The extra shell pad
+  // is only needed for native safe-area insets (home indicator / navigation
+  // bar) and otherwise creates a visible strip below the web nav.
+  const bottomPad = Platform.OS === 'web' || desktop ? 0 : Math.max(insets.bottom, space.xs)
   const { colors } = useTheme()
   const styles = useMemo(() => createStyles(colors), [colors])
 

@@ -1,7 +1,7 @@
 # Reader app
 
 > **Living doc** — update when Expo routes, city/feed/share behavior, or desktop web layer change.  
-> **Last verified against:** 2026-08-27 (feed first-page AsyncStorage cache: 45m TTL; pull / city / category / language / query invalidate)
+> **Last verified against:** 2026-08-27 (Android PWA install: SW + beforeinstallprompt; feed cache 45m TTL)
 
 ## Purpose
 
@@ -21,6 +21,11 @@ Share / Read original live in the overflow sheet (Google News copy: Save for lat
 Go to [source], I like this), not on the card face. Tab scenes fade in on focus;
 articles open with a fade-from-bottom; city picker slides from the right. Tablet
 and desktop retain denser rows and the desktop content rail.
+
+The compact web shell does not add native safe-area padding below the tab bar;
+native layouts retain device safe-area padding. The web document also keeps
+browser text-size adjustment at 100% so mobile browsers do not inflate the
+reader beyond the intended responsive scale.
 
 ## Boundaries
 
@@ -73,8 +78,10 @@ flowchart LR
 | `src/components/BreakingHeroCard.tsx` | Top story: rounded image, circular source mark, headline/time |
 | `src/components/RelatedStoriesStrip.tsx` | Horizontal related cluster under a featured card |
 | `src/utils/feedLayout.ts` | Mixed mobile feed (featured / related / compact) |
-| `public/manifest.webmanifest`, `public/_headers` | PWA / Pages headers |
-| `src/components/AddToHomeBanner.tsx` | Soft install hint after city pick; gated by `shouldOfferAddToHome` |
+| `public/manifest.webmanifest`, `public/sw.js`, `public/_headers` | PWA installability (manifest + service worker) / Pages headers |
+| `src/components/AddToHomeBanner.tsx` | Soft install hint after city pick; Android **Install** uses `beforeinstallprompt` |
+| `src/pwa/installPrompt.ts` | Captures Chromium install event; `promptInstall()` opens the native dialog |
+| `src/pwa/registerWebServiceWorker.ts` | Registers `/sw.js` on web only (never Expo native) |
 | `src/utils/shouldOfferAddToHome.ts` | A2HS only on **mobile web browsers**; never Expo native; never installed PWA (`display-mode: standalone` / iOS `navigator.standalone`) |
 
 Stack: Expo ~54, expo-router, Gluestack UI, Moti, AsyncStorage.

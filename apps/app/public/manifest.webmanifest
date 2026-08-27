@@ -2,6 +2,7 @@
   "name": "TazaKhabar",
   "short_name": "TazaKhabar",
   "description": "Fresh, clear local news for your city from TazaKhabar.",
+  "id": "/",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
@@ -9,12 +10,6 @@
   "theme_color": "#155EEF",
   "lang": "en",
   "icons": [
-    {
-      "src": "/favicon.png",
-      "sizes": "48x48",
-      "type": "image/png",
-      "purpose": "any"
-    },
     {
       "src": "/icon.png",
       "sizes": "192x192",
@@ -25,7 +20,13 @@
       "src": "/icon.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }
