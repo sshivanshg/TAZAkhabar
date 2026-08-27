@@ -41,6 +41,7 @@ import { ErrorState } from '../../src/components/ui/ErrorState'
 import { EmptyState } from '../../src/components/ui/EmptyState'
 import { useFeedPreferences } from '../../src/preferences/FeedPreferencesContext'
 import { useLanguagePreference } from '../../src/preferences/LanguagePreferenceContext'
+import { useTheme } from '../../src/preferences/ThemePreferenceContext'
 import {
   addBookmark,
   articleToBookmark,
@@ -53,11 +54,11 @@ import {
   FEED_CATEGORIES,
   type FeedCategory,
   PAGE_SIZE,
-  colors,
   ERROR_COLUMN_MAX,
   isFeedCategory,
   radius,
   space,
+  type AppColors,
 } from '../../src/theme/tokens'
 import { useTabBarClearance } from '../../src/theme/useTabBarClearance'
 import { isDesktopLayout, useBreakpoint } from '../../src/hooks/useBreakpoint'
@@ -78,6 +79,8 @@ export default function DiscoverScreen() {
 function DiscoverBody() {
   const router = useRouter()
   const insets = useSafeAreaInsets()
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
   const params = useLocalSearchParams<{ category?: string; from?: string; q?: string }>()
   const prefs = useFeedPreferences()
   const { preferredLanguage } = useLanguagePreference()
@@ -560,10 +563,11 @@ function DiscoverBody() {
   )
 }
 
-const styles = StyleSheet.create({
+function createStyles(c: AppColors) {
+  return StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: c.background,
   },
   header: {
     flexDirection: 'row',
@@ -586,9 +590,9 @@ const styles = StyleSheet.create({
     marginBottom: space.xs,
     height: 48,
     borderRadius: radius.full,
-    backgroundColor: colors.surface,
+    backgroundColor: c.surface,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
+    borderColor: c.border,
     paddingHorizontal: space.sm + 2,
     flexDirection: 'row',
     alignItems: 'center',
@@ -598,7 +602,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 17,
     lineHeight: 22,
-    color: colors.text,
+    color: c.text,
     paddingVertical: 0,
     height: 48,
   },
@@ -610,7 +614,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.full,
   },
   pressed: {
-    backgroundColor: colors.surfaceRaised,
+    backgroundColor: c.surfaceRaised,
   },
   listFlex: {
     flex: 1,
@@ -629,4 +633,5 @@ const styles = StyleSheet.create({
     maxWidth: ERROR_COLUMN_MAX,
     alignSelf: 'center',
   },
-})
+  })
+}

@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import {
   FlatList,
   type NativeScrollEvent,
@@ -10,7 +10,8 @@ import {
 } from 'react-native'
 import { MotiView } from 'moti'
 import type { ArticleResponse } from '@tazakhabar/shared-types'
-import { colors, HIT_TARGET, radius, space } from '../theme/tokens'
+import { useTheme } from '../preferences/ThemePreferenceContext'
+import { HIT_TARGET, radius, space, type AppColors } from '../theme/tokens'
 import { BreakingHeroCard } from './BreakingHeroCard'
 
 type Props = {
@@ -31,6 +32,8 @@ export function BreakingNewsCarousel({ articles, onPress, onMorePress }: Props) 
   const pageWidth = cardWidth + CARD_GAP
   const [page, setPage] = useState(0)
   const listRef = useRef<FlatList<ArticleResponse>>(null)
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
 
   const updatePageFromOffset = useCallback(
     (x: number) => {
@@ -116,32 +119,34 @@ export function BreakingNewsCarousel({ articles, onPress, onMorePress }: Props) 
   )
 }
 
-const styles = StyleSheet.create({
-  list: {
-    paddingHorizontal: SIDE_PAD,
-  },
-  dots: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: space.xxs,
-    marginTop: space.sm,
-    marginBottom: space.xxs,
-  },
-  dotHit: {
-    minHeight: HIT_TARGET,
-    minWidth: HIT_TARGET,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  dot: {
-    height: DOT_H,
-    borderRadius: radius.full,
-  },
-  dotInactive: {
-    backgroundColor: colors.border,
-  },
-  dotActive: {
-    backgroundColor: colors.accent,
-  },
-})
+function createStyles(c: AppColors) {
+  return StyleSheet.create({
+    list: {
+      paddingHorizontal: SIDE_PAD,
+    },
+    dots: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      alignItems: 'center',
+      gap: space.xxs,
+      marginTop: space.sm,
+      marginBottom: space.xxs,
+    },
+    dotHit: {
+      minHeight: HIT_TARGET,
+      minWidth: HIT_TARGET,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    dot: {
+      height: DOT_H,
+      borderRadius: radius.full,
+    },
+    dotInactive: {
+      backgroundColor: c.border,
+    },
+    dotActive: {
+      backgroundColor: c.accent,
+    },
+  })
+}

@@ -1,10 +1,12 @@
+import { useMemo } from 'react'
 import { ScrollView, StyleSheet, View } from 'react-native'
+import { useTheme } from '../preferences/ThemePreferenceContext'
 import {
   FEED_CATEGORIES,
   FEED_CATEGORY_LABELS,
   type FeedCategory,
-  colors,
   space,
+  type AppColors,
 } from '../theme/tokens'
 import { Chip } from './ui/Chip'
 
@@ -25,6 +27,9 @@ export function CategoryChipRow({
   onLongPressCategory,
   categories = FEED_CATEGORIES,
 }: Props) {
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
+
   return (
     <View style={styles.wrap}>
       <ScrollView
@@ -62,20 +67,22 @@ export function CategoryChipRow({
   )
 }
 
-const styles = StyleSheet.create({
-  wrap: {
-    flexGrow: 0,
-    flexShrink: 0,
-    backgroundColor: colors.background,
-  },
-  scroll: {
-    flexGrow: 0,
-    flexShrink: 0,
-  },
-  content: {
-    paddingHorizontal: space.screen,
-    paddingVertical: 6,
-    alignItems: 'center',
-    gap: 8,
-  },
-})
+function createStyles(c: AppColors) {
+  return StyleSheet.create({
+    wrap: {
+      flexGrow: 0,
+      flexShrink: 0,
+      backgroundColor: c.background,
+    },
+    scroll: {
+      flexGrow: 0,
+      flexShrink: 0,
+    },
+    content: {
+      paddingHorizontal: space.screen,
+      paddingVertical: 6,
+      alignItems: 'center',
+      gap: 8,
+    },
+  })
+}

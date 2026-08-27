@@ -1,11 +1,13 @@
+import { useMemo } from 'react'
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import ArrowLeft from 'lucide-react-native/icons/arrow-left'
+import { useTheme } from '../../preferences/ThemePreferenceContext'
 import { HIT_TARGET } from '../../theme/tokens'
 import { iconStroke } from '../../theme/categoryIcons'
 import {
-  readerColors,
   readerHeaderChrome,
+  type ReaderColors,
 } from '../../theme/readerTokens'
 import { usePrefersReducedMotion } from '../../hooks/usePrefersReducedMotion'
 import { useBreakpoint } from '../../hooks/useBreakpoint'
@@ -33,6 +35,8 @@ export function ArticleTopBar({
   const insets = useSafeAreaInsets()
   const reducedMotion = usePrefersReducedMotion()
   const breakpoint = useBreakpoint()
+  const { readerColors } = useTheme()
+  const styles = useMemo(() => createStyles(readerColors), [readerColors])
   const showBackLabel = breakpoint === 'desktop' || breakpoint === 'wide'
   const safeTop = Math.max(insets.top, 8)
   const progress = total > 0 ? Math.min(1, Math.max(0, position / total)) : 0
@@ -44,7 +48,7 @@ export function ArticleTopBar({
       style={[
         styles.wrap,
         { paddingTop: safeTop },
-        readerHeaderChrome(elevated, reducedMotion),
+        readerHeaderChrome(elevated, reducedMotion, readerColors),
       ]}
     >
       <View style={styles.row}>
@@ -58,7 +62,7 @@ export function ArticleTopBar({
             return [
               styles.back,
               pressed ? styles.pressed : null,
-              webFocusRing(Boolean(focused)),
+              webFocusRing(Boolean(focused), readerColors),
             ]
           }}
         >
@@ -86,56 +90,58 @@ export function ArticleTopBar({
   )
 }
 
-const styles = StyleSheet.create({
-  wrap: {
-    position: Platform.OS === 'web' ? ('fixed' as 'absolute') : 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 20,
-  },
-  row: {
-    minHeight: HIT_TARGET,
-    paddingHorizontal: 16,
-    paddingBottom: 6,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 8,
-  },
-  back: {
-    minWidth: HIT_TARGET,
-    minHeight: HIT_TARGET,
-    paddingLeft: 4,
-    paddingRight: 8,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    borderRadius: 10,
-  },
-  backLabel: {
-    color: readerColors.text,
-    fontSize: 15,
-    fontWeight: '600',
-  },
-  pressed: {
-    opacity: 0.72,
-  },
-  progressLabel: {
-    minWidth: 58,
-    textAlign: 'right',
-    color: readerColors.textSecondary,
-    fontSize: 13,
-    fontWeight: '600',
-    fontVariant: ['tabular-nums'],
-  },
-  track: {
-    height: 2,
-    backgroundColor: readerColors.progressTrack,
-  },
-  fill: {
-    height: 2,
-    backgroundColor: readerColors.progressFill,
-    opacity: 0.45,
-  },
-})
+function createStyles(c: ReaderColors) {
+  return StyleSheet.create({
+    wrap: {
+      position: Platform.OS === 'web' ? ('fixed' as 'absolute') : 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      zIndex: 20,
+    },
+    row: {
+      minHeight: HIT_TARGET,
+      paddingHorizontal: 16,
+      paddingBottom: 6,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: 8,
+    },
+    back: {
+      minWidth: HIT_TARGET,
+      minHeight: HIT_TARGET,
+      paddingLeft: 4,
+      paddingRight: 8,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      borderRadius: 10,
+    },
+    backLabel: {
+      color: c.text,
+      fontSize: 15,
+      fontWeight: '600',
+    },
+    pressed: {
+      opacity: 0.72,
+    },
+    progressLabel: {
+      minWidth: 58,
+      textAlign: 'right',
+      color: c.textSecondary,
+      fontSize: 13,
+      fontWeight: '600',
+      fontVariant: ['tabular-nums'],
+    },
+    track: {
+      height: 2,
+      backgroundColor: c.progressTrack,
+    },
+    fill: {
+      height: 2,
+      backgroundColor: c.progressFill,
+      opacity: 0.45,
+    },
+  })
+}

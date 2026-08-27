@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Platform,
   Pressable,
@@ -15,8 +15,9 @@ import { useRouter } from 'expo-router'
 import MapPin from 'lucide-react-native/icons/map-pin'
 import Search from 'lucide-react-native/icons/search'
 import { MotiView } from 'moti'
+import { useTheme } from '../../preferences/ThemePreferenceContext'
 import { iconStroke } from '../../theme/categoryIcons'
-import { colors, HIT_TARGET, radius, space, typography } from '../../theme/tokens'
+import { HIT_TARGET, radius, space, typography, type AppColors } from '../../theme/tokens'
 import {
   READING_LANGUAGES,
   type ReadingLanguageCode,
@@ -53,6 +54,8 @@ export function DesktopTopBar({
   const prevWindowWidth = useRef(windowWidth)
   const [expanded, setExpanded] = useState(false)
   const [query, setQuery] = useState('')
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
 
   const expand = useCallback(() => {
     setExpanded(true)
@@ -267,136 +270,138 @@ export function DesktopTopBar({
   )
 }
 
-const styles = StyleSheet.create({
-  bar: {
-    minHeight: HIT_TARGET,
-    paddingBottom: space.xs,
-    paddingHorizontal: space.screen + 2,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: colors.background,
-    flexGrow: 0,
-    flexShrink: 0,
-    gap: space.sm,
-  },
-  left: {
-    flex: 1,
-    alignItems: 'flex-start',
-    justifyContent: 'center',
-    gap: 4,
-    minWidth: 0,
-  },
-  rightCluster: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flexShrink: 0,
-    gap: space.xs,
-  },
-  langRow: {
-    flexDirection: 'row',
-    gap: 6,
-  },
-  langChip: {
-    minWidth: 38,
-    minHeight: 32,
-    paddingHorizontal: 10,
-    borderRadius: radius.md,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  langChipSelected: {
-    backgroundColor: colors.accent,
-    borderColor: colors.accent,
-  },
-  cityPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space.xxs,
-    paddingHorizontal: space.sm,
-    paddingVertical: 6,
-    minHeight: 32,
-    borderRadius: radius.md,
-    backgroundColor: colors.accentSoft,
-    maxWidth: '100%',
-  },
-  cityHover: {
-    opacity: 0.92,
-  },
-  cityPressed: {
-    opacity: 0.85,
-  },
-  searchControl: {
-    height: SEARCH_COLLAPSED_WIDTH,
-    overflow: 'hidden',
-    borderRadius: radius.md,
-    backgroundColor: colors.surface,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
-    flexShrink: 0,
-  },
-  searchRow: {
-    flex: 1,
-    height: '100%',
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  iconSlot: {
-    width: SEARCH_COLLAPSED_WIDTH,
-    height: SEARCH_COLLAPSED_WIDTH,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  },
-  searchHover: {
-    opacity: 0.92,
-  },
-  searchPressed: {
-    opacity: 0.85,
-  },
-  inputWrap: {
-    flex: 1,
-    minWidth: 0,
-    height: '100%',
-    justifyContent: 'center',
-    paddingRight: space.sm + 2,
-  },
-  input: {
-    flex: 1,
-    fontSize: 15,
-    lineHeight: 20,
-    color: colors.text,
-    paddingVertical: 0,
-    margin: 0,
-    height: SEARCH_COLLAPSED_WIDTH,
-    backgroundColor: 'transparent',
-    borderWidth: 0,
-    ...(Platform.OS === 'web'
-      ? ({
-          outline: 'none',
-          outlineWidth: 0,
-          outlineStyle: 'none',
-          outlineColor: 'transparent',
-          boxShadow: 'none',
-          WebkitAppearance: 'none',
-          appearance: 'none',
-        } as object)
-      : null),
-  },
-  focusRing: {
-    ...(Platform.OS === 'web'
-      ? {
-          outlineStyle: 'solid' as const,
-          outlineWidth: 2,
-          outlineColor: colors.accent,
-          outlineOffset: 2,
-        }
-      : {
-          borderWidth: 2,
-          borderColor: colors.accent,
-        }),
-  },
-})
+function createStyles(c: AppColors) {
+  return StyleSheet.create({
+    bar: {
+      minHeight: HIT_TARGET,
+      paddingBottom: space.xs,
+      paddingHorizontal: space.screen + 2,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      backgroundColor: c.background,
+      flexGrow: 0,
+      flexShrink: 0,
+      gap: space.sm,
+    },
+    left: {
+      flex: 1,
+      alignItems: 'flex-start',
+      justifyContent: 'center',
+      gap: 4,
+      minWidth: 0,
+    },
+    rightCluster: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      flexShrink: 0,
+      gap: space.xs,
+    },
+    langRow: {
+      flexDirection: 'row',
+      gap: 6,
+    },
+    langChip: {
+      minWidth: 38,
+      minHeight: 32,
+      paddingHorizontal: 10,
+      borderRadius: radius.md,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: c.border,
+      backgroundColor: c.surface,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    langChipSelected: {
+      backgroundColor: c.accentFill,
+      borderColor: c.accentFill,
+    },
+    cityPill: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: space.xxs,
+      paddingHorizontal: space.sm,
+      paddingVertical: 6,
+      minHeight: 32,
+      borderRadius: radius.md,
+      backgroundColor: c.accentSoft,
+      maxWidth: '100%',
+    },
+    cityHover: {
+      opacity: 0.92,
+    },
+    cityPressed: {
+      opacity: 0.85,
+    },
+    searchControl: {
+      height: SEARCH_COLLAPSED_WIDTH,
+      overflow: 'hidden',
+      borderRadius: radius.md,
+      backgroundColor: c.surface,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: c.border,
+      flexShrink: 0,
+    },
+    searchRow: {
+      flex: 1,
+      height: '100%',
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    iconSlot: {
+      width: SEARCH_COLLAPSED_WIDTH,
+      height: SEARCH_COLLAPSED_WIDTH,
+      alignItems: 'center',
+      justifyContent: 'center',
+      flexShrink: 0,
+    },
+    searchHover: {
+      opacity: 0.92,
+    },
+    searchPressed: {
+      opacity: 0.85,
+    },
+    inputWrap: {
+      flex: 1,
+      minWidth: 0,
+      height: '100%',
+      justifyContent: 'center',
+      paddingRight: space.sm + 2,
+    },
+    input: {
+      flex: 1,
+      fontSize: 15,
+      lineHeight: 20,
+      color: c.text,
+      paddingVertical: 0,
+      margin: 0,
+      height: SEARCH_COLLAPSED_WIDTH,
+      backgroundColor: 'transparent',
+      borderWidth: 0,
+      ...(Platform.OS === 'web'
+        ? ({
+            outline: 'none',
+            outlineWidth: 0,
+            outlineStyle: 'none',
+            outlineColor: 'transparent',
+            boxShadow: 'none',
+            WebkitAppearance: 'none',
+            appearance: 'none',
+          } as object)
+        : null),
+    },
+    focusRing: {
+      ...(Platform.OS === 'web'
+        ? {
+            outlineStyle: 'solid' as const,
+            outlineWidth: 2,
+            outlineColor: c.accent,
+            outlineOffset: 2,
+          }
+        : {
+            borderWidth: 2,
+            borderColor: c.accent,
+          }),
+    },
+  })
+}

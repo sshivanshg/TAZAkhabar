@@ -1,6 +1,7 @@
-import { Component, type ErrorInfo, type ReactNode } from 'react'
+import { Component, type ErrorInfo, type ReactNode, useMemo } from 'react'
 import { StyleSheet, View } from 'react-native'
-import { colors } from '../theme/tokens'
+import { useTheme } from '../preferences/ThemePreferenceContext'
+import { type AppColors } from '../theme/tokens'
 import { ErrorState } from './ui/ErrorState'
 
 type Props = {
@@ -14,6 +15,40 @@ type Props = {
 
 type State = {
   error: Error | null
+}
+
+type FallbackProps = {
+  title: string
+  message: string
+  onRetry: () => void
+  onBackToFeed?: () => void
+}
+
+function ScreenErrorFallback({ title, message, onRetry, onBackToFeed }: FallbackProps) {
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
+
+  return (
+    <View style={styles.root}>
+      <ErrorState
+        title={title}
+        message={message}
+        onRetry={onRetry}
+        retryLabel="Try again"
+        onSecondary={onBackToFeed}
+        secondaryLabel="Back to feed"
+      />
+    </View>
+  )
+}
+
+function createStyles(c: AppColors) {
+  return StyleSheet.create({
+    root: {
+      flex: 1,
+      backgroundColor: c.background,
+    },
+  })
 }
 
 /**
@@ -53,23 +88,12 @@ export class ScreenErrorBoundary extends Component<Props, State> {
       'This section hit an unexpected error. You can try again without leaving the app.'
 
     return (
-      <View style={styles.root}>
-        <ErrorState
-          title={title}
-          message={message}
-          onRetry={this.reset}
-          retryLabel="Try again"
-          onSecondary={this.props.onBackToFeed}
-          secondaryLabel="Back to feed"
-        />
-      </View>
+      <ScreenErrorFallback
+        title={title}
+        message={message}
+        onRetry={this.reset}
+        onBackToFeed={this.props.onBackToFeed}
+      />
     )
   }
 }
-
-const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-})

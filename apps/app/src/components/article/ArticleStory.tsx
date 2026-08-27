@@ -10,11 +10,12 @@ import {
 } from 'react-native'
 import Newspaper from 'lucide-react-native/icons/newspaper'
 import type { ArticleResponse } from '@tazakhabar/shared-types'
+import { useTheme } from '../../preferences/ThemePreferenceContext'
 import { iconStroke } from '../../theme/categoryIcons'
 import {
   ARTICLE_COLUMN_MAX,
   ARTICLE_HEADLINE_MAX,
-  readerColors,
+  type ReaderColors,
 } from '../../theme/readerTokens'
 import { formatRelativeTime } from '../../utils/relativeTime'
 import { estimateReadingMinutes, formatReadingTime } from '../../utils/readingTime'
@@ -39,10 +40,14 @@ function ArticleHero({
   uri,
   headline,
   priority,
+  styles,
+  readerColors,
 }: {
   uri: string | null
   headline: string
   priority: boolean
+  styles: ReturnType<typeof createStyles>
+  readerColors: ReaderColors
 }) {
   const [failed, setFailed] = useState(false)
   const [loaded, setLoaded] = useState(false)
@@ -79,6 +84,8 @@ function ArticleStoryBase({
   onReadSource,
   onRetry,
 }: Props) {
+  const { readerColors } = useTheme()
+  const styles = useMemo(() => createStyles(readerColors), [readerColors])
   const { width } = useWindowDimensions()
   const imageUri = article.imageUrl && isHttpsUrl(article.imageUrl) ? article.imageUrl : null
   const category = article.category?.trim()
@@ -107,7 +114,13 @@ function ArticleStoryBase({
       {...(Platform.OS === 'web' ? ({ role: 'article' } as object) : null)}
       style={styles.root}
     >
-      <ArticleHero uri={imageUri} headline={headline} priority={priorityImage} />
+      <ArticleHero
+        uri={imageUri}
+        headline={headline}
+        priority={priorityImage}
+        styles={styles}
+        readerColors={readerColors}
+      />
 
       <View style={styles.column}>
         <View
@@ -140,7 +153,7 @@ function ArticleStoryBase({
               return [
                 styles.originalCta,
                 pressed ? styles.pressed : null,
-                webFocusRing(Boolean(focused)),
+                webFocusRing(Boolean(focused), readerColors),
               ]
             }}
           >
@@ -190,7 +203,7 @@ function ArticleStoryBase({
                       return [
                         styles.retry,
                         pressed ? styles.pressed : null,
-                        webFocusRing(Boolean(focused)),
+                        webFocusRing(Boolean(focused), readerColors),
                       ]
                     }}
                   >
@@ -219,153 +232,155 @@ function ArticleStoryBase({
 
 export const ArticleStory = memo(ArticleStoryBase)
 
-const styles = StyleSheet.create({
-  root: {
-    width: '100%',
-    maxWidth: ARTICLE_HEADLINE_MAX,
-    alignSelf: 'center',
-    backgroundColor: readerColors.canvas,
-  },
-  hero: {
-    width: '100%',
-    aspectRatio: 16 / 9,
-    backgroundColor: readerColors.imageFallback,
-    overflow: 'hidden',
-  },
-  heroFallback: {
-    ...StyleSheet.absoluteFillObject,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: readerColors.imageFallback,
-  },
-  heroPlaceholder: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: readerColors.imageFallback,
-  },
-  column: {
-    width: '100%',
-    maxWidth: ARTICLE_COLUMN_MAX,
-    alignSelf: 'center',
-    paddingHorizontal: 22,
-    paddingTop: 22,
-    paddingBottom: 12,
-  },
-  header: {
-    gap: 8,
-  },
-  eyebrow: {
-    color: readerColors.accent,
-    fontSize: 12,
-    fontWeight: '700',
-    letterSpacing: 1.2,
-    textTransform: 'uppercase',
-  },
-  headline: {
-    color: readerColors.text,
-    fontWeight: '800',
-    letterSpacing: -0.6,
-  },
-  meta: {
-    color: readerColors.textMuted,
-    fontSize: 15,
-    lineHeight: 22,
-    marginTop: 4,
-  },
-  originalCta: {
-    alignSelf: 'flex-start',
-    marginTop: 20,
-    marginBottom: 4,
-    minHeight: 44,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-    backgroundColor: readerColors.accentSoft,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  originalCtaText: {
-    color: readerColors.accent,
-    fontSize: 15,
-    fontWeight: '700',
-  },
-  body: {
-    marginTop: 28,
-    gap: 18,
-  },
-  paragraph: {
-    color: readerColors.text,
-    fontSize: 18,
-    lineHeight: 29,
-  },
-  list: {
-    gap: 8,
-  },
-  listItem: {
-    flexDirection: 'row',
-    gap: 10,
-    paddingRight: 8,
-  },
-  bullet: {
-    color: readerColors.text,
-    fontSize: 18,
-    lineHeight: 29,
-    width: 14,
-  },
-  quote: {
-    borderLeftWidth: 3,
-    borderLeftColor: readerColors.accent,
-    paddingLeft: 14,
-    paddingVertical: 4,
-  },
-  quoteText: {
-    color: readerColors.textSecondary,
-    fontSize: 18,
-    lineHeight: 28,
-    fontStyle: 'italic',
-  },
-  emptyBody: {
-    gap: 12,
-  },
-  emptyTitle: {
-    color: readerColors.textSecondary,
-    fontSize: 16,
-    lineHeight: 24,
-  },
-  retry: {
-    alignSelf: 'flex-start',
-    minHeight: 44,
-    paddingHorizontal: 14,
-    borderRadius: 10,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: readerColors.sheetBorder,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  retryLabel: {
-    color: readerColors.accent,
-    fontSize: 15,
-    fontWeight: '600',
-  },
-  attribution: {
-    marginTop: 32,
-    marginBottom: 8,
-    padding: 16,
-    borderRadius: 12,
-    backgroundColor: readerColors.attribution,
-    gap: 6,
-  },
-  attributionKicker: {
-    color: readerColors.textSecondary,
-    fontSize: 12,
-    fontWeight: '700',
-    letterSpacing: 0.6,
-    textTransform: 'uppercase',
-  },
-  attributionBody: {
-    color: readerColors.textSecondary,
-    fontSize: 14,
-    lineHeight: 21,
-  },
-  pressed: {
-    opacity: 0.78,
-  },
-})
+function createStyles(c: ReaderColors) {
+  return StyleSheet.create({
+    root: {
+      width: '100%',
+      maxWidth: ARTICLE_HEADLINE_MAX,
+      alignSelf: 'center',
+      backgroundColor: c.canvas,
+    },
+    hero: {
+      width: '100%',
+      aspectRatio: 16 / 9,
+      backgroundColor: c.imageFallback,
+      overflow: 'hidden',
+    },
+    heroFallback: {
+      ...StyleSheet.absoluteFillObject,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: c.imageFallback,
+    },
+    heroPlaceholder: {
+      ...StyleSheet.absoluteFillObject,
+      backgroundColor: c.imageFallback,
+    },
+    column: {
+      width: '100%',
+      maxWidth: ARTICLE_COLUMN_MAX,
+      alignSelf: 'center',
+      paddingHorizontal: 22,
+      paddingTop: 22,
+      paddingBottom: 12,
+    },
+    header: {
+      gap: 8,
+    },
+    eyebrow: {
+      color: c.accent,
+      fontSize: 12,
+      fontWeight: '700',
+      letterSpacing: 1.2,
+      textTransform: 'uppercase',
+    },
+    headline: {
+      color: c.text,
+      fontWeight: '800',
+      letterSpacing: -0.6,
+    },
+    meta: {
+      color: c.textMuted,
+      fontSize: 15,
+      lineHeight: 22,
+      marginTop: 4,
+    },
+    originalCta: {
+      alignSelf: 'flex-start',
+      marginTop: 20,
+      marginBottom: 4,
+      minHeight: 44,
+      paddingHorizontal: 16,
+      borderRadius: 12,
+      backgroundColor: c.accentSoft,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    originalCtaText: {
+      color: c.accent,
+      fontSize: 15,
+      fontWeight: '700',
+    },
+    body: {
+      marginTop: 28,
+      gap: 18,
+    },
+    paragraph: {
+      color: c.text,
+      fontSize: 18,
+      lineHeight: 29,
+    },
+    list: {
+      gap: 8,
+    },
+    listItem: {
+      flexDirection: 'row',
+      gap: 10,
+      paddingRight: 8,
+    },
+    bullet: {
+      color: c.text,
+      fontSize: 18,
+      lineHeight: 29,
+      width: 14,
+    },
+    quote: {
+      borderLeftWidth: 3,
+      borderLeftColor: c.accent,
+      paddingLeft: 14,
+      paddingVertical: 4,
+    },
+    quoteText: {
+      color: c.textSecondary,
+      fontSize: 18,
+      lineHeight: 28,
+      fontStyle: 'italic',
+    },
+    emptyBody: {
+      gap: 12,
+    },
+    emptyTitle: {
+      color: c.textSecondary,
+      fontSize: 16,
+      lineHeight: 24,
+    },
+    retry: {
+      alignSelf: 'flex-start',
+      minHeight: 44,
+      paddingHorizontal: 14,
+      borderRadius: 10,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: c.sheetBorder,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    retryLabel: {
+      color: c.accent,
+      fontSize: 15,
+      fontWeight: '600',
+    },
+    attribution: {
+      marginTop: 32,
+      marginBottom: 8,
+      padding: 16,
+      borderRadius: 12,
+      backgroundColor: c.attribution,
+      gap: 6,
+    },
+    attributionKicker: {
+      color: c.textSecondary,
+      fontSize: 12,
+      fontWeight: '700',
+      letterSpacing: 0.6,
+      textTransform: 'uppercase',
+    },
+    attributionBody: {
+      color: c.textSecondary,
+      fontSize: 14,
+      lineHeight: 21,
+    },
+    pressed: {
+      opacity: 0.78,
+    },
+  })
+}

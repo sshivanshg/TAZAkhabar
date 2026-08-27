@@ -1,11 +1,12 @@
-import { memo, type ReactNode } from 'react'
+import { memo, useMemo, type ReactNode } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import Bookmark from 'lucide-react-native/icons/bookmark'
 import BookmarkCheck from 'lucide-react-native/icons/bookmark-check'
 import Share2 from 'lucide-react-native/icons/share-2'
+import { useTheme } from '../../preferences/ThemePreferenceContext'
 import { HIT_TARGET } from '../../theme/tokens'
 import { iconStroke } from '../../theme/categoryIcons'
-import { readerColors } from '../../theme/readerTokens'
+import type { ReaderColors } from '../../theme/readerTokens'
 import { pressableState, webFocusRing } from './focusStyle'
 
 type Props = {
@@ -27,6 +28,9 @@ function ActionButton({
   onPress,
   children,
 }: ActionProps) {
+  const { readerColors } = useTheme()
+  const styles = useMemo(() => createStyles(readerColors), [readerColors])
+
   return (
     <Pressable
       accessibilityRole="button"
@@ -34,7 +38,11 @@ function ActionButton({
       onPress={onPress}
       style={(state) => {
         const { pressed, focused } = pressableState(state)
-        return [styles.btn, pressed ? styles.pressed : null, webFocusRing(Boolean(focused))]
+        return [
+          styles.btn,
+          pressed ? styles.pressed : null,
+          webFocusRing(Boolean(focused), readerColors),
+        ]
       }}
     >
       {children}
@@ -44,6 +52,8 @@ function ActionButton({
 }
 
 function ArticleActionsBase({ bookmarked, onShare, onSave }: Props) {
+  const { readerColors } = useTheme()
+  const styles = useMemo(() => createStyles(readerColors), [readerColors])
   const SaveIcon = bookmarked ? BookmarkCheck : Bookmark
 
   return (
@@ -69,27 +79,29 @@ function ArticleActionsBase({ bookmarked, onShare, onSave }: Props) {
 
 export const ArticleActions = memo(ArticleActionsBase)
 
-const styles = StyleSheet.create({
-  row: {
-    flexDirection: 'row',
-    alignItems: 'stretch',
-    justifyContent: 'space-around',
-  },
-  btn: {
-    flex: 1,
-    minHeight: HIT_TARGET,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 2,
-    paddingVertical: 6,
-  },
-  label: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: readerColors.textSecondary,
-  },
-  pressed: {
-    opacity: 0.78,
-    transform: [{ scale: 0.985 }],
-  },
-})
+function createStyles(c: ReaderColors) {
+  return StyleSheet.create({
+    row: {
+      flexDirection: 'row',
+      alignItems: 'stretch',
+      justifyContent: 'space-around',
+    },
+    btn: {
+      flex: 1,
+      minHeight: HIT_TARGET,
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 2,
+      paddingVertical: 6,
+    },
+    label: {
+      fontSize: 12,
+      fontWeight: '600',
+      color: c.textSecondary,
+    },
+    pressed: {
+      opacity: 0.78,
+      transform: [{ scale: 0.985 }],
+    },
+  })
+}

@@ -1,9 +1,11 @@
+import { useMemo } from 'react'
 import { Pressable, StyleSheet, View, type ViewStyle } from 'react-native'
 import { Image, Text } from '@gluestack-ui/themed'
 import Ellipsis from 'lucide-react-native/icons/ellipsis'
 import { MotiView } from 'moti'
 import type { ArticleResponse } from '@tazakhabar/shared-types'
-import { colors, media, radius, space, typography } from '../theme/tokens'
+import { useTheme } from '../preferences/ThemePreferenceContext'
+import { media, radius, space, typography, type AppColors } from '../theme/tokens'
 import { iconStroke } from '../theme/categoryIcons'
 import { formatRelativeTime } from '../utils/relativeTime'
 import { SourceAvatar } from './SourceAvatar'
@@ -61,6 +63,8 @@ export function BreakingHeroCard({
   style,
   size = 'default',
 }: Props) {
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
   const headline = article.headline ?? 'Untitled'
   const source = article.sourceName ?? 'Unknown source'
   const relative = formatRelativeTime(article.publishedAt)
@@ -155,67 +159,69 @@ export function BreakingHeroCard({
   )
 }
 
-const styles = StyleSheet.create({
-  card: {
-    backgroundColor: colors.background,
-  },
-  pressed: {
-    opacity: 0.94,
-  },
-  imageWrap: {
-    width: '100%',
-    borderRadius: radius.lg,
-    overflow: 'hidden',
-    backgroundColor: colors.surfaceRaised,
-  },
-  logoOverlay: {
-    position: 'absolute',
-    top: space.sm,
-    right: space.sm,
-    borderWidth: 2,
-    borderColor: colors.surface,
-    borderRadius: radius.full,
-  },
-  sourceRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  sourceName: {
-    flex: 1,
-    minWidth: 0,
-  },
-  image: {
-    width: '100%',
-    height: '100%',
-  },
-  imagePlaceholder: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: colors.skeleton,
-  },
-  body: {
-    paddingTop: space.sm + 2,
-    gap: 6,
-  },
-  bodyCompact: {
-    paddingTop: space.xs + 2,
-    gap: 4,
-  },
-  metaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: 2,
-    minHeight: 28,
-  },
-  moreBtn: {
-    width: 32,
-    height: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: radius.full,
-  },
-  morePressed: {
-    backgroundColor: colors.surfaceRaised,
-  },
-})
+function createStyles(c: AppColors) {
+  return StyleSheet.create({
+    card: {
+      backgroundColor: c.background,
+    },
+    pressed: {
+      opacity: 0.94,
+    },
+    imageWrap: {
+      width: '100%',
+      borderRadius: radius.lg,
+      overflow: 'hidden',
+      backgroundColor: c.surfaceRaised,
+    },
+    logoOverlay: {
+      position: 'absolute',
+      top: space.sm,
+      right: space.sm,
+      borderWidth: 2,
+      borderColor: c.surface,
+      borderRadius: radius.full,
+    },
+    sourceRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+    },
+    sourceName: {
+      flex: 1,
+      minWidth: 0,
+    },
+    image: {
+      width: '100%',
+      height: '100%',
+    },
+    imagePlaceholder: {
+      ...StyleSheet.absoluteFillObject,
+      backgroundColor: c.skeleton,
+    },
+    body: {
+      paddingTop: space.sm + 2,
+      gap: 6,
+    },
+    bodyCompact: {
+      paddingTop: space.xs + 2,
+      gap: 4,
+    },
+    metaRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginTop: 2,
+      minHeight: 28,
+    },
+    moreBtn: {
+      width: 32,
+      height: 32,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: radius.full,
+    },
+    morePressed: {
+      backgroundColor: c.surfaceRaised,
+    },
+  })
+}

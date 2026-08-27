@@ -1,6 +1,6 @@
 import { StyleSheet, View } from 'react-native'
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg'
-import { colors } from '../theme/tokens'
+import { useTheme } from '../preferences/ThemePreferenceContext'
 
 let fadeId = 0
 
@@ -12,6 +12,7 @@ type Props = {
 
 /** Dark gradient at the bottom of a photo for overlay text legibility. */
 export function ImageBottomFade({ height = 72, peakOpacity = 0.75 }: Props) {
+  const { colors } = useTheme()
   const id = `imageBottomFade-${++fadeId}`
   return (
     <View style={[styles.wrap, { height }]} accessibilityElementsHidden>

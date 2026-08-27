@@ -1,57 +1,127 @@
 import { Platform, type ViewStyle } from 'react-native'
 
-/**
- * Light UI palette with a single blue accent.
- * Naming kept for existing imports; values match the UI redesign palette.
- */
-export const colors = {
-  /** Page canvas — crisp editorial white */
-  background: '#F4F6FA',
+export type ColorScheme = 'light' | 'dark'
+
+export type AppColors = {
+  /** Page canvas */
+  background: string
   /** Card / elevated surface */
-  surface: '#FFFFFF',
-  /** Secondary fill / cancel pill / pressed wash — surfaceAlt */
-  surfaceRaised: '#EEF2F6',
-  /** Single blue accent — tabs, chips, links, category pills */
-  accent: '#155EEF',
+  surface: string
+  /** Secondary fill / cancel pill / pressed wash */
+  surfaceRaised: string
+  /** Accent for text, icons, borders (may brighten in dark for AA) */
+  accent: string
+  /** Solid accent fill for primary buttons / selected chips — brand #155EEF */
+  accentFill: string
   /** Accent pressed */
-  accentPressed: '#0F45B8',
+  accentPressed: string
   /** Soft accent wash for selected chip / city pill */
-  accentSoft: '#E8F0FF',
+  accentSoft: string
   /** Headline on surface/background */
-  text: '#101828',
+  text: string
   /** Supporting body */
-  textSecondary: '#667085',
+  textSecondary: string
   /** Source / timestamp / muted labels */
-  textMuted: '#475467',
+  textMuted: string
   /** Text on accent fill */
-  textOnAccent: '#FFFFFF',
+  textOnAccent: string
   /** Overlay text on hero images */
+  textOnImage: string
+  textOnImageMuted: string
+  /** Hairline / chip outline */
+  border: string
+  borderSolid: string
+  /** Selected chip fill */
+  chipSelectedBg: string
+  chipSelectedText: string
+  /** Unselected chip */
+  chipInactiveBorder: string
+  chipInactiveText: string
+  /** Skeleton shimmer base */
+  skeleton: string
+  /** Dark fade under hero overlay text */
+  imageFade: string
+  /** Soft card shadow tint */
+  shadow: string
+  /** Destructive / remove actions */
+  destructive: string
+  /** Destructive row wash */
+  destructiveSoft: string
+  /** Legacy alias — same as textMuted */
+  muted: string
+  /** Scrim behind sheets */
+  overlay: string
+  /** Soft badge border wash */
+  badgeSoftBorder: string
+}
+
+export const colorsLight: AppColors = {
+  background: '#F4F6FA',
+  surface: '#FFFFFF',
+  surfaceRaised: '#EEF2F6',
+  accent: '#155EEF',
+  accentFill: '#155EEF',
+  accentPressed: '#0F45B8',
+  accentSoft: '#E8F0FF',
+  text: '#101828',
+  textSecondary: '#667085',
+  textMuted: '#475467',
+  textOnAccent: '#FFFFFF',
   textOnImage: '#FFFFFF',
   textOnImageMuted: 'rgba(255, 255, 255, 0.85)',
-  /** Hairline / chip outline */
   border: '#E4E8EF',
   borderSolid: '#D8DFE8',
-  /** Selected chip fill */
   chipSelectedBg: '#155EEF',
   chipSelectedText: '#FFFFFF',
-  /** Unselected chip */
   chipInactiveBorder: '#DCE2EA',
   chipInactiveText: '#667085',
-  /** Skeleton shimmer base */
   skeleton: '#E9EDF4',
-  /** Dark fade under hero overlay text */
   imageFade: '#000000',
-  /** Soft card shadow tint */
   shadow: '#101828',
-  /** Destructive / block actions */
   destructive: '#C73535',
-  /** Destructive row wash */
   destructiveSoft: '#FCEBEB',
-  /** Legacy alias — same as textMuted */
   muted: '#475467',
-  /** Scrim behind sheets */
   overlay: 'rgba(0, 0, 0, 0.4)',
-} as const
+  badgeSoftBorder: 'rgba(36, 76, 255, 0.08)',
+}
+
+export const colorsDark: AppColors = {
+  background: '#0F1419',
+  surface: '#1A222D',
+  surfaceRaised: '#243040',
+  /** Brighter than brand fill so accent-as-text passes AA on dark soft washes */
+  accent: '#5B8AFF',
+  accentFill: '#155EEF',
+  accentPressed: '#84A9FF',
+  accentSoft: '#050A14',
+  text: '#F2F4F7',
+  textSecondary: '#98A2B3',
+  textMuted: '#8494A7',
+  textOnAccent: '#FFFFFF',
+  textOnImage: '#FFFFFF',
+  textOnImageMuted: 'rgba(255, 255, 255, 0.85)',
+  border: '#2A3441',
+  borderSolid: '#364152',
+  chipSelectedBg: '#155EEF',
+  chipSelectedText: '#FFFFFF',
+  chipInactiveBorder: '#364152',
+  chipInactiveText: '#98A2B3',
+  skeleton: '#243040',
+  imageFade: '#000000',
+  shadow: '#000000',
+  destructive: '#F97066',
+  destructiveSoft: '#3B1C1C',
+  muted: '#8494A7',
+  overlay: 'rgba(0, 0, 0, 0.55)',
+  badgeSoftBorder: 'rgba(91, 138, 255, 0.28)',
+}
+
+/** @deprecated Prefer useTheme().colors — light alias for migration / tests */
+export const colors = colorsLight
+
+export function getColors(scheme: ColorScheme): AppColors {
+  return scheme === 'dark' ? colorsDark : colorsLight
+}
 
 /**
  * Rounded design language — use these everywhere instead of ad-hoc radii.
@@ -106,6 +176,7 @@ function elevationShadow(
   blur: number,
   opacity: number,
   elevation: number,
+  shadowColor: string,
 ): ViewStyle {
   if (Platform.OS === 'web') {
     return {
@@ -113,7 +184,7 @@ function elevationShadow(
     } as ViewStyle
   }
   return {
-    shadowColor: colors.shadow,
+    shadowColor,
     shadowOffset: { width: 0, height: offsetY },
     shadowOpacity: opacity,
     shadowRadius: blur,
@@ -121,10 +192,16 @@ function elevationShadow(
   }
 }
 
-export const shadows = {
-  card: elevationShadow(10, 28, 0.08, 4),
-  tabBar: elevationShadow(12, 28, 0.14, 10),
-} as const
+export function getShadows(scheme: ColorScheme) {
+  const shadow = getColors(scheme).shadow
+  return {
+    card: elevationShadow(10, 28, scheme === 'dark' ? 0.35 : 0.08, 4, shadow),
+    tabBar: elevationShadow(12, 28, scheme === 'dark' ? 0.45 : 0.14, 10, shadow),
+  } as const
+}
+
+/** @deprecated Prefer getShadows(scheme) / useTheme().shadows */
+export const shadows = getShadows('light')
 
 /**
  * Type scale — names kept for imports; sizes match redesign h1–label.

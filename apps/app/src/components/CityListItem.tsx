@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import {
   ActivityIndicator,
   Platform,
@@ -12,7 +13,8 @@ import { MotiView } from 'moti'
 import Check from 'lucide-react-native/icons/check'
 import Circle from 'lucide-react-native/icons/circle'
 import type { CityResponse } from '@tazakhabar/shared-types'
-import { colors, HIT_TARGET, radius, space } from '../theme/tokens'
+import { useTheme } from '../preferences/ThemePreferenceContext'
+import { HIT_TARGET, radius, space, type AppColors } from '../theme/tokens'
 import { iconStroke } from '../theme/categoryIcons'
 
 type Props = {
@@ -37,6 +39,9 @@ function cityLabel(city: CityResponse): { name: string; state: string } {
   }
 }
 
+const webPointer: ViewStyle =
+  Platform.OS === 'web' ? ({ cursor: 'pointer' } as ViewStyle) : {}
+
 /** Tappable city row — whole surface selects, with an explicit selected state. */
 export function CityListItem({
   city,
@@ -46,6 +51,8 @@ export function CityListItem({
   statusLabel,
   onSelect,
 }: Props) {
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
   const { name, state } = cityLabel(city)
   const a11yLabel = [
     name,
@@ -128,6 +135,9 @@ export function CityListItem({
 }
 
 export function CityListSkeleton() {
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
+
   return (
     <View style={styles.skeletonBlock} accessibilityLabel="Loading cities">
       <View style={styles.searchSkeleton} />
@@ -145,109 +155,108 @@ export function CityListSkeleton() {
   )
 }
 
-const webPointer: ViewStyle =
-  Platform.OS === 'web' ? ({ cursor: 'pointer' } as ViewStyle) : {}
-
-const styles = StyleSheet.create({
-  row: {
-    minHeight: 72,
-    paddingHorizontal: space.md,
-    paddingVertical: 14,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space.sm,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-    ...webPointer,
-  },
-  rowSelected: {
-    backgroundColor: colors.accentSoft,
-    borderColor: colors.accent,
-  },
-  rowHover: {
-    backgroundColor: colors.surfaceRaised,
-    borderColor: colors.borderSolid,
-  },
-  rowPressed: {
-    backgroundColor: colors.surfaceRaised,
-    transform: [{ scale: 0.992 }],
-    opacity: 0.96,
-  },
-  rowFocused: {
-    borderColor: colors.accent,
-  },
-  rowDisabled: {
-    opacity: 0.55,
-  },
-  copy: {
-    flex: 1,
-    minWidth: 0,
-    gap: 2,
-  },
-  indicator: {
-    width: HIT_TARGET,
-    minHeight: HIT_TARGET,
-    alignItems: 'center',
-    justifyContent: 'center',
-    pointerEvents: 'none',
-  },
-  checkWrap: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: colors.accent,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  skeletonBlock: {
-    gap: 10,
-  },
-  searchSkeleton: {
-    height: 50,
-    borderRadius: radius.md,
-    backgroundColor: colors.skeleton,
-  },
-  sectionSkeleton: {
-    height: 16,
-    width: 140,
-    borderRadius: radius.xs,
-    backgroundColor: colors.skeleton,
-    marginTop: space.sm,
-    marginBottom: 2,
-  },
-  rowSkeleton: {
-    minHeight: 72,
-    paddingHorizontal: space.md,
-    paddingVertical: 14,
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-  },
-  skeletonCopy: {
-    flex: 1,
-    gap: 8,
-  },
-  bone: {
-    height: 16,
-    borderRadius: radius.xs,
-    backgroundColor: colors.skeleton,
-  },
-  boneTitle: {
-    height: 18,
-    width: '42%',
-  },
-  boneMeta: {
-    width: '58%',
-  },
-  boneDot: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: colors.skeleton,
-  },
-})
+function createStyles(c: AppColors) {
+  return StyleSheet.create({
+    row: {
+      minHeight: 72,
+      paddingHorizontal: space.md,
+      paddingVertical: 14,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: space.sm,
+      borderRadius: radius.md,
+      borderWidth: 1,
+      borderColor: c.border,
+      backgroundColor: c.surface,
+      ...webPointer,
+    },
+    rowSelected: {
+      backgroundColor: c.accentSoft,
+      borderColor: c.accent,
+    },
+    rowHover: {
+      backgroundColor: c.surfaceRaised,
+      borderColor: c.borderSolid,
+    },
+    rowPressed: {
+      backgroundColor: c.surfaceRaised,
+      transform: [{ scale: 0.992 }],
+      opacity: 0.96,
+    },
+    rowFocused: {
+      borderColor: c.accent,
+    },
+    rowDisabled: {
+      opacity: 0.55,
+    },
+    copy: {
+      flex: 1,
+      minWidth: 0,
+      gap: 2,
+    },
+    indicator: {
+      width: HIT_TARGET,
+      minHeight: HIT_TARGET,
+      alignItems: 'center',
+      justifyContent: 'center',
+      pointerEvents: 'none',
+    },
+    checkWrap: {
+      width: 28,
+      height: 28,
+      borderRadius: 14,
+      backgroundColor: c.accentFill,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    skeletonBlock: {
+      gap: 10,
+    },
+    searchSkeleton: {
+      height: 50,
+      borderRadius: radius.md,
+      backgroundColor: c.skeleton,
+    },
+    sectionSkeleton: {
+      height: 16,
+      width: 140,
+      borderRadius: radius.xs,
+      backgroundColor: c.skeleton,
+      marginTop: space.sm,
+      marginBottom: 2,
+    },
+    rowSkeleton: {
+      minHeight: 72,
+      paddingHorizontal: space.md,
+      paddingVertical: 14,
+      flexDirection: 'row',
+      alignItems: 'center',
+      borderRadius: radius.md,
+      borderWidth: 1,
+      borderColor: c.border,
+      backgroundColor: c.surface,
+    },
+    skeletonCopy: {
+      flex: 1,
+      gap: 8,
+    },
+    bone: {
+      height: 16,
+      borderRadius: radius.xs,
+      backgroundColor: c.skeleton,
+    },
+    boneTitle: {
+      height: 18,
+      width: '42%',
+    },
+    boneMeta: {
+      width: '58%',
+    },
+    boneDot: {
+      width: 20,
+      height: 20,
+      borderRadius: 10,
+      backgroundColor: c.skeleton,
+    },
+  })
+}

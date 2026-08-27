@@ -1,7 +1,9 @@
+import { useMemo } from 'react'
 import { Modal, Pressable, StyleSheet, View } from 'react-native'
 import { Text, VStack } from '@gluestack-ui/themed'
 import { MotiView } from 'moti'
-import { colors, radius, space } from '../theme/tokens'
+import { useTheme } from '../preferences/ThemePreferenceContext'
+import { radius, type AppColors } from '../theme/tokens'
 
 type Props = {
   visible: boolean
@@ -23,6 +25,9 @@ export function ConfirmModal({
   onConfirm,
   onCancel,
 }: Props) {
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
+
   return (
     <Modal visible={visible} transparent animationType="none" onRequestClose={onCancel}>
       <View style={styles.root}>
@@ -83,41 +88,43 @@ export function ConfirmModal({
   )
 }
 
-const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 28,
-  },
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: colors.overlay,
-  },
-  card: {
-    width: '100%',
-    maxWidth: 360,
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    overflow: 'hidden',
-  },
-  actions: {
-    flexDirection: 'row',
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.border,
-    minHeight: 52,
-  },
-  actionBtn: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 14,
-  },
-  actionDivider: {
-    width: StyleSheet.hairlineWidth,
-    backgroundColor: colors.border,
-  },
-  pressed: {
-    backgroundColor: colors.surfaceRaised,
-  },
-})
+function createStyles(c: AppColors) {
+  return StyleSheet.create({
+    root: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      paddingHorizontal: 28,
+    },
+    overlay: {
+      ...StyleSheet.absoluteFillObject,
+      backgroundColor: c.overlay,
+    },
+    card: {
+      width: '100%',
+      maxWidth: 360,
+      backgroundColor: c.surface,
+      borderRadius: radius.lg,
+      overflow: 'hidden',
+    },
+    actions: {
+      flexDirection: 'row',
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: c.border,
+      minHeight: 52,
+    },
+    actionBtn: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: 14,
+    },
+    actionDivider: {
+      width: StyleSheet.hairlineWidth,
+      backgroundColor: c.border,
+    },
+    pressed: {
+      backgroundColor: c.surfaceRaised,
+    },
+  })
+}

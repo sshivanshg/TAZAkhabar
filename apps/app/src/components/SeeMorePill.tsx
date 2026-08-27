@@ -1,7 +1,9 @@
+import { useMemo } from 'react'
 import { Pressable, StyleSheet } from 'react-native'
 import { Text } from '@gluestack-ui/themed'
 import Newspaper from 'lucide-react-native/icons/newspaper'
-import { colors, radius, space, typography } from '../theme/tokens'
+import { useTheme } from '../preferences/ThemePreferenceContext'
+import { radius, space, typography, type AppColors } from '../theme/tokens'
 import { iconStroke } from '../theme/categoryIcons'
 
 type Props = {
@@ -11,6 +13,9 @@ type Props = {
 
 /** Compact “See more” cluster control — outline pill with a newspaper mark. */
 export function SeeMorePill({ onPress, accessibilityLabel = 'See more' }: Props) {
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
+
   return (
     <Pressable
       onPress={onPress}
@@ -32,19 +37,21 @@ export function SeeMorePill({ onPress, accessibilityLabel = 'See more' }: Props)
   )
 }
 
-const styles = StyleSheet.create({
-  pill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    minHeight: 32,
-    paddingHorizontal: space.sm,
-    borderRadius: radius.full,
-    borderWidth: 1,
-    borderColor: colors.accent,
-    backgroundColor: colors.surface,
-  },
-  pressed: {
-    backgroundColor: colors.accentSoft,
-  },
-})
+function createStyles(c: AppColors) {
+  return StyleSheet.create({
+    pill: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 5,
+      minHeight: 32,
+      paddingHorizontal: space.sm,
+      borderRadius: radius.full,
+      borderWidth: 1,
+      borderColor: c.accent,
+      backgroundColor: c.surface,
+    },
+    pressed: {
+      backgroundColor: c.accentSoft,
+    },
+  })
+}

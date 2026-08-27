@@ -5,7 +5,7 @@ import LayoutGrid from 'lucide-react-native/icons/layout-grid'
 import MapPin from 'lucide-react-native/icons/map-pin'
 import Newspaper from 'lucide-react-native/icons/newspaper'
 import Trophy from 'lucide-react-native/icons/trophy'
-import { FEED_CATEGORIES, type FeedCategory, colors } from '../theme/tokens'
+import { FEED_CATEGORIES, type FeedCategory, type AppColors } from '../theme/tokens'
 
 export type AppIcon = ComponentType<{
   size?: number
@@ -32,5 +32,11 @@ export function categoryIcon(category: FeedCategory): AppIcon {
 export const TOPIC_CATEGORIES = FEED_CATEGORIES.filter((c): c is Exclude<FeedCategory, 'All'> => c !== 'All')
 
 export const iconStroke = 1.75
-export const iconActive = colors.accent
-export const iconInactive = colors.textMuted
+
+export function iconActiveColor(colors: AppColors): string {
+  return colors.accent
+}
+
+export function iconInactiveColor(colors: AppColors): string {
+  return colors.textMuted
+}

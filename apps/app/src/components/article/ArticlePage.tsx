@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Platform, ScrollView, StyleSheet, View } from 'react-native'
-import { readerColors } from '../../theme/readerTokens'
+import { useTheme } from '../../preferences/ThemePreferenceContext'
+import type { ReaderColors } from '../../theme/readerTokens'
 
 type Props = {
   height: number
@@ -16,6 +17,8 @@ export function ArticlePage({
   padBottom,
   children,
 }: Props) {
+  const { readerColors } = useTheme()
+  const styles = useMemo(() => createStyles(readerColors), [readerColors])
   const [scrollable, setScrollable] = useState(false)
 
   return (
@@ -43,19 +46,21 @@ export function ArticlePage({
   )
 }
 
-const styles = StyleSheet.create({
-  page: {
-    width: '100%',
-    backgroundColor: readerColors.canvas,
-    overflow: 'hidden',
-    ...(Platform.OS === 'web'
-      ? ({
-          scrollSnapAlign: 'start',
-          scrollSnapStop: 'always',
-        } as object)
-      : null),
-  },
-  scroll: {
-    flex: 1,
-  },
-})
+function createStyles(c: ReaderColors) {
+  return StyleSheet.create({
+    page: {
+      width: '100%',
+      backgroundColor: c.canvas,
+      overflow: 'hidden',
+      ...(Platform.OS === 'web'
+        ? ({
+            scrollSnapAlign: 'start',
+            scrollSnapStop: 'always',
+          } as object)
+        : null),
+    },
+    scroll: {
+      flex: 1,
+    },
+  })
+}

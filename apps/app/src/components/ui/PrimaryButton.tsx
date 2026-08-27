@@ -1,7 +1,8 @@
-import { type ReactNode } from 'react'
+import { type ReactNode, useMemo } from 'react'
 import { ActivityIndicator, Pressable, StyleSheet, type StyleProp, type ViewStyle } from 'react-native'
 import { Text } from '@gluestack-ui/themed'
-import { colors, HIT_TARGET, radius, space, typography } from '../../theme/tokens'
+import { useTheme } from '../../preferences/ThemePreferenceContext'
+import { HIT_TARGET, radius, space, typography, type AppColors } from '../../theme/tokens'
 
 type CommonProps = {
   label: string
@@ -24,6 +25,9 @@ export function PrimaryButton({
   style,
   fullWidth,
 }: CommonProps) {
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
+
   return (
     <Pressable
       onPress={onPress}
@@ -69,6 +73,9 @@ export function SecondaryButton({
   fullWidth,
   outline = false,
 }: CommonProps & { outline?: boolean }) {
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
+
   return (
     <Pressable
       onPress={onPress}
@@ -97,44 +104,46 @@ export function SecondaryButton({
   )
 }
 
-const styles = StyleSheet.create({
-  base: {
-    minHeight: HIT_TARGET,
-    paddingHorizontal: space.lg,
-    borderRadius: radius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.08,
-    shadowRadius: 16,
-    elevation: 2,
-  },
-  fullWidth: {
-    alignSelf: 'stretch',
-    width: '100%',
-  },
-  primary: {
-    backgroundColor: colors.accent,
-  },
-  primaryPressed: {
-    backgroundColor: colors.accentPressed,
-    transform: [{ scale: 0.985 }],
-  },
-  textOnly: {
-    backgroundColor: 'transparent',
-  },
-  outline: {
-    backgroundColor: 'transparent',
-    borderWidth: 1,
-    borderColor: colors.border,
-    shadowOpacity: 0,
-    elevation: 0,
-  },
-  secondaryPressed: {
-    opacity: 0.78,
-  },
-  disabled: {
-    opacity: 0.5,
-  },
-})
+function createStyles(c: AppColors) {
+  return StyleSheet.create({
+    base: {
+      minHeight: HIT_TARGET,
+      paddingHorizontal: space.lg,
+      borderRadius: radius.md,
+      alignItems: 'center',
+      justifyContent: 'center',
+      shadowColor: c.shadow,
+      shadowOffset: { width: 0, height: 8 },
+      shadowOpacity: 0.08,
+      shadowRadius: 16,
+      elevation: 2,
+    },
+    fullWidth: {
+      alignSelf: 'stretch',
+      width: '100%',
+    },
+    primary: {
+      backgroundColor: c.accentFill,
+    },
+    primaryPressed: {
+      backgroundColor: c.accentPressed,
+      transform: [{ scale: 0.985 }],
+    },
+    textOnly: {
+      backgroundColor: 'transparent',
+    },
+    outline: {
+      backgroundColor: 'transparent',
+      borderWidth: 1,
+      borderColor: c.border,
+      shadowOpacity: 0,
+      elevation: 0,
+    },
+    secondaryPressed: {
+      opacity: 0.78,
+    },
+    disabled: {
+      opacity: 0.5,
+    },
+  })
+}

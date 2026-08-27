@@ -5,17 +5,20 @@ import { Text, VStack } from '@gluestack-ui/themed'
 import { MotiView } from 'moti'
 import { ConfirmModal } from '../../src/components/ConfirmModal'
 import { useFeedPreferences } from '../../src/preferences/FeedPreferencesContext'
+import { useTheme } from '../../src/preferences/ThemePreferenceContext'
 import {
   TOPIC_CATEGORIES,
   categoryIcon,
-  iconInactive,
+  iconInactiveColor,
   iconStroke,
 } from '../../src/theme/categoryIcons'
-import { type FeedCategory, colors, radius, space } from '../../src/theme/tokens'
+import { type FeedCategory, radius, space, type AppColors } from '../../src/theme/tokens'
 
 export default function CategoriesScreen() {
   const router = useRouter()
   const prefs = useFeedPreferences()
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
   const [blockCategoryName, setBlockCategoryName] = useState<string | null>(null)
 
   const categories = useMemo(
@@ -62,7 +65,7 @@ export default function CategoriesScreen() {
                 style={({ pressed }) => [styles.row, pressed ? styles.rowPressed : null]}
               >
                 <View style={styles.iconWrap}>
-                  <Icon size={22} strokeWidth={iconStroke} color={iconInactive} />
+                  <Icon size={22} strokeWidth={iconStroke} color={iconInactiveColor(colors)} />
                 </View>
                 <Text
                   fontSize={18}
@@ -81,7 +84,7 @@ export default function CategoriesScreen() {
           )
         }}
         ListEmptyComponent={
-          <BoxEmpty />
+          <BoxEmpty colors={colors} />
         }
       />
 
@@ -102,7 +105,7 @@ export default function CategoriesScreen() {
   )
 }
 
-function BoxEmpty() {
+function BoxEmpty({ colors }: { colors: AppColors }) {
   return (
     <VStack px="$4" py="$10" space="sm">
       <Text fontSize={18} lineHeight={28} fontWeight="$bold" color={colors.text}>
@@ -115,32 +118,34 @@ function BoxEmpty() {
   )
 }
 
-const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  list: {
-    paddingBottom: 32,
-  },
-  row: {
-    minHeight: 64,
-    paddingHorizontal: space.md,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space.sm + 2,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.border,
-  },
-  rowPressed: {
-    backgroundColor: colors.surface,
-  },
-  iconWrap: {
-    width: 40,
-    height: 40,
-    borderRadius: radius.full,
-    backgroundColor: colors.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-})
+function createStyles(c: AppColors) {
+  return StyleSheet.create({
+    root: {
+      flex: 1,
+      backgroundColor: c.background,
+    },
+    list: {
+      paddingBottom: 32,
+    },
+    row: {
+      minHeight: 64,
+      paddingHorizontal: space.md,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: space.sm + 2,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: c.border,
+    },
+    rowPressed: {
+      backgroundColor: c.surface,
+    },
+    iconWrap: {
+      width: 40,
+      height: 40,
+      borderRadius: radius.full,
+      backgroundColor: c.surface,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+  })
+}

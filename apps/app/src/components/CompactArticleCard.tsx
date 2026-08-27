@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import {
   Platform,
   Pressable,
@@ -9,7 +10,8 @@ import {
 import { Box, Image, Text } from '@gluestack-ui/themed'
 import Ellipsis from 'lucide-react-native/icons/ellipsis'
 import type { ArticleResponse } from '@tazakhabar/shared-types'
-import { colors, HIT_TARGET, media, radius, space, typography } from '../theme/tokens'
+import { useTheme } from '../preferences/ThemePreferenceContext'
+import { HIT_TARGET, media, radius, space, typography, type AppColors } from '../theme/tokens'
 import { iconStroke } from '../theme/categoryIcons'
 import { formatRelativeTime } from '../utils/relativeTime'
 import { isHttpsUrl } from '../utils/shareToWhatsApp'
@@ -42,11 +44,11 @@ const webArticleProps = Platform.OS === 'web'
   ? ({ role: 'article' } as const)
   : {}
 
-function focusRing(focused?: boolean): ViewStyle | undefined {
+function focusRing(accent: string, focused?: boolean): ViewStyle | undefined {
   if (!focused || Platform.OS !== 'web') return undefined
   return {
     outlineWidth: 2,
-    outlineColor: colors.accent,
+    outlineColor: accent,
     outlineStyle: 'solid',
     outlineOffset: 2,
   } as ViewStyle
@@ -66,6 +68,8 @@ export function CompactArticleCard({
   onSeeMorePress,
   density = 'default',
 }: Props) {
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
   const dense = density === 'compact'
   const headline = article.headline?.trim() || 'Untitled'
   const summary = article.summary?.trim()
@@ -96,7 +100,7 @@ export function CompactArticleCard({
             dense ? styles.rowDense : null,
             hovered && Platform.OS === 'web' ? styles.rowHover : null,
             pressed ? styles.pressed : null,
-            focusRing(focused),
+            focusRing(colors.accent, focused),
           ]
         }}
       >
@@ -145,7 +149,7 @@ export function CompactArticleCard({
                     return [
                       styles.moreButton,
                       pressed ? styles.morePressed : null,
-                      focusRing(focused),
+                      focusRing(colors.accent, focused),
                     ]
                   }}
                 >
@@ -185,6 +189,8 @@ export function CompactArticleCardSkeleton({
   density?: Density
   withImage?: boolean
 }) {
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
   const dense = density === 'compact'
   const thumbSize = dense ? media.thumbDense : media.thumb
 
@@ -221,119 +227,121 @@ export function CompactArticleCardSkeleton({
   )
 }
 
-const styles = StyleSheet.create({
-  wrap: {
-    backgroundColor: colors.background,
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: space.md,
-    paddingTop: space.md,
-    paddingBottom: space.sm,
-  },
-  rowDense: {
-    gap: space.sm,
-    paddingTop: space.sm,
-    paddingBottom: space.sm,
-  },
-  textCol: {
-    flex: 1,
-    minWidth: 0,
-    gap: 4,
-  },
-  sourceRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  source: {
-    flex: 1,
-    minWidth: 0,
-    color: colors.textMuted,
-    fontSize: typography.label.fontSize,
-    lineHeight: typography.label.lineHeight,
-    fontWeight: '600',
-    letterSpacing: 0.2,
-  },
-  headline: {
-    color: colors.text,
-    fontSize: 17,
-    lineHeight: 23,
-    fontWeight: '700',
-    letterSpacing: -0.25,
-    marginTop: 2,
-  },
-  headlineDense: {
-    fontSize: 15,
-    lineHeight: 20,
-    fontWeight: '600',
-    letterSpacing: -0.15,
-  },
-  lede: {
-    color: colors.textSecondary,
-    fontSize: 14,
-    lineHeight: 20,
-    fontWeight: '400',
-    marginTop: 2,
-  },
-  metaRow: {
-    marginTop: 8,
-    minHeight: 32,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: space.xs,
-  },
-  meta: {
-    flexShrink: 1,
-    minWidth: 0,
-    color: colors.textMuted,
-    fontSize: typography.label.fontSize,
-    lineHeight: typography.label.lineHeight,
-    fontWeight: '500',
-  },
-  metaSpacer: {
-    flex: 1,
-  },
-  metaActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 2,
-    flexShrink: 0,
-  },
-  thumb: {
-    flexShrink: 0,
-    borderRadius: radius.md,
-    overflow: 'hidden',
-    backgroundColor: colors.skeleton,
-  },
-  image: {
-    width: '100%',
-    height: '100%',
-  },
-  moreButton: {
-    width: HIT_TARGET * 0.72,
-    height: HIT_TARGET * 0.72,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: radius.full,
-  },
-  morePressed: {
-    backgroundColor: colors.surfaceRaised,
-  },
-  rowHover: {
-    backgroundColor: colors.accentSoft,
-  },
-  pressed: {
-    opacity: 0.92,
-    transform: [{ scale: 0.992 }],
-  },
-  divider: {
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: colors.borderSolid,
-  },
-  skeleton: {
-    backgroundColor: colors.skeleton,
-  },
-})
+function createStyles(c: AppColors) {
+  return StyleSheet.create({
+    wrap: {
+      backgroundColor: c.background,
+    },
+    row: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: space.md,
+      paddingTop: space.md,
+      paddingBottom: space.sm,
+    },
+    rowDense: {
+      gap: space.sm,
+      paddingTop: space.sm,
+      paddingBottom: space.sm,
+    },
+    textCol: {
+      flex: 1,
+      minWidth: 0,
+      gap: 4,
+    },
+    sourceRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+    },
+    source: {
+      flex: 1,
+      minWidth: 0,
+      color: c.textMuted,
+      fontSize: typography.label.fontSize,
+      lineHeight: typography.label.lineHeight,
+      fontWeight: '600',
+      letterSpacing: 0.2,
+    },
+    headline: {
+      color: c.text,
+      fontSize: 17,
+      lineHeight: 23,
+      fontWeight: '700',
+      letterSpacing: -0.25,
+      marginTop: 2,
+    },
+    headlineDense: {
+      fontSize: 15,
+      lineHeight: 20,
+      fontWeight: '600',
+      letterSpacing: -0.15,
+    },
+    lede: {
+      color: c.textSecondary,
+      fontSize: 14,
+      lineHeight: 20,
+      fontWeight: '400',
+      marginTop: 2,
+    },
+    metaRow: {
+      marginTop: 8,
+      minHeight: 32,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: space.xs,
+    },
+    meta: {
+      flexShrink: 1,
+      minWidth: 0,
+      color: c.textMuted,
+      fontSize: typography.label.fontSize,
+      lineHeight: typography.label.lineHeight,
+      fontWeight: '500',
+    },
+    metaSpacer: {
+      flex: 1,
+    },
+    metaActions: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 2,
+      flexShrink: 0,
+    },
+    thumb: {
+      flexShrink: 0,
+      borderRadius: radius.md,
+      overflow: 'hidden',
+      backgroundColor: c.skeleton,
+    },
+    image: {
+      width: '100%',
+      height: '100%',
+    },
+    moreButton: {
+      width: HIT_TARGET * 0.72,
+      height: HIT_TARGET * 0.72,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: radius.full,
+    },
+    morePressed: {
+      backgroundColor: c.surfaceRaised,
+    },
+    rowHover: {
+      backgroundColor: c.accentSoft,
+    },
+    pressed: {
+      opacity: 0.92,
+      transform: [{ scale: 0.992 }],
+    },
+    divider: {
+      height: StyleSheet.hairlineWidth,
+      backgroundColor: c.borderSolid,
+    },
+    skeleton: {
+      backgroundColor: c.skeleton,
+    },
+  })
+}

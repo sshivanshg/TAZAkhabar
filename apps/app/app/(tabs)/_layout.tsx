@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { Tabs } from 'expo-router'
 import { Platform, StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -6,13 +7,14 @@ import Home from 'lucide-react-native/icons/house'
 import User from 'lucide-react-native/icons/user'
 import { MotiView } from 'moti'
 import {
-  colors,
   space,
   TAB_BAR_HEIGHT,
+  type AppColors,
 } from '../../src/theme/tokens'
 import { iconStroke } from '../../src/theme/categoryIcons'
 import { ScreenErrorBoundary } from '../../src/components/ScreenErrorBoundary'
 import { isDesktopLayout, useBreakpoint } from '../../src/hooks/useBreakpoint'
+import { useTheme } from '../../src/preferences/ThemePreferenceContext'
 
 function TabIcon({
   Icon,
@@ -21,11 +23,14 @@ function TabIcon({
   Icon: typeof Home
   focused: boolean
 }) {
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
+
   return (
     <MotiView
       animate={{
         scale: focused ? 1 : 0.96,
-        backgroundColor: focused ? colors.accent : 'transparent',
+        backgroundColor: focused ? colors.accentFill : 'transparent',
       }}
       transition={{ type: 'timing', duration: 200 }}
       style={styles.tabIconWrap}
@@ -43,6 +48,8 @@ export default function TabsLayout() {
   const insets = useSafeAreaInsets()
   const desktop = isDesktopLayout(useBreakpoint())
   const bottomPad = desktop ? 0 : Math.max(insets.bottom, space.xs)
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
 
   return (
     <ScreenErrorBoundary name="tabs">
@@ -136,17 +143,19 @@ export default function TabsLayout() {
   )
 }
 
-const styles = StyleSheet.create({
-  shell: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  tabIconWrap: {
-    minWidth: 56,
-    height: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 16,
-    paddingHorizontal: 16,
-  },
-})
+function createStyles(c: AppColors) {
+  return StyleSheet.create({
+    shell: {
+      flex: 1,
+      backgroundColor: c.background,
+    },
+    tabIconWrap: {
+      minWidth: 56,
+      height: 32,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: 16,
+      paddingHorizontal: 16,
+    },
+  })
+}

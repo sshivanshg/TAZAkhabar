@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Platform, Pressable, StyleSheet, View } from 'react-native'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { Text } from '@gluestack-ui/themed'
-import { colors, radius, space, typography } from '../theme/tokens'
+import { useTheme } from '../preferences/ThemePreferenceContext'
+import { radius, space, typography, type AppColors } from '../theme/tokens'
 import { getStoredCitySlug } from '../storage/cityPreference'
 
 const A2HS_DISMISSED_KEY = 'tazakhabar.a2hs.dismissed.v1'
@@ -26,6 +27,8 @@ function installHintCopy(): string {
  */
 export function AddToHomeBanner() {
   const [visible, setVisible] = useState(false)
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
 
   useEffect(() => {
     let cancelled = false
@@ -90,29 +93,31 @@ export function AddToHomeBanner() {
   )
 }
 
-const styles = StyleSheet.create({
-  banner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space.sm,
-    marginHorizontal: space.screen,
-    marginBottom: space.xs,
-    paddingHorizontal: space.sm + 2,
-    paddingVertical: space.xs,
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
-  },
-  dismissBtn: {
-    minHeight: 44,
-    minWidth: 44,
-    paddingHorizontal: space.sm,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: radius.sm,
-  },
-  pressed: {
-    backgroundColor: colors.accentSoft,
-  },
-})
+function createStyles(c: AppColors) {
+  return StyleSheet.create({
+    banner: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: space.sm,
+      marginHorizontal: space.screen,
+      marginBottom: space.xs,
+      paddingHorizontal: space.sm + 2,
+      paddingVertical: space.xs,
+      backgroundColor: c.surface,
+      borderRadius: radius.md,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: c.border,
+    },
+    dismissBtn: {
+      minHeight: 44,
+      minWidth: 44,
+      paddingHorizontal: space.sm,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: radius.sm,
+    },
+    pressed: {
+      backgroundColor: c.accentSoft,
+    },
+  })
+}

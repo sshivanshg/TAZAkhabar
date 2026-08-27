@@ -1,9 +1,11 @@
+import { useMemo } from 'react'
 import { Pressable, StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Text } from '@gluestack-ui/themed'
 import MapPin from 'lucide-react-native/icons/map-pin'
 import Search from 'lucide-react-native/icons/search'
-import { colors, HIT_TARGET, radius, space, typography } from '../theme/tokens'
+import { useTheme } from '../preferences/ThemePreferenceContext'
+import { HIT_TARGET, radius, space, typography, type AppColors } from '../theme/tokens'
 import { iconStroke } from '../theme/categoryIcons'
 import {
   READING_LANGUAGES,
@@ -30,6 +32,8 @@ export function HomeTopBar({
 }: Props) {
   const insets = useSafeAreaInsets()
   const paddingTop = includeSafeArea ? Math.max(insets.top, space.xxs) : space.xxs
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
 
   return (
     <View style={[styles.bar, { paddingTop }]}>
@@ -109,60 +113,62 @@ export function HomeTopBar({
   )
 }
 
-const styles = StyleSheet.create({
-  bar: {
-    minHeight: HIT_TARGET,
-    paddingBottom: space.xs,
-    paddingHorizontal: space.screen,
-    gap: space.xs,
-    backgroundColor: colors.background,
-    flexGrow: 0,
-    flexShrink: 0,
-  },
-  topRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    minHeight: 44,
-  },
-  center: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: space.sm,
-  },
-  iconHit: {
-    width: 40,
-    height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  cityHit: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    maxWidth: 120,
-    minHeight: 40,
-    paddingHorizontal: 4,
-  },
-  langRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 6,
-  },
-  langChip: {
-    minWidth: 38,
-    minHeight: 30,
-    paddingHorizontal: 10,
-    borderRadius: radius.full,
-    backgroundColor: colors.surfaceRaised,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  langChipSelected: {
-    backgroundColor: colors.accent,
-  },
-  pressed: {
-    opacity: 0.75,
-  },
-})
+function createStyles(c: AppColors) {
+  return StyleSheet.create({
+    bar: {
+      minHeight: HIT_TARGET,
+      paddingBottom: space.xs,
+      paddingHorizontal: space.screen,
+      gap: space.xs,
+      backgroundColor: c.background,
+      flexGrow: 0,
+      flexShrink: 0,
+    },
+    topRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      minHeight: 44,
+    },
+    center: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: space.sm,
+    },
+    iconHit: {
+      width: 40,
+      height: 40,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    cityHit: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      maxWidth: 120,
+      minHeight: 40,
+      paddingHorizontal: 4,
+    },
+    langRow: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      gap: 6,
+    },
+    langChip: {
+      minWidth: 38,
+      minHeight: 30,
+      paddingHorizontal: 10,
+      borderRadius: radius.full,
+      backgroundColor: c.surfaceRaised,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    langChipSelected: {
+      backgroundColor: c.accentFill,
+    },
+    pressed: {
+      opacity: 0.75,
+    },
+  })
+}

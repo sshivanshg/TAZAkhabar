@@ -1,7 +1,12 @@
+import { useMemo } from 'react'
 import { StyleSheet, View } from 'react-native'
-import { ARTICLE_COLUMN_MAX, readerColors } from '../../theme/readerTokens'
+import { useTheme } from '../../preferences/ThemePreferenceContext'
+import { ARTICLE_COLUMN_MAX, type ReaderColors } from '../../theme/readerTokens'
 
 export function ArticleSkeleton() {
+  const { readerColors } = useTheme()
+  const styles = useMemo(() => createStyles(readerColors), [readerColors])
+
   return (
     <View testID="article-skeleton" style={styles.root} accessibilityLabel="Loading next story">
       <View style={styles.hero} />
@@ -18,52 +23,54 @@ export function ArticleSkeleton() {
   )
 }
 
-const styles = StyleSheet.create({
-  root: {
-    width: '100%',
-    maxWidth: ARTICLE_COLUMN_MAX,
-    alignSelf: 'center',
-    paddingBottom: 32,
-  },
-  hero: {
-    width: '100%',
-    aspectRatio: 16 / 9,
-    backgroundColor: readerColors.imageFallback,
-  },
-  column: {
-    paddingHorizontal: 24,
-    paddingTop: 24,
-    gap: 12,
-  },
-  line: {
-    height: 14,
-    borderRadius: 6,
-    backgroundColor: readerColors.imageFallback,
-    opacity: 0.7,
-  },
-  cat: {
-    width: 72,
-    height: 10,
-  },
-  title: {
-    width: '92%',
-    height: 22,
-  },
-  titleShort: {
-    width: '64%',
-    height: 22,
-  },
-  meta: {
-    width: '48%',
-    height: 12,
-    marginTop: 4,
-  },
-  body: {
-    width: '100%',
-    height: 12,
-  },
-  bodyShort: {
-    width: '76%',
-    height: 12,
-  },
-})
+function createStyles(c: ReaderColors) {
+  return StyleSheet.create({
+    root: {
+      width: '100%',
+      maxWidth: ARTICLE_COLUMN_MAX,
+      alignSelf: 'center',
+      paddingBottom: 32,
+    },
+    hero: {
+      width: '100%',
+      aspectRatio: 16 / 9,
+      backgroundColor: c.imageFallback,
+    },
+    column: {
+      paddingHorizontal: 24,
+      paddingTop: 24,
+      gap: 12,
+    },
+    line: {
+      height: 14,
+      borderRadius: 6,
+      backgroundColor: c.imageFallback,
+      opacity: 0.7,
+    },
+    cat: {
+      width: 72,
+      height: 10,
+    },
+    title: {
+      width: '92%',
+      height: 22,
+    },
+    titleShort: {
+      width: '64%',
+      height: 22,
+    },
+    meta: {
+      width: '48%',
+      height: 12,
+      marginTop: 4,
+    },
+    body: {
+      width: '100%',
+      height: 12,
+    },
+    bodyShort: {
+      width: '76%',
+      height: 12,
+    },
+  })
+}

@@ -1,11 +1,13 @@
+import { useMemo } from 'react'
 import { Platform, Pressable, StyleSheet, Text, View, type AccessibilityRole, type PressableStateCallbackType } from 'react-native'
 import { usePathname, useRouter, type Href } from 'expo-router'
 import Bookmark from 'lucide-react-native/icons/bookmark'
 import Home from 'lucide-react-native/icons/house'
 import User from 'lucide-react-native/icons/user'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { useTheme } from '../../preferences/ThemePreferenceContext'
 import { iconStroke, type AppIcon } from '../../theme/categoryIcons'
-import { colors, HIT_TARGET, radius, space, typography } from '../../theme/tokens'
+import { HIT_TARGET, radius, space, typography, type AppColors } from '../../theme/tokens'
 
 type NavItem = {
   id: 'home' | 'bookmarks' | 'profile'
@@ -45,6 +47,8 @@ export function DesktopSidebar() {
   const pathname = usePathname()
   const router = useRouter()
   const insets = useSafeAreaInsets()
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
 
   return (
     <View
@@ -109,100 +113,102 @@ export function DesktopSidebar() {
   )
 }
 
-const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: colors.surface,
-    borderRightWidth: StyleSheet.hairlineWidth,
-    borderRightColor: colors.border,
-    paddingHorizontal: space.sm,
-  },
-  brandBlock: {
-    paddingHorizontal: space.sm,
-    marginBottom: space.lg,
-    gap: 8,
-  },
-  brand: {
-    fontSize: typography.section.fontSize,
-    lineHeight: typography.section.lineHeight,
-    fontWeight: typography.section.fontWeight,
-    color: colors.text,
-    letterSpacing: -0.3,
-  },
-  brandRule: {
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: colors.border,
-  },
-  list: {
-    gap: 6,
-    flexGrow: 0,
-  },
-  item: {
-    minHeight: HIT_TARGET,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space.sm,
-    paddingVertical: 10,
-    paddingLeft: space.md,
-    paddingRight: space.sm,
-    borderRadius: radius.sm,
-    overflow: 'hidden',
-  },
-  itemActive: {
-    backgroundColor: colors.accentSoft,
-  },
-  itemHover: {
-    backgroundColor: colors.accentSoft,
-  },
-  itemPressed: {
-    backgroundColor: colors.surfaceRaised,
-  },
-  itemFocus: {
-    ...(Platform.OS === 'web'
-      ? {
-          outlineStyle: 'solid' as const,
-          outlineWidth: 2,
-          outlineColor: colors.accent,
-          outlineOffset: 2,
-        }
-      : {
-          borderWidth: 2,
-          borderColor: colors.accent,
-        }),
-  },
-  accentBar: {
-    position: 'absolute',
-    left: 0,
-    top: 8,
-    bottom: 8,
-    width: 3,
-    borderRadius: radius.full,
-    backgroundColor: colors.accent,
-  },
-  label: {
-    fontSize: typography.bodySemibold.fontSize,
-    lineHeight: typography.bodySemibold.lineHeight,
-    fontWeight: typography.bodySemibold.fontWeight,
-    color: colors.textSecondary,
-  },
-  labelActive: {
-    color: colors.accent,
-  },
-  footer: {
-    marginTop: 'auto',
-    paddingHorizontal: space.sm,
-    paddingTop: space.lg,
-    gap: space.sm,
-  },
-  footerRule: {
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: colors.border,
-  },
-  footerText: {
-    fontSize: typography.label.fontSize,
-    lineHeight: typography.label.lineHeight,
-    fontWeight: typography.label.fontWeight,
-    letterSpacing: typography.label.letterSpacing,
-    color: colors.textMuted,
-  },
-})
+function createStyles(c: AppColors) {
+  return StyleSheet.create({
+    root: {
+      flex: 1,
+      backgroundColor: c.surface,
+      borderRightWidth: StyleSheet.hairlineWidth,
+      borderRightColor: c.border,
+      paddingHorizontal: space.sm,
+    },
+    brandBlock: {
+      paddingHorizontal: space.sm,
+      marginBottom: space.lg,
+      gap: 8,
+    },
+    brand: {
+      fontSize: typography.section.fontSize,
+      lineHeight: typography.section.lineHeight,
+      fontWeight: typography.section.fontWeight,
+      color: c.text,
+      letterSpacing: -0.3,
+    },
+    brandRule: {
+      height: StyleSheet.hairlineWidth,
+      backgroundColor: c.border,
+    },
+    list: {
+      gap: 6,
+      flexGrow: 0,
+    },
+    item: {
+      minHeight: HIT_TARGET,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: space.sm,
+      paddingVertical: 10,
+      paddingLeft: space.md,
+      paddingRight: space.sm,
+      borderRadius: radius.sm,
+      overflow: 'hidden',
+    },
+    itemActive: {
+      backgroundColor: c.accentSoft,
+    },
+    itemHover: {
+      backgroundColor: c.accentSoft,
+    },
+    itemPressed: {
+      backgroundColor: c.surfaceRaised,
+    },
+    itemFocus: {
+      ...(Platform.OS === 'web'
+        ? {
+            outlineStyle: 'solid' as const,
+            outlineWidth: 2,
+            outlineColor: c.accent,
+            outlineOffset: 2,
+          }
+        : {
+            borderWidth: 2,
+            borderColor: c.accent,
+          }),
+    },
+    accentBar: {
+      position: 'absolute',
+      left: 0,
+      top: 8,
+      bottom: 8,
+      width: 3,
+      borderRadius: radius.full,
+      backgroundColor: c.accentFill,
+    },
+    label: {
+      fontSize: typography.bodySemibold.fontSize,
+      lineHeight: typography.bodySemibold.lineHeight,
+      fontWeight: typography.bodySemibold.fontWeight,
+      color: c.textSecondary,
+    },
+    labelActive: {
+      color: c.accent,
+    },
+    footer: {
+      marginTop: 'auto',
+      paddingHorizontal: space.sm,
+      paddingTop: space.lg,
+      gap: space.sm,
+    },
+    footerRule: {
+      height: StyleSheet.hairlineWidth,
+      backgroundColor: c.border,
+    },
+    footerText: {
+      fontSize: typography.label.fontSize,
+      lineHeight: typography.label.lineHeight,
+      fontWeight: typography.label.fontWeight,
+      letterSpacing: typography.label.letterSpacing,
+      color: c.textMuted,
+    },
+  })
+}

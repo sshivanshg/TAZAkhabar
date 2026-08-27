@@ -1,10 +1,12 @@
+import { useMemo } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import {
   READING_LANGUAGES,
   type ReadingLanguageCode,
 } from '../../storage/languagePreference'
+import { useTheme } from '../../preferences/ThemePreferenceContext'
 import { HIT_TARGET } from '../../theme/tokens'
-import { readerColors } from '../../theme/readerTokens'
+import type { ReaderColors } from '../../theme/readerTokens'
 import { pressableState, webFocusRing } from './focusStyle'
 
 type Props = {
@@ -14,6 +16,9 @@ type Props = {
 
 /** Compact EN | हिंदी segmented control for the article reader. */
 export function LanguageSegment({ value, onChange }: Props) {
+  const { readerColors } = useTheme()
+  const styles = useMemo(() => createStyles(readerColors), [readerColors])
+
   return (
     <View
       accessibilityRole="radiogroup"
@@ -38,7 +43,7 @@ export function LanguageSegment({ value, onChange }: Props) {
                 index === 0 ? styles.optionFirst : styles.optionLast,
                 selected ? styles.optionSelected : null,
                 pressed && !selected ? styles.optionPressed : null,
-                webFocusRing(Boolean(focused)),
+                webFocusRing(Boolean(focused), readerColors),
               ]
             }}
           >
@@ -50,42 +55,44 @@ export function LanguageSegment({ value, onChange }: Props) {
   )
 }
 
-const styles = StyleSheet.create({
-  group: {
-    flexDirection: 'row',
-    alignItems: 'stretch',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: readerColors.sheetBorder,
-    borderRadius: 10,
-    backgroundColor: readerColors.sheet,
-    overflow: 'hidden',
-  },
-  option: {
-    minWidth: HIT_TARGET,
-    minHeight: 36,
-    paddingHorizontal: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  optionFirst: {
-    borderRightWidth: StyleSheet.hairlineWidth,
-    borderRightColor: readerColors.sheetBorder,
-  },
-  optionLast: {},
-  optionSelected: {
-    backgroundColor: readerColors.accentSoft,
-  },
-  optionPressed: {
-    opacity: 0.82,
-  },
-  label: {
-    color: readerColors.textMuted,
-    fontSize: 12,
-    fontWeight: '600',
-    letterSpacing: 0.2,
-  },
-  labelSelected: {
-    color: readerColors.accent,
-    fontWeight: '700',
-  },
-})
+function createStyles(c: ReaderColors) {
+  return StyleSheet.create({
+    group: {
+      flexDirection: 'row',
+      alignItems: 'stretch',
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: c.sheetBorder,
+      borderRadius: 10,
+      backgroundColor: c.sheet,
+      overflow: 'hidden',
+    },
+    option: {
+      minWidth: HIT_TARGET,
+      minHeight: 36,
+      paddingHorizontal: 10,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    optionFirst: {
+      borderRightWidth: StyleSheet.hairlineWidth,
+      borderRightColor: c.sheetBorder,
+    },
+    optionLast: {},
+    optionSelected: {
+      backgroundColor: c.accentSoft,
+    },
+    optionPressed: {
+      opacity: 0.82,
+    },
+    label: {
+      color: c.textMuted,
+      fontSize: 12,
+      fontWeight: '600',
+      letterSpacing: 0.2,
+    },
+    labelSelected: {
+      color: c.accent,
+      fontWeight: '700',
+    },
+  })
+}

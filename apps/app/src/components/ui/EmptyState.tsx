@@ -1,9 +1,10 @@
-import { type ReactNode } from 'react'
+import { type ReactNode, useMemo } from 'react'
 import { StyleSheet, View } from 'react-native'
 import { Text } from '@gluestack-ui/themed'
+import { useTheme } from '../../preferences/ThemePreferenceContext'
+import { space, typography, type AppColors } from '../../theme/tokens'
 import { Card } from './Card'
 import { PrimaryButton, SecondaryButton } from './PrimaryButton'
-import { colors, space, typography } from '../../theme/tokens'
 
 type Props = {
   title: string
@@ -32,6 +33,9 @@ export function EmptyState({
   secondaryAccessibilityLabel,
   icon,
 }: Props) {
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
+
   return (
     <View style={styles.outer}>
       <Card>
@@ -77,32 +81,34 @@ export function EmptyState({
   )
 }
 
-const styles = StyleSheet.create({
-  outer: {
-    flex: 1,
-    justifyContent: 'center',
-    paddingHorizontal: space.screen,
-    paddingVertical: space.xl,
-  },
-  inner: {
-    paddingHorizontal: space.lg,
-    paddingVertical: space.xl,
-    alignItems: 'center',
-    gap: space.xs,
-  },
-  iconWrap: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: colors.accentSoft,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: space.xs,
-  },
-  message: {
-    marginBottom: space.xs,
-  },
-  secondary: {
-    marginTop: space.xxs,
-  },
-})
+function createStyles(c: AppColors) {
+  return StyleSheet.create({
+    outer: {
+      flex: 1,
+      justifyContent: 'center',
+      paddingHorizontal: space.screen,
+      paddingVertical: space.xl,
+    },
+    inner: {
+      paddingHorizontal: space.lg,
+      paddingVertical: space.xl,
+      alignItems: 'center',
+      gap: space.xs,
+    },
+    iconWrap: {
+      width: 64,
+      height: 64,
+      borderRadius: 32,
+      backgroundColor: c.accentSoft,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: space.xs,
+    },
+    message: {
+      marginBottom: space.xs,
+    },
+    secondary: {
+      marginTop: space.xxs,
+    },
+  })
+}

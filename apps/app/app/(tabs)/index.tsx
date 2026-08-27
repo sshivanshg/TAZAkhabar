@@ -39,6 +39,7 @@ import { ErrorState } from '../../src/components/ui/ErrorState'
 import { EmptyState } from '../../src/components/ui/EmptyState'
 import { useFeedPreferences } from '../../src/preferences/FeedPreferencesContext'
 import { useLanguagePreference } from '../../src/preferences/LanguagePreferenceContext'
+import { useTheme } from '../../src/preferences/ThemePreferenceContext'
 import {
   articleToBookmark,
   getBookmarks,
@@ -51,13 +52,13 @@ import {
   FEED_CATEGORIES,
   type FeedCategory,
   PAGE_SIZE,
-  colors,
   ERROR_COLUMN_MAX,
   isFeedCategory,
   media,
   radius,
   space,
   typography,
+  type AppColors,
 } from '../../src/theme/tokens'
 import { useTabBarClearance } from '../../src/theme/useTabBarClearance'
 import { isDesktopLayout, useBreakpoint } from '../../src/hooks/useBreakpoint'
@@ -101,6 +102,8 @@ function ArticleCardSlot({
   hostRef?: (node: View | null) => void
   children: ReactNode
 }) {
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
   const [hovered, setHovered] = useState(false)
   const webHover: WebHoverHandlers =
     desktop && Platform.OS === 'web'
@@ -138,6 +141,8 @@ function HomeFeedBody() {
   const prefs = useFeedPreferences()
   const { preferredLanguage, setPreferredLanguage, ready: languageReady } =
     useLanguagePreference()
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
   const tabClearance = useTabBarClearance()
   const bp = useBreakpoint()
   const desktop = isDesktopLayout(bp)
@@ -877,6 +882,8 @@ function SectionHeader({
   actionLabel?: string
   onAction?: () => void
 }) {
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
   // Soft accent section label (Google News “Top stories” rhythm).
   return (
     <HStack
@@ -922,7 +929,8 @@ function SectionHeader({
   )
 }
 
-const styles = StyleSheet.create({
+function createStyles(c: AppColors) {
+  return StyleSheet.create({
   listFlex: {
     flex: 1,
   },
@@ -958,7 +966,7 @@ const styles = StyleSheet.create({
     padding: 4,
     margin: -4,
     borderRadius: radius.md,
-    backgroundColor: colors.accentSoft,
+    backgroundColor: c.accentSoft,
   },
   errorColumn: {
     flex: 1,
@@ -995,4 +1003,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-})
+  })
+}

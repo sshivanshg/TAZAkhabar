@@ -1,4 +1,4 @@
-import { useCallback, useState, type ReactNode } from 'react'
+import { useCallback, useMemo, useState, type ReactNode } from 'react'
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import Constants from 'expo-constants'
@@ -9,6 +9,7 @@ import Ban from 'lucide-react-native/icons/ban'
 import Info from 'lucide-react-native/icons/info'
 import Languages from 'lucide-react-native/icons/languages'
 import MapPin from 'lucide-react-native/icons/map-pin'
+import Moon from 'lucide-react-native/icons/moon'
 import Tag from 'lucide-react-native/icons/tag'
 import type { CityResponse } from '@tazakhabar/shared-types'
 import { apiClient } from '../../src/api/client'
@@ -18,9 +19,13 @@ import { Card } from '../../src/components/ui/Card'
 import { PrimaryButton } from '../../src/components/ui/PrimaryButton'
 import { useFeedPreferences } from '../../src/preferences/FeedPreferencesContext'
 import { useLanguagePreference } from '../../src/preferences/LanguagePreferenceContext'
+import { useTheme } from '../../src/preferences/ThemePreferenceContext'
 import { READING_LANGUAGES } from '../../src/storage/languagePreference'
+import {
+  type ThemePreference,
+} from '../../src/storage/themePreference'
 import { getStoredCitySlug } from '../../src/storage/cityPreference'
-import { colors, HIT_TARGET, space, typography } from '../../src/theme/tokens'
+import { HIT_TARGET, space, typography, type AppColors } from '../../src/theme/tokens'
 import { iconStroke } from '../../src/theme/categoryIcons'
 import { useTabBarClearance } from '../../src/theme/useTabBarClearance'
 import { isDesktopLayout, useBreakpoint } from '../../src/hooks/useBreakpoint'
@@ -41,6 +46,14 @@ function ProfileBody() {
   const prefs = useFeedPreferences()
   const { preferredLanguage, setPreferredLanguage, ready: languageReady } =
     useLanguagePreference()
+  const {
+    colors,
+    preference: themePreference,
+    setPreference: setThemePreference,
+    colorScheme,
+    ready: themeReady,
+  } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
   const tabClearance = useTabBarClearance()
   const desktop = isDesktopLayout(useBreakpoint())
   const [cityMeta, setCityMeta] = useState<CityResponse | null>(null)
@@ -106,7 +119,7 @@ function ProfileBody() {
             color={colors.textSecondary}
             mt="$1"
           >
-            City, language, blocks, and about
+            City, language, appearance, blocks, and about
           </Text>
         </View>
 
@@ -134,6 +147,61 @@ function ProfileBody() {
             accessibilityLabel="Change city"
             style={styles.changeCity}
           />
+        </Section>
+
+        <Section title="Appearance" Icon={Moon}>
+          <Text
+            fontSize={typography.summary.fontSize}
+            lineHeight={typography.summary.lineHeight}
+            color={colors.textSecondary}
+            mb="$3"
+          >
+            Choose light, dark, or match your device. Preference is saved on this device.
+          </Text>
+          <View style={styles.langRow}>
+            {(
+              [
+                { value: 'light' as const, label: 'Light' },
+                { value: 'dark' as const, label: 'Dark' },
+                { value: 'system' as const, label: 'System' },
+              ] satisfies { value: ThemePreference; label: string }[]
+            ).map((option) => {
+              const selected = themeReady && themePreference === option.value
+              return (
+                <Pressable
+                  key={option.value}
+                  onPress={() => setThemePreference(option.value)}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected }}
+                  accessibilityLabel={
+                    option.value === 'system'
+                      ? `Appearance system, currently ${colorScheme}`
+                      : `Appearance ${option.label}`
+                  }
+                  style={[styles.langChip, selected ? styles.langChipSelected : null]}
+                >
+                  <Text
+                    fontSize={typography.label.fontSize}
+                    lineHeight={typography.label.lineHeight}
+                    fontWeight="$semibold"
+                    color={selected ? colors.chipSelectedText : colors.chipInactiveText}
+                  >
+                    {option.label}
+                  </Text>
+                </Pressable>
+              )
+            })}
+          </View>
+          {themeReady && themePreference === 'system' ? (
+            <Text
+              fontSize={typography.meta.fontSize}
+              lineHeight={typography.meta.lineHeight}
+              color={colors.textMuted}
+              mt="$2"
+            >
+              Following device ({colorScheme})
+            </Text>
+          ) : null}
         </Section>
 
         <Section title="Reading language" Icon={Languages}>
@@ -226,6 +294,8 @@ function Section({
   Icon: typeof MapPin
   children: ReactNode
 }) {
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
   return (
     <View style={styles.section}>
       <Card>
@@ -263,6 +333,8 @@ function BlockedRow({
   items: string[]
   onRemove: (value: string) => void
 }) {
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
   return (
     <VStack>
       <View style={styles.blockedSummary}>
@@ -327,77 +399,79 @@ function BlockedRow({
   )
 }
 
-const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  content: {
-    paddingHorizontal: space.screen,
-  },
-  pageHeader: {
-    paddingBottom: space.sm,
-  },
-  section: {
-    marginBottom: space.xl,
-  },
-  cardBody: {
-    padding: space.md,
-  },
-  cardTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space.xs,
-    marginBottom: space.sm,
-  },
-  changeCity: {
-    alignSelf: 'flex-start',
-    paddingHorizontal: space.md,
-  },
-  langRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: space.xs,
-  },
-  langChip: {
-    minHeight: HIT_TARGET - 8,
-    paddingHorizontal: space.md,
-    paddingVertical: space.xs,
-    borderRadius: 999,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.chipInactiveBorder,
-    backgroundColor: colors.surface,
-    justifyContent: 'center',
-  },
-  langChipSelected: {
-    backgroundColor: colors.chipSelectedBg,
-    borderColor: colors.chipSelectedBg,
-  },
-  spacer: {
-    height: space.md,
-  },
-  blockedSummary: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space.xs,
-    minHeight: HIT_TARGET - 8,
-    marginBottom: space.xxs,
-  },
-  blockedLabel: {
-    flex: 1,
-  },
-  prefRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    minHeight: HIT_TARGET,
-    gap: space.sm,
-    paddingLeft: space.xl,
-  },
-  unblockHit: {
-    minHeight: HIT_TARGET,
-    minWidth: HIT_TARGET,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: space.xs,
-  },
-})
+function createStyles(c: AppColors) {
+  return StyleSheet.create({
+    root: {
+      flex: 1,
+      backgroundColor: c.background,
+    },
+    content: {
+      paddingHorizontal: space.screen,
+    },
+    pageHeader: {
+      paddingBottom: space.sm,
+    },
+    section: {
+      marginBottom: space.xl,
+    },
+    cardBody: {
+      padding: space.md,
+    },
+    cardTitleRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: space.xs,
+      marginBottom: space.sm,
+    },
+    changeCity: {
+      alignSelf: 'flex-start',
+      paddingHorizontal: space.md,
+    },
+    langRow: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: space.xs,
+    },
+    langChip: {
+      minHeight: HIT_TARGET - 8,
+      paddingHorizontal: space.md,
+      paddingVertical: space.xs,
+      borderRadius: 999,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: c.chipInactiveBorder,
+      backgroundColor: c.surface,
+      justifyContent: 'center',
+    },
+    langChipSelected: {
+      backgroundColor: c.accentFill,
+      borderColor: c.accentFill,
+    },
+    spacer: {
+      height: space.md,
+    },
+    blockedSummary: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: space.xs,
+      minHeight: HIT_TARGET - 8,
+      marginBottom: space.xxs,
+    },
+    blockedLabel: {
+      flex: 1,
+    },
+    prefRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      minHeight: HIT_TARGET,
+      gap: space.sm,
+      paddingLeft: space.xl,
+    },
+    unblockHit: {
+      minHeight: HIT_TARGET,
+      minWidth: HIT_TARGET,
+      justifyContent: 'center',
+      alignItems: 'center',
+      paddingHorizontal: space.xs,
+    },
+  })
+}

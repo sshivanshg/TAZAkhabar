@@ -12,7 +12,8 @@ import { CityListItem, CityListSkeleton } from '../src/components/CityListItem'
 import { CitySearch, filterCities } from '../src/components/CitySearch'
 import { ErrorState } from '../src/components/ui/ErrorState'
 import { getStoredCitySlug, setStoredCitySlug } from '../src/storage/cityPreference'
-import { colors, HIT_TARGET, radius, space, typography } from '../src/theme/tokens'
+import { useTheme } from '../src/preferences/ThemePreferenceContext'
+import { HIT_TARGET, radius, space, typography, type AppColors } from '../src/theme/tokens'
 import { iconStroke } from '../src/theme/categoryIcons'
 
 const EMPTY_CITIES: CityResponse[] = []
@@ -26,6 +27,8 @@ function isSelectableCity(city: CityResponse): boolean {
 export default function CityPickerScreen() {
   const router = useRouter()
   const insets = useSafeAreaInsets()
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
   const canGoBack = router.canGoBack()
   const [query, setQuery] = useState('')
   const [storedSlug, setStoredSlug] = useState<string | null>(null)
@@ -261,50 +264,52 @@ export default function CityPickerScreen() {
   )
 }
 
-const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: colors.background,
-    ...(Platform.OS === 'web' ? { minHeight: '100dvh' as unknown as number } : {}),
-  },
-  content: {
-    width: '100%',
-    maxWidth: CONTENT_MAX,
-    alignSelf: 'center',
-    paddingHorizontal: space.xl,
-    flexGrow: 1,
-  },
-  backBtn: {
-    width: HIT_TARGET,
-    height: HIT_TARGET,
-    marginLeft: -space.xs,
-    marginBottom: space.xs,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: radius.full,
-  },
-  backPressed: {
-    backgroundColor: colors.surfaceRaised,
-  },
-  description: {
-    marginBottom: space.xl,
-    maxWidth: 480,
-  },
-  body: {
-    gap: space.sm,
-  },
-  section: {
-    marginTop: space.lg,
-  },
-  list: {
-    gap: 10,
-  },
-  emptySearch: {
-    marginTop: space.xl,
-    paddingVertical: space.lg,
-  },
-  errorWrap: {
-    flexGrow: 1,
-    minHeight: 280,
-  },
-})
+function createStyles(c: AppColors) {
+  return StyleSheet.create({
+    root: {
+      flex: 1,
+      backgroundColor: c.background,
+      ...(Platform.OS === 'web' ? { minHeight: '100dvh' as unknown as number } : {}),
+    },
+    content: {
+      width: '100%',
+      maxWidth: CONTENT_MAX,
+      alignSelf: 'center',
+      paddingHorizontal: space.xl,
+      flexGrow: 1,
+    },
+    backBtn: {
+      width: HIT_TARGET,
+      height: HIT_TARGET,
+      marginLeft: -space.xs,
+      marginBottom: space.xs,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: radius.full,
+    },
+    backPressed: {
+      backgroundColor: c.surfaceRaised,
+    },
+    description: {
+      marginBottom: space.xl,
+      maxWidth: 480,
+    },
+    body: {
+      gap: space.sm,
+    },
+    section: {
+      marginTop: space.lg,
+    },
+    list: {
+      gap: 10,
+    },
+    emptySearch: {
+      marginTop: space.xl,
+      paddingVertical: space.lg,
+    },
+    errorWrap: {
+      flexGrow: 1,
+      minHeight: 280,
+    },
+  })
+}

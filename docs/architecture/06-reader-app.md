@@ -1,7 +1,7 @@
 # Reader app
 
 > **Living doc** — update when Expo routes, city/feed/share behavior, or desktop web layer change.  
-> **Last verified against:** 2026-08-27 (no next-story divider between pages)
+> **Last verified against:** 2026-08-27 (theme via `useTheme` / ThemePreferenceProvider)
 
 ## Purpose
 
@@ -13,7 +13,7 @@ On mobile, the top bar and category rail sit outside the only vertical scroll
 surface, the virtualized feed. The bottom tab bar remains in the navigator shell
 (Home, Bookmarks, Profile — Discover is hidden from the tab bar for now),
 so browser/body scrolling never moves either navigation region. Feed cards follow
-a Google News pattern on a TazaKhabar light canvas: photo stories at a regular
+a Google News pattern on a TazaKhabar canvas (light or dark): photo stories at a regular
 cadence become featured (large rounded image, circular source mark); the next
 cluster is a horizontal related strip; remaining stories are compact rows with a
 source avatar, right-aligned thumb when present, and a See more pill. Save /
@@ -34,7 +34,7 @@ flowchart LR
   User[Reader] --> Pages[Cloudflare Pages<br/>tazakhabar-web]
   Pages --> Expo[Expo RN Web export]
   Expo -->|EXPO_PUBLIC_API_BASE_URL<br/>no auth| API[TazaKhabar.Api]
-  Expo --> Storage[AsyncStorage city + prefs]
+  Expo --> Storage[AsyncStorage city + theme + prefs]
 ```
 
 ## Components / key types
@@ -48,7 +48,7 @@ flowchart LR
 | `(tabs)/index.tsx` | Home feed |
 | `(tabs)/search.tsx` | Search / Discover (hidden from tab bar; opened from home search) |
 | `(tabs)/bookmarks.tsx` | Local bookmarks |
-| `(tabs)/profile.tsx` | Settings / change city |
+| `(tabs)/profile.tsx` | Settings: city, appearance (Light/Dark/System), language, blocks |
 | `(tabs)/categories.tsx` | Hidden (`href: null`) |
 | `article/[id].tsx` | Continuous editorial article feed; hydrates `body` via `getArticle`; Back returns to Home |
 | `feed.tsx` | Legacy redirect → tabs |
@@ -65,7 +65,9 @@ flowchart LR
 | `src/utils/shareToWhatsApp.ts` | Share deep link / intent |
 | `src/components/desktop/*` | Desktop shell / sidebar / hero row |
 | `src/storage/viewSession.ts` | Anonymous view sessions for trending |
-| `src/theme/tokens.ts` | Light shell `#F4F6FA`, accent `#155EEF` |
+| `src/preferences/ThemePreferenceContext.tsx` | Light/dark/system preference → `useTheme()` (`colors`, `readerColors`, `shadows`) |
+| `src/theme/tokens.ts` | Shell palettes (light `#F4F6FA` / dark) + accent `#155EEF` (`accentFill`) |
+| `src/theme/readerTokens.ts` | Article reader palette per color scheme |
 | `src/components/CompactArticleCard.tsx` | Google News–style list card (thumb when image, text-only otherwise) + See more + skeleton |
 | `src/components/BreakingHeroCard.tsx` | Top story: rounded image, circular source mark, headline/time |
 | `src/components/RelatedStoriesStrip.tsx` | Horizontal related cluster under a featured card |
@@ -146,8 +148,8 @@ Manual verification still required before claiming a comprehensive a11y sweep is
 
 - Use RN primitives (`View`/`Text`/`Pressable`) so web and native stay aligned — avoid raw HTML/CSS except thin `Platform` forks.
 - Do not add a second Vite reader app.
-- MVP UI stays light + single blue accent until branding lands.
-- No login — city preference is device-local only.
+- Appearance: Light / Dark / System (default System), persisted in AsyncStorage; Profile controls it. Brand accent fill stays `#155EEF`.
+- No login — city and theme preferences are device-local only.
 - List payloads omit `body`; the reader shows full plain-text `body` when `GET /api/articles/{id}` returns it, otherwise the summary. For translated reads, the API suppresses original-language `body` so the story shows translated headline/summary rather than mixing languages.
 - The article screen uses Reels-style vertical paging: each story is one viewport-tall page so two stories never share the screen. A scroll gesture snaps to the next story with a slower eased transition on web (~700ms; instant when the reader prefers reduced motion). Native paging uses the normal deceleration rate rather than the snappy `fast` default. Short stories pad to fill the page; longer stories scroll inside that page. Story content starts below the opaque top bar so hero images (including e-paper mastheads) do not bleed through the chrome. Publisher download CTAs such as “Download in high quality” are stripped from body copy. Later stories append as the reader approaches the end. The FlatList is the only paging surface (`flex: 1` inside an overflow-clipped root); the sticky top bar and compact bottom action bar sit outside that list (viewport-fixed on web) so chrome does not move with story content. Share and Save live only in that bottom bar — not duplicated in the story body.
 - Active story is detected with FlatList viewability (and an IntersectionObserver sentinel on web). `6 of 8` updates from that active item. On web the `/article/:id` path is `history.replaceState`’d while reading. The article Back control always `replace`s to Home (`/(tabs)`) so history never drops the reader on Discover.

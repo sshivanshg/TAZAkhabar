@@ -1,7 +1,7 @@
 # System overview
 
 > **Living doc** — update in the same change when topology, hosting, or cross-app contracts move.  
-> **Last verified against:** 2026-08-27 (OpenAI scrape rewrite alongside Claude)
+> **Last verified against:** 2026-08-27 (reader Light/Dark/System appearance)
 
 ## Purpose
 
@@ -121,7 +121,7 @@ sequenceDiagram
 | **Render + Cloudflare Pages + Neon** | Docker API auto-deploy; static CDNs; edge-cache feed GETs to cut Neon cost ([ADR-004](../adr/004-render-cloudflare-neon-hosting.md)) |
 | **Claude (`ArticleIntelligence`)** | Summarize, PDF/image story extract, translate |
 | **OpenAI (`OpenAiRewrite`)** | Rewrite scraped articles into original digest summary + body |
-| **Light UI + single blue accent** | Defer branding without UI rebuild |
+| **Light + dark UI, single blue accent** | Dual palettes; brand fill `#155EEF`; Appearance preference on Profile |
 
 ## Key files
 

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from 'react'
+import { useCallback, useEffect, useMemo, useRef } from 'react'
 import {
   Modal,
   Platform,
@@ -8,9 +8,18 @@ import {
   useWindowDimensions,
   View,
   type PressableStateCallbackType,
+  type ViewStyle,
 } from 'react-native'
 import { MotiView } from 'moti'
-import { colors, HIT_TARGET, radius, shadows, space, typography } from '../../theme/tokens'
+import { useTheme } from '../../preferences/ThemePreferenceContext'
+import {
+  HIT_TARGET,
+  getShadows,
+  radius,
+  space,
+  typography,
+  type AppColors,
+} from '../../theme/tokens'
 import { iconStroke } from '../../theme/categoryIcons'
 import type { BottomSheetSection } from '../ui/BottomSheet'
 
@@ -80,6 +89,8 @@ export function StoryOptionsPopover({ visible, anchor, title, sections, onClose 
   const open = visible && anchor != null
   const returnFocusRef = useRef<HTMLElement | null>(null)
   const hasCapturedFocusRef = useRef(false)
+  const { colors, shadows } = useTheme()
+  const styles = useMemo(() => createStyles(colors, shadows), [colors, shadows])
 
   const focusableItems = useCallback((): HTMLElement[] => {
     if (Platform.OS !== 'web' || typeof document === 'undefined') {
@@ -270,85 +281,87 @@ export function StoryOptionsPopover({ visible, anchor, title, sections, onClose 
 
 const webMenuOrigin = { transformOrigin: 'top right' } as const
 
-const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-  },
-  menu: {
-    position: 'absolute',
-    width: MENU_WIDTH,
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
-    overflow: 'hidden',
-    paddingVertical: space.xxs,
-    ...shadows.card,
-  },
-  title: {
-    fontSize: typography.label.fontSize,
-    lineHeight: typography.label.lineHeight,
-    fontWeight: '600',
-    color: colors.textSecondary,
-    letterSpacing: typography.label.letterSpacing,
-    paddingHorizontal: space.md,
-    paddingTop: space.sm,
-    paddingBottom: space.xs,
-  },
-  sectionDivider: {
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: colors.border,
-    marginVertical: space.xxs,
-    marginHorizontal: space.md,
-  },
-  row: {
-    minHeight: ROW_HEIGHT,
-    paddingHorizontal: space.md,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space.sm,
-  },
-  rowDanger: {
-    backgroundColor: colors.destructiveSoft,
-    marginHorizontal: space.xs,
-    borderRadius: radius.sm,
-  },
-  rowHover: {
-    backgroundColor: colors.accentSoft,
-  },
-  rowPressed: {
-    backgroundColor: colors.surfaceRaised,
-  },
-  rowDangerPressed: {
-    opacity: 0.88,
-  },
-  rowFocus: {
-    ...(Platform.OS === 'web'
-      ? {
-          outlineStyle: 'solid' as const,
-          outlineWidth: 2,
-          outlineColor: colors.accent,
-          outlineOffset: -2,
-        }
-      : {
-          borderWidth: 2,
-          borderColor: colors.accent,
-        }),
-  },
-  rowIcon: {
-    marginRight: 0,
-  },
-  rowIconSpacer: {
-    width: 18,
-  },
-  rowLabel: {
-    flex: 1,
-    fontSize: typography.summary.fontSize,
-    lineHeight: typography.summary.lineHeight,
-    fontWeight: '500',
-    color: colors.text,
-  },
-  rowLabelDanger: {
-    color: colors.destructive,
-  },
-})
+function createStyles(c: AppColors, shadows: ReturnType<typeof getShadows>) {
+  return StyleSheet.create({
+    root: {
+      flex: 1,
+    },
+    menu: {
+      position: 'absolute',
+      width: MENU_WIDTH,
+      backgroundColor: c.surface,
+      borderRadius: radius.md,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: c.border,
+      overflow: 'hidden',
+      paddingVertical: space.xxs,
+      ...(shadows.card as ViewStyle),
+    },
+    title: {
+      fontSize: typography.label.fontSize,
+      lineHeight: typography.label.lineHeight,
+      fontWeight: '600',
+      color: c.textSecondary,
+      letterSpacing: typography.label.letterSpacing,
+      paddingHorizontal: space.md,
+      paddingTop: space.sm,
+      paddingBottom: space.xs,
+    },
+    sectionDivider: {
+      height: StyleSheet.hairlineWidth,
+      backgroundColor: c.border,
+      marginVertical: space.xxs,
+      marginHorizontal: space.md,
+    },
+    row: {
+      minHeight: ROW_HEIGHT,
+      paddingHorizontal: space.md,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: space.sm,
+    },
+    rowDanger: {
+      backgroundColor: c.destructiveSoft,
+      marginHorizontal: space.xs,
+      borderRadius: radius.sm,
+    },
+    rowHover: {
+      backgroundColor: c.accentSoft,
+    },
+    rowPressed: {
+      backgroundColor: c.surfaceRaised,
+    },
+    rowDangerPressed: {
+      opacity: 0.88,
+    },
+    rowFocus: {
+      ...(Platform.OS === 'web'
+        ? {
+            outlineStyle: 'solid' as const,
+            outlineWidth: 2,
+            outlineColor: c.accent,
+            outlineOffset: -2,
+          }
+        : {
+            borderWidth: 2,
+            borderColor: c.accent,
+          }),
+    },
+    rowIcon: {
+      marginRight: 0,
+    },
+    rowIconSpacer: {
+      width: 18,
+    },
+    rowLabel: {
+      flex: 1,
+      fontSize: typography.summary.fontSize,
+      lineHeight: typography.summary.lineHeight,
+      fontWeight: '500',
+      color: c.text,
+    },
+    rowLabelDanger: {
+      color: c.destructive,
+    },
+  })
+}

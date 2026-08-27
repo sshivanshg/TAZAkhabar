@@ -31,6 +31,7 @@ import {
 import { ScreenErrorBoundary } from '../../src/components/ScreenErrorBoundary'
 import { BottomSheet } from '../../src/components/ui/BottomSheet'
 import { useLanguagePreference } from '../../src/preferences/LanguagePreferenceContext'
+import { useTheme } from '../../src/preferences/ThemePreferenceContext'
 import {
   addBookmark,
   articleToBookmark,
@@ -43,7 +44,7 @@ import { PAGE_SIZE } from '../../src/theme/tokens'
 import {
   articleChromeBottom,
   articleChromeTop,
-  readerColors,
+  type ReaderColors,
 } from '../../src/theme/readerTokens'
 import { todayCityIso } from '../../src/utils/cityCalendar'
 import { formatLocationLabel } from '../../src/utils/formatLocationLabel'
@@ -108,6 +109,8 @@ function ArticleFeedBody() {
   const feedCategory = paramString(raw.feedCategory)
   const routeDate = paramString(raw.date)
   const { preferredLanguage, setPreferredLanguage } = useLanguagePreference()
+  const { readerColors } = useTheme()
+  const styles = useMemo(() => createStyles(readerColors), [readerColors])
   const lang = preferredLanguage
 
   const initialFromParams: ArticleResponse | null = useMemo(() => {
@@ -718,10 +721,11 @@ function ArticleFeedBody() {
   )
 }
 
-const styles = StyleSheet.create({
+function createStyles(c: ReaderColors) {
+  return StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: readerColors.canvas,
+    backgroundColor: c.canvas,
     // Keep top/bottom chrome viewport-fixed; only the FlatList scrolls.
     overflow: 'hidden',
     ...(Platform.OS === 'web'
@@ -736,19 +740,19 @@ const styles = StyleSheet.create({
   },
   center: {
     flex: 1,
-    backgroundColor: readerColors.canvas,
+    backgroundColor: c.canvas,
     alignItems: 'center',
     justifyContent: 'center',
     padding: 24,
     gap: 12,
   },
   errorTitle: {
-    color: readerColors.text,
+    color: c.text,
     fontSize: 20,
     fontWeight: '700',
   },
   errorBody: {
-    color: readerColors.textMuted,
+    color: c.textMuted,
     fontSize: 14,
     textAlign: 'center',
   },
@@ -757,14 +761,14 @@ const styles = StyleSheet.create({
     minHeight: 44,
     paddingHorizontal: 20,
     borderRadius: 12,
-    backgroundColor: readerColors.sheet,
+    backgroundColor: c.sheet,
     borderWidth: 1,
-    borderColor: readerColors.sheetBorder,
+    borderColor: c.sheetBorder,
     alignItems: 'center',
     justifyContent: 'center',
   },
   errorBtnText: {
-    color: readerColors.accent,
+    color: c.accent,
     fontWeight: '600',
   },
   retryMore: {
@@ -776,7 +780,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   retryMoreText: {
-    color: readerColors.accent,
+    color: c.accent,
     fontSize: 14,
     fontWeight: '600',
   },
@@ -788,8 +792,8 @@ const styles = StyleSheet.create({
     zIndex: 30,
   },
   noticeText: {
-    backgroundColor: readerColors.text,
-    color: '#FFFFFF',
+    backgroundColor: c.text,
+    color: c.canvas,
     overflow: 'hidden',
     borderRadius: 999,
     paddingHorizontal: 16,
@@ -797,4 +801,5 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
   },
-})
+  })
+}

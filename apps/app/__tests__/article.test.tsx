@@ -3,6 +3,7 @@ import { FlatList } from 'react-native'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import type { ArticleResponse } from '@tazakhabar/shared-types'
 import { LanguagePreferenceProvider } from '../src/preferences/LanguagePreferenceContext'
+import { ThemePreferenceProvider } from '../src/preferences/ThemePreferenceContext'
 
 const mockBack = jest.fn()
 const mockReplace = jest.fn()
@@ -89,9 +90,11 @@ function renderArticle() {
         insets: { top: 0, left: 0, right: 0, bottom: 0 },
       }}
     >
-      <LanguagePreferenceProvider>
-        <ArticleScreen />
-      </LanguagePreferenceProvider>
+      <ThemePreferenceProvider>
+        <LanguagePreferenceProvider>
+          <ArticleScreen />
+        </LanguagePreferenceProvider>
+      </ThemePreferenceProvider>
     </SafeAreaProvider>,
   )
 }

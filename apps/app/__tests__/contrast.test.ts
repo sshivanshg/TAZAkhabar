@@ -1,5 +1,5 @@
-import { colors } from '../src/theme/tokens'
-import { readerColors } from '../src/theme/readerTokens'
+import { colorsDark, colorsLight } from '../src/theme/tokens'
+import { readerColorsDark, readerColorsLight } from '../src/theme/readerTokens'
 
 function parseColor(color: string, background = '#FFFFFF'): [number, number, number] {
   if (color.startsWith('#')) {
@@ -49,33 +49,54 @@ function contrast(foreground: string, background: string): number {
   return (Math.max(fg, bg) + 0.05) / (Math.min(fg, bg) + 0.05)
 }
 
-describe('theme contrast', () => {
-  const normalTextPairs = [
-    ['text on background', colors.text, colors.background],
-    ['text on surface', colors.text, colors.surface],
-    ['secondary on background', colors.textSecondary, colors.background],
-    ['secondary on surface', colors.textSecondary, colors.surface],
-    ['muted on background', colors.textMuted, colors.background],
-    ['muted on surface', colors.textMuted, colors.surface],
-    ['selected chip text on accent', colors.textOnAccent, colors.accent],
-    ['accent text on soft badge', colors.accent, colors.accentSoft],
-    ['destructive text on destructive soft', colors.destructive, colors.destructiveSoft],
-    ['reader text on canvas', readerColors.text, readerColors.canvas],
-    ['reader muted on canvas', readerColors.textMuted, readerColors.canvas],
-    ['reader secondary on canvas', readerColors.textSecondary, readerColors.canvas],
-    ['reader accent on canvas', readerColors.accent, readerColors.canvas],
-    ['reader text on card', readerColors.text, readerColors.card],
-    ['reader secondary on attribution', readerColors.textSecondary, readerColors.attribution],
-    ['reader accent on accent soft', readerColors.accent, readerColors.accentSoft],
+function normalTextPairs(
+  label: string,
+  colors: typeof colorsLight,
+  readerColors: typeof readerColorsLight,
+) {
+  return [
+    [`${label} text on background`, colors.text, colors.background],
+    [`${label} text on surface`, colors.text, colors.surface],
+    [`${label} secondary on background`, colors.textSecondary, colors.background],
+    [`${label} secondary on surface`, colors.textSecondary, colors.surface],
+    [`${label} muted on background`, colors.textMuted, colors.background],
+    [`${label} muted on surface`, colors.textMuted, colors.surface],
+    [`${label} selected chip text on accent`, colors.chipSelectedText, colors.chipSelectedBg],
+    [`${label} accent text on soft badge`, colors.accent, colors.accentSoft],
+    [`${label} destructive text on destructive soft`, colors.destructive, colors.destructiveSoft],
+    [`${label} reader text on canvas`, readerColors.text, readerColors.canvas],
+    [`${label} reader muted on canvas`, readerColors.textMuted, readerColors.canvas],
+    [`${label} reader secondary on canvas`, readerColors.textSecondary, readerColors.canvas],
+    [`${label} reader accent on canvas`, readerColors.accent, readerColors.canvas],
+    [`${label} reader text on card`, readerColors.text, readerColors.card],
+    [`${label} reader secondary on attribution`, readerColors.textSecondary, readerColors.attribution],
+    [`${label} reader accent on accent soft`, readerColors.accent, readerColors.accentSoft],
   ] as const
+}
 
-  it.each(normalTextPairs)('%s is WCAG AA for normal text', (_name, fg, bg) => {
+describe('theme contrast', () => {
+  const pairs = [
+    ...normalTextPairs('light', colorsLight, readerColorsLight),
+    ...normalTextPairs('dark', colorsDark, readerColorsDark),
+  ]
+
+  it.each(pairs)('%s is WCAG AA for normal text', (_name, fg, bg) => {
     expect(contrast(fg, bg)).toBeGreaterThanOrEqual(4.5)
   })
 
   const uiPairs = [
-    ['accent border/fill on accent soft', colors.accent, colors.accentSoft],
-    ['destructive affordance on destructive soft', colors.destructive, colors.destructiveSoft],
+    ['light accent border/fill on accent soft', colorsLight.accent, colorsLight.accentSoft],
+    [
+      'light destructive affordance on destructive soft',
+      colorsLight.destructive,
+      colorsLight.destructiveSoft,
+    ],
+    ['dark accent border/fill on accent soft', colorsDark.accent, colorsDark.accentSoft],
+    [
+      'dark destructive affordance on destructive soft',
+      colorsDark.destructive,
+      colorsDark.destructiveSoft,
+    ],
   ] as const
 
   it.each(uiPairs)('%s is WCAG AA for UI components', (_name, fg, bg) => {

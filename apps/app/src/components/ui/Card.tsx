@@ -1,6 +1,7 @@
-import { type ReactNode } from 'react'
+import { type ReactNode, useMemo } from 'react'
 import { Platform, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native'
-import { colors, radius, shadows } from '../../theme/tokens'
+import { useTheme } from '../../preferences/ThemePreferenceContext'
+import { radius, type AppColors } from '../../theme/tokens'
 
 type Props = {
   children: ReactNode
@@ -14,6 +15,9 @@ type Props = {
  * Radius matches media-forward hero cards (`radius.md`) so both card states share DNA.
  */
 export function Card({ children, style, clipped = false }: Props) {
+  const { colors, shadows } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
+
   return (
     <View
       style={[
@@ -27,23 +31,25 @@ export function Card({ children, style, clipped = false }: Props) {
   )
 }
 
-const styles = StyleSheet.create({
-  shadowHost: {
-    borderRadius: radius.lg,
-    backgroundColor: colors.surface,
-    padding: 0,
-  },
-  webBorder: {
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  inner: {
-    borderRadius: radius.lg,
-    backgroundColor: colors.surface,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
-  },
-  clipped: {
-    overflow: 'hidden',
-  },
-})
+function createStyles(c: AppColors) {
+  return StyleSheet.create({
+    shadowHost: {
+      borderRadius: radius.lg,
+      backgroundColor: c.surface,
+      padding: 0,
+    },
+    webBorder: {
+      borderWidth: 1,
+      borderColor: c.border,
+    },
+    inner: {
+      borderRadius: radius.lg,
+      backgroundColor: c.surface,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: c.border,
+    },
+    clipped: {
+      overflow: 'hidden',
+    },
+  })
+}

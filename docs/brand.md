@@ -7,10 +7,11 @@ Write the name exactly as `TazaKhabar` in reader-facing copy. The Hindi descript
 
 ## Visual language
 
-- **Primary blue:** `#155EEF` — navigation, links, selected states, brand mark.
+- **Primary blue:** `#155EEF` — navigation, links, selected fills, brand mark (`accentFill`).
 - **Saffron signal:** `#FFB000` — small freshness and breaking-news accents only.
-- **Canvas:** `#F4F6FA`; **surface:** `#FFFFFF`; **headline:** `#101828`.
-- Keep interfaces light, calm, and high-contrast. Blue is the primary action color; saffron must not become a competing action color.
+- **Light canvas:** `#F4F6FA`; **surface:** `#FFFFFF`; **headline:** `#101828`.
+- **Dark mode:** navy-charcoal canvas (`#0F1419`) / surface (`#1A222D`); accent text may brighten for WCAG AA on dark soft washes; solid fills stay `#155EEF`.
+- Readers can choose Light, Dark, or System (follow device). Keep both modes calm and high-contrast. Blue is the primary action color; saffron must not become a competing action color.
 - Prefer generous type, 44px minimum touch targets, and direct language for the 40+ readership.
 
 ## Assets

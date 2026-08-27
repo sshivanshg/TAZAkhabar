@@ -1,8 +1,26 @@
 import { Platform, StyleSheet, type ViewStyle } from 'react-native'
-import { HIT_TARGET } from './tokens'
+import { HIT_TARGET, type ColorScheme } from './tokens'
 
-/** Light editorial palette for the article reader. */
-export const readerColors = {
+export type ReaderColors = {
+  canvas: string
+  card: string
+  text: string
+  textMuted: string
+  textSecondary: string
+  accent: string
+  accentSoft: string
+  overlay: string
+  sheet: string
+  sheetBorder: string
+  imageFallback: string
+  header: string
+  headerSolid: string
+  progressTrack: string
+  progressFill: string
+  attribution: string
+}
+
+export const readerColorsLight: ReaderColors = {
   canvas: '#F4F6FA',
   card: '#FFFFFF',
   text: '#101828',
@@ -19,7 +37,34 @@ export const readerColors = {
   progressTrack: '#E4E8EF',
   progressFill: '#2855E8',
   attribution: '#EEF2F6',
-} as const
+}
+
+export const readerColorsDark: ReaderColors = {
+  canvas: '#0F1419',
+  card: '#1A222D',
+  text: '#F2F4F7',
+  textMuted: '#98A2B3',
+  textSecondary: '#B0BAC8',
+  /** Brighter link blue for dark canvas; soft wash stays near-black for AA */
+  accent: '#5B8AFF',
+  accentSoft: '#050A14',
+  overlay: 'rgba(0, 0, 0, 0.35)',
+  sheet: '#1A222D',
+  sheetBorder: '#2A3441',
+  imageFallback: '#243040',
+  header: 'rgba(15, 20, 25, 0.94)',
+  headerSolid: 'rgba(15, 20, 25, 0.96)',
+  progressTrack: '#2A3441',
+  progressFill: '#5B8AFF',
+  attribution: '#141A22',
+}
+
+/** @deprecated Prefer useTheme().readerColors — light alias for migration / tests */
+export const readerColors = readerColorsLight
+
+export function getReaderColors(scheme: ColorScheme): ReaderColors {
+  return scheme === 'dark' ? readerColorsDark : readerColorsLight
+}
 
 export const ARTICLE_COLUMN_MAX = 720
 export const ARTICLE_HEADLINE_MAX = 800
@@ -35,7 +80,11 @@ export function articleChromeBottom(insetBottom: number): number {
   return ARTICLE_BOTTOM_BAR_HEIGHT + Math.max(insetBottom, 8)
 }
 
-export function readerHeaderChrome(elevated: boolean, reducedMotion: boolean): ViewStyle {
+export function readerHeaderChrome(
+  elevated: boolean,
+  reducedMotion: boolean,
+  palette: ReaderColors = readerColorsLight,
+): ViewStyle {
   const web: ViewStyle =
     Platform.OS === 'web'
       ? ({
@@ -48,16 +97,16 @@ export function readerHeaderChrome(elevated: boolean, reducedMotion: boolean): V
 
   if (!elevated) {
     return {
-      backgroundColor: readerColors.header,
+      backgroundColor: palette.header,
       borderBottomWidth: 0,
       ...web,
     }
   }
 
   return {
-    backgroundColor: readerColors.headerSolid,
+    backgroundColor: palette.headerSolid,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: readerColors.sheetBorder,
+    borderBottomColor: palette.sheetBorder,
     ...web,
   }
 }

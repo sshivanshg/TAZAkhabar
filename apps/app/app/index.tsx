@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
 import { Redirect } from 'expo-router'
 import { Box, Spinner, Text, VStack } from '@gluestack-ui/themed'
+import { useTheme } from '../src/preferences/ThemePreferenceContext'
 import { getStoredCitySlug } from '../src/storage/cityPreference'
-import { colors } from '../src/theme/tokens'
 
 export default function IndexScreen() {
+  const { colors } = useTheme()
   const [ready, setReady] = useState(false)
   const [slug, setSlug] = useState<string | null>(null)
 

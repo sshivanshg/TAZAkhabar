@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Platform, Pressable, StyleSheet, TextInput, View } from 'react-native'
 import Search from 'lucide-react-native/icons/search'
 import X from 'lucide-react-native/icons/x'
 import type { CityResponse } from '@tazakhabar/shared-types'
-import { colors, HIT_TARGET, radius, space } from '../theme/tokens'
+import { useTheme } from '../preferences/ThemePreferenceContext'
+import { HIT_TARGET, radius, space, type AppColors } from '../theme/tokens'
 import { iconStroke } from '../theme/categoryIcons'
 
 type Props = {
@@ -27,6 +28,8 @@ export function filterCities(cities: CityResponse[], query: string): CityRespons
 export function CitySearch({ value, onChange }: Props) {
   const [focused, setFocused] = useState(false)
   const hasQuery = value.length > 0
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
 
   return (
     <View style={[styles.field, focused ? styles.fieldFocused : null]}>
@@ -67,50 +70,52 @@ export function CitySearch({ value, onChange }: Props) {
   )
 }
 
-const styles = StyleSheet.create({
-  field: {
-    minHeight: 50,
-    borderRadius: radius.md,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.borderSolid,
-    paddingLeft: space.md,
-    paddingRight: space.xs,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space.sm,
-  },
-  fieldFocused: {
-    borderColor: colors.accent,
-  },
-  iconSlot: {
-    width: 20,
-    height: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  input: {
-    flex: 1,
-    fontSize: 16,
-    lineHeight: 22,
-    color: colors.text,
-    paddingVertical: 0,
-    minHeight: HIT_TARGET,
-    ...(Platform.OS === 'web'
-      ? {
-          outlineWidth: 0,
-          outlineStyle: 'solid' as const,
-          outlineColor: 'transparent',
-        }
-      : {}),
-  },
-  clear: {
-    width: HIT_TARGET,
-    height: HIT_TARGET,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  clearPressed: {
-    opacity: 0.7,
-  },
-})
+function createStyles(c: AppColors) {
+  return StyleSheet.create({
+    field: {
+      minHeight: 50,
+      borderRadius: radius.md,
+      backgroundColor: c.surface,
+      borderWidth: 1,
+      borderColor: c.borderSolid,
+      paddingLeft: space.md,
+      paddingRight: space.xs,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: space.sm,
+    },
+    fieldFocused: {
+      borderColor: c.accent,
+    },
+    iconSlot: {
+      width: 20,
+      height: 20,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    input: {
+      flex: 1,
+      fontSize: 16,
+      lineHeight: 22,
+      color: c.text,
+      paddingVertical: 0,
+      minHeight: HIT_TARGET,
+      ...(Platform.OS === 'web'
+        ? {
+            outlineWidth: 0,
+            outlineStyle: 'solid' as const,
+            outlineColor: 'transparent',
+          }
+        : {}),
+    },
+    clear: {
+      width: HIT_TARGET,
+      height: HIT_TARGET,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    clearPressed: {
+      opacity: 0.7,
+    },
+  })
+}

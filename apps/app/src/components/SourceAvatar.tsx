@@ -1,6 +1,8 @@
+import { useMemo } from 'react'
 import { StyleSheet, View } from 'react-native'
 import { Text } from '@gluestack-ui/themed'
-import { colors, radius } from '../theme/tokens'
+import { useTheme } from '../preferences/ThemePreferenceContext'
+import { radius, type AppColors } from '../theme/tokens'
 
 type Props = {
   name: string
@@ -19,6 +21,8 @@ function initialFor(name: string): string {
 
 /** Rounded source mark — first letter on a soft blue wash (no remote favicons). */
 export function SourceAvatar({ name, size = 22, shape = 'rounded' }: Props) {
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
   const glyph = initialFor(name)
   const corner = shape === 'circle' ? size / 2 : Math.max(radius.xs, size * 0.28)
   return (
@@ -46,11 +50,13 @@ export function SourceAvatar({ name, size = 22, shape = 'rounded' }: Props) {
   )
 }
 
-const styles = StyleSheet.create({
-  mark: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.accentSoft,
-    flexShrink: 0,
-  },
-})
+function createStyles(c: AppColors) {
+  return StyleSheet.create({
+    mark: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: c.accentSoft,
+      flexShrink: 0,
+    },
+  })
+}

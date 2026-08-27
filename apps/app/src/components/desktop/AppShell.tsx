@@ -1,7 +1,8 @@
-import { type ReactNode } from 'react'
+import { useMemo, type ReactNode } from 'react'
 import { StyleSheet, View } from 'react-native'
 import { isCompactNav, useBreakpoint } from '../../hooks/useBreakpoint'
-import { colors, SIDEBAR_WIDTH } from '../../theme/tokens'
+import { useTheme } from '../../preferences/ThemePreferenceContext'
+import { SIDEBAR_WIDTH, type AppColors } from '../../theme/tokens'
 import { ContentRail } from './ContentRail'
 
 type Props = {
@@ -16,6 +17,8 @@ type Props = {
  */
 export function AppShell({ children, sidebar }: Props): ReactNode {
   const bp = useBreakpoint()
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
 
   if (isCompactNav(bp)) {
     return children
@@ -31,16 +34,18 @@ export function AppShell({ children, sidebar }: Props): ReactNode {
   )
 }
 
-const styles = StyleSheet.create({
-  row: {
-    flex: 1,
-    flexDirection: 'row',
-    backgroundColor: colors.background,
-  },
-  sidebar: {
-    width: SIDEBAR_WIDTH,
-  },
-  main: {
-    flex: 1,
-  },
-})
+function createStyles(c: AppColors) {
+  return StyleSheet.create({
+    row: {
+      flex: 1,
+      flexDirection: 'row',
+      backgroundColor: c.background,
+    },
+    sidebar: {
+      width: SIDEBAR_WIDTH,
+    },
+    main: {
+      flex: 1,
+    },
+  })
+}

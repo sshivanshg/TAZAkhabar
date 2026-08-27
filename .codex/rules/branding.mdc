@@ -7,7 +7,7 @@ alwaysApply: true
 
 - The product name is **TazaKhabar**. Use this exact capitalization in all reader-facing and admin-facing text, titles, manifests, and documentation.
 - Use `tazakhabar` for new slugs, package names, storage keys, and non-secret identifiers. Do not add new `tazakhabar` names.
-- The reader is a calm, accessible light interface for a 40+ audience. Its primary blue is `#155EEF`; use saffron `#FFB000` sparingly for freshness or breaking-news signals, not routine primary controls.
+- The reader is a calm, accessible interface for a 40+ audience with Light / Dark / System appearance. Primary blue fill is `#155EEF`; use saffron `#FFB000` sparingly for freshness or breaking-news signals, not routine primary controls. Both color schemes must keep WCAG AA contrast.
 - Source brand assets from `apps/app/assets/tazakhabar-app-icon.svg` and the exports documented in `docs/brand.md`. Do not introduce an alternate mark.
 - Preserve 16px minimum body text, WCAG AA contrast, and 44px minimum tap targets when applying brand changes.
 - Legacy `TazaKhabar.Api` namespaces and applied migrations are implementation history; do not rename or edit them solely for branding.

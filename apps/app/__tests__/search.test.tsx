@@ -3,6 +3,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context'
 import type { ArticleResponse, CityResponse, PagedArticlesResponse } from '@tazakhabar/shared-types'
 import { FeedPreferencesProvider } from '../src/preferences/FeedPreferencesContext'
 import { LanguagePreferenceProvider } from '../src/preferences/LanguagePreferenceContext'
+import { ThemePreferenceProvider } from '../src/preferences/ThemePreferenceContext'
 
 const mockPush = jest.fn()
 const mockReplace = jest.fn()
@@ -163,9 +164,11 @@ function renderDiscover() {
       }}
     >
       <FeedPreferencesProvider>
-        <LanguagePreferenceProvider>
-          <DiscoverScreen />
-        </LanguagePreferenceProvider>
+        <ThemePreferenceProvider>
+          <LanguagePreferenceProvider>
+            <DiscoverScreen />
+          </LanguagePreferenceProvider>
+        </ThemePreferenceProvider>
       </FeedPreferencesProvider>
     </SafeAreaProvider>,
   )

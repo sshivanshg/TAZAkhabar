@@ -1,8 +1,10 @@
+import { useMemo } from 'react'
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native'
 import { Text } from '@gluestack-ui/themed'
 import Ellipsis from 'lucide-react-native/icons/ellipsis'
 import type { ArticleResponse } from '@tazakhabar/shared-types'
-import { colors, HIT_TARGET, radius, space, typography } from '../theme/tokens'
+import { useTheme } from '../preferences/ThemePreferenceContext'
+import { HIT_TARGET, radius, space, typography, type AppColors } from '../theme/tokens'
 import { iconStroke } from '../theme/categoryIcons'
 import { formatRelativeTime } from '../utils/relativeTime'
 import { SourceAvatar } from './SourceAvatar'
@@ -17,6 +19,9 @@ const CARD_WIDTH = 220
 
 /** Horizontal related-story strip under a featured card (Google News cluster). */
 export function RelatedStoriesStrip({ articles, onPress, onMorePress }: Props) {
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
+
   if (articles.length === 0) {
     return null
   }
@@ -76,62 +81,64 @@ export function RelatedStoriesStrip({ articles, onPress, onMorePress }: Props) {
   )
 }
 
-const styles = StyleSheet.create({
-  row: {
-    paddingHorizontal: space.screen,
-    paddingTop: space.xs,
-    paddingBottom: space.md,
-    gap: space.sm,
-  },
-  card: {
-    width: CARD_WIDTH,
-    minHeight: 148,
-    padding: space.sm,
-    borderRadius: radius.lg,
-    backgroundColor: colors.surface,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
-    gap: 8,
-  },
-  pressed: {
-    opacity: 0.92,
-    transform: [{ scale: 0.985 }],
-  },
-  sourceRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  source: {
-    flex: 1,
-    minWidth: 0,
-    color: colors.textMuted,
-    fontSize: typography.label.fontSize,
-    lineHeight: typography.label.lineHeight,
-    fontWeight: '600',
-  },
-  headline: {
-    color: colors.text,
-    fontSize: 15,
-    lineHeight: 20,
-    fontWeight: '700',
-    letterSpacing: -0.2,
-    flexGrow: 1,
-  },
-  meta: {
-    color: colors.textMuted,
-    fontSize: typography.label.fontSize,
-    lineHeight: typography.label.lineHeight,
-    fontWeight: '500',
-  },
-  more: {
-    width: HIT_TARGET * 0.64,
-    height: HIT_TARGET * 0.64,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: radius.full,
-  },
-  morePressed: {
-    backgroundColor: colors.surfaceRaised,
-  },
-})
+function createStyles(c: AppColors) {
+  return StyleSheet.create({
+    row: {
+      paddingHorizontal: space.screen,
+      paddingTop: space.xs,
+      paddingBottom: space.md,
+      gap: space.sm,
+    },
+    card: {
+      width: CARD_WIDTH,
+      minHeight: 148,
+      padding: space.sm,
+      borderRadius: radius.lg,
+      backgroundColor: c.surface,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: c.border,
+      gap: 8,
+    },
+    pressed: {
+      opacity: 0.92,
+      transform: [{ scale: 0.985 }],
+    },
+    sourceRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+    },
+    source: {
+      flex: 1,
+      minWidth: 0,
+      color: c.textMuted,
+      fontSize: typography.label.fontSize,
+      lineHeight: typography.label.lineHeight,
+      fontWeight: '600',
+    },
+    headline: {
+      color: c.text,
+      fontSize: 15,
+      lineHeight: 20,
+      fontWeight: '700',
+      letterSpacing: -0.2,
+      flexGrow: 1,
+    },
+    meta: {
+      color: c.textMuted,
+      fontSize: typography.label.fontSize,
+      lineHeight: typography.label.lineHeight,
+      fontWeight: '500',
+    },
+    more: {
+      width: HIT_TARGET * 0.64,
+      height: HIT_TARGET * 0.64,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: radius.full,
+    },
+    morePressed: {
+      backgroundColor: c.surfaceRaised,
+    },
+  })
+}

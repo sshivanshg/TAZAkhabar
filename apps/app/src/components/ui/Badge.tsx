@@ -1,6 +1,8 @@
+import { useMemo } from 'react'
 import { StyleSheet, View } from 'react-native'
 import { Text } from '@gluestack-ui/themed'
-import { colors, radius, space, typography } from '../../theme/tokens'
+import { useTheme } from '../../preferences/ThemePreferenceContext'
+import { radius, space, typography, type AppColors } from '../../theme/tokens'
 
 type Props = {
   label: string
@@ -10,6 +12,8 @@ type Props = {
 
 /** Shared category pill — identical size/weight on hero and list cards. */
 export function Badge({ label, variant = 'filled' }: Props) {
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
   const filled = variant === 'filled'
   return (
     <View
@@ -31,21 +35,23 @@ export function Badge({ label, variant = 'filled' }: Props) {
   )
 }
 
-const styles = StyleSheet.create({
-  base: {
-    alignSelf: 'flex-start',
-    paddingHorizontal: space.xs + 4,
-    paddingVertical: 4,
-    borderRadius: radius.full,
-    maxWidth: '100%',
-    borderWidth: StyleSheet.hairlineWidth,
-  },
-  filled: {
-    backgroundColor: colors.accent,
-    borderColor: colors.accent,
-  },
-  soft: {
-    backgroundColor: colors.accentSoft,
-    borderColor: 'rgba(36, 76, 255, 0.08)',
-  },
-})
+function createStyles(c: AppColors) {
+  return StyleSheet.create({
+    base: {
+      alignSelf: 'flex-start',
+      paddingHorizontal: space.xs + 4,
+      paddingVertical: 4,
+      borderRadius: radius.full,
+      maxWidth: '100%',
+      borderWidth: StyleSheet.hairlineWidth,
+    },
+    filled: {
+      backgroundColor: c.accentFill,
+      borderColor: c.accentFill,
+    },
+    soft: {
+      backgroundColor: c.accentSoft,
+      borderColor: c.badgeSoftBorder,
+    },
+  })
+}

@@ -15,15 +15,15 @@ import { ScreenErrorBoundary } from '../../src/components/ScreenErrorBoundary'
 import { TabScreenShell } from '../../src/components/TabScreenShell'
 import type { BottomSheetSection } from '../../src/components/ui/BottomSheet'
 import { EmptyState } from '../../src/components/ui/EmptyState'
+import { useTheme } from '../../src/preferences/ThemePreferenceContext'
 import {
   type BookmarkSnapshot,
   getBookmarks,
   removeBookmark,
 } from '../../src/storage/bookmarks'
-import { colors, radius, space, typography } from '../../src/theme/tokens'
+import { radius, space, type AppColors } from '../../src/theme/tokens'
 import { useTabBarClearance } from '../../src/theme/useTabBarClearance'
 import { isDesktopLayout, useBreakpoint } from '../../src/hooks/useBreakpoint'
-import { iconStroke } from '../../src/theme/categoryIcons'
 import { articleRouteParams } from '../../src/utils/articleRouteParams'
 
 export default function BookmarksScreen() {
@@ -41,6 +41,8 @@ function BookmarksBody() {
   const insets = useSafeAreaInsets()
   const tabClearance = useTabBarClearance()
   const desktop = isDesktopLayout(useBreakpoint())
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
   const [bookmarks, setBookmarks] = useState<BookmarkSnapshot[]>([])
   const [ready, setReady] = useState(false)
   const [actionItem, setActionItem] = useState<BookmarkSnapshot | null>(null)
@@ -222,38 +224,40 @@ function BookmarksBody() {
   )
 }
 
-const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  header: {
-    paddingHorizontal: space.screen,
-    paddingBottom: space.sm,
-  },
-  list: {
-    paddingHorizontal: space.screen,
-    flexGrow: 1,
-  },
-  iconWrap: {
-    width: 64,
-    height: 64,
-    borderRadius: radius.full,
-    backgroundColor: colors.accentSoft,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 8,
-  },
-  removeBtn: {
-    alignSelf: 'flex-start',
-    minHeight: 44,
-    justifyContent: 'center',
-    paddingVertical: space.xs,
-    paddingHorizontal: space.xxs,
-    marginBottom: space.sm,
-    marginTop: -space.xs,
-  },
-  removePressed: {
-    opacity: 0.7,
-  },
-})
+function createStyles(c: AppColors) {
+  return StyleSheet.create({
+    root: {
+      flex: 1,
+      backgroundColor: c.background,
+    },
+    header: {
+      paddingHorizontal: space.screen,
+      paddingBottom: space.sm,
+    },
+    list: {
+      paddingHorizontal: space.screen,
+      flexGrow: 1,
+    },
+    iconWrap: {
+      width: 64,
+      height: 64,
+      borderRadius: radius.full,
+      backgroundColor: c.accentSoft,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: 8,
+    },
+    removeBtn: {
+      alignSelf: 'flex-start',
+      minHeight: 44,
+      justifyContent: 'center',
+      paddingVertical: space.xs,
+      paddingHorizontal: space.xxs,
+      marginBottom: space.sm,
+      marginTop: -space.xs,
+    },
+    removePressed: {
+      opacity: 0.7,
+    },
+  })
+}

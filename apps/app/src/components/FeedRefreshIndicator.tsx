@@ -1,9 +1,14 @@
+import { useMemo } from 'react'
 import { StyleSheet } from 'react-native'
 import { MotiView } from 'moti'
-import { colors, radius } from '../theme/tokens'
+import { useTheme } from '../preferences/ThemePreferenceContext'
+import { radius, type AppColors } from '../theme/tokens'
 
 /** Pull-to-refresh indicator — accent bar pulse, not the system spinner. */
 export function FeedRefreshIndicator({ visible }: { visible: boolean }) {
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
+
   if (!visible) {
     return null
   }
@@ -32,17 +37,19 @@ export function FeedRefreshIndicator({ visible }: { visible: boolean }) {
   )
 }
 
-const styles = StyleSheet.create({
-  wrap: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 10,
-    backgroundColor: colors.background,
-  },
-  bar: {
-    height: 2,
-    width: 48,
-    borderRadius: radius.full,
-    backgroundColor: colors.accent,
-  },
-})
+function createStyles(c: AppColors) {
+  return StyleSheet.create({
+    wrap: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: 10,
+      backgroundColor: c.background,
+    },
+    bar: {
+      height: 2,
+      width: 48,
+      borderRadius: radius.full,
+      backgroundColor: c.accent,
+    },
+  })
+}

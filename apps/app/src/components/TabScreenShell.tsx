@@ -1,8 +1,9 @@
-import { type ReactNode, useEffect, useState } from 'react'
+import { type ReactNode, useEffect, useMemo, useState } from 'react'
 import { Platform, StyleSheet, View } from 'react-native'
 import { useIsFocused } from '@react-navigation/native'
 import { MotiView } from 'moti'
-import { colors } from '../theme/tokens'
+import { useTheme } from '../preferences/ThemePreferenceContext'
+import { type AppColors } from '../theme/tokens'
 
 type Props = {
   children: ReactNode
@@ -16,6 +17,8 @@ type Props = {
 export function TabScreenShell({ children }: Props) {
   const focused = useIsFocused()
   const [mounted, setMounted] = useState(focused)
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
 
   useEffect(() => {
     if (focused) {
@@ -54,15 +57,17 @@ export function TabScreenShell({ children }: Props) {
   )
 }
 
-const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  shown: {
-    display: 'flex',
-  },
-  hidden: {
-    display: 'none',
-  },
-})
+function createStyles(c: AppColors) {
+  return StyleSheet.create({
+    root: {
+      flex: 1,
+      backgroundColor: c.background,
+    },
+    shown: {
+      display: 'flex',
+    },
+    hidden: {
+      display: 'none',
+    },
+  })
+}

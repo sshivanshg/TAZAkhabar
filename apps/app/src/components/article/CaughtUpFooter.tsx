@@ -1,6 +1,8 @@
+import { useMemo } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
+import { useTheme } from '../../preferences/ThemePreferenceContext'
 import { HIT_TARGET } from '../../theme/tokens'
-import { readerColors } from '../../theme/readerTokens'
+import type { ReaderColors } from '../../theme/readerTokens'
 import { pressableState, webFocusRing } from './focusStyle'
 
 type Props = {
@@ -8,6 +10,9 @@ type Props = {
 }
 
 export function CaughtUpFooter({ onBack }: Props) {
+  const { readerColors } = useTheme()
+  const styles = useMemo(() => createStyles(readerColors), [readerColors])
+
   return (
     <View testID="caught-up" style={styles.wrap}>
       <View style={styles.rule} />
@@ -22,7 +27,7 @@ export function CaughtUpFooter({ onBack }: Props) {
           return [
             styles.btn,
             pressed ? styles.pressed : null,
-            webFocusRing(Boolean(focused)),
+            webFocusRing(Boolean(focused), readerColors),
           ]
         }}
       >
@@ -32,49 +37,51 @@ export function CaughtUpFooter({ onBack }: Props) {
   )
 }
 
-const styles = StyleSheet.create({
-  wrap: {
-    flexGrow: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 24,
-    paddingTop: 24,
-    paddingBottom: 24,
-    gap: 8,
-  },
-  rule: {
-    width: 48,
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: readerColors.sheetBorder,
-    marginBottom: 16,
-  },
-  title: {
-    color: readerColors.text,
-    fontSize: 20,
-    fontWeight: '700',
-    letterSpacing: -0.3,
-  },
-  body: {
-    color: readerColors.textMuted,
-    fontSize: 15,
-    marginBottom: 8,
-  },
-  btn: {
-    minHeight: HIT_TARGET,
-    paddingHorizontal: 18,
-    borderRadius: 12,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: readerColors.sheetBorder,
-    backgroundColor: readerColors.sheet,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  pressed: {
-    opacity: 0.8,
-  },
-  btnLabel: {
-    color: readerColors.text,
-    fontSize: 15,
-    fontWeight: '600',
-  },
-})
+function createStyles(c: ReaderColors) {
+  return StyleSheet.create({
+    wrap: {
+      flexGrow: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: 24,
+      paddingTop: 24,
+      paddingBottom: 24,
+      gap: 8,
+    },
+    rule: {
+      width: 48,
+      height: StyleSheet.hairlineWidth,
+      backgroundColor: c.sheetBorder,
+      marginBottom: 16,
+    },
+    title: {
+      color: c.text,
+      fontSize: 20,
+      fontWeight: '700',
+      letterSpacing: -0.3,
+    },
+    body: {
+      color: c.textMuted,
+      fontSize: 15,
+      marginBottom: 8,
+    },
+    btn: {
+      minHeight: HIT_TARGET,
+      paddingHorizontal: 18,
+      borderRadius: 12,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: c.sheetBorder,
+      backgroundColor: c.sheet,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    pressed: {
+      opacity: 0.8,
+    },
+    btnLabel: {
+      color: c.text,
+      fontSize: 15,
+      fontWeight: '600',
+    },
+  })
+}

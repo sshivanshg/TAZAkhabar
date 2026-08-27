@@ -1,9 +1,10 @@
-import { type ComponentType } from 'react'
+import { type ComponentType, useMemo } from 'react'
 import { Modal, Pressable, StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Text } from '@gluestack-ui/themed'
 import { MotiView } from 'moti'
-import { colors, HIT_TARGET, radius, space, typography } from '../../theme/tokens'
+import { useTheme } from '../../preferences/ThemePreferenceContext'
+import { HIT_TARGET, radius, space, typography, type AppColors } from '../../theme/tokens'
 import { iconStroke } from '../../theme/categoryIcons'
 
 type IconProps = { size?: number; strokeWidth?: number; color?: string; style?: object }
@@ -45,6 +46,8 @@ export function BottomSheet({
   showCancel = false,
 }: Props) {
   const insets = useSafeAreaInsets()
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
   const resolvedSections: BottomSheetSection[] =
     sections ??
     (items && items.length > 0 ? [{ key: 'default', items }] : [])
@@ -185,87 +188,89 @@ export function ActionSheet(props: {
   return <BottomSheet showCancel {...props} />
 }
 
-const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    justifyContent: 'flex-end',
-    pointerEvents: 'box-none',
-  },
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(16, 24, 40, 0.42)',
-  },
-  sheetWrap: {
-    paddingHorizontal: 0,
-    gap: space.xs,
-  },
-  sheet: {
-    backgroundColor: colors.surface,
-    borderTopLeftRadius: radius.sheet,
-    borderTopRightRadius: radius.sheet,
-    overflow: 'hidden',
-    paddingBottom: space.sm,
-  },
-  handle: {
-    alignSelf: 'center',
-    width: 36,
-    height: 4,
-    borderRadius: radius.full,
-    backgroundColor: colors.borderSolid,
-    marginTop: space.sm,
-    marginBottom: space.xs,
-  },
-  title: {
-    paddingHorizontal: space.lg,
-    paddingBottom: space.sm,
-  },
-  sectionDivider: {
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: colors.border,
-    marginVertical: space.xxs,
-    marginHorizontal: space.lg,
-  },
-  row: {
-    minHeight: 52,
-    paddingHorizontal: space.lg,
-    paddingVertical: space.xs,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space.md,
-  },
-  rowDanger: {
-    backgroundColor: 'transparent',
-  },
-  rowPressed: {
-    backgroundColor: colors.surfaceRaised,
-  },
-  rowDangerPressed: {
-    backgroundColor: colors.destructiveSoft,
-  },
-  rowIcon: {
-    marginRight: 0,
-  },
-  rowIconSpacer: {
-    width: 22,
-  },
-  rowCopy: {
-    flex: 1,
-    minWidth: 0,
-    gap: 2,
-  },
-  rowLabel: {
-    flexShrink: 1,
-  },
-  cancel: {
-    minHeight: HIT_TARGET,
-    marginHorizontal: space.sm,
-    borderRadius: radius.full,
-    backgroundColor: colors.surfaceRaised,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: space.md,
-  },
-  cancelPressed: {
-    opacity: 0.85,
-  },
-})
+function createStyles(c: AppColors) {
+  return StyleSheet.create({
+    root: {
+      flex: 1,
+      justifyContent: 'flex-end',
+      pointerEvents: 'box-none',
+    },
+    overlay: {
+      ...StyleSheet.absoluteFillObject,
+      backgroundColor: c.overlay,
+    },
+    sheetWrap: {
+      paddingHorizontal: 0,
+      gap: space.xs,
+    },
+    sheet: {
+      backgroundColor: c.surface,
+      borderTopLeftRadius: radius.sheet,
+      borderTopRightRadius: radius.sheet,
+      overflow: 'hidden',
+      paddingBottom: space.sm,
+    },
+    handle: {
+      alignSelf: 'center',
+      width: 36,
+      height: 4,
+      borderRadius: radius.full,
+      backgroundColor: c.borderSolid,
+      marginTop: space.sm,
+      marginBottom: space.xs,
+    },
+    title: {
+      paddingHorizontal: space.lg,
+      paddingBottom: space.sm,
+    },
+    sectionDivider: {
+      height: StyleSheet.hairlineWidth,
+      backgroundColor: c.border,
+      marginVertical: space.xxs,
+      marginHorizontal: space.lg,
+    },
+    row: {
+      minHeight: 52,
+      paddingHorizontal: space.lg,
+      paddingVertical: space.xs,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: space.md,
+    },
+    rowDanger: {
+      backgroundColor: 'transparent',
+    },
+    rowPressed: {
+      backgroundColor: c.surfaceRaised,
+    },
+    rowDangerPressed: {
+      backgroundColor: c.destructiveSoft,
+    },
+    rowIcon: {
+      marginRight: 0,
+    },
+    rowIconSpacer: {
+      width: 22,
+    },
+    rowCopy: {
+      flex: 1,
+      minWidth: 0,
+      gap: 2,
+    },
+    rowLabel: {
+      flexShrink: 1,
+    },
+    cancel: {
+      minHeight: HIT_TARGET,
+      marginHorizontal: space.sm,
+      borderRadius: radius.full,
+      backgroundColor: c.surfaceRaised,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: space.md,
+    },
+    cancelPressed: {
+      opacity: 0.85,
+    },
+  })
+}

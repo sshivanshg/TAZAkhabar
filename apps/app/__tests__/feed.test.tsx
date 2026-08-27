@@ -4,6 +4,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context'
 import type { ArticleResponse, CityResponse, PagedArticlesResponse } from '@tazakhabar/shared-types'
 import { FeedPreferencesProvider } from '../src/preferences/FeedPreferencesContext'
 import { LanguagePreferenceProvider } from '../src/preferences/LanguagePreferenceContext'
+import { ThemePreferenceProvider } from '../src/preferences/ThemePreferenceContext'
 import { ERROR_COLUMN_MAX } from '../src/theme/tokens'
 
 const mockPush = jest.fn()
@@ -178,9 +179,11 @@ function renderFeed() {
       }}
     >
       <FeedPreferencesProvider>
-        <LanguagePreferenceProvider>
-          <FeedScreen />
-        </LanguagePreferenceProvider>
+        <ThemePreferenceProvider>
+          <LanguagePreferenceProvider>
+            <FeedScreen />
+          </LanguagePreferenceProvider>
+        </ThemePreferenceProvider>
       </FeedPreferencesProvider>
     </SafeAreaProvider>,
   )
