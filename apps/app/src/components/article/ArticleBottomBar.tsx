@@ -6,19 +6,15 @@ import { ArticleActions } from './ArticleActions'
 type Props = {
   visible: boolean
   bookmarked: boolean
-  hasSource: boolean
   onShare: () => void
   onSave: () => void
-  onReadSource?: () => void
 }
 
 export function ArticleBottomBar({
   visible,
   bookmarked,
-  hasSource,
   onShare,
   onSave,
-  onReadSource,
 }: Props) {
   const insets = useSafeAreaInsets()
   if (!visible) {
@@ -38,10 +34,8 @@ export function ArticleBottomBar({
       <ArticleActions
         variant="bar"
         bookmarked={bookmarked}
-        hasSource={hasSource}
         onShare={onShare}
         onSave={onSave}
-        onReadSource={onReadSource}
       />
     </View>
   )

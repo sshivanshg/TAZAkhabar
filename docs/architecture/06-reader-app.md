@@ -1,7 +1,7 @@
 # Reader app
 
 > **Living doc** — update when Expo routes, city/feed/share behavior, or desktop web layer change.  
-> **Last verified against:** 2026-08-26 (editorial article feed)
+> **Last verified against:** 2026-08-26 (single original-article CTA)
 
 ## Purpose
 
@@ -138,7 +138,7 @@ Manual verification still required before claiming a comprehensive a11y sweep is
 - List payloads omit `body`; the reader shows full plain-text `body` when `GET /api/articles/{id}` returns it, otherwise the summary. For translated reads, the API suppresses original-language `body` so the story shows translated headline/summary rather than mixing languages.
 - The article screen is a single continuous vertical feed (no snap paging, no nested body scroll). The opened story is first; later stories append as the reader approaches the bottom.
 - Active story is detected with FlatList viewability (and an IntersectionObserver sentinel on web). `6 of 8` updates from that active item. On web the `/article/:id` path is `history.replaceState`’d so Back still returns to the feed.
-- Source URLs are shown as “Read original article” near the headline and again in a compact attribution block. Only valid `https` URLs become links.
+- Source URLs appear once as “Read original article” near the headline. Publisher name stays in metadata as plain text. Only valid `https` URLs become that link.
 - Share prefers the platform share sheet, then copy-link; WhatsApp remains an optional destination rather than the only action.
 
 ## Related docs

@@ -76,40 +76,6 @@ function ArticleHero({
   )
 }
 
-function SourceLink({
-  label,
-  url,
-  onPress,
-}: {
-  label: string
-  url?: string
-  onPress: () => void
-}) {
-  const clickable = Boolean(url)
-
-  if (clickable) {
-    return (
-      <Pressable
-        accessibilityRole="link"
-        accessibilityLabel={`Source: ${label}`}
-        onPress={onPress}
-        style={(state) => {
-          const { pressed, focused } = pressableState(state)
-          return [
-            styles.sourcePress,
-            pressed ? styles.pressed : null,
-            webFocusRing(Boolean(focused)),
-          ]
-        }}
-      >
-        <Text style={styles.sourceLink}>Source: {label} ↗</Text>
-      </Pressable>
-    )
-  }
-
-  return <Text style={styles.meta}>Source: {label}</Text>
-}
-
 function ArticleStoryBase({
   article,
   cityLabel,
@@ -161,9 +127,6 @@ function ArticleStoryBase({
           </Text>
           {metaParts.length > 0 ? (
             <Text style={styles.meta}>{metaParts.join(' · ')}</Text>
-          ) : null}
-          {publisher ? (
-            <SourceLink label={publisher} url={sourceUrl} onPress={onReadSource} />
           ) : null}
         </View>
 
@@ -246,33 +209,10 @@ function ArticleStoryBase({
                 ? `This story is based on reporting published by ${publisher}.`
                 : 'This story is based on the original publisher’s reporting.'}
             </Text>
-            {sourceUrl ? (
-              <Pressable
-                accessibilityRole="link"
-                accessibilityLabel={`View full article from ${publisher ?? 'the publisher'}`}
-                onPress={onReadSource}
-                style={(state) => {
-                  const { pressed, focused } = pressableState(state)
-                  return [
-                    styles.attrLink,
-                    pressed ? styles.pressed : null,
-                    webFocusRing(Boolean(focused)),
-                  ]
-                }}
-              >
-                <Text style={styles.attrLinkText}>View full article ↗</Text>
-              </Pressable>
-            ) : null}
           </View>
         ) : null}
 
-        <ArticleActions
-          bookmarked={bookmarked}
-          hasSource={Boolean(sourceUrl)}
-          onShare={onShare}
-          onSave={onSave}
-          onReadSource={onReadSource}
-        />
+        <ArticleActions bookmarked={bookmarked} onShare={onShare} onSave={onSave} />
       </View>
     </View>
   )
@@ -331,17 +271,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     lineHeight: 22,
     marginTop: 4,
-  },
-  sourcePress: {
-    alignSelf: 'flex-start',
-    minHeight: 32,
-    justifyContent: 'center',
-  },
-  sourceLink: {
-    color: readerColors.accent,
-    fontSize: 15,
-    lineHeight: 22,
-    fontWeight: '600',
   },
   originalCta: {
     alignSelf: 'flex-start',
@@ -436,16 +365,6 @@ const styles = StyleSheet.create({
     color: readerColors.textSecondary,
     fontSize: 14,
     lineHeight: 21,
-  },
-  attrLink: {
-    alignSelf: 'flex-start',
-    minHeight: 36,
-    justifyContent: 'center',
-  },
-  attrLinkText: {
-    color: readerColors.accent,
-    fontSize: 14,
-    fontWeight: '700',
   },
   pressed: {
     opacity: 0.78,
