@@ -55,6 +55,7 @@ import {
 } from '../../src/utils/shareArticle'
 import { shareArticleToWhatsApp, isHttpsUrl } from '../../src/utils/shareToWhatsApp'
 import { replaceArticlePathId } from '../../src/utils/syncArticleUrl'
+import { attachWebArticlePaging } from '../../src/utils/pagedArticleScroll'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 export default function ArticleScreen() {
@@ -152,6 +153,8 @@ function ArticleFeedBody() {
   const loadingMoreRef = useRef(false)
   const hydratedIdsRef = useRef(new Set<number>())
   const listRef = useRef<FlatList<ArticleResponse>>(null)
+  const pageHeightRef = useRef(0)
+  const pageCountRef = useRef(1)
   const activeIndexRef = useRef(0)
   const headerElevatedRef = useRef(false)
   const noticeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -498,6 +501,45 @@ function ArticleFeedBody() {
   const padTop = articleChromeTop(insets.top)
   const padBottom = articleChromeBottom(insets.bottom)
   const listBottomPad = padBottom + 8
+  pageHeightRef.current = pageHeight
+  pageCountRef.current = visibleStack.length + 1
+
+  useEffect(() => {
+    if (Platform.OS !== 'web' || loading || stack.length === 0) {
+      return
+    }
+    let cleanup: (() => void) | undefined
+    let frame = 0
+    let tries = 0
+    const attach = () => {
+      if (typeof document === 'undefined') {
+        return false
+      }
+      const el = document.querySelector('[data-testid="article-feed"]')
+      if (!(el instanceof HTMLElement)) {
+        return false
+      }
+      cleanup = attachWebArticlePaging(el, {
+        getPageHeight: () => pageHeightRef.current,
+        getPageCount: () => pageCountRef.current,
+      })
+      return true
+    }
+    const tryAttach = () => {
+      if (attach()) {
+        return
+      }
+      if (tries < 12) {
+        tries += 1
+        frame = requestAnimationFrame(tryAttach)
+      }
+    }
+    tryAttach()
+    return () => {
+      cancelAnimationFrame(frame)
+      cleanup?.()
+    }
+  }, [loading, stack.length, error])
 
   if (loading && stack.length === 0) {
     return (
@@ -589,7 +631,7 @@ function ArticleFeedBody() {
         snapToInterval={pageHeight}
         snapToAlignment="start"
         disableIntervalMomentum
-        decelerationRate="fast"
+        decelerationRate="normal"
         getItemLayout={(_, index) => ({
           length: pageHeight,
           offset: pageHeight * index,

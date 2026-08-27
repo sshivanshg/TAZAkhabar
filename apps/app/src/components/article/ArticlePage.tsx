@@ -24,6 +24,7 @@ export function ArticlePage({
   return (
     <View testID="article-page" style={[styles.page, { height }]}>
       <ScrollView
+        testID="article-inner-scroll"
         style={styles.scroll}
         contentContainerStyle={{
           paddingTop: padTop,

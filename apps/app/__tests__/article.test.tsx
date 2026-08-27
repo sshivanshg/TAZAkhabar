@@ -147,7 +147,7 @@ describe('ArticleScreen', () => {
 
     expect(feed.props.pagingEnabled).toBe(true)
     expect(feed.props.disableIntervalMomentum).toBe(true)
-    expect(feed.props.decelerationRate).toBe('fast')
+    expect(feed.props.decelerationRate).toBe('normal')
     expect(feed.props.testID).toBe('article-feed')
     expect(pageHeight).toBeGreaterThan(0)
     expect(secondPage).toEqual({
