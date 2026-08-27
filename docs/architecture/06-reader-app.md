@@ -66,7 +66,7 @@ flowchart LR
 | `src/components/desktop/*` | Desktop shell / sidebar / hero row |
 | `src/storage/viewSession.ts` | Anonymous view sessions for trending |
 | `src/preferences/ThemePreferenceContext.tsx` | Light/dark/system preference → `useTheme()` (`colors`, `readerColors`, `shadows`) |
-| `src/theme/tokens.ts` | Shell palettes (light `#F4F6FA` / dark) + accent `#155EEF` (`accentFill`) |
+| `src/theme/tokens.ts` | Shell palettes (light `#F4F6FA` / Google News grey dark `#202124`) + accent `#155EEF` (`accentFill`) |
 | `src/theme/readerTokens.ts` | Article reader palette per color scheme |
 | `src/components/CompactArticleCard.tsx` | Google News–style list card (thumb when image, text-only otherwise) + See more + skeleton |
 | `src/components/BreakingHeroCard.tsx` | Top story: rounded image, circular source mark, headline/time |

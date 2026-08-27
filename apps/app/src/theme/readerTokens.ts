@@ -40,23 +40,23 @@ export const readerColorsLight: ReaderColors = {
 }
 
 export const readerColorsDark: ReaderColors = {
-  canvas: '#0F1419',
-  card: '#1A222D',
-  text: '#F2F4F7',
-  textMuted: '#98A2B3',
-  textSecondary: '#B0BAC8',
-  /** Brighter link blue for dark canvas; soft wash stays near-black for AA */
-  accent: '#5B8AFF',
-  accentSoft: '#050A14',
-  overlay: 'rgba(0, 0, 0, 0.35)',
-  sheet: '#1A222D',
-  sheetBorder: '#2A3441',
-  imageFallback: '#243040',
-  header: 'rgba(15, 20, 25, 0.94)',
-  headerSolid: 'rgba(15, 20, 25, 0.96)',
-  progressTrack: '#2A3441',
-  progressFill: '#5B8AFF',
-  attribution: '#141A22',
+  canvas: '#202124',
+  card: '#292A2D',
+  text: '#E8EAED',
+  textMuted: '#9AA0A6',
+  textSecondary: '#BDC1C6',
+  /** Material-ish link blue on grey dark surfaces */
+  accent: '#8AB4F8',
+  accentSoft: '#17181A',
+  overlay: 'rgba(0, 0, 0, 0.4)',
+  sheet: '#292A2D',
+  sheetBorder: '#3C4043',
+  imageFallback: '#3C4043',
+  header: 'rgba(32, 33, 36, 0.94)',
+  headerSolid: 'rgba(32, 33, 36, 0.96)',
+  progressTrack: '#3C4043',
+  progressFill: '#8AB4F8',
+  attribution: '#1A1B1E',
 }
 
 /** @deprecated Prefer useTheme().readerColors — light alias for migration / tests */
