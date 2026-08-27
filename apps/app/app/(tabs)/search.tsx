@@ -12,17 +12,12 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router'
 import { Box, Text, VStack } from '@gluestack-ui/themed'
 import ArrowLeft from 'lucide-react-native/icons/arrow-left'
-import Ban from 'lucide-react-native/icons/ban'
-import Bookmark from 'lucide-react-native/icons/bookmark'
-import EyeOff from 'lucide-react-native/icons/eye-off'
-import MessageCircle from 'lucide-react-native/icons/message-circle'
 import Search from 'lucide-react-native/icons/search'
 import SlidersHorizontal from 'lucide-react-native/icons/sliders-horizontal'
-import ThumbsDown from 'lucide-react-native/icons/thumbs-down'
-import ThumbsUp from 'lucide-react-native/icons/thumbs-up'
 import { MotiView } from 'moti'
 import type { ArticleResponse, CityResponse } from '@tazakhabar/shared-types'
 import { apiClient } from '../../src/api/client'
+import { buildStorySections } from '../../src/components/buildStorySections'
 import {
   ActionSheet,
   BottomSheet,
@@ -67,7 +62,8 @@ import {
 import { useTabBarClearance } from '../../src/theme/useTabBarClearance'
 import { isDesktopLayout, useBreakpoint } from '../../src/hooks/useBreakpoint'
 import { articleRouteParams } from '../../src/utils/articleRouteParams'
-import { shareArticleToWhatsApp } from '../../src/utils/shareToWhatsApp'
+import { openArticleSource } from '../../src/utils/openArticleSource'
+import { shareArticle } from '../../src/utils/shareArticle'
 
 export default function DiscoverScreen() {
   return (
@@ -109,7 +105,6 @@ function DiscoverBody() {
   const loadGenRef = useRef(0)
   // Only show back when Discover was opened from Home (not as the tab root).
   const showBack = params.from === 'home'
-  const shareLabel = Platform.OS === 'web' ? 'Share on WhatsApp' : 'Share'
 
   const refreshBookmarks = useCallback(async () => {
     const list = await getBookmarks()
@@ -267,86 +262,51 @@ function DiscoverBody() {
     const source = actionArticle.sourceName ?? 'this source'
     const saved =
       actionArticle.id != null && bookmarkedIds.has(actionArticle.id)
-    return [
-      {
-        key: 'share',
-        items: [
-          {
-            key: 'share',
-            label: shareLabel,
-            Icon: MessageCircle,
-            onPress: () => {
-              void shareArticleToWhatsApp({
-                headline: actionArticle.headline,
-                summary: actionArticle.summary,
-                sourceUrl: actionArticle.sourceUrl,
-              })
-            },
-          },
-        ],
+    return buildStorySections({
+      article: actionArticle,
+      saved,
+      onSave: () => {
+        void (async () => {
+          if (actionArticle.id == null) {
+            return
+          }
+          if (saved) {
+            await removeBookmark(actionArticle.id)
+          } else {
+            const snap = articleToBookmark(actionArticle, citySlug ?? undefined)
+            if (snap) {
+              await addBookmark(snap)
+            }
+          }
+          await refreshBookmarks()
+        })()
       },
-      {
-        key: 'save',
-        items: [
-          {
-            key: 'bookmark',
-            label: saved ? 'Remove bookmark' : 'Save',
-            Icon: Bookmark,
-            onPress: () => {
-              void (async () => {
-                if (actionArticle.id == null) {
-                  return
-                }
-                if (saved) {
-                  await removeBookmark(actionArticle.id)
-                } else {
-                  const snap = articleToBookmark(actionArticle, citySlug ?? undefined)
-                  if (snap) {
-                    await addBookmark(snap)
-                  }
-                }
-                await refreshBookmarks()
-              })()
-            },
-          },
-          {
-            key: 'more',
-            label: 'Show more like this',
-            Icon: ThumbsUp,
-            onPress: () => prefs.showMoreLikeThis(cat),
-          },
-          {
-            key: 'less',
-            label: 'Show less like this',
-            Icon: ThumbsDown,
-            onPress: () => prefs.showLessLikeThis(cat),
-          },
-          {
-            key: 'hide',
-            label: 'Hide this story',
-            Icon: EyeOff,
-            onPress: () => {
-              if (actionArticle.id != null) {
-                prefs.hideStory(actionArticle.id)
-              }
-            },
-          },
-        ],
+      onShare: () => {
+        void shareArticle({
+          headline: actionArticle.headline,
+          summary: actionArticle.summary,
+          sourceUrl: actionArticle.sourceUrl,
+        })
       },
-      {
-        key: 'danger',
-        items: [
-          {
-            key: 'block',
-            label: 'Block this source',
-            Icon: Ban,
-            destructive: true,
-            onPress: () => setBlockSourceName(source),
-          },
-        ],
+      onOpenSource: () => {
+        void openArticleSource(actionArticle.sourceUrl, {
+          articleId: actionArticle.id,
+          publisher: actionArticle.sourceName,
+        })
       },
-    ]
-  }, [actionArticle, bookmarkedIds, citySlug, prefs, refreshBookmarks, shareLabel])
+      onLike: () => prefs.showMoreLikeThis(cat),
+      onDislike: () => prefs.showLessLikeThis(cat),
+      onHide: () => {
+        if (actionArticle.id != null) {
+          prefs.hideStory(actionArticle.id)
+        }
+      },
+      onBlockSource: () => setBlockSourceName(source),
+      onFewerAboutTopic: cat
+        ? () => setBlockCategoryName(cat)
+        : undefined,
+    })
+  }, [actionArticle, bookmarkedIds, citySlug, prefs, refreshBookmarks])
 
   const filterItems: ActionSheetItem[] = useMemo(
     () => [
@@ -485,6 +445,12 @@ function DiscoverBody() {
                 onPress={openArticle}
                 onLongPress={desktop ? openStoryActions : setActionArticle}
                 onMorePress={desktop ? openStoryActions : setActionArticle}
+                onSeeMorePress={(article) => {
+                  const q = article.sourceName?.trim()
+                  if (q) {
+                    setQuery(q)
+                  }
+                }}
               />
             )
             if (!desktop) {
@@ -549,14 +515,12 @@ function DiscoverBody() {
         <StoryOptionsPopover
           visible={actionArticle != null}
           anchor={popoverAnchor}
-          title="Story options"
           sections={sheetSections}
           onClose={closeStoryActions}
         />
       ) : (
         <BottomSheet
           visible={actionArticle != null}
-          title="Story options"
           sections={sheetSections}
           onClose={() => setActionArticle(null)}
         />

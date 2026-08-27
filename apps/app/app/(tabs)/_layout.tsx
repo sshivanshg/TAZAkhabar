@@ -2,7 +2,6 @@ import { Tabs } from 'expo-router'
 import { Platform, StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import Bookmark from 'lucide-react-native/icons/bookmark'
-import Globe from 'lucide-react-native/icons/globe'
 import Home from 'lucide-react-native/icons/house'
 import User from 'lucide-react-native/icons/user'
 import { MotiView } from 'moti'
@@ -25,16 +24,16 @@ function TabIcon({
   return (
     <MotiView
       animate={{
-        opacity: focused ? 1 : 0.72,
         scale: focused ? 1 : 0.96,
+        backgroundColor: focused ? colors.accent : 'transparent',
       }}
       transition={{ type: 'timing', duration: 200 }}
-      style={[styles.tabIconWrap, focused ? styles.tabIconActive : null]}
+      style={styles.tabIconWrap}
     >
       <Icon
         size={22}
-        strokeWidth={iconStroke}
-        color={focused ? colors.accent : colors.textMuted}
+        strokeWidth={focused ? 2.15 : iconStroke}
+        color={focused ? colors.textOnAccent : colors.textMuted}
       />
     </MotiView>
   )
@@ -54,7 +53,6 @@ export default function TabsLayout() {
             headerTintColor: colors.text,
             headerTitleStyle: { fontWeight: '700', fontSize: 18, color: colors.text },
             headerShadowVisible: false,
-            // Not absolute — scene layout ends above the bar so content is never covered.
             tabBarStyle: {
               height: TAB_BAR_HEIGHT,
               marginHorizontal: 0,
@@ -80,7 +78,7 @@ export default function TabsLayout() {
             sceneStyle: {
               backgroundColor: colors.background,
             },
-            animation: 'none',
+            animation: Platform.OS === 'web' ? 'none' : 'fade',
             freezeOnBlur: true,
             tabBarActiveTintColor: colors.accent,
             tabBarInactiveTintColor: colors.textMuted,
@@ -102,16 +100,6 @@ export default function TabsLayout() {
             }}
           />
           <Tabs.Screen
-            name="search"
-            options={{
-              title: 'Discover',
-              headerShown: false,
-              tabBarLabel: 'Discover',
-              tabBarIcon: ({ focused }) => <TabIcon Icon={Globe} focused={focused} />,
-              tabBarAccessibilityLabel: 'Discover stories',
-            }}
-          />
-          <Tabs.Screen
             name="bookmarks"
             options={{
               title: 'Bookmarks',
@@ -127,6 +115,13 @@ export default function TabsLayout() {
               tabBarLabel: 'Profile',
               tabBarIcon: ({ focused }) => <TabIcon Icon={User} focused={focused} />,
               tabBarAccessibilityLabel: 'Profile and settings',
+            }}
+          />
+          <Tabs.Screen
+            name="search"
+            options={{
+              href: null,
+              headerShown: false,
             }}
           />
           <Tabs.Screen
@@ -152,9 +147,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 16,
-    paddingHorizontal: 12,
-  },
-  tabIconActive: {
-    backgroundColor: colors.accentSoft,
+    paddingHorizontal: 16,
   },
 })

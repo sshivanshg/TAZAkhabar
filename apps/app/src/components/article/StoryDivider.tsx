@@ -22,8 +22,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
     paddingHorizontal: 24,
-    paddingTop: 40,
-    paddingBottom: 20,
+    paddingTop: 8,
+    paddingBottom: 12,
   },
   line: {
     flex: 1,

@@ -16,6 +16,7 @@ import { BreakingHeroCard } from './BreakingHeroCard'
 type Props = {
   articles: ArticleResponse[]
   onPress: (article: ArticleResponse) => void
+  onMorePress?: (article: ArticleResponse) => void
 }
 
 const CARD_GAP = space.sm
@@ -24,7 +25,7 @@ const DOT_INACTIVE = 5
 const DOT_ACTIVE_W = 16
 const DOT_H = 5
 
-export function BreakingNewsCarousel({ articles, onPress }: Props) {
+export function BreakingNewsCarousel({ articles, onPress, onMorePress }: Props) {
   const { width: screenWidth } = useWindowDimensions()
   const cardWidth = screenWidth - SIDE_PAD * 2
   const pageWidth = cardWidth + CARD_GAP
@@ -70,7 +71,13 @@ export function BreakingNewsCarousel({ articles, onPress }: Props) {
         onScrollEndDrag={onScroll}
         onMomentumScrollEnd={onScroll}
         renderItem={({ item, index }) => (
-          <BreakingHeroCard article={item} index={index} width={cardWidth} onPress={onPress} />
+          <BreakingHeroCard
+            article={item}
+            index={index}
+            width={cardWidth}
+            onPress={onPress}
+            onMorePress={onMorePress}
+          />
         )}
       />
       {articles.length > 1 ? (

@@ -8,10 +8,7 @@ import { iconStroke } from '../../theme/categoryIcons'
 import { readerColors } from '../../theme/readerTokens'
 import { pressableState, webFocusRing } from './focusStyle'
 
-export type ArticleActionsVariant = 'inline' | 'bar'
-
 type Props = {
-  variant?: ArticleActionsVariant
   bookmarked: boolean
   onShare: () => void
   onSave: () => void
@@ -22,7 +19,6 @@ type ActionProps = {
   accessibilityLabel: string
   onPress: () => void
   children: ReactNode
-  variant: ArticleActionsVariant
 }
 
 function ActionButton({
@@ -30,7 +26,6 @@ function ActionButton({
   accessibilityLabel,
   onPress,
   children,
-  variant,
 }: ActionProps) {
   return (
     <Pressable
@@ -39,42 +34,24 @@ function ActionButton({
       onPress={onPress}
       style={(state) => {
         const { pressed, focused } = pressableState(state)
-        return [
-          variant === 'bar' ? styles.barBtn : styles.inlineBtn,
-          pressed ? styles.pressed : null,
-          webFocusRing(Boolean(focused)),
-        ]
+        return [styles.btn, pressed ? styles.pressed : null, webFocusRing(Boolean(focused))]
       }}
     >
       {children}
-      <Text style={[styles.label, variant === 'bar' ? styles.barLabel : null]}>{label}</Text>
+      <Text style={styles.label}>{label}</Text>
     </Pressable>
   )
 }
 
-function ArticleActionsBase({
-  variant = 'inline',
-  bookmarked,
-  onShare,
-  onSave,
-}: Props) {
+function ArticleActionsBase({ bookmarked, onShare, onSave }: Props) {
   const SaveIcon = bookmarked ? BookmarkCheck : Bookmark
 
   return (
-    <View
-      style={variant === 'bar' ? styles.barRow : styles.inlineRow}
-      accessibilityRole="toolbar"
-    >
-      <ActionButton
-        variant={variant}
-        label="Share"
-        accessibilityLabel="Share"
-        onPress={onShare}
-      >
+    <View style={styles.row} accessibilityRole="toolbar">
+      <ActionButton label="Share" accessibilityLabel="Share" onPress={onShare}>
         <Share2 size={18} strokeWidth={iconStroke} color={readerColors.text} />
       </ActionButton>
       <ActionButton
-        variant={variant}
         label={bookmarked ? 'Saved' : 'Save'}
         accessibilityLabel={bookmarked ? 'Remove bookmark' : 'Save'}
         onPress={onSave}
@@ -93,30 +70,12 @@ function ArticleActionsBase({
 export const ArticleActions = memo(ArticleActionsBase)
 
 const styles = StyleSheet.create({
-  inlineRow: {
-    flexDirection: 'row',
-    gap: 8,
-    marginTop: 8,
-  },
-  barRow: {
+  row: {
     flexDirection: 'row',
     alignItems: 'stretch',
     justifyContent: 'space-around',
   },
-  inlineBtn: {
-    flex: 1,
-    minHeight: HIT_TARGET,
-    borderRadius: 12,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: readerColors.sheetBorder,
-    backgroundColor: readerColors.sheet,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexDirection: 'row',
-    gap: 8,
-    paddingHorizontal: 8,
-  },
-  barBtn: {
+  btn: {
     flex: 1,
     minHeight: HIT_TARGET,
     alignItems: 'center',
@@ -125,11 +84,6 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   label: {
-    color: readerColors.text,
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  barLabel: {
     fontSize: 12,
     fontWeight: '600',
     color: readerColors.textSecondary,

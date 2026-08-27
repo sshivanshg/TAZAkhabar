@@ -1,25 +1,20 @@
-import { StyleSheet, View } from 'react-native'
+import { Platform, StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { ARTICLE_BOTTOM_BAR_HEIGHT, readerColors } from '../../theme/readerTokens'
 import { ArticleActions } from './ArticleActions'
 
 type Props = {
-  visible: boolean
   bookmarked: boolean
   onShare: () => void
   onSave: () => void
 }
 
 export function ArticleBottomBar({
-  visible,
   bookmarked,
   onShare,
   onSave,
 }: Props) {
   const insets = useSafeAreaInsets()
-  if (!visible) {
-    return null
-  }
 
   return (
     <View
@@ -32,7 +27,6 @@ export function ArticleBottomBar({
       ]}
     >
       <ArticleActions
-        variant="bar"
         bookmarked={bookmarked}
         onShare={onShare}
         onSave={onSave}
@@ -43,7 +37,9 @@ export function ArticleBottomBar({
 
 const styles = StyleSheet.create({
   wrap: {
-    position: 'absolute',
+    // Web: fixed to the viewport so document/list growth cannot drag the bar.
+    // Native: absolute within the overflow-clipped article screen root.
+    position: Platform.OS === 'web' ? ('fixed' as 'absolute') : 'absolute',
     left: 0,
     right: 0,
     bottom: 0,

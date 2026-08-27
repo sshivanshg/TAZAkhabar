@@ -34,10 +34,12 @@ export function CaughtUpFooter({ onBack }: Props) {
 
 const styles = StyleSheet.create({
   wrap: {
+    flexGrow: 1,
     alignItems: 'center',
+    justifyContent: 'center',
     paddingHorizontal: 24,
-    paddingTop: 40,
-    paddingBottom: 48,
+    paddingTop: 24,
+    paddingBottom: 24,
     gap: 8,
   },
   rule: {

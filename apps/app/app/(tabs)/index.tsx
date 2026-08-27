@@ -3,15 +3,11 @@ import { FlatList, Platform, Pressable, RefreshControl, StyleSheet, useWindowDim
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router'
 import { Box, HStack, Text } from '@gluestack-ui/themed'
 import { MotiView } from 'moti'
-import Ban from 'lucide-react-native/icons/ban'
-import Bookmark from 'lucide-react-native/icons/bookmark'
-import EyeOff from 'lucide-react-native/icons/eye-off'
-import MessageCircle from 'lucide-react-native/icons/message-circle'
-import ThumbsDown from 'lucide-react-native/icons/thumbs-down'
-import ThumbsUp from 'lucide-react-native/icons/thumbs-up'
 import type { ArticleResponse, CityResponse } from '@tazakhabar/shared-types'
 import { apiClient } from '../../src/api/client'
 import { useAsyncResource } from '../../src/api/useAsyncResource'
+import { BreakingHeroCard } from '../../src/components/BreakingHeroCard'
+import { buildStorySections } from '../../src/components/buildStorySections'
 import {
   BottomSheet,
   type BottomSheetSection,
@@ -22,6 +18,7 @@ import {
   CompactArticleCard,
   CompactArticleCardSkeleton,
 } from '../../src/components/CompactArticleCard'
+import { RelatedStoriesStrip } from '../../src/components/RelatedStoriesStrip'
 import { ConfirmModal } from '../../src/components/ConfirmModal'
 import { AddToHomeBanner } from '../../src/components/AddToHomeBanner'
 import {
@@ -40,7 +37,6 @@ import { ScreenErrorBoundary } from '../../src/components/ScreenErrorBoundary'
 import { TabScreenShell } from '../../src/components/TabScreenShell'
 import { ErrorState } from '../../src/components/ui/ErrorState'
 import { EmptyState } from '../../src/components/ui/EmptyState'
-import { PrimaryButton } from '../../src/components/ui/PrimaryButton'
 import { useFeedPreferences } from '../../src/preferences/FeedPreferencesContext'
 import { useLanguagePreference } from '../../src/preferences/LanguagePreferenceContext'
 import {
@@ -66,15 +62,17 @@ import {
 import { useTabBarClearance } from '../../src/theme/useTabBarClearance'
 import { isDesktopLayout, useBreakpoint } from '../../src/hooks/useBreakpoint'
 import { articleRouteParams } from '../../src/utils/articleRouteParams'
-import { shareArticleToWhatsApp } from '../../src/utils/shareToWhatsApp'
-import { shareArticle } from '../../src/utils/shareArticle'
+import { buildMobileFeedRows } from '../../src/utils/feedLayout'
 import { openArticleSource } from '../../src/utils/openArticleSource'
+import { shareArticle } from '../../src/utils/shareArticle'
 
 type ListRow =
   | { kind: 'breaking'; key: 'breaking' }
   | { kind: 'trending'; key: 'trending' }
   | { kind: 'section'; key: 'section' }
   | { kind: 'empty'; key: 'empty' }
+  | { kind: 'featured'; key: string; article: ArticleResponse; index: number }
+  | { kind: 'related'; key: string; articles: ArticleResponse[] }
   | { kind: 'article'; key: string; article: ArticleResponse; index: number }
   | {
       kind: 'article-row'
@@ -373,21 +371,10 @@ function HomeFeedBody() {
   const hasMore = articles.length < total
 
   const listData: ListRow[] = useMemo(() => {
-    const rows: ListRow[] = []
     if (mobile) {
-      for (const [index, article] of visibleArticles.entries()) {
-        rows.push({
-          kind: 'article',
-          key: String(article.id ?? `article-${index}`),
-          article,
-          index,
-        })
-      }
-      if (!loading && visibleArticles.length === 0) {
-        rows.push({ kind: 'empty', key: 'empty' })
-      }
-      return rows
+      return buildMobileFeedRows(visibleArticles)
     }
+    const rows: ListRow[] = []
     if (breaking.length > 0) {
       rows.push({ kind: 'breaking', key: 'breaking' })
     }
@@ -455,7 +442,19 @@ function HomeFeedBody() {
     })
   }, [router, category])
 
-  const shareLabel = Platform.OS === 'web' ? 'Share on WhatsApp' : 'Share'
+  const goSeeMore = useCallback(
+    (article: ArticleResponse) => {
+      const q = article.sourceName?.trim()
+      router.push({
+        pathname: '/(tabs)/search',
+        params: {
+          from: 'home',
+          ...(q ? { q } : {}),
+        },
+      })
+    },
+    [router],
+  )
 
   const openStoryActions = useCallback((article: ArticleResponse) => {
     setActionArticle(article)
@@ -500,21 +499,8 @@ function HomeFeedBody() {
         onPress={openArticle}
         onLongPress={desktop ? openStoryActions : setActionArticle}
         onMorePress={desktop ? openStoryActions : setActionArticle}
+        onSeeMorePress={goSeeMore}
         saved={article.id != null && bookmarkedIds.has(article.id)}
-        onSavePress={mobile ? (item) => {
-          void (async () => {
-            if (item.id == null) return
-            if (bookmarkedIds.has(item.id)) {
-              await removeBookmark(item.id)
-            } else {
-              const snapshot = articleToBookmark(item, citySlug ?? undefined)
-              if (snapshot) await addBookmark(snapshot)
-            }
-            await refreshBookmarks()
-          })()
-        } : undefined}
-        onSharePress={mobile ? (item) => { void shareArticle(item) } : undefined}
-        onSourcePress={mobile ? (item) => { void openArticleSource(item.sourceUrl, { articleId: item.id, publisher: item.sourceName, storyIndex: index }) } : undefined}
       />
     </ArticleCardSlot>
   )
@@ -527,86 +513,51 @@ function HomeFeedBody() {
     const source = actionArticle.sourceName ?? 'this source'
     const saved =
       actionArticle.id != null && bookmarkedIds.has(actionArticle.id)
-    return [
-      {
-        key: 'share',
-        items: [
-          {
-            key: 'share',
-            label: shareLabel,
-            Icon: MessageCircle,
-            onPress: () => {
-              void shareArticleToWhatsApp({
-                headline: actionArticle.headline,
-                summary: actionArticle.summary,
-                sourceUrl: actionArticle.sourceUrl,
-              })
-            },
-          },
-        ],
+    return buildStorySections({
+      article: actionArticle,
+      saved,
+      onSave: () => {
+        void (async () => {
+          if (actionArticle.id == null) {
+            return
+          }
+          if (saved) {
+            await removeBookmark(actionArticle.id)
+          } else {
+            const snap = articleToBookmark(actionArticle, citySlug ?? undefined)
+            if (snap) {
+              await addBookmark(snap)
+            }
+          }
+          await refreshBookmarks()
+        })()
       },
-      {
-        key: 'save',
-        items: [
-          {
-            key: 'bookmark',
-            label: saved ? 'Remove bookmark' : 'Save',
-            Icon: Bookmark,
-            onPress: () => {
-              void (async () => {
-                if (actionArticle.id == null) {
-                  return
-                }
-                if (saved) {
-                  await removeBookmark(actionArticle.id)
-                } else {
-                  const snap = articleToBookmark(actionArticle, citySlug ?? undefined)
-                  if (snap) {
-                    await addBookmark(snap)
-                  }
-                }
-                await refreshBookmarks()
-              })()
-            },
-          },
-          {
-            key: 'more',
-            label: 'Show more like this',
-            Icon: ThumbsUp,
-            onPress: () => prefs.showMoreLikeThis(cat),
-          },
-          {
-            key: 'less',
-            label: 'Show less like this',
-            Icon: ThumbsDown,
-            onPress: () => prefs.showLessLikeThis(cat),
-          },
-          {
-            key: 'hide',
-            label: 'Hide this story',
-            Icon: EyeOff,
-            onPress: () => {
-              if (actionArticle.id != null) {
-                prefs.hideStory(actionArticle.id)
-              }
-            },
-          },
-        ],
+      onShare: () => {
+        void shareArticle({
+          headline: actionArticle.headline,
+          summary: actionArticle.summary,
+          sourceUrl: actionArticle.sourceUrl,
+        })
       },
-      {
-        key: 'danger',
-        items: [
-          {
-            key: 'block',
-            label: 'Block this source',
-            Icon: Ban,
-            destructive: true,
-            onPress: () => setBlockSourceName(source),
-          },
-        ],
+      onOpenSource: () => {
+        void openArticleSource(actionArticle.sourceUrl, {
+          articleId: actionArticle.id,
+          publisher: actionArticle.sourceName,
+        })
       },
-    ]
-  }, [actionArticle, bookmarkedIds, citySlug, prefs, refreshBookmarks, shareLabel])
+      onLike: () => prefs.showMoreLikeThis(cat),
+      onDislike: () => prefs.showLessLikeThis(cat),
+      onHide: () => {
+        if (actionArticle.id != null) {
+          prefs.hideStory(actionArticle.id)
+        }
+      },
+      onBlockSource: () => setBlockSourceName(source),
+      onFewerAboutTopic: cat
+        ? () => setBlockCategoryName(cat)
+        : undefined,
+    })
+  }, [actionArticle, bookmarkedIds, citySlug, prefs, refreshBookmarks])
 
   const onEndReached = () => {
     if (!loading && !refreshing && !loadingMore && hasMore) {
@@ -700,7 +651,11 @@ function HomeFeedBody() {
                         {desktop ? (
                           <DesktopHeroRow articles={breaking} onPress={openArticle} />
                         ) : (
-                          <BreakingNewsCarousel articles={breaking} onPress={openArticle} />
+                          <BreakingNewsCarousel
+                            articles={breaking}
+                            onPress={openArticle}
+                            onMorePress={setActionArticle}
+                          />
                         )}
                       </View>
                     )
@@ -747,16 +702,16 @@ function HomeFeedBody() {
                       ? 'Stories hidden by your filters'
                       : 'No stories yet'
                     const message = filteredAway
-                      ? 'Unblock sources or categories in Profile, or browse Discover for a wider view.'
+                      ? 'Unblock sources or categories in Profile, then pull to refresh.'
                       : `We do not have articles for ${cityTitle}${
                           category !== 'All' ? ` in ${category}` : ''
-                        } right now. Pull down to refresh, or browse Discover.`
+                        } right now. Pull down to refresh, or try another city.`
                     const primaryLabel = filteredAway
                       ? 'Open Profile'
-                      : 'Browse Discover'
-                    const secondaryLabel = filteredAway
-                      ? 'Browse Discover'
                       : 'Change city'
+                    const secondaryLabel = filteredAway
+                      ? 'Change city'
+                      : undefined
                     return (
                       <EmptyState
                         title={title}
@@ -765,14 +720,12 @@ function HomeFeedBody() {
                         onPrimary={
                           filteredAway
                             ? () => router.push('/(tabs)/profile')
-                            : goDiscover
+                            : () => router.push('/city')
                         }
                         primaryAccessibilityLabel={primaryLabel}
                         secondaryLabel={secondaryLabel}
                         onSecondary={
-                          filteredAway
-                            ? goDiscover
-                            : () => router.push('/city')
+                          filteredAway ? () => router.push('/city') : undefined
                         }
                         secondaryAccessibilityLabel={secondaryLabel}
                       />
@@ -788,6 +741,28 @@ function HomeFeedBody() {
                           <View style={styles.articleCell} />
                         )}
                       </View>
+                    )
+                  }
+                  if (item.kind === 'featured') {
+                    return (
+                      <View style={styles.featuredPad}>
+                        <BreakingHeroCard
+                          article={item.article}
+                          index={item.index}
+                          width={windowWidth - space.screen * 2}
+                          onPress={openArticle}
+                          onMorePress={setActionArticle}
+                        />
+                      </View>
+                    )
+                  }
+                  if (item.kind === 'related') {
+                    return (
+                      <RelatedStoriesStrip
+                        articles={item.articles}
+                        onPress={openArticle}
+                        onMorePress={setActionArticle}
+                      />
                     )
                   }
                   return renderArticleCard(item.article, item.index, styles.cardPad)
@@ -848,14 +823,12 @@ function HomeFeedBody() {
         <StoryOptionsPopover
           visible={actionArticle != null}
           anchor={popoverAnchor}
-          title="Story options"
           sections={storySections}
           onClose={closeStoryActions}
         />
       ) : (
         <BottomSheet
           visible={actionArticle != null}
-          title="Story options"
           sections={storySections}
           onClose={() => setActionArticle(null)}
         />
@@ -965,6 +938,11 @@ const styles = StyleSheet.create({
   },
   cardPad: {
     paddingHorizontal: space.screen,
+  },
+  featuredPad: {
+    paddingHorizontal: space.screen,
+    paddingTop: space.sm,
+    paddingBottom: space.xs,
   },
   articleRow: {
     flexDirection: 'row',

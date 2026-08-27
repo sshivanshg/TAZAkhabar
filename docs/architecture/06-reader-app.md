@@ -1,7 +1,7 @@
 # Reader app
 
 > **Living doc** — update when Expo routes, city/feed/share behavior, or desktop web layer change.  
-> **Last verified against:** 2026-08-27 (native feed shell and editorial cards)
+> **Last verified against:** 2026-08-27 (one article per viewport page)
 
 ## Purpose
 
@@ -10,11 +10,17 @@ Universal Expo client (`apps/app`) for readers: web/PWA now, native later. Phone
 Build **mobile-first** (touch targets, feed density, bottom tabs) while keeping breakpoint responsiveness: tablet pairing and desktop sidebar/rail remain active from `useBreakpoint`.
 
 On mobile, the top bar and category rail sit outside the only vertical scroll
-surface, the virtualized feed. The bottom tab bar remains in the navigator shell,
-so browser/body scrolling never moves either navigation region. Feed cards use a
-compact editorial hierarchy, clamped summary text, reserved 16:9 media, and
-inline Save, Share, and Read original actions. Tablet and desktop retain denser
-thumb-right rows and the desktop content rail.
+surface, the virtualized feed. The bottom tab bar remains in the navigator shell
+(Home, Bookmarks, Profile — Discover is hidden from the tab bar for now),
+so browser/body scrolling never moves either navigation region. Feed cards follow
+a Google News pattern on a TazaKhabar light canvas: photo stories at a regular
+cadence become featured (large rounded image, circular source mark); the next
+cluster is a horizontal related strip; remaining stories are compact rows with a
+source avatar, right-aligned thumb when present, and a See more pill. Save /
+Share / Read original live in the overflow sheet (Google News copy: Save for later,
+Go to [source], I like this), not on the card face. Tab scenes fade in on focus;
+articles open with a fade-from-bottom; city picker slides from the right. Tablet
+and desktop retain denser rows and the desktop content rail.
 
 ## Boundaries
 
@@ -40,11 +46,11 @@ flowchart LR
 | `index.tsx` | Boot: stored city → tabs else `/city` |
 | `city.tsx` | City picker (search, selected row, onboarding vs change-city copy) |
 | `(tabs)/index.tsx` | Home feed |
-| `(tabs)/search.tsx` | Discover / search |
+| `(tabs)/search.tsx` | Search / Discover (hidden from tab bar; opened from home search) |
 | `(tabs)/bookmarks.tsx` | Local bookmarks |
 | `(tabs)/profile.tsx` | Settings / change city |
 | `(tabs)/categories.tsx` | Hidden (`href: null`) |
-| `article/[id].tsx` | Continuous editorial article feed; hydrates `body` via `getArticle` |
+| `article/[id].tsx` | Continuous editorial article feed; hydrates `body` via `getArticle`; Back returns to Home |
 | `feed.tsx` | Legacy redirect → tabs |
 
 ### Modules
@@ -59,9 +65,11 @@ flowchart LR
 | `src/utils/shareToWhatsApp.ts` | Share deep link / intent |
 | `src/components/desktop/*` | Desktop shell / sidebar / hero row |
 | `src/storage/viewSession.ts` | Anonymous view sessions for trending |
-| `src/theme/tokens.ts` | Light shell `#F4F6FA`, accent `#2855E8` |
-| `src/components/CompactArticleCard.tsx` | Mobile editorial card + compact tablet/desktop row; matching skeleton |
-| `src/components/BreakingHeroCard.tsx` | Top story: rounded image above source/headline/time |
+| `src/theme/tokens.ts` | Light shell `#F4F6FA`, accent `#155EEF` |
+| `src/components/CompactArticleCard.tsx` | Google News–style list card (thumb when image, text-only otherwise) + See more + skeleton |
+| `src/components/BreakingHeroCard.tsx` | Top story: rounded image, circular source mark, headline/time |
+| `src/components/RelatedStoriesStrip.tsx` | Horizontal related cluster under a featured card |
+| `src/utils/feedLayout.ts` | Mixed mobile feed (featured / related / compact) |
 | `public/manifest.webmanifest`, `public/_headers` | PWA / Pages headers |
 
 Stack: Expo ~54, expo-router, Gluestack UI, Moti, AsyncStorage.
@@ -141,8 +149,8 @@ Manual verification still required before claiming a comprehensive a11y sweep is
 - MVP UI stays light + single blue accent until branding lands.
 - No login — city preference is device-local only.
 - List payloads omit `body`; the reader shows full plain-text `body` when `GET /api/articles/{id}` returns it, otherwise the summary. For translated reads, the API suppresses original-language `body` so the story shows translated headline/summary rather than mixing languages.
-- The article screen is a single continuous vertical feed (no snap paging, no nested body scroll). The opened story is first; later stories append as the reader approaches the bottom.
-- Active story is detected with FlatList viewability (and an IntersectionObserver sentinel on web). `6 of 8` updates from that active item. On web the `/article/:id` path is `history.replaceState`’d so Back still returns to the feed.
+- The article screen uses Reels-style vertical paging: each story is one viewport-tall page so two stories never share the screen. A scroll gesture snaps to the next story. Short stories pad to fill the page; longer stories scroll inside that page. Story content starts below the opaque top bar so hero images (including e-paper mastheads) do not bleed through the chrome. Publisher download CTAs such as “Download in high quality” are stripped from body copy. Later stories append as the reader approaches the end. The FlatList is the only paging surface (`flex: 1` inside an overflow-clipped root); the sticky top bar and compact bottom action bar sit outside that list (viewport-fixed on web) so chrome does not move with story content. Share and Save live only in that bottom bar — not duplicated in the story body.
+- Active story is detected with FlatList viewability (and an IntersectionObserver sentinel on web). `6 of 8` updates from that active item. On web the `/article/:id` path is `history.replaceState`’d while reading. The article Back control always `replace`s to Home (`/(tabs)`) so history never drops the reader on Discover.
 - Source URLs appear once as “Read original article” near the headline. Publisher name stays in metadata as plain text. Only valid `https` URLs become that link.
 - Share prefers the platform share sheet, then copy-link; WhatsApp remains an optional destination rather than the only action.
 

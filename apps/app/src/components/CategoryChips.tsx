@@ -1,6 +1,7 @@
 import { ScrollView, StyleSheet, View } from 'react-native'
 import {
   FEED_CATEGORIES,
+  FEED_CATEGORY_LABELS,
   type FeedCategory,
   colors,
   space,
@@ -36,10 +37,11 @@ export function CategoryChipRow({
       >
         {categories.map((category) => {
           const isActive = category === selected
+          const label = FEED_CATEGORY_LABELS[category]
           return (
             <Chip
               key={category}
-              label={category}
+              label={label}
               selected={isActive}
               onPress={() => onSelect(category)}
               onLongPress={
@@ -49,8 +51,8 @@ export function CategoryChipRow({
               }
               accessibilityLabel={
                 category === 'All'
-                  ? `Filter ${category}`
-                  : `Filter ${category}. Long press to block.`
+                  ? `Filter ${label}`
+                  : `Filter ${label}. Long press to block.`
               }
             />
           )
