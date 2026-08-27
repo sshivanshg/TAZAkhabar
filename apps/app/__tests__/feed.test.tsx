@@ -201,8 +201,11 @@ describe('FeedScreen', () => {
     expect(
       await screen.findByText('[MOCK] Local municipal budget approved for FY26'),
     ).toBeTruthy()
-    expect(screen.getByText('Top stories')).toBeTruthy()
-    expect(screen.getByText('For you')).toBeTruthy()
+    expect(screen.queryByText('Top stories')).toBeNull()
+    expect(screen.queryByText('For you')).toBeNull()
+    expect(screen.getAllByText('Read original')).toHaveLength(6)
+    expect(screen.getAllByText('Save')).toHaveLength(6)
+    expect(screen.getAllByText('Share')).toHaveLength(6)
     expect(screen.getByLabelText(/Change city/)).toBeTruthy()
     expect(screen.queryByTestId('article-row')).toBeNull()
   })
@@ -285,23 +288,23 @@ describe('FeedScreen', () => {
   it('opens city picker from city pill', async () => {
     renderFeed()
 
-    await screen.findByText('Top stories')
+    await screen.findByText('[MOCK] Local municipal budget approved for FY26')
     fireEvent.press(screen.getByLabelText(/Change city/))
 
     expect(mockPush).toHaveBeenCalledWith('/city')
   })
 
-  it('opens story actions on long press of a recommendation card', async () => {
+  it('opens story actions on long press of a mobile feed card', async () => {
     renderFeed()
 
     const card = await screen.findByLabelText(
-      /Story 6.*Open options for more actions/,
+      /Story 6.*Dainik Jagran/,
     )
     fireEvent(card, 'onLongPress')
 
-    // Native share label is "Share"; web uses "Share on WhatsApp".
-    expect(await screen.findByText('Share')).toBeTruthy()
-    expect(screen.getByText('Save')).toBeTruthy()
+    expect(await screen.findByText('Story options')).toBeTruthy()
+    expect(screen.getByLabelText('Share')).toBeTruthy()
+    expect(screen.getByLabelText('Save')).toBeTruthy()
     expect(screen.getByText('Show more like this')).toBeTruthy()
     expect(screen.getByText('Block this source')).toBeTruthy()
   })

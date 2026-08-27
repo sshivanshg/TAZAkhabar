@@ -1,7 +1,7 @@
 # Reader app
 
 > **Living doc** — update when Expo routes, city/feed/share behavior, or desktop web layer change.  
-> **Last verified against:** 2026-08-27 (single original-article CTA)
+> **Last verified against:** 2026-08-27 (native feed shell and editorial cards)
 
 ## Purpose
 
@@ -9,7 +9,12 @@ Universal Expo client (`apps/app`) for readers: web/PWA now, native later. Phone
 
 Build **mobile-first** (touch targets, feed density, bottom tabs) while keeping breakpoint responsiveness: tablet pairing and desktop sidebar/rail remain active from `useBreakpoint`.
 
-Feed chrome follows a Google News–like structure on light surfaces: centered brand top bar, pill category chips, image-above-text top stories, thumb-right list rows, accent section titles.
+On mobile, the top bar and category rail sit outside the only vertical scroll
+surface, the virtualized feed. The bottom tab bar remains in the navigator shell,
+so browser/body scrolling never moves either navigation region. Feed cards use a
+compact editorial hierarchy, clamped summary text, reserved 16:9 media, and
+inline Save, Share, and Read original actions. Tablet and desktop retain denser
+thumb-right rows and the desktop content rail.
 
 ## Boundaries
 
@@ -55,7 +60,7 @@ flowchart LR
 | `src/components/desktop/*` | Desktop shell / sidebar / hero row |
 | `src/storage/viewSession.ts` | Anonymous view sessions for trending |
 | `src/theme/tokens.ts` | Light shell `#F4F6FA`, accent `#2855E8` |
-| `src/components/CompactArticleCard.tsx` | Feed row: source, headline, thumb-right, time + more |
+| `src/components/CompactArticleCard.tsx` | Mobile editorial card + compact tablet/desktop row; matching skeleton |
 | `src/components/BreakingHeroCard.tsx` | Top story: rounded image above source/headline/time |
 | `public/manifest.webmanifest`, `public/_headers` | PWA / Pages headers |
 

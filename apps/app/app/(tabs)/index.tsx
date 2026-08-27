@@ -67,6 +67,8 @@ import { useTabBarClearance } from '../../src/theme/useTabBarClearance'
 import { isDesktopLayout, useBreakpoint } from '../../src/hooks/useBreakpoint'
 import { articleRouteParams } from '../../src/utils/articleRouteParams'
 import { shareArticleToWhatsApp } from '../../src/utils/shareToWhatsApp'
+import { shareArticle } from '../../src/utils/shareArticle'
+import { openArticleSource } from '../../src/utils/openArticleSource'
 
 type ListRow =
   | { kind: 'breaking'; key: 'breaking' }
@@ -142,6 +144,7 @@ function HomeFeedBody() {
   const bp = useBreakpoint()
   const desktop = isDesktopLayout(bp)
   const tablet = bp === 'tablet'
+  const mobile = bp === 'mobile'
   const { width: windowWidth } = useWindowDimensions()
   const [citySlug, setCitySlug] = useState<string | null>(params.city ?? null)
   const [cityMeta, setCityMeta] = useState<CityResponse | null>(null)
@@ -244,7 +247,7 @@ function HomeFeedBody() {
     },
     [citySlug, preferredLanguage, languageReady, trendingEpoch],
     {
-      enabled: Boolean(citySlug && languageReady),
+      enabled: Boolean(citySlug && languageReady && !mobile),
       initialData: EMPTY_ARTICLES,
     },
   )
@@ -371,6 +374,20 @@ function HomeFeedBody() {
 
   const listData: ListRow[] = useMemo(() => {
     const rows: ListRow[] = []
+    if (mobile) {
+      for (const [index, article] of visibleArticles.entries()) {
+        rows.push({
+          kind: 'article',
+          key: String(article.id ?? `article-${index}`),
+          article,
+          index,
+        })
+      }
+      if (!loading && visibleArticles.length === 0) {
+        rows.push({ kind: 'empty', key: 'empty' })
+      }
+      return rows
+    }
     if (breaking.length > 0) {
       rows.push({ kind: 'breaking', key: 'breaking' })
     }
@@ -408,7 +425,7 @@ function HomeFeedBody() {
       rows.push({ kind: 'empty', key: 'empty' })
     }
     return rows
-  }, [breaking, recommendations, loading, tablet, visibleTrending])
+  }, [breaking, recommendations, loading, mobile, tablet, visibleArticles, visibleTrending])
 
   const openArticle = useCallback(
     (article: ArticleResponse) => {
@@ -479,10 +496,25 @@ function HomeFeedBody() {
       <CompactArticleCard
         article={article}
         index={index}
-        density={desktop ? 'compact' : 'default'}
+        density={mobile ? 'default' : 'compact'}
         onPress={openArticle}
         onLongPress={desktop ? openStoryActions : setActionArticle}
         onMorePress={desktop ? openStoryActions : setActionArticle}
+        saved={article.id != null && bookmarkedIds.has(article.id)}
+        onSavePress={mobile ? (item) => {
+          void (async () => {
+            if (item.id == null) return
+            if (bookmarkedIds.has(item.id)) {
+              await removeBookmark(item.id)
+            } else {
+              const snapshot = articleToBookmark(item, citySlug ?? undefined)
+              if (snapshot) await addBookmark(snapshot)
+            }
+            await refreshBookmarks()
+          })()
+        } : undefined}
+        onSharePress={mobile ? (item) => { void shareArticle(item) } : undefined}
+        onSourcePress={mobile ? (item) => { void openArticleSource(item.sourceUrl, { articleId: item.id, publisher: item.sourceName, storyIndex: index }) } : undefined}
       />
     </ArticleCardSlot>
   )
@@ -620,12 +652,12 @@ function HomeFeedBody() {
 
         {(loading && !showContent) || !prefs.ready ? (
           <Box pt="$2" px="$4">
-            <Box h={media.heroHeight} bg={colors.skeleton} borderRadius={radius.lg} mb="$4" />
+            {!mobile ? <Box h={media.heroHeight} bg={colors.skeleton} borderRadius={radius.lg} mb="$4" /> : null}
             {[0, 1, 2].map((i) => (
               <CompactArticleCardSkeleton
                 key={i}
                 index={i}
-                density={desktop ? 'compact' : 'default'}
+                density={mobile ? 'default' : 'compact'}
               />
             ))}
           </Box>
@@ -777,10 +809,7 @@ function HomeFeedBody() {
                 ListFooterComponent={
                   loadingMore ? (
                     <Box px="$4" py="$2">
-                      <CompactArticleCardSkeleton
-                        index={0}
-                        density={desktop ? 'compact' : 'default'}
-                      />
+                      <CompactArticleCardSkeleton index={0} density={mobile ? 'default' : 'compact'} />
                     </Box>
                   ) : appendError ? (
                     <Pressable

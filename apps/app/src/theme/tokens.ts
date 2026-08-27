@@ -76,7 +76,7 @@ export const space = {
   xl: 24,
   xxl: 32,
   /** Screen edge inset used by cards / lists */
-  screen: 18,
+  screen: 16,
 } as const
 
 /** Image / media sizing used by cards and heroes. */
