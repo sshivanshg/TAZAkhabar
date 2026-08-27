@@ -256,6 +256,17 @@ public sealed class RssIngestService(
             return false;
         }
 
+        if (Uri.TryCreate(sourceUrl, UriKind.Absolute, out var sourceUri)
+            && HtmlArticleExtractor.LooksLikeEpaperLink(sourceUri))
+        {
+            return false;
+        }
+
+        if (HtmlArticleExtractor.LooksLikeEpaperHeadline(item.Title))
+        {
+            return false;
+        }
+
         if (await db.Articles.AnyAsync(a => a.SourceUrl == sourceUrl, cancellationToken))
         {
             return false;

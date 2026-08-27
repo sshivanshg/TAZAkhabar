@@ -1,7 +1,7 @@
 # API
 
 > **Living doc** — update when endpoints, auth, rate limits, CORS, or DI composition change.  
-> **Last verified against:** 2026-08-27 (OpenAiRewrite Enabled flag)
+> **Last verified against:** 2026-08-27 (public feed hides e-paper editions)
 
 ## Purpose
 
@@ -44,7 +44,7 @@ Pipeline (order): Serilog request logging → RequestId header/log context → E
 | GET | `/api/health` | `GetHealth` | App health |
 | GET | `/healthz` | — | ASP.NET + Npgsql; Render health check |
 | GET | `/api/cities` | `GetCities` | `Cache-Control: public, max-age=60` |
-| GET | `/api/articles` | `GetArticles` | `city` required; published only; cache 60s; **no `body`** |
+| GET | `/api/articles` | `GetArticles` | `city` required; published only; hides newspaper e-paper editions; cache 60s; **no `body`** |
 | GET | `/api/articles/dates` | `GetArticleDates` | City calendar (Asia/Kolkata) |
 | GET | `/api/articles/trending` | `GetTrendingArticles` | View-based; **no `body`** |
 | POST | `/api/articles/{id}/view` | `RecordArticleView` | Optional `sessionId` |

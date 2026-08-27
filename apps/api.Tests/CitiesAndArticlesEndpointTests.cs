@@ -330,6 +330,40 @@ public sealed class ArticlesEndpointTests : IClassFixture<TazaKhabarWebApplicati
     }
 
     [Fact]
+    public async Task GetArticles_HidesAmarUjalaEpaperEditions()
+    {
+        var client = _factory.CreateSeededClient();
+        InsertJhansiArticles(
+            Published("Amar Ujala epaper Jammu city", "https://epaper.amarujala.com/jammu-city/20260827/01.html?format=img&ed_code=jammu-city"),
+            Published("Betwa flood update", "https://www.amarujala.com/uttar-pradesh/jhansi/betwa-flood"));
+
+        var payload = await client.GetFromJsonAsync<PagedArticlesResponse>("/api/articles?city=jhansi");
+        Assert.NotNull(payload);
+        Assert.Equal(1, payload.Total);
+        Assert.Equal("Betwa flood update", Assert.Single(payload.Items).Headline);
+    }
+
+    [Fact]
+    public async Task GetArticleById_EpaperEdition_Returns404()
+    {
+        var client = _factory.CreateSeededClient();
+        int id;
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var article = Published(
+                "Amar Ujala epaper Delhi",
+                "https://epaper.amarujala.com/delhi-city/20260827/01.html?format=img&ed_code=delhi-city");
+            db.Articles.Add(article);
+            db.SaveChanges();
+            id = article.Id;
+        }
+
+        var response = await client.GetAsync($"/api/articles/{id}");
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
     public async Task GetArticleById_UnpublishedOrMock_Returns404()
     {
         var client = _factory.CreateSeededClient();

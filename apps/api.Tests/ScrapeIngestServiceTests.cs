@@ -69,6 +69,38 @@ public sealed class ScrapeIngestServiceTests
     }
 
     [Fact]
+    public async Task Skips_AmarUjalaEpaperEdition_And_StillInsertsCityStory()
+    {
+        const string storyUrl = "https://www.amarujala.com/uttar-pradesh/jhansi/youth-swept-away-jhansi-news-2026-08-27";
+        const string epaperUrl = "https://epaper.amarujala.com/jammu-city/20260827/01.html?format=img&ed_code=jammu-city";
+        await using var db = CreateDb();
+        var source = await AddScrapeSourceAsync(db, "Amar Ujala Jhansi", ListUrl);
+        var http = new FakeScrapeHttpClient
+        {
+            Responses =
+            {
+                [ListUrl] = """
+                    <html><body>
+                      <a href="https://epaper.amarujala.com/jammu-city/20260827/01.html?format=img&ed_code=jammu-city">Amar Ujala epaper Jammu city</a>
+                      <a href="/uttar-pradesh/jhansi/youth-swept-away-jhansi-news-2026-08-27">Betwa story</a>
+                    </body></html>
+                    """,
+                [storyUrl] = File.ReadAllText(FixturePath("scrape-article.html")),
+                [epaperUrl] = "<html><body><h1>Amar Ujala epaper Jammu city</h1><p>हाई क्वालिटी में डाउनलोड करें</p></body></html>",
+            },
+        };
+        var service = CreateService(db, http);
+
+        var run = await service.RunSourceAsync(source.Id, CancellationToken.None);
+
+        Assert.Equal(1, run.ArticlesFound);
+        Assert.Equal(1, run.ArticlesAdded);
+        var stored = Assert.Single(await db.Articles.ToListAsync());
+        Assert.Equal(storyUrl, stored.SourceUrl);
+        Assert.DoesNotContain("epaper", stored.Headline, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public async Task RewriteOn_StoresRewriterOutput_AsPublished()
     {
         await using var db = CreateDb();

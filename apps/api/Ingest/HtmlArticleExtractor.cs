@@ -47,6 +47,11 @@ public static partial class HtmlArticleExtractor
                 continue;
             }
 
+            if (LooksLikeEpaperLink(safe))
+            {
+                continue;
+            }
+
             // Drop tracking query noise for dedupe; keep absolute URI for fetch.
             var dedupeKey = safe.GetLeftPart(UriPartial.Path);
             if (!seen.Add(dedupeKey))
@@ -153,8 +158,45 @@ public static partial class HtmlArticleExtractor
         return HtmlText.Truncate(string.Join("\n\n", parts), MaxBodyChars);
     }
 
+    internal static bool LooksLikeEpaperLink(Uri uri)
+    {
+        var host = uri.Host;
+        if (host.StartsWith("epaper.", StringComparison.OrdinalIgnoreCase)
+            || host.Contains(".epaper.", StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        var path = uri.AbsolutePath;
+        if (path.Contains("/epaper", StringComparison.OrdinalIgnoreCase)
+            || path.Contains("e-paper", StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        return uri.Query.Contains("ed_code=", StringComparison.OrdinalIgnoreCase);
+    }
+
+    internal static bool LooksLikeEpaperHeadline(string? headline)
+    {
+        if (string.IsNullOrWhiteSpace(headline))
+        {
+            return false;
+        }
+
+        return headline.Contains("epaper", StringComparison.OrdinalIgnoreCase)
+            || headline.Contains("e-paper", StringComparison.OrdinalIgnoreCase)
+            || headline.Contains("ई-पेपर", StringComparison.Ordinal)
+            || headline.Contains("ई पेपर", StringComparison.Ordinal);
+    }
+
     internal static bool LooksLikeArticleLink(Uri uri)
     {
+        if (LooksLikeEpaperLink(uri))
+        {
+            return false;
+        }
+
         var path = uri.AbsolutePath;
         if (path.EndsWith(".html", StringComparison.OrdinalIgnoreCase))
         {

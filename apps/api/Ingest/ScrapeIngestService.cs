@@ -202,6 +202,21 @@ public sealed class ScrapeIngestService
             foreach (var link in links)
             {
                 var sourceUrl = HtmlText.Truncate(link.AbsoluteUri, 500);
+                if (HtmlArticleExtractor.LooksLikeEpaperLink(link))
+                {
+                    skipped++;
+                    IngestionEvents.Emit(
+                        _events,
+                        run.Id,
+                        "skipped",
+                        $"E-paper edition · {HtmlText.Truncate(sourceUrl, 90)}",
+                        found: links.Count,
+                        added: inserted,
+                        skipped: skipped,
+                        failed: failed);
+                    continue;
+                }
+
                 if (await _db.Articles.AnyAsync(a => a.SourceUrl == sourceUrl, ct))
                 {
                     skipped++;
@@ -237,6 +252,21 @@ public sealed class ScrapeIngestService
                             run.Id,
                             "skipped",
                             "Empty headline after extract",
+                            found: links.Count,
+                            added: inserted,
+                            skipped: skipped,
+                            failed: failed);
+                        continue;
+                    }
+
+                    if (HtmlArticleExtractor.LooksLikeEpaperHeadline(headline))
+                    {
+                        skipped++;
+                        IngestionEvents.Emit(
+                            _events,
+                            run.Id,
+                            "skipped",
+                            $"E-paper edition · {HtmlText.Truncate(headline, 80)}",
                             found: links.Count,
                             added: inserted,
                             skipped: skipped,

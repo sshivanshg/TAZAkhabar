@@ -182,6 +182,43 @@ public sealed class RssIngestServiceTests
         Assert.Empty(await db.IngestionRuns.Where(r => r.SourceId == inactive.Id).ToListAsync());
     }
 
+    [Fact]
+    public async Task Skips_EpaperEditionItems()
+    {
+        await using var db = CreateDb();
+        await AddSourceAsync(db, "Amar Ujala", CityFeedUrl, SourceKind.CityEdition);
+        const string epaperUrl = "https://epaper.amarujala.com/delhi-city/20260827/01.html?format=img&ed_code=delhi-city";
+        var client = new FakeRssFeedClient
+        {
+            Responses =
+            {
+                [CityFeedUrl] = $"""
+                    <?xml version="1.0"?><rss version="2.0"><channel>
+                      <item>
+                        <title>Amar Ujala epaper Delhi</title>
+                        <link>https://epaper.amarujala.com/delhi-city/20260827/01.html?format=img&amp;ed_code=delhi-city</link>
+                        <description>Today's paper</description>
+                      </item>
+                      <item>
+                        <title>Jhansi municipal budget</title>
+                        <link>{CityItemUrl}</link>
+                        <description>Nagar nigam session</description>
+                      </item>
+                    </channel></rss>
+                    """,
+            },
+        };
+        var service = CreateService(db, client);
+
+        var result = await service.RunAsync(CancellationToken.None);
+
+        Assert.Equal(1, result.Inserted);
+        Assert.True(result.Skipped >= 1);
+        var stored = Assert.Single(await db.Articles.ToListAsync());
+        Assert.Equal(CityItemUrl, stored.SourceUrl);
+        Assert.False(await db.Articles.AnyAsync(a => a.SourceUrl == epaperUrl));
+    }
+
     private static AppDbContext CreateDb()
     {
         var options = new DbContextOptionsBuilder<AppDbContext>()

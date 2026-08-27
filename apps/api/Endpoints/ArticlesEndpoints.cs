@@ -89,7 +89,8 @@ public static class ArticlesEndpoints
                     .Where(a => a.CityId == cityEntity.Id
                         && a.Status == ArticleStatus.Published
                         && !a.IsMock
-                        && a.PublishedAt >= cutoff);
+                        && a.PublishedAt >= cutoff)
+                    .ExcludeEpaperEditions();
 
                 if (!string.IsNullOrWhiteSpace(category))
                 {
@@ -178,7 +179,8 @@ public static class ArticlesEndpoints
                         && a.Status == ArticleStatus.Published
                         && !a.IsMock
                         && a.PublishedAt >= windowStartUtc
-                        && a.PublishedAt < windowEndUtc);
+                        && a.PublishedAt < windowEndUtc)
+                    .ExcludeEpaperEditions();
 
                 if (!string.IsNullOrWhiteSpace(category))
                 {
@@ -257,6 +259,7 @@ public static class ArticlesEndpoints
                         && v.Article.Status == ArticleStatus.Published
                         && !v.Article.IsMock
                         && v.Article.PublishedAt >= publishedSince)
+                    .ExcludeEpaperEditions()
                     .GroupBy(v => v.ArticleId)
                     .Select(g => new { ArticleId = g.Key, Views = g.Count() })
                     .OrderByDescending(x => x.Views)
@@ -303,6 +306,7 @@ public static class ArticlesEndpoints
                 var cutoff = ArticleRetention.CutoffUtc(DateTimeOffset.UtcNow, retentionOptions.Value.Days);
                 var exists = await db.Articles
                     .AsNoTracking()
+                    .ExcludeEpaperEditions()
                     .AnyAsync(
                         a => a.Id == id
                             && a.Status == ArticleStatus.Published
@@ -363,6 +367,7 @@ public static class ArticlesEndpoints
                 var cutoff = ArticleRetention.CutoffUtc(DateTimeOffset.UtcNow, retentionOptions.Value.Days);
                 var entity = await db.Articles
                     .AsNoTracking()
+                    .ExcludeEpaperEditions()
                     .FirstOrDefaultAsync(
                         a => a.Id == id
                             && a.Status == ArticleStatus.Published

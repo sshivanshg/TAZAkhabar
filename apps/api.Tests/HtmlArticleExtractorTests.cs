@@ -16,6 +16,7 @@ public sealed class HtmlArticleExtractorTests
         Assert.Contains(links, u => u.AbsoluteUri == "https://www.amarujala.com/city/story-1");
         Assert.Contains(links, u => u.AbsoluteUri == "https://www.amarujala.com/city/story-2");
         Assert.Contains(links, u => u.AbsoluteUri == "https://www.amarujala.com/city/story-3");
+        Assert.DoesNotContain(links, u => u.Host.Contains("epaper", StringComparison.OrdinalIgnoreCase));
         Assert.DoesNotContain(links, u => u.Scheme == "javascript" || u.Scheme == "file");
         Assert.Equal(3, links.Count);
 
@@ -50,6 +51,24 @@ public sealed class HtmlArticleExtractorTests
             links[1].AbsoluteUri);
         Assert.DoesNotContain(links, u => u.AbsolutePath.Contains("/video/", StringComparison.Ordinal));
         Assert.DoesNotContain(links, u => u.AbsolutePath is "/videos" or "/search");
+    }
+
+    [Fact]
+    public void ExtractArticleLinks_DropsEpaperHtmlEvenWhenItLooksLikeAnArticle()
+    {
+        const string html = """
+            <html><body>
+              <a href="https://epaper.amarujala.com/lucknow-city/20260827/01.html?format=img&ed_code=lucknow-city">Amar Ujala epaper Lucknow city</a>
+              <a href="/uttar-pradesh/jhansi/youth-swept-away-in-the-betwa-jhansi-news-863605-2026-08-27">Betwa story</a>
+            </body></html>
+            """;
+
+        var links = HtmlArticleExtractor.ExtractArticleLinks(html, ListBaseUri, maxLinks: 20);
+
+        Assert.Single(links);
+        Assert.Equal(
+            "https://www.amarujala.com/uttar-pradesh/jhansi/youth-swept-away-in-the-betwa-jhansi-news-863605-2026-08-27",
+            links[0].AbsoluteUri);
     }
 
     [Fact]
