@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Pressable, StyleSheet, TextInput, View } from 'react-native'
+import { Platform, Pressable, StyleSheet, TextInput, View } from 'react-native'
 import Search from 'lucide-react-native/icons/search'
 import X from 'lucide-react-native/icons/x'
 import type { CityResponse } from '@newsfeed/shared-types'
@@ -30,13 +30,13 @@ export function CitySearch({ value, onChange }: Props) {
 
   return (
     <View style={[styles.field, focused ? styles.fieldFocused : null]}>
-      <Search
-        size={20}
-        strokeWidth={iconStroke}
-        color={focused ? colors.accent : colors.textMuted}
-        accessibilityElementsHidden
-        importantForAccessibility="no"
-      />
+      <View style={styles.iconSlot}>
+        <Search
+          size={20}
+          strokeWidth={iconStroke}
+          color={focused ? colors.accent : colors.textMuted}
+        />
+      </View>
       <TextInput
         value={value}
         onChangeText={onChange}
@@ -83,6 +83,12 @@ const styles = StyleSheet.create({
   fieldFocused: {
     borderColor: colors.accent,
   },
+  iconSlot: {
+    width: 20,
+    height: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   input: {
     flex: 1,
     fontSize: 16,
@@ -90,6 +96,13 @@ const styles = StyleSheet.create({
     color: colors.text,
     paddingVertical: 0,
     minHeight: HIT_TARGET,
+    ...(Platform.OS === 'web'
+      ? {
+          outlineWidth: 0,
+          outlineStyle: 'solid' as const,
+          outlineColor: 'transparent',
+        }
+      : {}),
   },
   clear: {
     width: HIT_TARGET,
