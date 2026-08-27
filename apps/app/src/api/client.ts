@@ -6,7 +6,7 @@ import type {
   PagedArticlesResponse,
   ProblemDetails,
   TrendingArticlesResponse,
-} from '@newsfeed/shared-types'
+} from '@tazakhabar/shared-types'
 
 const API_BASE_URL = (process.env.EXPO_PUBLIC_API_BASE_URL ?? '').replace(/\/$/, '')
 const REQUEST_TIMEOUT_MS = 15000

@@ -11,7 +11,7 @@ import { Text } from '@gluestack-ui/themed'
 import { MotiView } from 'moti'
 import Check from 'lucide-react-native/icons/check'
 import Circle from 'lucide-react-native/icons/circle'
-import type { CityResponse } from '@newsfeed/shared-types'
+import type { CityResponse } from '@tazakhabar/shared-types'
 import { colors, HIT_TARGET, radius, space } from '../theme/tokens'
 import { iconStroke } from '../theme/categoryIcons'
 

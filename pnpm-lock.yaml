@@ -20,7 +20,7 @@ importers:
       '@fontsource/geist-sans':
         specifier: ^5.3.0
         version: 5.3.0
-      '@newsfeed/shared-types':
+      '@tazakhabar/shared-types':
         specifier: workspace:*
         version: link:../../packages/shared-types
       react:
@@ -69,12 +69,12 @@ importers:
       '@legendapp/motion':
         specifier: ^2.5.3
         version: 2.5.3(g3g45mkicj2t27voyy764orzli)
-      '@newsfeed/shared-types':
-        specifier: workspace:*
-        version: link:../../packages/shared-types
       '@react-native-async-storage/async-storage':
         specifier: 2.2.0
         version: 2.2.0(react-native@0.81.5(@babel/core@7.29.7)(@react-native/metro-config@0.86.2(@babel/core@7.29.7))(@types/react@19.1.17)(react@19.1.0))
+      '@tazakhabar/shared-types':
+        specifier: workspace:*
+        version: link:../../packages/shared-types
       expo:
         specifier: ~54.0.0
         version: 54.0.36(@babel/core@7.29.7)(@expo/dom-webview@57.0.1)(@expo/metro-runtime@6.1.2)(expo-router@6.0.24)(react-native@0.81.5(@babel/core@7.29.7)(@react-native/metro-config@0.86.2(@babel/core@7.29.7))(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)(typescript@5.9.3)

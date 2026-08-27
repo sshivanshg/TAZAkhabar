@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import type { ArticleResponse } from '@newsfeed/shared-types'
+import type { ArticleResponse } from '@tazakhabar/shared-types'
 
-export const BOOKMARKS_STORAGE_KEY = 'newsfeed.bookmarks.v1'
+export const BOOKMARKS_STORAGE_KEY = 'tazakhabar.bookmarks.v1'
 
 export type BookmarkSnapshot = {
   id: number

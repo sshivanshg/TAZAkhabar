@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Platform, Pressable, StyleSheet, TextInput, View } from 'react-native'
 import Search from 'lucide-react-native/icons/search'
 import X from 'lucide-react-native/icons/x'
-import type { CityResponse } from '@newsfeed/shared-types'
+import type { CityResponse } from '@tazakhabar/shared-types'
 import { colors, HIT_TARGET, radius, space } from '../theme/tokens'
 import { iconStroke } from '../theme/categoryIcons'
 

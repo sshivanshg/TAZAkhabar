@@ -34,8 +34,8 @@ public static class CorsOrigin
         }
 
         var host = uri.Host;
-        return IsPagesProjectHost(host, "newsfeed-web.pages.dev")
-            || IsPagesProjectHost(host, "newsfeed-admin.pages.dev");
+        return IsPagesProjectHost(host, "tazakhabar-web.pages.dev")
+            || IsPagesProjectHost(host, "tazakhabar-admin.pages.dev");
     }
 
     private static bool IsPagesProjectHost(string host, string apex) =>

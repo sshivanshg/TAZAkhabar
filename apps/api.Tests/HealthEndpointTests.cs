@@ -4,11 +4,11 @@ using NewsFeed.Api.Dtos;
 
 namespace NewsFeed.Api.Tests;
 
-public sealed class HealthEndpointTests : IClassFixture<NewsFeedWebApplicationFactory>
+public sealed class HealthEndpointTests : IClassFixture<TazaKhabarWebApplicationFactory>
 {
-    private readonly NewsFeedWebApplicationFactory _factory;
+    private readonly TazaKhabarWebApplicationFactory _factory;
 
-    public HealthEndpointTests(NewsFeedWebApplicationFactory factory)
+    public HealthEndpointTests(TazaKhabarWebApplicationFactory factory)
     {
         _factory = factory;
     }
@@ -24,7 +24,7 @@ public sealed class HealthEndpointTests : IClassFixture<NewsFeedWebApplicationFa
         var payload = await response.Content.ReadFromJsonAsync<HealthResponse>();
         Assert.NotNull(payload);
         Assert.Equal("healthy", payload.Status);
-        Assert.Equal("newsfeed-api", payload.Service);
+        Assert.Equal("tazakhabar-api", payload.Service);
         Assert.Equal("up", payload.Database);
     }
 }

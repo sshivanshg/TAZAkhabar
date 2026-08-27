@@ -5,7 +5,7 @@ import { useRouter } from 'expo-router'
 import { Text } from '@gluestack-ui/themed'
 import { MotiView } from 'moti'
 import ArrowLeft from 'lucide-react-native/icons/arrow-left'
-import type { CityResponse } from '@newsfeed/shared-types'
+import type { CityResponse } from '@tazakhabar/shared-types'
 import { apiClient } from '../src/api/client'
 import { useAsyncResource } from '../src/api/useAsyncResource'
 import { CityListItem, CityListSkeleton } from '../src/components/CityListItem'
@@ -127,7 +127,7 @@ export default function CityPickerScreen() {
           letterSpacing={0.4}
           accessibilityRole="header"
         >
-          NewsFeed
+          TazaKhabar
         </Text>
         <Text
           fontSize={typography.section.fontSize}

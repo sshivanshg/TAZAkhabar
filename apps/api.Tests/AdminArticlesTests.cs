@@ -9,11 +9,11 @@ using NewsFeed.Api.Dtos;
 
 namespace NewsFeed.Api.Tests;
 
-public sealed class AdminArticlesTests : IClassFixture<NewsFeedWebApplicationFactory>
+public sealed class AdminArticlesTests : IClassFixture<TazaKhabarWebApplicationFactory>
 {
-    private readonly NewsFeedWebApplicationFactory _factory;
+    private readonly TazaKhabarWebApplicationFactory _factory;
 
-    public AdminArticlesTests(NewsFeedWebApplicationFactory factory)
+    public AdminArticlesTests(TazaKhabarWebApplicationFactory factory)
     {
         _factory = factory;
     }

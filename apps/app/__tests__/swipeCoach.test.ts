@@ -20,7 +20,7 @@ describe('swipeCoach', () => {
   it('returns false when nothing stored', async () => {
     mockGetItem.mockResolvedValueOnce(null)
     await expect(hasCompletedSwipeCoach()).resolves.toBe(false)
-    expect(mockGetItem).toHaveBeenCalledWith('newsfeed.swipeCoach.v1')
+    expect(mockGetItem).toHaveBeenCalledWith('tazakhabar.swipeCoach.v1')
   })
 
   it('returns true when flag is set', async () => {
@@ -31,7 +31,7 @@ describe('swipeCoach', () => {
   it('persists completion flag', async () => {
     mockSetItem.mockResolvedValueOnce(undefined)
     await markSwipeCoachCompleted()
-    expect(mockSetItem).toHaveBeenCalledWith('newsfeed.swipeCoach.v1', '1')
+    expect(mockSetItem).toHaveBeenCalledWith('tazakhabar.swipeCoach.v1', '1')
   })
 
   it('treats storage errors as incomplete coach', async () => {

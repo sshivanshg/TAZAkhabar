@@ -9,7 +9,7 @@ import {
   View,
 } from 'react-native'
 import { MotiView } from 'moti'
-import type { ArticleResponse } from '@newsfeed/shared-types'
+import type { ArticleResponse } from '@tazakhabar/shared-types'
 import { colors, HIT_TARGET, radius, space } from '../theme/tokens'
 import { BreakingHeroCard } from './BreakingHeroCard'
 

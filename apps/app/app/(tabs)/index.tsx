@@ -9,7 +9,7 @@ import EyeOff from 'lucide-react-native/icons/eye-off'
 import MessageCircle from 'lucide-react-native/icons/message-circle'
 import ThumbsDown from 'lucide-react-native/icons/thumbs-down'
 import ThumbsUp from 'lucide-react-native/icons/thumbs-up'
-import type { ArticleResponse, CityResponse } from '@newsfeed/shared-types'
+import type { ArticleResponse, CityResponse } from '@tazakhabar/shared-types'
 import { apiClient } from '../../src/api/client'
 import { useAsyncResource } from '../../src/api/useAsyncResource'
 import {

@@ -1,14 +1,14 @@
 {
   "openapi": "3.0.1",
   "info": {
-    "title": "NewsFeed API",
+    "title": "TazaKhabar API",
     "version": "v1"
   },
   "paths": {
     "/api/health": {
       "get": {
         "tags": [
-          "NewsFeed.Api"
+          "TazaKhabar.Api"
         ],
         "operationId": "GetHealth",
         "responses": {
@@ -48,7 +48,7 @@
     "/api/cities": {
       "get": {
         "tags": [
-          "NewsFeed.Api"
+          "TazaKhabar.Api"
         ],
         "operationId": "GetCities",
         "responses": {
@@ -81,7 +81,7 @@
     "/api/articles": {
       "get": {
         "tags": [
-          "NewsFeed.Api"
+          "TazaKhabar.Api"
         ],
         "operationId": "GetArticles",
         "parameters": [
@@ -174,7 +174,7 @@
     "/api/articles/dates": {
       "get": {
         "tags": [
-          "NewsFeed.Api"
+          "TazaKhabar.Api"
         ],
         "operationId": "GetArticleDates",
         "parameters": [
@@ -238,7 +238,7 @@
     "/api/articles/trending": {
       "get": {
         "tags": [
-          "NewsFeed.Api"
+          "TazaKhabar.Api"
         ],
         "operationId": "GetTrendingArticles",
         "parameters": [
@@ -302,7 +302,7 @@
     "/api/articles/{id}/view": {
       "post": {
         "tags": [
-          "NewsFeed.Api"
+          "TazaKhabar.Api"
         ],
         "operationId": "RecordArticleView",
         "parameters": [
@@ -355,7 +355,7 @@
     "/api/articles/{id}": {
       "get": {
         "tags": [
-          "NewsFeed.Api"
+          "TazaKhabar.Api"
         ],
         "operationId": "GetArticleById",
         "parameters": [
@@ -413,7 +413,7 @@
     "/api/ingest/rss": {
       "post": {
         "tags": [
-          "NewsFeed.Api"
+          "TazaKhabar.Api"
         ],
         "operationId": "IngestRss",
         "responses": {
@@ -453,7 +453,7 @@
     "/api/ingest/scrape": {
       "post": {
         "tags": [
-          "NewsFeed.Api"
+          "TazaKhabar.Api"
         ],
         "operationId": "IngestScrape",
         "responses": {
@@ -493,7 +493,7 @@
     "/api/ingest/daily": {
       "post": {
         "tags": [
-          "NewsFeed.Api"
+          "TazaKhabar.Api"
         ],
         "operationId": "IngestDaily",
         "responses": {
@@ -533,7 +533,7 @@
     "/api/ingest/backfill-bodies": {
       "post": {
         "tags": [
-          "NewsFeed.Api"
+          "TazaKhabar.Api"
         ],
         "operationId": "IngestBackfillBodies",
         "parameters": [
@@ -591,7 +591,7 @@
     "/api/maintenance/purge-old-articles": {
       "post": {
         "tags": [
-          "NewsFeed.Api"
+          "TazaKhabar.Api"
         ],
         "operationId": "PurgeOldArticles",
         "responses": {
@@ -631,7 +631,7 @@
     "/api/admin/login": {
       "post": {
         "tags": [
-          "NewsFeed.Api"
+          "TazaKhabar.Api"
         ],
         "operationId": "AdminLogin",
         "requestBody": {
@@ -691,7 +691,7 @@
     "/api/admin/articles": {
       "get": {
         "tags": [
-          "NewsFeed.Api"
+          "TazaKhabar.Api"
         ],
         "operationId": "AdminListArticles",
         "parameters": [
@@ -761,7 +761,7 @@
       },
       "post": {
         "tags": [
-          "NewsFeed.Api"
+          "TazaKhabar.Api"
         ],
         "operationId": "AdminCreateArticle",
         "requestBody": {
@@ -820,7 +820,7 @@
     "/api/admin/articles/{id}": {
       "patch": {
         "tags": [
-          "NewsFeed.Api"
+          "TazaKhabar.Api"
         ],
         "operationId": "AdminPatchArticle",
         "parameters": [
@@ -891,7 +891,7 @@
     "/api/admin/articles/{id}/publish": {
       "post": {
         "tags": [
-          "NewsFeed.Api"
+          "TazaKhabar.Api"
         ],
         "operationId": "AdminPublishArticle",
         "parameters": [
@@ -952,7 +952,7 @@
     "/api/admin/articles/{id}/reject": {
       "post": {
         "tags": [
-          "NewsFeed.Api"
+          "TazaKhabar.Api"
         ],
         "operationId": "AdminRejectArticle",
         "parameters": [
@@ -1013,7 +1013,7 @@
     "/api/admin/articles/{id}/archive": {
       "post": {
         "tags": [
-          "NewsFeed.Api"
+          "TazaKhabar.Api"
         ],
         "operationId": "AdminArchiveArticle",
         "parameters": [
@@ -1074,7 +1074,7 @@
     "/api/admin/sources": {
       "get": {
         "tags": [
-          "NewsFeed.Api"
+          "TazaKhabar.Api"
         ],
         "operationId": "AdminListSources",
         "responses": {
@@ -1105,7 +1105,7 @@
       },
       "post": {
         "tags": [
-          "NewsFeed.Api"
+          "TazaKhabar.Api"
         ],
         "operationId": "AdminCreateSource",
         "requestBody": {
@@ -1164,7 +1164,7 @@
     "/api/admin/sources/{id}": {
       "patch": {
         "tags": [
-          "NewsFeed.Api"
+          "TazaKhabar.Api"
         ],
         "operationId": "AdminPatchSource",
         "parameters": [
@@ -1245,7 +1245,7 @@
     "/api/admin/sources/{id}/trigger": {
       "post": {
         "tags": [
-          "NewsFeed.Api"
+          "TazaKhabar.Api"
         ],
         "operationId": "AdminTriggerSource",
         "parameters": [
@@ -1306,7 +1306,7 @@
     "/api/admin/ingestion-runs/{id}/events": {
       "get": {
         "tags": [
-          "NewsFeed.Api"
+          "TazaKhabar.Api"
         ],
         "operationId": "AdminStreamIngestionEvents",
         "parameters": [
@@ -1357,7 +1357,7 @@
     "/api/admin/ingestion-runs": {
       "get": {
         "tags": [
-          "NewsFeed.Api"
+          "TazaKhabar.Api"
         ],
         "operationId": "AdminListIngestionRuns",
         "parameters": [
@@ -1405,7 +1405,7 @@
     "/api/admin/uploads": {
       "post": {
         "tags": [
-          "NewsFeed.Api"
+          "TazaKhabar.Api"
         ],
         "operationId": "AdminCreateUpload",
         "requestBody": {
@@ -1454,7 +1454,7 @@
       },
       "get": {
         "tags": [
-          "NewsFeed.Api"
+          "TazaKhabar.Api"
         ],
         "operationId": "AdminListUploads",
         "parameters": [
@@ -1494,7 +1494,7 @@
     "/api/admin/uploads/{id}": {
       "get": {
         "tags": [
-          "NewsFeed.Api"
+          "TazaKhabar.Api"
         ],
         "operationId": "AdminGetUpload",
         "parameters": [

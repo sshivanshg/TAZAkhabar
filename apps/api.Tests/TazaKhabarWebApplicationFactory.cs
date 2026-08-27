@@ -9,13 +9,13 @@ using Microsoft.Extensions.Hosting;
 
 namespace NewsFeed.Api.Tests;
 
-public sealed class NewsFeedWebApplicationFactory : WebApplicationFactory<Program>
+public sealed class TazaKhabarWebApplicationFactory : WebApplicationFactory<Program>
 {
     public const string TestIngestKey = "test-ingest-key";
     public const string TestAdminPassword = "test-admin-password";
     public const string TestAdminJwtSigningKey = "test-admin-jwt-signing-key-min-32-chars!!";
 
-    private readonly string _databaseName = $"newsfeed-tests-{Guid.NewGuid():N}";
+    private readonly string _databaseName = $"tazakhabar-tests-{Guid.NewGuid():N}";
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
@@ -24,7 +24,7 @@ public sealed class NewsFeedWebApplicationFactory : WebApplicationFactory<Progra
         builder.UseSetting("Admin:Password", TestAdminPassword);
         builder.UseSetting("Admin:JwtSigningKey", TestAdminJwtSigningKey);
         builder.UseSetting("Upload:MaxBytes", "8192");
-        builder.UseSetting("Upload:RootPath", Path.Combine(Path.GetTempPath(), $"newsfeed-test-uploads-{Guid.NewGuid():N}"));
+        builder.UseSetting("Upload:RootPath", Path.Combine(Path.GetTempPath(), $"tazakhabar-test-uploads-{Guid.NewGuid():N}"));
 
         builder.ConfigureServices(services =>
         {

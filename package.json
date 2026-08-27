@@ -1,19 +1,19 @@
 {
-  "name": "newsfeed",
+  "name": "tazakhabar",
   "private": true,
   "packageManager": "pnpm@9.15.0",
   "scripts": {
-    "dev:app": "pnpm --filter @newsfeed/app start",
-    "dev:web": "pnpm --filter @newsfeed/app web",
-    "build:web": "pnpm --filter @newsfeed/app build:web",
-    "lint:app": "pnpm --filter @newsfeed/app lint",
-    "test:app": "pnpm --filter @newsfeed/app test",
-    "generate:types": "pnpm --filter @newsfeed/shared-types generate",
-    "dev:admin": "pnpm --filter @newsfeed/admin dev",
-    "build:admin": "pnpm --filter @newsfeed/admin build",
-    "dev:api": "dotnet run --project apps/api/NewsFeed.Api.csproj",
-    "test:api": "dotnet test NewsFeed.sln",
-    "build:api": "dotnet build NewsFeed.sln -c Release"
+    "dev:app": "pnpm --filter @tazakhabar/app start",
+    "dev:web": "pnpm --filter @tazakhabar/app web",
+    "build:web": "pnpm --filter @tazakhabar/app build:web",
+    "lint:app": "pnpm --filter @tazakhabar/app lint",
+    "test:app": "pnpm --filter @tazakhabar/app test",
+    "generate:types": "pnpm --filter @tazakhabar/shared-types generate",
+    "dev:admin": "pnpm --filter @tazakhabar/admin dev",
+    "build:admin": "pnpm --filter @tazakhabar/admin build",
+    "dev:api": "dotnet run --project apps/api/TazaKhabar.Api.csproj",
+    "test:api": "dotnet test TazaKhabar.sln",
+    "build:api": "dotnet build TazaKhabar.sln -c Release"
   },
   "engines": {
     "node": ">=20"

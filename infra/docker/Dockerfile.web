@@ -21,7 +21,7 @@ ARG EXPO_PUBLIC_APP_ENV=local
 ENV EXPO_PUBLIC_API_BASE_URL=$EXPO_PUBLIC_API_BASE_URL
 ENV EXPO_PUBLIC_APP_ENV=$EXPO_PUBLIC_APP_ENV
 
-RUN pnpm --filter @newsfeed/app build:web
+RUN pnpm --filter @tazakhabar/app build:web
 
 FROM nginx:1.27-alpine AS final
 COPY infra/docker/nginx.web.conf /etc/nginx/conf.d/default.conf

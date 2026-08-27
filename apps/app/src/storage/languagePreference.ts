@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
 
-export const LANGUAGE_STORAGE_KEY = 'newsfeed.preferredReadingLanguage.v1'
+export const LANGUAGE_STORAGE_KEY = 'tazakhabar.preferredReadingLanguage.v1'
 
 /** v1 reading languages — UI list only; API accepts any ISO code. */
 export const READING_LANGUAGES = [

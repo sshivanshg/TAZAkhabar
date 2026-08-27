@@ -8,7 +8,7 @@ import type {
   PagedAdminArticlesResponse,
   PagedDocumentUploadsResponse,
   PagedIngestionRunsResponse,
-} from '@newsfeed/shared-types'
+} from '@tazakhabar/shared-types'
 import { clearSession, getToken } from './auth'
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080'

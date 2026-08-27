@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
-import type { CityResponse } from '@newsfeed/shared-types'
+import type { CityResponse } from '@tazakhabar/shared-types'
 import { filterCities } from '../src/components/CitySearch'
 
 const mockReplace = jest.fn()

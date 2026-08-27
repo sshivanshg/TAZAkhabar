@@ -1,5 +1,5 @@
 {
-  "name": "@newsfeed/admin",
+  "name": "@tazakhabar/admin",
   "private": true,
   "version": "0.1.0",
   "type": "module",
@@ -11,7 +11,7 @@
   "dependencies": {
     "@fontsource/geist-mono": "^5.3.0",
     "@fontsource/geist-sans": "^5.3.0",
-    "@newsfeed/shared-types": "workspace:*",
+    "@tazakhabar/shared-types": "workspace:*",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "react-router-dom": "^7.8.0"

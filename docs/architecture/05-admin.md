@@ -1,7 +1,7 @@
 # Admin
 
 > **Living doc** — update when admin routes, auth client behavior, or live-ingest UI change.  
-> **Last verified against:** 2026-08-15 (validation, audit logs, durable source triggers)
+> **Last verified against:** 2026-08-27 (validation, audit logs, durable source triggers)
 
 ## Purpose
 
@@ -16,9 +16,9 @@ Internal Vite + React SPA for editors: review queue, sources, uploads, ingestion
 
 ```mermaid
 flowchart LR
-  Editor[Editor browser] --> Pages[Cloudflare Pages<br/>newsfeed-admin]
+  Editor[Editor browser] --> Pages[Cloudflare Pages<br/>tazakhabar-admin]
   Pages --> SPA[Vite React SPA]
-  SPA -->|VITE_API_BASE_URL<br/>Bearer JWT| API[NewsFeed.Api]
+  SPA -->|VITE_API_BASE_URL<br/>Bearer JWT| API[TazaKhabar.Api]
   SPA -->|SSE ingest events| API
 ```
 
@@ -37,7 +37,7 @@ flowchart LR
 | `src/auth.ts` | JWT in `sessionStorage` |
 | `src/live/*` | `useIngestionStream`, `LiveRunDock`, `LiveTerminal` |
 
-Stack: Vite 8 + React 19 + TypeScript + react-router-dom 7. Types from `@newsfeed/shared-types`.
+Stack: Vite 8 + React 19 + TypeScript + react-router-dom 7. Types from `@tazakhabar/shared-types`.
 
 ## Data & control flows
 
@@ -54,7 +54,7 @@ sequenceDiagram
   API-->>A: SSE ingest events
 ```
 
-Session keys: `newsfeed_admin_token`, `newsfeed_admin_token_expires`, `newsfeed_admin_name`.
+Session keys: `tazakhabar_admin_token`, `tazakhabar_admin_token_expires`, `tazakhabar_admin_name`.
 
 May copy **token values** (colors/spacing) from reader theme; own table/form components — do not embed reader cards.
 
@@ -76,7 +76,7 @@ Source “run now” returns `202` after creating an `IngestionRun` plus durable
 |------|-------|
 | Env | `VITE_API_BASE_URL` (default `http://localhost:8080`) |
 | Login | `POST /api/admin/login` `{ password, displayName }` |
-| Deploy | Cloudflare Pages project default `newsfeed-admin` → `apps/admin/dist` |
+| Deploy | Cloudflare Pages project default `tazakhabar-admin` → `apps/admin/dist` |
 | CORS | Admin origin must be in `Cors__AllowedOrigins__*` |
 
 ## Failure modes & invariants

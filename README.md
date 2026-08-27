@@ -1,8 +1,8 @@
-# NewsFeed
+# TazaKhabar
 
 Localized news summarization monorepo. MVP: **Expo (React Native + Web)** + .NET 8 API + Postgres. No auth.
 
-> **Name:** `NewsFeed` is a placeholder — find-and-replace when the real product name is decided.
+> **Name:** TazaKhabar — fresh, clear local news for your city.
 
 ## Layout
 
@@ -43,10 +43,10 @@ cp apps/app/.env.example apps/app/.env
 docker compose up -d postgres
 
 # 3. API (applies pending EF migrations on startup when using a relational DB)
-dotnet run --project apps/api/NewsFeed.Api.csproj
+dotnet run --project apps/api/TazaKhabar.Api.csproj
 
 # Optional manual migrate instead of / in addition to startup:
-# dotnet ef database update --project apps/api/NewsFeed.Api.csproj
+# dotnet ef database update --project apps/api/TazaKhabar.Api.csproj
 
 # 4. App (web in browser — primary MVP path)
 pnpm install
@@ -57,7 +57,7 @@ pnpm dev:web
 - API health: http://localhost:8080/api/health
 - OpenAPI: http://localhost:8080/openapi/v1.json
 
-Native later: `pnpm --filter @newsfeed/app ios` / `android` (same app).
+Native later: `pnpm --filter @tazakhabar/app ios` / `android` (same app).
 
 ## Build an Android APK
 
@@ -100,7 +100,7 @@ Use an APK when you want to install a test build directly on an Android phone or
 4. When the build finishes, open the URL printed by EAS, download the `.apk`, and install it on the Android device. Android may ask you to allow installs from the browser or file manager you used. Alternatively, with USB debugging enabled:
 
    ```bash
-   adb install path/to/newsfeed.apk
+   adb install path/to/tazakhabar.apk
    ```
 
 To install the latest EAS build on a running Android emulator, use:
@@ -138,7 +138,7 @@ Never point local/staging tools at production data.
 ## Shared types (OpenAPI → TypeScript)
 
 ```bash
-pnpm --filter @newsfeed/shared-types fetch-openapi
+pnpm --filter @tazakhabar/shared-types fetch-openapi
 pnpm generate:types
 ```
 
@@ -147,7 +147,7 @@ Commit OpenAPI snapshot + generated types in the **same PR** as API contract cha
 ## Tests
 
 ```bash
-dotnet test NewsFeed.sln
+dotnet test TazaKhabar.sln
 pnpm test:app
 pnpm build:web   # Expo static export used by Cloudflare Pages
 ```

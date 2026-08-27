@@ -21,7 +21,7 @@ import SlidersHorizontal from 'lucide-react-native/icons/sliders-horizontal'
 import ThumbsDown from 'lucide-react-native/icons/thumbs-down'
 import ThumbsUp from 'lucide-react-native/icons/thumbs-up'
 import { MotiView } from 'moti'
-import type { ArticleResponse, CityResponse } from '@newsfeed/shared-types'
+import type { ArticleResponse, CityResponse } from '@tazakhabar/shared-types'
 import { apiClient } from '../../src/api/client'
 import {
   ActionSheet,

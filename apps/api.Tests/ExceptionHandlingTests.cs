@@ -4,11 +4,11 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace NewsFeed.Api.Tests;
 
-public sealed class ExceptionHandlingTests : IClassFixture<NewsFeedWebApplicationFactory>
+public sealed class ExceptionHandlingTests : IClassFixture<TazaKhabarWebApplicationFactory>
 {
-    private readonly NewsFeedWebApplicationFactory _factory;
+    private readonly TazaKhabarWebApplicationFactory _factory;
 
-    public ExceptionHandlingTests(NewsFeedWebApplicationFactory factory)
+    public ExceptionHandlingTests(TazaKhabarWebApplicationFactory factory)
     {
         _factory = factory;
     }

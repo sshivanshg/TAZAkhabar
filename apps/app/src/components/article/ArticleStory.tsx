@@ -9,7 +9,7 @@ import {
   View,
 } from 'react-native'
 import Newspaper from 'lucide-react-native/icons/newspaper'
-import type { ArticleResponse } from '@newsfeed/shared-types'
+import type { ArticleResponse } from '@tazakhabar/shared-types'
 import { iconStroke } from '../../theme/categoryIcons'
 import {
   ARTICLE_COLUMN_MAX,

@@ -12,7 +12,7 @@ alwaysApply: false
 - Required web packages (installed): `react-dom`, `react-native-web`, `@expo/metro-runtime`.
 - Entry must import `@expo/metro-runtime` first (`index.ts`).
 - Functional components + hooks only — no class components.
-- **TypeScript strict mode** on. Prefer `@newsfeed/shared-types`.
+- **TypeScript strict mode** on. Prefer `@tazakhabar/shared-types`.
 - Use RN primitives (`View`, `Text`, `Pressable`, `ScrollView`). Avoid web-only DOM/CSS except thin `Platform.OS === 'web'` forks.
 
 ## API access
@@ -30,11 +30,11 @@ alwaysApply: false
 
 - Light UI: near-white canvas (`#FAFAFA`), white cards with soft shadow, near-black headlines (`#1A1A1A`), mid-gray meta (`#6B6B6B`).
 - Single blue accent (`#1D7BFF`) for active tabs, selected chips, links, and category pills — no extra brand hues yet.
-- Placeholder product name is **NewsFeed** — find-and-replace later; do not invent alternate brand names.
+- Placeholder product name is **TazaKhabar** — find-and-replace later; do not invent alternate brand names.
 
 ## Web + native
 
-- Develop primarily with `pnpm --filter @newsfeed/app web` for MVP pilots.
+- Develop primarily with `pnpm --filter @tazakhabar/app web` for MVP pilots.
 - Keep screens native-safe so `ios` / `android` builds do not require a rewrite.
 - Web PWA: keep Expo web manifest / icons current; do not reintroduce a separate Vite app.
 

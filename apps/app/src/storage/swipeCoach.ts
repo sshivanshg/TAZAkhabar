@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
 
-const STORAGE_KEY = 'newsfeed.swipeCoach.v1'
+const STORAGE_KEY = 'tazakhabar.swipeCoach.v1'
 
 export async function hasCompletedSwipeCoach(): Promise<boolean> {
   try {

@@ -1,4 +1,4 @@
-import type { ArticleResponse } from '@newsfeed/shared-types'
+import type { ArticleResponse } from '@tazakhabar/shared-types'
 import type { BookmarkSnapshot } from '../storage/bookmarks'
 
 /** Route params for `/article/[id]` — enables optimistic render before API reconcile. */

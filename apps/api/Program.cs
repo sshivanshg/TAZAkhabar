@@ -53,7 +53,7 @@ try
         {
             if (string.IsNullOrWhiteSpace(upload.RootPath))
             {
-                upload.RootPath = Path.Combine(Path.GetTempPath(), "newsfeed-uploads");
+                upload.RootPath = Path.Combine(Path.GetTempPath(), "tazakhabar-uploads");
             }
         });
     }
@@ -61,12 +61,12 @@ try
     builder.Services.AddHttpClient("rss", client =>
     {
         client.Timeout = TimeSpan.FromSeconds(15);
-        client.DefaultRequestHeaders.UserAgent.ParseAdd("NewsFeedIngest/0.1");
+        client.DefaultRequestHeaders.UserAgent.ParseAdd("TazaKhabarIngest/0.1");
     });
     builder.Services.AddHttpClient(ScrapeHttpClient.HttpClientName, client =>
     {
         client.Timeout = TimeSpan.FromSeconds(15);
-        client.DefaultRequestHeaders.UserAgent.ParseAdd("NewsFeedIngest/0.1");
+        client.DefaultRequestHeaders.UserAgent.ParseAdd("TazaKhabarIngest/0.1");
     }).ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
     {
         AllowAutoRedirect = false,
@@ -74,7 +74,7 @@ try
     builder.Services.AddHttpClient(ArticleImageHtmlClient.HttpClientName, client =>
     {
         client.Timeout = TimeSpan.FromSeconds(15);
-        client.DefaultRequestHeaders.UserAgent.ParseAdd("NewsFeedIngest/0.1");
+        client.DefaultRequestHeaders.UserAgent.ParseAdd("TazaKhabarIngest/0.1");
     }).ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
     {
         AllowAutoRedirect = false,
@@ -82,7 +82,7 @@ try
     builder.Services.AddHttpClient(ClaudeArticleIntelligence.HttpClientName, client =>
     {
         client.Timeout = TimeSpan.FromSeconds(90);
-        client.DefaultRequestHeaders.UserAgent.ParseAdd("NewsFeedIngest/0.1");
+        client.DefaultRequestHeaders.UserAgent.ParseAdd("TazaKhabarIngest/0.1");
     });
     builder.Services.AddHttpClient(OpenAiArticleRewriter.HttpClientName, client =>
     {
@@ -92,7 +92,7 @@ try
     builder.Services.AddHttpClient("alerts", client =>
     {
         client.Timeout = TimeSpan.FromSeconds(10);
-        client.DefaultRequestHeaders.UserAgent.ParseAdd("NewsFeedIngest/0.1");
+        client.DefaultRequestHeaders.UserAgent.ParseAdd("TazaKhabarIngest/0.1");
     });
     builder.Services.AddSingleton<IIngestionEventBus, IngestionEventBus>();
     builder.Services.AddSingleton<IRssFeedClient, RssFeedClient>();
@@ -137,7 +137,7 @@ try
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddSwaggerGen(options =>
     {
-        options.SwaggerDoc("v1", new() { Title = "NewsFeed API", Version = "v1" });
+        options.SwaggerDoc("v1", new() { Title = "TazaKhabar API", Version = "v1" });
     });
 
     var connectionString = builder.Configuration.GetConnectionString("Database");
@@ -307,7 +307,7 @@ try
             var canConnect = await db.Database.CanConnectAsync(cancellationToken);
             var response = new HealthResponse(
                 Status: canConnect ? "healthy" : "degraded",
-                Service: "newsfeed-api",
+                Service: "tazakhabar-api",
                 TimestampUtc: DateTimeOffset.UtcNow,
                 Database: canConnect ? "up" : "down");
 

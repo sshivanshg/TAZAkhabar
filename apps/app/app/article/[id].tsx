@@ -16,7 +16,7 @@ import { StatusBar } from 'expo-status-bar'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import Copy from 'lucide-react-native/icons/copy'
 import MessageCircle from 'lucide-react-native/icons/message-circle'
-import type { ArticleResponse } from '@newsfeed/shared-types'
+import type { ArticleResponse } from '@tazakhabar/shared-types'
 import { apiClient } from '../../src/api/client'
 import {
   ArticleBottomBar,

@@ -8,13 +8,13 @@ import { FeedPreferencesProvider } from '../src/preferences/FeedPreferencesConte
 import { LanguagePreferenceProvider } from '../src/preferences/LanguagePreferenceContext'
 import { ScreenErrorBoundary } from '../src/components/ScreenErrorBoundary'
 import { AppShell, DesktopSidebar } from '../src/components/desktop'
-import { newsfeedConfig } from '../src/theme/gluestack-config'
+import { tazakhabarConfig } from '../src/theme/gluestack-config'
 import { colors } from '../src/theme/tokens'
 
 export default function RootLayout() {
   return (
     <SafeAreaProvider>
-      <GluestackUIProvider config={newsfeedConfig}>
+      <GluestackUIProvider config={tazakhabarConfig}>
         <FeedPreferencesProvider>
           <LanguagePreferenceProvider>
           <ScreenErrorBoundary name="root">

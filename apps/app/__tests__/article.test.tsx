@@ -1,7 +1,7 @@
 import { render, screen, waitFor } from '@testing-library/react-native'
 import { FlatList } from 'react-native'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
-import type { ArticleResponse } from '@newsfeed/shared-types'
+import type { ArticleResponse } from '@tazakhabar/shared-types'
 import { LanguagePreferenceProvider } from '../src/preferences/LanguagePreferenceContext'
 
 const mockBack = jest.fn()

@@ -10,13 +10,13 @@ using NewsFeed.Api.Ingest;
 
 namespace NewsFeed.Api.Tests;
 
-public sealed class IngestEndpointTests : IClassFixture<NewsFeedWebApplicationFactory>
+public sealed class IngestEndpointTests : IClassFixture<TazaKhabarWebApplicationFactory>
 {
     private const string FeedUrl = "https://feeds.example.com/jhansi-city.xml";
 
-    private readonly NewsFeedWebApplicationFactory _factory;
+    private readonly TazaKhabarWebApplicationFactory _factory;
 
-    public IngestEndpointTests(NewsFeedWebApplicationFactory factory)
+    public IngestEndpointTests(TazaKhabarWebApplicationFactory factory)
     {
         _factory = factory;
     }
@@ -47,7 +47,7 @@ public sealed class IngestEndpointTests : IClassFixture<NewsFeedWebApplicationFa
         });
 
         var client = factory.CreateClient();
-        client.DefaultRequestHeaders.Add("X-Ingest-Key", NewsFeedWebApplicationFactory.TestIngestKey);
+        client.DefaultRequestHeaders.Add("X-Ingest-Key", TazaKhabarWebApplicationFactory.TestIngestKey);
         var response = await client.PostAsync("/api/ingest/rss", null);
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
@@ -115,7 +115,7 @@ public sealed class IngestEndpointTests : IClassFixture<NewsFeedWebApplicationFa
             db.SaveChanges();
         }
 
-        client.DefaultRequestHeaders.Add("X-Ingest-Key", NewsFeedWebApplicationFactory.TestIngestKey);
+        client.DefaultRequestHeaders.Add("X-Ingest-Key", TazaKhabarWebApplicationFactory.TestIngestKey);
         var response = await client.PostAsync("/api/ingest/rss", null);
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var body = await response.Content.ReadFromJsonAsync<IngestRunResponse>();
@@ -174,7 +174,7 @@ public sealed class IngestEndpointTests : IClassFixture<NewsFeedWebApplicationFa
             db.SaveChanges();
         }
 
-        client.DefaultRequestHeaders.Add("X-Ingest-Key", NewsFeedWebApplicationFactory.TestIngestKey);
+        client.DefaultRequestHeaders.Add("X-Ingest-Key", TazaKhabarWebApplicationFactory.TestIngestKey);
         var response = await client.PostAsync("/api/ingest/scrape", null);
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var body = await response.Content.ReadFromJsonAsync<IngestRunResponse>();
@@ -202,7 +202,7 @@ public sealed class IngestEndpointTests : IClassFixture<NewsFeedWebApplicationFa
 
         var login = await client.PostAsJsonAsync("/api/admin/login", new
         {
-            password = NewsFeedWebApplicationFactory.TestAdminPassword,
+            password = TazaKhabarWebApplicationFactory.TestAdminPassword,
             displayName = "Editor One",
         });
         login.EnsureSuccessStatusCode();
@@ -301,7 +301,7 @@ public sealed class IngestEndpointTests : IClassFixture<NewsFeedWebApplicationFa
             db.SaveChanges();
         }
 
-        client.DefaultRequestHeaders.Add("X-Ingest-Key", NewsFeedWebApplicationFactory.TestIngestKey);
+        client.DefaultRequestHeaders.Add("X-Ingest-Key", TazaKhabarWebApplicationFactory.TestIngestKey);
         var response = await client.PostAsync("/api/ingest/daily", null);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);

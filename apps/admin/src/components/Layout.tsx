@@ -17,7 +17,7 @@ export function Layout() {
       <div className="shell">
         <aside className="shell-nav">
           <div className="shell-brand">
-            NewsFeed
+            TazaKhabar
             <span>Admin</span>
           </div>
           {nav.map((item) => (

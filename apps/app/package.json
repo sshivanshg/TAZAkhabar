@@ -1,5 +1,5 @@
 {
-  "name": "@newsfeed/app",
+  "name": "@tazakhabar/app",
   "version": "0.1.0",
   "private": true,
   "main": "expo-router/entry",
@@ -19,7 +19,7 @@
     "@gluestack-ui/config": "^1.1.20",
     "@gluestack-ui/themed": "^1.1.73",
     "@legendapp/motion": "^2.5.3",
-    "@newsfeed/shared-types": "workspace:*",
+    "@tazakhabar/shared-types": "workspace:*",
     "@react-native-async-storage/async-storage": "2.2.0",
     "expo": "~54.0.0",
     "expo-constants": "~18.0.13",

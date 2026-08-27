@@ -1,4 +1,4 @@
-# Buildy Codex Rules
+# TazaKhabar Codex Rules
 
 This repository mirrors the Cursor agent rules in `.codex/rules/`. Treat these
 rules as always available project instructions for Codex.
@@ -52,9 +52,10 @@ Hard boundaries:
 - One reader client codebase: Expo in `apps/app` serves web for MVP hosting and
   native later. Do not add a separate Vite/CRA reader. Admin Vite SPA at
   `apps/admin` is the narrow exception.
-- Placeholder product name is NewsFeed. Find-and-replace when the real name is
-  chosen; do not invent alternate brand names.
-- MVP UI is light with a single blue accent.
+- Product name is TazaKhabar. Follow `.codex/rules/branding.mdc` and
+  `docs/brand.md`; do not invent alternate brand names.
+- MVP UI is light with TazaKhabar blue as its primary accent and saffron only
+  as a restrained freshness/breaking-news signal.
 
 Before structural changes, read the matching `docs/architecture/` page,
 `.codex/rules/architecture.mdc`, and `docs/PRD.md`. Prefer an ADR under
@@ -122,7 +123,7 @@ For `apps/app/**/*.{ts,tsx}`:
   `@expo/metro-runtime`.
 - Entry must import `@expo/metro-runtime` first (`index.ts`).
 - Functional components + hooks only. No class components.
-- TypeScript strict mode. Prefer `@newsfeed/shared-types`.
+- TypeScript strict mode. Prefer `@tazakhabar/shared-types`.
 - Use RN primitives (`View`, `Text`, `Pressable`, `ScrollView`). Avoid web-only
   DOM/CSS except thin `Platform.OS === 'web'` forks.
 - No inline `fetch` in screens. All HTTP goes through `src/api/`.
@@ -130,11 +131,11 @@ For `apps/app/**/*.{ts,tsx}`:
   hardcode secrets.
 - Minimum 16px base font size, WCAG AA contrast, large tap targets, and
   readability for a 40+ demographic.
-- MVP theme: light UI, near-white canvas (`#FAFAFA`), white cards with soft
-  shadow, near-black headlines (`#1A1A1A`), mid-gray meta (`#6B6B6B`), and one
-  blue accent (`#1D7BFF`).
-- Placeholder product name is NewsFeed.
-- Develop primarily with `pnpm --filter @newsfeed/app web` for MVP pilots.
+- MVP theme: light UI, near-white canvas (`#F4F6FA`), white cards with soft
+  shadow, near-black headlines (`#101828`), mid-gray meta (`#667085`), primary
+  blue (`#155EEF`), and restrained saffron (`#FFB000`) freshness signals.
+- Product name is TazaKhabar; follow `.codex/rules/branding.mdc`.
+- Develop primarily with `pnpm --filter @tazakhabar/app web` for MVP pilots.
 - Keep screens native-safe. Do not reintroduce a separate Vite app for the
   reader.
 

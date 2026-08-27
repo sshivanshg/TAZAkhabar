@@ -62,7 +62,7 @@ export function DesktopSidebar() {
     >
       <View style={styles.brandBlock}>
         <Text style={styles.brand} accessibilityRole="header">
-          NewsFeed
+          TazaKhabar
         </Text>
         <View style={styles.brandRule} />
       </View>
@@ -103,8 +103,8 @@ export function DesktopSidebar() {
 
       <View style={styles.footer} testID="sidebar-footer">
         <View style={styles.footerRule} />
-        <Text style={styles.footerText} accessibilityLabel="NewsFeed version 0.1">
-          NewsFeed v0.1
+        <Text style={styles.footerText} accessibilityLabel="TazaKhabar version 0.1">
+          TazaKhabar v0.1
         </Text>
       </View>
     </View>

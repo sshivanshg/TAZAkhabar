@@ -1,29 +1,28 @@
 {
   "expo": {
-    "name": "NewsFeed",
-    "slug": "newsfeed",
+    "name": "TazaKhabar",
+    "slug": "tazakhabar",
     "version": "0.1.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "scheme": "newsfeed",
+    "scheme": "tazakhabar",
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#FAFAFA"
+      "backgroundColor": "#F4F6FA"
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "app.newsfeed.mobile"
+      "bundleIdentifier": "app.tazakhabar.mobile"
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#ffffff",
+        "backgroundColor": "#155EEF",
         "foregroundImage": "./assets/android-icon-foreground.png",
-        "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "package": "app.newsfeed.mobile",
+      "package": "app.tazakhabar.mobile",
       "predictiveBackGestureEnabled": false,
       "usesCleartextTraffic": true
     },
@@ -31,12 +30,12 @@
       "bundler": "metro",
       "output": "single",
       "favicon": "./assets/favicon.png",
-      "name": "NewsFeed",
-      "shortName": "NewsFeed",
+      "name": "TazaKhabar",
+      "shortName": "TazaKhabar",
       "lang": "en",
-      "themeColor": "#FAFAFA",
-      "backgroundColor": "#FAFAFA",
-      "description": "Local news summaries for your city. Light shell with a single blue accent."
+      "themeColor": "#155EEF",
+      "backgroundColor": "#F4F6FA",
+      "description": "Fresh, clear local news for your city from TazaKhabar."
     },
     "plugins": [
       "expo-font",

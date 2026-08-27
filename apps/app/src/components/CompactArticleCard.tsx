@@ -2,7 +2,7 @@ import { Platform, Pressable, StyleSheet, View, type PressableStateCallbackType 
 import { Box, Image, Text } from '@gluestack-ui/themed'
 import Ellipsis from 'lucide-react-native/icons/ellipsis'
 import { MotiView } from 'moti'
-import type { ArticleResponse } from '@newsfeed/shared-types'
+import type { ArticleResponse } from '@tazakhabar/shared-types'
 import { colors, HIT_TARGET, media, radius, space, typography } from '../theme/tokens'
 import { iconStroke } from '../theme/categoryIcons'
 import { formatRelativeTime } from '../utils/relativeTime'

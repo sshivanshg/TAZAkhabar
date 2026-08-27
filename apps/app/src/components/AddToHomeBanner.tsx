@@ -5,19 +5,19 @@ import { Text } from '@gluestack-ui/themed'
 import { colors, radius, space, typography } from '../theme/tokens'
 import { getStoredCitySlug } from '../storage/cityPreference'
 
-const A2HS_DISMISSED_KEY = 'newsfeed.a2hs.dismissed.v1'
+const A2HS_DISMISSED_KEY = 'tazakhabar.a2hs.dismissed.v1'
 
 function installHintCopy(): string {
   // Heuristic: iOS Safari vs other browsers (Chrome install / menu).
   if (Platform.OS !== 'web' || typeof navigator === 'undefined') {
-    return 'Add NewsFeed to your home screen for quick access'
+    return 'Add TazaKhabar to your home screen for quick access'
   }
   const ua = navigator.userAgent || ''
   const isIOS = /iPad|iPhone|iPod/.test(ua)
   if (isIOS) {
     return 'On iPhone: tap Share, then Add to Home Screen'
   }
-  return 'Install NewsFeed from your browser menu for quick access'
+  return 'Install TazaKhabar from your browser menu for quick access'
 }
 
 /**

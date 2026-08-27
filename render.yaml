@@ -1,9 +1,9 @@
-# Render Blueprint — NewsFeed API (ADR-004)
+# Render Blueprint — TazaKhabar API (ADR-004)
 # Secrets (ConnectionStrings__Database, Cors origins, Admin, ingest) are set in the Render dashboard (sync: false).
 
 services:
   - type: web
-    name: newsfeed-api
+    name: tazakhabar-api
     runtime: docker
     dockerfilePath: ./infra/docker/Dockerfile.api
     dockerContext: .
@@ -58,7 +58,7 @@ services:
         sync: false
 
   - type: cron
-    name: newsfeed-rss-ingest
+    name: tazakhabar-rss-ingest
     runtime: python
     plan: starter
     schedule: "*/45 * * * *"
@@ -71,7 +71,7 @@ services:
         sync: false
 
   - type: cron
-    name: newsfeed-scrape-ingest
+    name: tazakhabar-scrape-ingest
     runtime: python
     plan: starter
     schedule: "*/45 * * * *"
@@ -84,7 +84,7 @@ services:
         sync: false
 
   - type: cron
-    name: newsfeed-purge-old-articles
+    name: tazakhabar-purge-old-articles
     runtime: python
     plan: starter
     schedule: "0 3 * * *"

@@ -1,7 +1,7 @@
 # Monorepo
 
 > **Living doc** — update when workspace packages, root scripts, or layout change.  
-> **Last verified against:** 2026-08-14 (local working tree)
+> **Last verified against:** 2026-08-27 (local working tree)
 
 ## Purpose
 
@@ -16,7 +16,7 @@ Describe package layout, tooling, and boundaries so API / types / clients stay c
 
 ```mermaid
 flowchart TB
-  root[Buildy monorepo]
+  root[TazaKhabar monorepo]
   root --> app[apps/app<br/>Expo reader]
   root --> admin[apps/admin<br/>Vite admin]
   root --> api[apps/api<br/>.NET 8]
@@ -34,14 +34,14 @@ flowchart TB
 
 | Path | Package / project | Role |
 |------|-------------------|------|
-| `apps/app` | `@newsfeed/app` | Expo universal reader |
-| `apps/admin` | `@newsfeed/admin` | Editorial Vite SPA |
-| `apps/api` | `NewsFeed.Api` | Minimal API |
-| `apps/api.Tests` | `NewsFeed.Api.Tests` | xUnit + WebApplicationFactory |
-| `packages/shared-types` | `@newsfeed/shared-types` | Generated TS DTOs |
+| `apps/app` | `@tazakhabar/app` | Expo universal reader |
+| `apps/admin` | `@tazakhabar/admin` | Editorial Vite SPA |
+| `apps/api` | `TazaKhabar.Api` | Minimal API |
+| `apps/api.Tests` | `TazaKhabar.Api.Tests` | xUnit + WebApplicationFactory |
+| `packages/shared-types` | `@tazakhabar/shared-types` | Generated TS DTOs |
 | `infra/docker` | — | `Dockerfile.api`, optional `Dockerfile.web` |
-| `infra/migrations` | `NewsFeed.Api.Migrations` | EF migrations compiled into API |
-| `NewsFeed.sln` | — | API + tests |
+| `infra/migrations` | `TazaKhabar.Api.Migrations` (legacy namespace) | EF migrations compiled into API |
+| `TazaKhabar.sln` | — | API + tests |
 | `pnpm-workspace.yaml` | — | `apps/app`, `apps/admin`, `packages/*` |
 
 ## Data & control flows
@@ -62,14 +62,14 @@ Local stack: Docker Postgres ↔ API ↔ Metro/Expo + Vite admin.
 ## Key files
 
 - `package.json`, `pnpm-workspace.yaml`
-- `NewsFeed.sln`
+- `TazaKhabar.sln`
 - `docker-compose.yml`
 - `apps/README.md`
 - `.cursor/rules/architecture.mdc`
 
 ## Public contracts
 
-Workspace consumers depend on `@newsfeed/shared-types`. Contract changes require **same PR**: API OpenAPI + snapshot + generated types + app/admin consumers.
+Workspace consumers depend on `@tazakhabar/shared-types`. Contract changes require **same PR**: API OpenAPI + snapshot + generated types + app/admin consumers.
 
 ## Failure modes & invariants
 

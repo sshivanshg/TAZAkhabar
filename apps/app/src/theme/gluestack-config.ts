@@ -2,7 +2,7 @@ import { config as defaultConfig } from '@gluestack-ui/config'
 import { createConfig } from '@gluestack-ui/themed'
 
 /** Light theme with a single blue accent. */
-export const newsfeedConfig = createConfig({
+export const tazakhabarConfig = createConfig({
   ...defaultConfig,
   tokens: {
     ...defaultConfig.tokens,
@@ -38,7 +38,7 @@ export const newsfeedConfig = createConfig({
   },
 })
 
-type Config = typeof newsfeedConfig
+type Config = typeof tazakhabarConfig
 declare module '@gluestack-ui/themed' {
   interface UIConfig extends Config {}
 }

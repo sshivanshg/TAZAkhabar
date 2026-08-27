@@ -1,12 +1,12 @@
 {
-  "name": "NewsFeed",
-  "short_name": "NewsFeed",
-  "description": "Local news summaries for your city.",
+  "name": "TazaKhabar",
+  "short_name": "TazaKhabar",
+  "description": "Fresh, clear local news for your city from TazaKhabar.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#FAFAFA",
-  "theme_color": "#FAFAFA",
+  "background_color": "#F4F6FA",
+  "theme_color": "#155EEF",
   "lang": "en",
   "icons": [
     {

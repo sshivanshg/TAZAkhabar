@@ -9,11 +9,11 @@ using NewsFeed.Api.Options;
 
 namespace NewsFeed.Api.Tests;
 
-public sealed class AdminUploadsTests : IClassFixture<NewsFeedWebApplicationFactory>
+public sealed class AdminUploadsTests : IClassFixture<TazaKhabarWebApplicationFactory>
 {
-    private readonly NewsFeedWebApplicationFactory _factory;
+    private readonly TazaKhabarWebApplicationFactory _factory;
 
-    public AdminUploadsTests(NewsFeedWebApplicationFactory factory)
+    public AdminUploadsTests(TazaKhabarWebApplicationFactory factory)
     {
         _factory = factory;
     }

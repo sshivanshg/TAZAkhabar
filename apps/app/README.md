@@ -1,6 +1,6 @@
-# @newsfeed/app
+# @tazakhabar/app
 
-Expo universal client for **NewsFeed** (placeholder name) — web is the primary MVP surface.
+Expo universal client for **TazaKhabar** (placeholder name) — web is the primary MVP surface.
 iOS/Android builds use the same codebase later.
 
 ## UI
@@ -17,8 +17,8 @@ pnpm dev:web
 pnpm build:web
 
 # later:
-pnpm --filter @newsfeed/app ios
-pnpm --filter @newsfeed/app android
+pnpm --filter @tazakhabar/app ios
+pnpm --filter @tazakhabar/app android
 ```
 
 The web dev server runs at `http://localhost:19006`, an origin allowlisted by

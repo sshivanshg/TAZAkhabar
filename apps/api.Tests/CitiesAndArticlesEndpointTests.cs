@@ -8,11 +8,11 @@ using NewsFeed.Api.Dtos;
 
 namespace NewsFeed.Api.Tests;
 
-public sealed class CitiesEndpointTests : IClassFixture<NewsFeedWebApplicationFactory>
+public sealed class CitiesEndpointTests : IClassFixture<TazaKhabarWebApplicationFactory>
 {
-    private readonly NewsFeedWebApplicationFactory _factory;
+    private readonly TazaKhabarWebApplicationFactory _factory;
 
-    public CitiesEndpointTests(NewsFeedWebApplicationFactory factory)
+    public CitiesEndpointTests(TazaKhabarWebApplicationFactory factory)
     {
         _factory = factory;
     }
@@ -40,11 +40,11 @@ public sealed class CitiesEndpointTests : IClassFixture<NewsFeedWebApplicationFa
     }
 }
 
-public sealed class ArticlesEndpointTests : IClassFixture<NewsFeedWebApplicationFactory>
+public sealed class ArticlesEndpointTests : IClassFixture<TazaKhabarWebApplicationFactory>
 {
-    private readonly NewsFeedWebApplicationFactory _factory;
+    private readonly TazaKhabarWebApplicationFactory _factory;
 
-    public ArticlesEndpointTests(NewsFeedWebApplicationFactory factory)
+    public ArticlesEndpointTests(TazaKhabarWebApplicationFactory factory)
     {
         _factory = factory;
     }

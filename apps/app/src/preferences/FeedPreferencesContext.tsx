@@ -8,9 +8,9 @@ import {
   useState,
   type ReactNode,
 } from 'react'
-import type { ArticleResponse } from '@newsfeed/shared-types'
+import type { ArticleResponse } from '@tazakhabar/shared-types'
 
-const STORAGE_KEY = 'newsfeed.feedPreferences.v1'
+const STORAGE_KEY = 'tazakhabar.feedPreferences.v1'
 
 export type FeedPreferencesState = {
   /** Story IDs hidden via "Hide this story" */

@@ -1,11 +1,11 @@
 # System overview
 
 > **Living doc** — update in the same change when topology, hosting, or cross-app contracts move.  
-> **Last verified against:** 2026-08-26 (OpenAI scrape rewrite alongside Claude)
+> **Last verified against:** 2026-08-27 (OpenAI scrape rewrite alongside Claude)
 
 ## Purpose
 
-End-to-end picture of NewsFeed: who talks to whom, where code lives, and why the stack looks like this.
+End-to-end picture of TazaKhabar: who talks to whom, where code lives, and why the stack looks like this.
 
 ## Boundaries
 
@@ -63,9 +63,9 @@ flowchart TB
 
 | Component | Path / host | Role |
 |-----------|-------------|------|
-| Reader | `apps/app` → Cloudflare Pages `newsfeed-web` | City feed, search, share, PWA |
-| Admin | `apps/admin` → Cloudflare Pages `newsfeed-admin` | Review queue, sources, uploads, live ingest |
-| API | `apps/api` → Render `newsfeed-api` | Sole DB client; public + admin + ingest |
+| Reader | `apps/app` → Cloudflare Pages `tazakhabar-web` | City feed, search, share, PWA |
+| Admin | `apps/admin` → Cloudflare Pages `tazakhabar-admin` | Review queue, sources, uploads, live ingest |
+| API | `apps/api` → Render `tazakhabar-api` | Sole DB client; public + admin + ingest |
 | Shared types | `packages/shared-types` | OpenAPI → NSwag DTOs |
 | DB | Neon Postgres | Production data; local Docker Postgres |
 | Migrations | `infra/migrations` | EF Core; applied on API startup |
@@ -148,7 +148,7 @@ sequenceDiagram
 - CORS allowlist only — never `AllowAnyOrigin` in staging/production.
 - Feed GETs may be ~60s stale at the Cloudflare edge.
 - Render health check is `/healthz` (not `/api/health`).
-- Product placeholder name is **NewsFeed** until rename.
+- Product placeholder name is **TazaKhabar** until rename.
 
 ## Related docs
 

@@ -12,11 +12,11 @@ export const colors = {
   /** Secondary fill / cancel pill / pressed wash — surfaceAlt */
   surfaceRaised: '#EEF2F6',
   /** Single blue accent — tabs, chips, links, category pills */
-  accent: '#2855E8',
+  accent: '#155EEF',
   /** Accent pressed */
-  accentPressed: '#1F46C4',
+  accentPressed: '#0F45B8',
   /** Soft accent wash for selected chip / city pill */
-  accentSoft: '#EAF0FF',
+  accentSoft: '#E8F0FF',
   /** Headline on surface/background */
   text: '#101828',
   /** Supporting body */
@@ -32,7 +32,7 @@ export const colors = {
   border: '#E4E8EF',
   borderSolid: '#D8DFE8',
   /** Selected chip fill */
-  chipSelectedBg: '#2855E8',
+  chipSelectedBg: '#155EEF',
   chipSelectedText: '#FFFFFF',
   /** Unselected chip */
   chipInactiveBorder: '#DCE2EA',
@@ -147,7 +147,7 @@ export const typography = {
   button: { fontSize: 16, lineHeight: 22, fontWeight: '600' as const },
 } as const
 
-export const CITY_STORAGE_KEY = 'newsfeed.selectedCitySlug'
+export const CITY_STORAGE_KEY = 'tazakhabar.selectedCitySlug'
 
 export const FEED_CATEGORIES = [
   'All',

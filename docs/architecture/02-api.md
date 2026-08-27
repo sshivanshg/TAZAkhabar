@@ -1,11 +1,11 @@
 # API
 
 > **Living doc** — update when endpoints, auth, rate limits, CORS, or DI composition change.  
-> **Last verified against:** 2026-08-26 (OpenAiRewrite Enabled flag)
+> **Last verified against:** 2026-08-27 (OpenAiRewrite Enabled flag)
 
 ## Purpose
 
-`.NET 8` Minimal API (`NewsFeed.Api`) is the only process that talks to Postgres and the contract surface for reader, admin, and ingest.
+`.NET 8` Minimal API (`TazaKhabar.Api`) is the only process that talks to Postgres and the contract surface for reader, admin, and ingest.
 
 ## Boundaries
 
@@ -16,7 +16,7 @@
 
 ```mermaid
 flowchart LR
-  Reader[Reader] -->|public /api| API[NewsFeed.Api]
+  Reader[Reader] -->|public /api| API[TazaKhabar.Api]
   Admin[Admin] -->|/api/admin JWT| API
   Cron[Render cron / GitHub Actions] -->|/api/ingest X-Ingest-Key| API
   API --> Neon[(Neon)]
@@ -75,13 +75,13 @@ Pipeline (order): Serilog request logging → RequestId header/log context → E
 - Admin: shared password + display name → HS256 JWT 8h ([ADR-005](../adr/005-admin-shared-credential.md)).
 - Production startup fails if admin password/JWT signing key are missing, default, or too short.
 - Ingest key is **not** accepted on admin routes.
-- CORS: configured `Cors__AllowedOrigins__*` plus HTTPS hosts under `*.newsfeed-web.pages.dev` / `*.newsfeed-admin.pages.dev` (Cloudflare Git preview aliases). Never `AllowAnyOrigin`.
+- CORS: configured `Cors__AllowedOrigins__*` plus HTTPS hosts under `*.tazakhabar-web.pages.dev` / `*.tazakhabar-admin.pages.dev` (Cloudflare Git preview aliases). Never `AllowAnyOrigin`.
 
 ## Key files
 
 - `apps/api/Program.cs`
 - `apps/api/Endpoints/*`
-- `apps/api/NewsFeed.Api.csproj`
+- `apps/api/TazaKhabar.Api.csproj`
 
 ## Public contracts
 

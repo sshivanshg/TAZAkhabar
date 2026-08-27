@@ -8,11 +8,11 @@ using NewsFeed.Api.Dtos;
 
 namespace NewsFeed.Api.Tests;
 
-public sealed class ArticlePurgeTests : IClassFixture<NewsFeedWebApplicationFactory>
+public sealed class ArticlePurgeTests : IClassFixture<TazaKhabarWebApplicationFactory>
 {
-    private readonly NewsFeedWebApplicationFactory _factory;
+    private readonly TazaKhabarWebApplicationFactory _factory;
 
-    public ArticlePurgeTests(NewsFeedWebApplicationFactory factory) => _factory = factory;
+    public ArticlePurgeTests(TazaKhabarWebApplicationFactory factory) => _factory = factory;
 
     [Fact]
     public async Task Purge_MissingKey_Returns401()
@@ -46,7 +46,7 @@ public sealed class ArticlePurgeTests : IClassFixture<NewsFeedWebApplicationFact
             db.SaveChanges();
         }
 
-        client.DefaultRequestHeaders.Add("X-Ingest-Key", NewsFeedWebApplicationFactory.TestIngestKey);
+        client.DefaultRequestHeaders.Add("X-Ingest-Key", TazaKhabarWebApplicationFactory.TestIngestKey);
         var response = await client.PostAsync("/api/maintenance/purge-old-articles", null);
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var body = await response.Content.ReadFromJsonAsync<PurgeOldArticlesResponse>();
@@ -73,7 +73,7 @@ public sealed class ArticlePurgeTests : IClassFixture<NewsFeedWebApplicationFact
             db.SaveChanges();
         }
 
-        client.DefaultRequestHeaders.Add("X-Ingest-Key", NewsFeedWebApplicationFactory.TestIngestKey);
+        client.DefaultRequestHeaders.Add("X-Ingest-Key", TazaKhabarWebApplicationFactory.TestIngestKey);
         await client.PostAsync("/api/maintenance/purge-old-articles", null);
         var second = await client.PostAsync("/api/maintenance/purge-old-articles", null);
         var body = await second.Content.ReadFromJsonAsync<PurgeOldArticlesResponse>();

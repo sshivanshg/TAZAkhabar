@@ -6,11 +6,11 @@ using NewsFeed.Api.Ingest;
 
 namespace NewsFeed.Api.Tests;
 
-public sealed class ScrapeHttpClientTests : IClassFixture<NewsFeedWebApplicationFactory>
+public sealed class ScrapeHttpClientTests : IClassFixture<TazaKhabarWebApplicationFactory>
 {
-    private readonly NewsFeedWebApplicationFactory _factory;
+    private readonly TazaKhabarWebApplicationFactory _factory;
 
-    public ScrapeHttpClientTests(NewsFeedWebApplicationFactory factory)
+    public ScrapeHttpClientTests(TazaKhabarWebApplicationFactory factory)
     {
         _factory = factory;
     }

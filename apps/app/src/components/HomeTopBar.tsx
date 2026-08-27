@@ -52,7 +52,7 @@ export function HomeTopBar({
             color={colors.text}
             numberOfLines={1}
           >
-            NewsFeed
+            TazaKhabar
           </Text>
         </View>
 

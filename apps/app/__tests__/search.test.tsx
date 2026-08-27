@@ -1,6 +1,6 @@
 import { render, waitFor } from '@testing-library/react-native'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
-import type { ArticleResponse, CityResponse, PagedArticlesResponse } from '@newsfeed/shared-types'
+import type { ArticleResponse, CityResponse, PagedArticlesResponse } from '@tazakhabar/shared-types'
 import { FeedPreferencesProvider } from '../src/preferences/FeedPreferencesContext'
 import { LanguagePreferenceProvider } from '../src/preferences/LanguagePreferenceContext'
 

@@ -1,7 +1,7 @@
 # Data model
 
 > **Living doc** — update when entities, statuses, or migration ownership change.  
-> **Last verified against:** 2026-08-17 (scrape publishes directly; production migrations are explicit, not boot-time)
+> **Last verified against:** 2026-08-27 (scrape publishes directly; production migrations are explicit, not boot-time)
 
 ## Purpose
 
@@ -72,9 +72,9 @@ Generate:
 
 ```bash
 dotnet ef migrations add <Name> \
-  --project apps/api/NewsFeed.Api.csproj \
+  --project apps/api/TazaKhabar.Api.csproj \
   --output-dir ../../infra/migrations \
-  --namespace NewsFeed.Api.Migrations
+  --namespace TazaKhabar.Api.Migrations
 ```
 
 Migrations are compiled into the API via csproj include of `infra/migrations/**/*.cs`.

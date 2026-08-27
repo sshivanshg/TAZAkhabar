@@ -12,11 +12,11 @@ using NewsFeed.Api.Ingest;
 
 namespace NewsFeed.Api.Tests;
 
-public sealed class AdminSourcesTests : IClassFixture<NewsFeedWebApplicationFactory>
+public sealed class AdminSourcesTests : IClassFixture<TazaKhabarWebApplicationFactory>
 {
-    private readonly NewsFeedWebApplicationFactory _factory;
+    private readonly TazaKhabarWebApplicationFactory _factory;
 
-    public AdminSourcesTests(NewsFeedWebApplicationFactory factory)
+    public AdminSourcesTests(TazaKhabarWebApplicationFactory factory)
     {
         _factory = factory;
     }
@@ -160,7 +160,7 @@ public sealed class AdminSourcesTests : IClassFixture<NewsFeedWebApplicationFact
 
         var login = await client.PostAsJsonAsync("/api/admin/login", new
         {
-            password = NewsFeedWebApplicationFactory.TestAdminPassword,
+            password = TazaKhabarWebApplicationFactory.TestAdminPassword,
             displayName = "Ada",
         });
         var token = (await login.Content.ReadFromJsonAsync<AdminLoginResponse>())!.Token;

@@ -7,11 +7,11 @@ using NewsFeed.Api.Dtos;
 
 namespace NewsFeed.Api.Tests;
 
-public sealed class TrendingEndpointTests : IClassFixture<NewsFeedWebApplicationFactory>
+public sealed class TrendingEndpointTests : IClassFixture<TazaKhabarWebApplicationFactory>
 {
-    private readonly NewsFeedWebApplicationFactory _factory;
+    private readonly TazaKhabarWebApplicationFactory _factory;
 
-    public TrendingEndpointTests(NewsFeedWebApplicationFactory factory)
+    public TrendingEndpointTests(TazaKhabarWebApplicationFactory factory)
     {
         _factory = factory;
     }

@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react'
 import { StyleSheet, useWindowDimensions, View, type LayoutChangeEvent } from 'react-native'
-import type { ArticleResponse } from '@newsfeed/shared-types'
+import type { ArticleResponse } from '@tazakhabar/shared-types'
 import { CONTENT_RAIL_MAX, media, SIDEBAR_WIDTH, space } from '../../theme/tokens'
 import { BreakingHeroCard } from '../BreakingHeroCard'
 

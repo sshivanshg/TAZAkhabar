@@ -6,13 +6,13 @@ using NewsFeed.Api.Dtos;
 
 namespace NewsFeed.Api.Tests;
 
-public sealed class AdminAuthTests : IClassFixture<NewsFeedWebApplicationFactory>
+public sealed class AdminAuthTests : IClassFixture<TazaKhabarWebApplicationFactory>
 {
-    private static readonly ConcurrentDictionary<(NewsFeedWebApplicationFactory Factory, string Name), string> Tokens = new();
+    private static readonly ConcurrentDictionary<(TazaKhabarWebApplicationFactory Factory, string Name), string> Tokens = new();
 
-    private readonly NewsFeedWebApplicationFactory _factory;
+    private readonly TazaKhabarWebApplicationFactory _factory;
 
-    public AdminAuthTests(NewsFeedWebApplicationFactory factory)
+    public AdminAuthTests(TazaKhabarWebApplicationFactory factory)
     {
         _factory = factory;
     }
@@ -23,7 +23,7 @@ public sealed class AdminAuthTests : IClassFixture<NewsFeedWebApplicationFactory
         var client = _factory.CreateSeededClient();
         var response = await client.PostAsJsonAsync("/api/admin/login", new
         {
-            password = NewsFeedWebApplicationFactory.TestAdminPassword,
+            password = TazaKhabarWebApplicationFactory.TestAdminPassword,
             displayName = "Ada",
         });
 
@@ -51,7 +51,7 @@ public sealed class AdminAuthTests : IClassFixture<NewsFeedWebApplicationFactory
         var client = _factory.CreateSeededClient();
         var response = await client.PostAsJsonAsync("/api/admin/login", new
         {
-            password = NewsFeedWebApplicationFactory.TestAdminPassword,
+            password = TazaKhabarWebApplicationFactory.TestAdminPassword,
             displayName = "   ",
         });
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
@@ -63,7 +63,7 @@ public sealed class AdminAuthTests : IClassFixture<NewsFeedWebApplicationFactory
         var client = _factory.CreateSeededClient();
         var response = await client.PostAsJsonAsync("/api/admin/login", new
         {
-            password = NewsFeedWebApplicationFactory.TestAdminPassword,
+            password = TazaKhabarWebApplicationFactory.TestAdminPassword,
             displayName = new string('x', 81),
         });
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
@@ -81,13 +81,13 @@ public sealed class AdminAuthTests : IClassFixture<NewsFeedWebApplicationFactory
     public async Task AdminArticles_IngestKey_NotAccepted()
     {
         var client = _factory.CreateSeededClient();
-        client.DefaultRequestHeaders.Add("X-Ingest-Key", NewsFeedWebApplicationFactory.TestIngestKey);
+        client.DefaultRequestHeaders.Add("X-Ingest-Key", TazaKhabarWebApplicationFactory.TestIngestKey);
         var response = await client.GetAsync("/api/admin/articles");
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
     public static async Task<HttpClient> CreateAuthedClientAsync(
-        NewsFeedWebApplicationFactory factory,
+        TazaKhabarWebApplicationFactory factory,
         string displayName = "Ada")
     {
         var client = factory.CreateSeededClient();
@@ -96,7 +96,7 @@ public sealed class AdminAuthTests : IClassFixture<NewsFeedWebApplicationFactory
         {
             var login = await client.PostAsJsonAsync("/api/admin/login", new
             {
-                password = NewsFeedWebApplicationFactory.TestAdminPassword,
+                password = TazaKhabarWebApplicationFactory.TestAdminPassword,
                 displayName,
             });
             login.EnsureSuccessStatusCode();

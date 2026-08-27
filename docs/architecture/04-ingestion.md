@@ -1,7 +1,7 @@
 # Ingestion
 
 > **Living doc** — update when pipelines, article status on insert, cron, SSE, or intelligence providers change.  
-> **Last verified against:** 2026-08-26 (OpenAI scrape rewrite + Enabled flag)
+> **Last verified against:** 2026-08-27 (OpenAI scrape rewrite + Enabled flag)
 
 ## Purpose
 
@@ -105,8 +105,8 @@ Manual admin source triggers create both an `IngestionRun` and a queued `Ingesti
 
 Every 45 minutes (`render.yaml`):
 
-- `newsfeed-rss-ingest` → `POST {INGEST_URL}/api/ingest/rss`
-- `newsfeed-scrape-ingest` → `POST {INGEST_URL}/api/ingest/scrape`
+- `tazakhabar-rss-ingest` → `POST {INGEST_URL}/api/ingest/rss`
+- `tazakhabar-scrape-ingest` → `POST {INGEST_URL}/api/ingest/scrape`
 
 Nightly at midnight IST (`30 18 * * *` UTC):
 

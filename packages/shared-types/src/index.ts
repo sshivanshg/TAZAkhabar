@@ -1,5 +1,5 @@
 /**
- * Shared API contracts for NewsFeed (placeholder product name).
+ * Shared API contracts for TazaKhabar (placeholder product name).
  *
  * Source of truth: `openapi/openapi.json` (exported from the .NET API).
  * Regenerate with: `pnpm generate:types` (NSwag OpenAPI → TypeScript).

@@ -10,7 +10,7 @@ import Info from 'lucide-react-native/icons/info'
 import Languages from 'lucide-react-native/icons/languages'
 import MapPin from 'lucide-react-native/icons/map-pin'
 import Tag from 'lucide-react-native/icons/tag'
-import type { CityResponse } from '@newsfeed/shared-types'
+import type { CityResponse } from '@tazakhabar/shared-types'
 import { apiClient } from '../../src/api/client'
 import { ScreenErrorBoundary } from '../../src/components/ScreenErrorBoundary'
 import { TabScreenShell } from '../../src/components/TabScreenShell'
@@ -198,7 +198,7 @@ function ProfileBody() {
             lineHeight={24}
             color={colors.textSecondary}
           >
-            NewsFeed is a local news summary you can add to your home screen. No login — pick a
+            TazaKhabar is a local news summary you can add to your home screen. No login — pick a
             city, read short summaries, save stories on this device, and share to WhatsApp in one
             tap.
           </Text>

@@ -1,7 +1,7 @@
 # Shared types
 
 > **Living doc** — update when OpenAPI generation, NSwag config, or contract PR rules change.  
-> **Last verified against:** 2026-08-15 (CI OpenAPI drift check)
+> **Last verified against:** 2026-08-27 (CI OpenAPI drift check)
 
 ## Purpose
 
@@ -16,7 +16,7 @@ Keep TypeScript DTOs for reader and admin in lockstep with the API OpenAPI docum
 
 ```mermaid
 flowchart LR
-  API[NewsFeed.Api] -->|/openapi/v1.json| Fetch[scripts/fetch-openapi.mjs]
+  API[TazaKhabar.Api] -->|/openapi/v1.json| Fetch[scripts/fetch-openapi.mjs]
   Fetch --> Snap[openapi/openapi.json]
   Snap --> NSwag[nswag run nswag.json]
   NSwag --> Gen[src/generated.ts]
@@ -40,7 +40,7 @@ flowchart LR
 
 ```bash
 # API must be running (or OPENAPI_URL set)
-pnpm --filter @newsfeed/shared-types fetch-openapi
+pnpm --filter @tazakhabar/shared-types fetch-openapi
 pnpm generate:types
 ```
 
@@ -56,7 +56,7 @@ CI starts the API after the backend build, fetches `/openapi/v1.json`, and diffs
 
 ## Public contracts
 
-Consumers import from `@newsfeed/shared-types` only through the package `index` surface. Breaking DTO changes require coordinated client updates in the same PR (architecture hard rule).
+Consumers import from `@tazakhabar/shared-types` only through the package `index` surface. Breaking DTO changes require coordinated client updates in the same PR (architecture hard rule).
 
 ## Failure modes & invariants
 

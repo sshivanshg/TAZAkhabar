@@ -1,8 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { Platform } from 'react-native'
 
-const STORAGE_KEY = 'newsfeed.viewSessionId'
-const SESSION_STORAGE_KEY = 'newsfeed.viewSessionId'
+const STORAGE_KEY = 'tazakhabar.viewSessionId'
+const SESSION_STORAGE_KEY = 'tazakhabar.viewSessionId'
 
 function randomId(): string {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {

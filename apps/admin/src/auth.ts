@@ -1,6 +1,6 @@
-const TOKEN_KEY = 'newsfeed_admin_token'
-const EXPIRES_KEY = 'newsfeed_admin_expires'
-const NAME_KEY = 'newsfeed_admin_name'
+const TOKEN_KEY = 'tazakhabar_admin_token'
+const EXPIRES_KEY = 'tazakhabar_admin_expires'
+const NAME_KEY = 'tazakhabar_admin_name'
 
 export function getToken(): string | null {
   const token = sessionStorage.getItem(TOKEN_KEY)

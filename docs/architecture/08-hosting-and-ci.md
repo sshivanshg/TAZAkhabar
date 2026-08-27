@@ -1,11 +1,11 @@
 # Hosting and CI
 
 > **Living doc** — update when Render, Cloudflare, Neon, Docker, workflows, or env templates change.  
-> **Last verified against:** 2026-08-26 (OpenAiRewrite Enabled flag)
+> **Last verified against:** 2026-08-27 (OpenAiRewrite Enabled flag)
 
 ## Purpose
 
-How NewsFeed is built, deployed, and wired in production: Render API + crons, Cloudflare Pages (reader + admin), Neon Postgres, GitHub Actions, local Docker.
+How TazaKhabar is built, deployed, and wired in production: Render API + crons, Cloudflare Pages (reader + admin), Neon Postgres, GitHub Actions, local Docker.
 
 ## Boundaries
 
@@ -23,10 +23,10 @@ flowchart TB
   end
 
   Main --> CI
-  Main -->|auto| Render[Render newsfeed-api<br/>Docker Dockerfile.api]
+  Main -->|auto| Render[Render tazakhabar-api<br/>Docker Dockerfile.api]
   Main --> Deploy
-  Deploy --> PagesWeb[Cloudflare Pages<br/>newsfeed-web]
-  Deploy --> PagesAdmin[Cloudflare Pages<br/>newsfeed-admin]
+  Deploy --> PagesWeb[Cloudflare Pages<br/>tazakhabar-web]
+  Deploy --> PagesAdmin[Cloudflare Pages<br/>tazakhabar-admin]
   Render --> Neon[(Neon Postgres)]
   CronRSS[Render cron RSS] --> Render
   CronScrape[Render cron scrape] --> Render
@@ -44,7 +44,7 @@ flowchart TB
 |-------|----------------|
 | API image | `infra/docker/Dockerfile.api` |
 | Optional web nginx preview | `infra/docker/Dockerfile.web`, `nginx.web.conf` |
-| Blueprint | `render.yaml` — web `newsfeed-api` + ingest/purge crons |
+| Blueprint | `render.yaml` — web `tazakhabar-api` + ingest/purge crons |
 | Local DB | `docker-compose.yml` Postgres 16 |
 | CI | `.github/workflows/ci.yml` — API format/build/test + Postgres, migration SQL artifact, OpenAPI drift check; app lint/test/export; admin build |
 | Deploy | `.github/workflows/deploy.yml` — Pages for web + admin; API via Render auto-deploy |
@@ -95,14 +95,14 @@ No `wrangler.toml` in-repo — Pages deploy uses `cloudflare/pages-action` (wran
 | `EXPO_PUBLIC_API_BASE_URL` | GitHub Actions **and** `apps/app/.env.production` (Expo inlines this at export) |
 | `VITE_API_BASE_URL` | GitHub Actions **and** `apps/admin/.env.production` |
 | `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` | GitHub secrets |
-| `CLOUDFLARE_PAGES_PROJECT_NAME` | default `newsfeed-web` |
-| `CLOUDFLARE_PAGES_ADMIN_PROJECT_NAME` | default `newsfeed-admin` |
+| `CLOUDFLARE_PAGES_PROJECT_NAME` | default `tazakhabar-web` |
+| `CLOUDFLARE_PAGES_ADMIN_PROJECT_NAME` | default `tazakhabar-admin` |
 | `PRODUCTION_DATABASE_CONNECTION_STRING` | GitHub production environment secret for manual migration workflow |
 
 ## Failure modes & invariants
 
 - API deploys are owned by Render, not the Pages deploy job.
-- **Do not let Cloudflare dashboard Git builds replace Actions without env.** Connecting the repo in Pages Settings starts a second pipeline that does **not** see GitHub `vars.EXPO_PUBLIC_API_BASE_URL`. Expo then ships `EXPO_PUBLIC_API_BASE_URL is not configured`. Prefer: pause Pages automatic deployments and keep `.github/workflows/deploy.yml`. If Git builds stay on, set production env `EXPO_PUBLIC_API_BASE_URL`, build command `corepack enable && pnpm install --frozen-lockfile && pnpm --filter @newsfeed/app build:web`, output `apps/app/dist`.
+- **Do not let Cloudflare dashboard Git builds replace Actions without env.** Connecting the repo in Pages Settings starts a second pipeline that does **not** see GitHub `vars.EXPO_PUBLIC_API_BASE_URL`. Expo then ships `EXPO_PUBLIC_API_BASE_URL is not configured`. Prefer: pause Pages automatic deployments and keep `.github/workflows/deploy.yml`. If Git builds stay on, set production env `EXPO_PUBLIC_API_BASE_URL`, build command `corepack enable && pnpm install --frozen-lockfile && pnpm --filter @tazakhabar/app build:web`, output `apps/app/dist`.
 - Edge caching implies up to ~60s feed staleness — tune deliberately.
 - `.github/workflows/nightly-ingest.yml` runs at `30 18 * * *` UTC (00:00 IST) and calls `/api/ingest/daily`, which avoids Claude summarization and OpenAI scrape rewrite.
 - Staging Render/Neon deferred; when added, separate service + Neon branch/project.

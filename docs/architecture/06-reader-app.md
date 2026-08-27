@@ -1,7 +1,7 @@
 # Reader app
 
 > **Living doc** — update when Expo routes, city/feed/share behavior, or desktop web layer change.  
-> **Last verified against:** 2026-08-26 (single original-article CTA)
+> **Last verified against:** 2026-08-27 (single original-article CTA)
 
 ## Purpose
 
@@ -20,9 +20,9 @@ Feed chrome follows a Google News–like structure on light surfaces: centered b
 
 ```mermaid
 flowchart LR
-  User[Reader] --> Pages[Cloudflare Pages<br/>newsfeed-web]
+  User[Reader] --> Pages[Cloudflare Pages<br/>tazakhabar-web]
   Pages --> Expo[Expo RN Web export]
-  Expo -->|EXPO_PUBLIC_API_BASE_URL<br/>no auth| API[NewsFeed.Api]
+  Expo -->|EXPO_PUBLIC_API_BASE_URL<br/>no auth| API[TazaKhabar.Api]
   Expo --> Storage[AsyncStorage city + prefs]
 ```
 
@@ -103,10 +103,10 @@ API helpers used: `getHealth`, `getCities`, `getArticles`, `getArticleDates`, `g
 |------|-------|
 | Env | `EXPO_PUBLIC_API_BASE_URL`, `EXPO_PUBLIC_APP_ENV` |
 | Deploy artifact | `pnpm build:web` → `apps/app/dist` |
-| Bundle report | `pnpm --filter @newsfeed/app bundle:report` |
+| Bundle report | `pnpm --filter @tazakhabar/app bundle:report` |
 | Android test binary | EAS `preview` profile → internal-distribution APK |
 | Android Play binary | EAS `production` profile → AAB |
-| Pages project | default `newsfeed-web` |
+| Pages project | default `tazakhabar-web` |
 | Auth | None for MVP |
 
 For ordinary reader UI development, `apps/app/.env.example` targets the hosted

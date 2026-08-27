@@ -1,4 +1,4 @@
-import type { ArticleResponse } from '@newsfeed/shared-types'
+import type { ArticleResponse } from '@tazakhabar/shared-types'
 
 /** True when the API is serving translated headline/summary text. */
 export function isArticleTranslated(

@@ -9,7 +9,7 @@
   },
   "codeGenerators": {
     "openApiToTypeScriptClient": {
-      "className": "NewsFeedApiClient",
+      "className": "TazaKhabarApiClient",
       "moduleName": "",
       "namespace": "",
       "typeScriptVersion": 4.3,

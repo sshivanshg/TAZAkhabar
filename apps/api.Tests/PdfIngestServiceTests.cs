@@ -195,7 +195,7 @@ public sealed class PdfIngestServiceTests
         }));
         db.SaveChanges();
 
-        var root = Path.Combine(Path.GetTempPath(), "newsfeed-uploads-tests", Guid.NewGuid().ToString("N"));
+        var root = Path.Combine(Path.GetTempPath(), "tazakhabar-uploads-tests", Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(root);
 
         var fake = intelligence ?? new RecordingFakeIntelligence();

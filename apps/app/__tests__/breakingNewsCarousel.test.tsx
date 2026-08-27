@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/react-native'
 import { FlatList } from 'react-native'
-import type { ArticleResponse } from '@newsfeed/shared-types'
+import type { ArticleResponse } from '@tazakhabar/shared-types'
 import { BreakingNewsCarousel } from '../src/components/BreakingNewsCarousel'
 import { space } from '../src/theme/tokens'
 
