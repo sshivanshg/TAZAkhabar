@@ -1,7 +1,7 @@
 # Hosting and CI
 
 > **Living doc** — update when Render, Cloudflare, Neon, Docker, workflows, or env templates change.  
-> **Last verified against:** 2026-08-27 (Deploy fails closed without CF token; direct wrangler Pages publish)
+> **Last verified against:** 2026-08-27 (public support env + CSP/HSTS; deploy fails closed without CF token)
 
 ## Purpose
 
@@ -25,8 +25,8 @@ flowchart TB
   Main --> CI
   Main -->|auto| Render[Render tazakhabar-api<br/>Docker Dockerfile.api]
   Main --> Deploy
-  Deploy --> PagesWeb[Cloudflare Pages<br/>tazakhabar-web]
-  Deploy --> PagesAdmin[Cloudflare Pages<br/>tazakhabar-admin]
+  Deploy --> PagesWeb[Cloudflare Pages<br/>newsfeed-web]
+  Deploy --> PagesAdmin[Cloudflare Pages<br/>newsfeed-admin]
   Render --> Neon[(Neon Postgres)]
   CronRSS[Render cron RSS] --> Render
   CronScrape[Render cron scrape] --> Render
@@ -93,6 +93,7 @@ No `wrangler.toml` in-repo — Pages deploy uses `cloudflare/pages-action` (wran
 | `IngestHealth__MaxSilenceMinutes`, `IngestHealth__AlertWebhookUrl` | Render |
 | `INGEST_URL` | Render cron services and GitHub Actions `nightly-ingest.yml` |
 | `EXPO_PUBLIC_API_BASE_URL` | GitHub Actions **and** `apps/app/.env.production` (Expo inlines this at export) |
+| `EXPO_PUBLIC_SUPPORT_EMAIL` | GitHub Actions production variable; inlined into public support/privacy/corrections pages |
 | `VITE_API_BASE_URL` | GitHub Actions **and** `apps/admin/.env.production` |
 | `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` | GitHub **production** environment secrets (required — Deploy fails if either is missing) |
 | `CLOUDFLARE_PAGES_PROJECT_NAME` | default `newsfeed-web` (existing Cloudflare Pages project) |

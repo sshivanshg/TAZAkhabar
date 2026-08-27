@@ -130,6 +130,7 @@ jobs:
         env:
           EXPO_PUBLIC_API_BASE_URL: https://api.example.com
           EXPO_PUBLIC_APP_ENV: ci
+          EXPO_PUBLIC_SUPPORT_EMAIL: support@example.com
 
       - name: Build admin (Cloudflare Pages artifact)
         run: pnpm build:admin

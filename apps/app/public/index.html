@@ -2,14 +2,26 @@
 <html lang="%LANG_ISO_CODE%">
   <head>
     <meta charset="utf-8" />
-    <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no, viewport-fit=cover" />
     <meta name="theme-color" content="#155EEF" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="description" content="Fresh, clear local news for your city from TazaKhabar." />
+    <meta name="application-name" content="TazaKhabar" />
+    <meta name="apple-mobile-web-app-title" content="TazaKhabar" />
+    <meta name="color-scheme" content="light dark" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="TazaKhabar" />
+    <meta property="og:title" content="TazaKhabar — clear local news for your city" />
+    <meta property="og:description" content="Pick your city and read fresh local news in a calm, easy-to-read format." />
+    <meta property="og:image" content="https://newsfeed-web.pages.dev/icon-512.png" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="TazaKhabar — clear local news for your city" />
+    <meta name="twitter:description" content="Pick your city and read fresh local news in a calm, easy-to-read format." />
+    <meta name="twitter:image" content="https://newsfeed-web.pages.dev/icon-512.png" />
     <link rel="manifest" href="/manifest.webmanifest" />
-    <link rel="apple-touch-icon" href="/icon.png" />
+    <link rel="apple-touch-icon" href="/icon-512.png" />
     <title>%WEB_TITLE%</title>
     <!-- The `react-native-web` recommended style reset: https://necolas.github.io/react-native-web/docs/setup/#root-element -->
     <style id="expo-reset">
@@ -20,6 +32,8 @@
         height: 100dvh;
         width: 100%;
         overscroll-behavior: none;
+        -webkit-text-size-adjust: 100%;
+        text-size-adjust: 100%;
       }
       /* These styles disable body scrolling if you are using <ScrollView> */
       body {

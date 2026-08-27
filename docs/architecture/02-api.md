@@ -1,7 +1,7 @@
 # API
 
 > **Living doc** — update when endpoints, auth, rate limits, CORS, or DI composition change.  
-> **Last verified against:** 2026-08-27 (public feed hides e-paper editions)
+> **Last verified against:** 2026-08-27 (actual + future-branded Cloudflare Pages CORS hosts)
 
 ## Purpose
 
@@ -75,7 +75,7 @@ Pipeline (order): Serilog request logging → RequestId header/log context → E
 - Admin: shared password + display name → HS256 JWT 8h ([ADR-005](../adr/005-admin-shared-credential.md)).
 - Production startup fails if admin password/JWT signing key are missing, default, or too short.
 - Ingest key is **not** accepted on admin routes.
-- CORS: configured `Cors__AllowedOrigins__*` plus HTTPS hosts under `*.tazakhabar-web.pages.dev` / `*.tazakhabar-admin.pages.dev` (Cloudflare Git preview aliases). Never `AllowAnyOrigin`.
+- CORS: configured `Cors__AllowedOrigins__*` plus HTTPS hosts under the actual `*.newsfeed-web.pages.dev` / `*.newsfeed-admin.pages.dev` projects and future-branded `*.tazakhabar-web.pages.dev` / `*.tazakhabar-admin.pages.dev` aliases. Never `AllowAnyOrigin`.
 
 ## Key files
 

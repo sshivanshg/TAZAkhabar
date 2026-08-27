@@ -48,6 +48,12 @@ import {
 } from '../../src/storage/bookmarks'
 import { getStoredCitySlug, setStoredCitySlug } from '../../src/storage/cityPreference'
 import {
+  feedCacheKey,
+  isFeedCacheFresh,
+  readFeedCache,
+  writeFeedCache,
+} from '../../src/storage/feedCache'
+import {
   BREAKING_NEWS_COUNT,
   FEED_CATEGORIES,
   type FeedCategory,
@@ -262,13 +268,44 @@ function HomeFeedBody() {
       }
 
       const gen = mode === 'append' ? loadGenRef.current : ++loadGenRef.current
+      const cacheKey = feedCacheKey({
+        city: citySlug,
+        category: category === 'All' ? undefined : category,
+        lang: preferredLanguage,
+      })
+      let paintedFromCache = false
 
       if (mode === 'replace') {
-        setLoading(true)
-        setShowContent(false)
         setError(null)
         setAppendError(false)
         offsetRef.current = 0
+
+        const cached = await readFeedCache(cacheKey)
+        if (gen !== loadGenRef.current) {
+          return
+        }
+        if (cached && isFeedCacheFresh(cached)) {
+          setArticles(cached.items)
+          setTotal(cached.total)
+          offsetRef.current = cached.items.length
+          setError(null)
+          setLoading(false)
+          setRefreshing(false)
+          requestAnimationFrame(() => setShowContent(true))
+          return
+        }
+        if (cached) {
+          // Stale-while-revalidate: paint last feed while we refresh in the background.
+          paintedFromCache = true
+          setArticles(cached.items)
+          setTotal(cached.total)
+          offsetRef.current = cached.items.length
+          setLoading(false)
+          requestAnimationFrame(() => setShowContent(true))
+        } else {
+          setLoading(true)
+          setShowContent(false)
+        }
       } else if (mode === 'refresh') {
         setRefreshing(true)
         setError(null)
@@ -296,12 +333,14 @@ function HomeFeedBody() {
           return
         }
         const items = result.items ?? []
-        setTotal(result.total ?? items.length)
+        const nextTotal = result.total ?? items.length
+        setTotal(nextTotal)
         setArticles((prev) => (mode === 'append' ? [...prev, ...items] : items))
         offsetRef.current = offset + items.length
         setError(null)
         setAppendError(false)
         if (mode === 'replace' || mode === 'refresh') {
+          void writeFeedCache(cacheKey, items, nextTotal)
           setTrendingEpoch((n) => n + 1)
         }
         requestAnimationFrame(() => setShowContent(true))
@@ -314,9 +353,11 @@ function HomeFeedBody() {
         } else {
           setError(err instanceof Error ? err.message : 'Could not load articles')
         }
-        // Keep prior items on refresh/append failure; only clear on initial replace.
-        if (mode === 'replace') {
+        // Keep prior items on refresh/append/stale-cache failure; clear only when replace had nothing.
+        if (mode === 'replace' && !paintedFromCache) {
           setArticles([])
+        }
+        if (mode === 'replace' || mode === 'refresh') {
           setShowContent(true)
         }
       } finally {

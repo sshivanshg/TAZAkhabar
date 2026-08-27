@@ -49,6 +49,12 @@ import {
   removeBookmark,
 } from '../../src/storage/bookmarks'
 import { getStoredCitySlug } from '../../src/storage/cityPreference'
+import {
+  feedCacheKey,
+  isFeedCacheFresh,
+  readFeedCache,
+  writeFeedCache,
+} from '../../src/storage/feedCache'
 import { iconStroke } from '../../src/theme/categoryIcons'
 import {
   FEED_CATEGORIES,
@@ -175,10 +181,34 @@ function DiscoverBody() {
         return
       }
       const gen = ++loadGenRef.current
+      const cacheKey = feedCacheKey({
+        city: citySlug,
+        category: category === 'All' ? undefined : category,
+        lang: preferredLanguage,
+        q: debounced || undefined,
+      })
+      let paintedFromCache = false
+
       if (mode === 'refresh') {
         setRefreshing(true)
       } else {
-        setLoading(true)
+        const cached = await readFeedCache(cacheKey)
+        if (gen !== loadGenRef.current) {
+          return
+        }
+        if (cached && isFeedCacheFresh(cached)) {
+          setArticles(cached.items)
+          setError(null)
+          setLoading(false)
+          return
+        }
+        if (cached) {
+          paintedFromCache = true
+          setArticles(cached.items)
+          setLoading(false)
+        } else {
+          setLoading(true)
+        }
       }
       setError(null)
       try {
@@ -193,13 +223,15 @@ function DiscoverBody() {
         if (gen !== loadGenRef.current) {
           return
         }
-        setArticles(result.items ?? [])
+        const items = result.items ?? []
+        setArticles(items)
+        void writeFeedCache(cacheKey, items, result.total ?? items.length)
       } catch (err) {
         if (gen !== loadGenRef.current) {
           return
         }
-        // Keep prior results on refresh failure so pull-to-refresh does not wipe the list.
-        if (mode === 'replace') {
+        // Keep prior results on refresh/stale-cache failure so pull-to-refresh does not wipe the list.
+        if (mode === 'replace' && !paintedFromCache) {
           setArticles([])
         }
         setError(err instanceof Error ? err.message : 'Could not load stories')

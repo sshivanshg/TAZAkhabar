@@ -1,7 +1,7 @@
 # Reader app
 
 > **Living doc** — update when Expo routes, city/feed/share behavior, or desktop web layer change.  
-> **Last verified against:** 2026-08-27 (A2HS banner: mobile browser web only; hidden when installed PWA / Expo native)
+> **Last verified against:** 2026-08-27 (public trust/support routes; Android PWA install; feed cache 45m TTL)
 
 ## Purpose
 
@@ -22,6 +22,11 @@ Go to [source], I like this), not on the card face. Tab scenes fade in on focus;
 articles open with a fade-from-bottom; city picker slides from the right. Tablet
 and desktop retain denser rows and the desktop content rail.
 
+The compact web shell does not add native safe-area padding below the tab bar;
+native layouts retain device safe-area padding. The web document also keeps
+browser text-size adjustment at 100% so mobile browsers do not inflate the
+reader beyond the intended responsive scale.
+
 ## Boundaries
 
 - **In scope:** Expo Router screens, API client, city preference, share, desktop layout, theme tokens, PWA assets.
@@ -31,10 +36,10 @@ and desktop retain denser rows and the desktop content rail.
 
 ```mermaid
 flowchart LR
-  User[Reader] --> Pages[Cloudflare Pages<br/>tazakhabar-web]
+  User[Reader] --> Pages[Cloudflare Pages<br/>newsfeed-web]
   Pages --> Expo[Expo RN Web export]
   Expo -->|EXPO_PUBLIC_API_BASE_URL<br/>no auth| API[TazaKhabar.Api]
-  Expo --> Storage[AsyncStorage city + theme + prefs]
+  Expo --> Storage[AsyncStorage city + theme + prefs + feed cache]
 ```
 
 ## Components / key types
@@ -51,6 +56,8 @@ flowchart LR
 | `(tabs)/profile.tsx` | Settings: city, appearance (Light/Dark/System), language, blocks |
 | `(tabs)/categories.tsx` | Hidden (`href: null`) |
 | `article/[id].tsx` | Continuous editorial article feed; hydrates `body` via `getArticle`; Back returns to Home |
+| `about.tsx`, `privacy.tsx`, `terms.tsx` | Public product, privacy, and legal information |
+| `support.tsx`, `corrections.tsx` | Reader support plus editorial correction/takedown process |
 | `feed.tsx` | Legacy redirect → tabs |
 
 ### Modules
@@ -60,6 +67,7 @@ flowchart LR
 | `src/api/client.ts` | Typed API calls |
 | `src/api/useAsyncResource.ts` | Shared async lifecycle hook for ordinary server-state reads |
 | `src/storage/cityPreference.ts` | Persisted city (`AsyncStorage`; device-local, no account) |
+| `src/storage/feedCache.ts` | First-page Home/Discover feed cache (`AsyncStorage`; 45m TTL; key = city+category+lang+q) |
 | `src/components/CityListItem.tsx` | Tappable city row + list skeleton |
 | `src/components/CitySearch.tsx` | Live city/state filter field |
 | `src/utils/shareToWhatsApp.ts` | Share deep link / intent |
@@ -72,17 +80,26 @@ flowchart LR
 | `src/components/BreakingHeroCard.tsx` | Top story: rounded image, circular source mark, headline/time |
 | `src/components/RelatedStoriesStrip.tsx` | Horizontal related cluster under a featured card |
 | `src/utils/feedLayout.ts` | Mixed mobile feed (featured / related / compact) |
-| `public/manifest.webmanifest`, `public/_headers` | PWA / Pages headers |
-| `src/components/AddToHomeBanner.tsx` | Soft install hint after city pick; gated by `shouldOfferAddToHome` |
+| `public/manifest.webmanifest`, `public/sw.js`, `public/_headers` | PWA installability (manifest + service worker) / Pages headers |
+| `src/components/AddToHomeBanner.tsx` | Soft install hint after city pick; Android **Install** uses `beforeinstallprompt` |
+| `src/pwa/installPrompt.ts` | Captures Chromium install event; `promptInstall()` opens the native dialog |
+| `src/pwa/registerWebServiceWorker.ts` | Registers `/sw.js` on web only (never Expo native) |
 | `src/utils/shouldOfferAddToHome.ts` | A2HS only on **mobile web browsers**; never Expo native; never installed PWA (`display-mode: standalone` / iOS `navigator.standalone`) |
+| `src/components/PublicInfoScreen.tsx`, `src/content/publicPages.ts` | Shared native-safe public information pages and launch policy copy |
 
 Stack: Expo ~54, expo-router, Gluestack UI, Moti, AsyncStorage.
 
 Server state convention: ordinary API reads should go through `useAsyncResource`
 or a feature hook built on it. Keep imperative `useState`/`useEffect` loaders only
 where pagination, body prefetching, or fire-and-forget mutations make the flow
-meaningfully different. Revisit TanStack Query when cross-screen caching,
-invalidation, or offline behavior becomes product-critical.
+meaningfully different. Home and Discover first-page lists use `src/storage/feedCache.ts`
+so a reopen / tab return within **45 minutes** reuses the last successful fetch
+(no network). Pull-to-refresh always hits the API and overwrites the cache. Changing
+city, category, language, or Discover query uses a different cache key (fetch if that
+key is missing or stale). Expired cache still paints immediately while a background
+refresh runs (stale-while-revalidate). Pagination `append` is never served from cache.
+Revisit TanStack Query when cross-screen invalidation or offline-first sync becomes
+product-critical beyond this first-page policy.
 
 ## Data & control flows
 
@@ -97,6 +114,9 @@ sequenceDiagram
     App->>App: AsyncStorage save
   end
   App->>API: getCities / getArticles / getArticleDates
+  Note over App: First-page getArticles skipped when feed cache is fresh (45m)
+  U->>App: Pull to refresh
+  App->>API: getArticles (force) + write feed cache
   U->>App: Open article
   App->>API: getArticles (stack) + getArticle (body)
   App->>API: recordArticleView
@@ -118,12 +138,12 @@ API helpers used: `getHealth`, `getCities`, `getArticles`, `getArticleDates`, `g
 
 | Item | Value |
 |------|-------|
-| Env | `EXPO_PUBLIC_API_BASE_URL`, `EXPO_PUBLIC_APP_ENV` |
+| Env | `EXPO_PUBLIC_API_BASE_URL`, `EXPO_PUBLIC_APP_ENV`, `EXPO_PUBLIC_SUPPORT_EMAIL` |
 | Deploy artifact | `pnpm build:web` → `apps/app/dist` |
 | Bundle report | `pnpm --filter @tazakhabar/app bundle:report` |
 | Android APK (local) | `pnpm build:apk` → `expo prebuild` + `gradlew assembleRelease` → `apps/app/android/app/build/outputs/apk/release/app-release.apk` |
 | Native project | `apps/app/android/` generated, gitignored; regenerate with `pnpm --filter @tazakhabar/app prebuild:android` |
-| Pages project | default `tazakhabar-web` |
+| Pages project | `newsfeed-web` |
 | Auth | None for MVP |
 
 For ordinary reader UI development, `apps/app/.env.example` targets the hosted
@@ -151,7 +171,8 @@ Manual verification still required before claiming a comprehensive a11y sweep is
 - Use RN primitives (`View`/`Text`/`Pressable`) so web and native stay aligned — avoid raw HTML/CSS except thin `Platform` forks.
 - Do not add a second Vite reader app.
 - Appearance: Light / Dark / System (default System), persisted in AsyncStorage; Profile controls it. Brand accent fill stays `#155EEF`.
-- No login — city and theme preferences are device-local only.
+- No login — city, theme, and first-page feed cache are device-local only.
+- Feed cache: first page only; TTL 45 minutes; max 16 key entries (LRU). Fresh cache skips the network until pull-to-refresh or key change (city / category / language / Discover `q`). Stale cache paints then revalidates.
 - List payloads omit `body`; the reader shows full plain-text `body` when `GET /api/articles/{id}` returns it, otherwise the summary. For translated reads, the API suppresses original-language `body` so the story shows translated headline/summary rather than mixing languages.
 - The article screen uses Reels-style vertical paging: each story is one viewport-tall page so two stories never share the screen. A scroll gesture snaps to the next story with a slower eased transition on web (~700ms; instant when the reader prefers reduced motion). Native paging uses the normal deceleration rate rather than the snappy `fast` default. Short stories pad to fill the page; longer stories scroll inside that page. Story content starts below the opaque top bar so hero images (including e-paper mastheads) do not bleed through the chrome. Publisher download CTAs such as “Download in high quality” are stripped from body copy. Later stories append as the reader approaches the end. The FlatList is the only paging surface (`flex: 1` inside an overflow-clipped root); the sticky top bar and compact bottom action bar sit outside that list (viewport-fixed on web) so chrome does not move with story content. Share and Save live only in that bottom bar — not duplicated in the story body.
 - Active story is detected with FlatList viewability (and an IntersectionObserver sentinel on web). `6 of 8` updates from that active item. On web the `/article/:id` path is `history.replaceState`’d while reading. The article Back control always `replace`s to Home (`/(tabs)`) so history never drops the reader on Discover.
