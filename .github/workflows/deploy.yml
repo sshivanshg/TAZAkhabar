@@ -44,7 +44,8 @@ jobs:
             echo "ready=true" >> "$GITHUB_OUTPUT"
           else
             echo "ready=false" >> "$GITHUB_OUTPUT"
-            echo "::warning::Skipping Cloudflare Pages publish — set CLOUDFLARE_API_TOKEN (and CLOUDFLARE_ACCOUNT_ID) as repository or production-environment secrets."
+            echo "::error::CLOUDFLARE_API_TOKEN and/or CLOUDFLARE_ACCOUNT_ID missing on the production environment. Add both as environment secrets so Pages publish can run."
+            exit 1
           fi
 
       - name: Publish to Cloudflare Pages
@@ -91,7 +92,8 @@ jobs:
             echo "ready=true" >> "$GITHUB_OUTPUT"
           else
             echo "ready=false" >> "$GITHUB_OUTPUT"
-            echo "::warning::Skipping Cloudflare Pages publish — set CLOUDFLARE_API_TOKEN (and CLOUDFLARE_ACCOUNT_ID) as repository or production-environment secrets."
+            echo "::error::CLOUDFLARE_API_TOKEN and/or CLOUDFLARE_ACCOUNT_ID missing on the production environment. Add both as environment secrets so Pages publish can run."
+            exit 1
           fi
 
       - name: Publish admin to Cloudflare Pages

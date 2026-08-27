@@ -1,7 +1,7 @@
 # Monorepo
 
 > **Living doc** — update when workspace packages, root scripts, or layout change.  
-> **Last verified against:** 2026-08-27 (local working tree)
+> **Last verified against:** 2026-08-27 (githooks + Cursor verify-build)
 
 ## Purpose
 
@@ -50,18 +50,31 @@ Root scripts (see root `package.json`):
 
 | Script | Does |
 |--------|------|
+| `pnpm prepare` | Sets `core.hooksPath` to `.githooks` (local git hooks) |
 | `pnpm dev:web` | Expo web reader |
 | `pnpm build:web` | `expo export -p web` → `apps/app/dist` |
+| `pnpm lint:app` | Expo app `tsc --noEmit` |
 | `pnpm dev:admin` | Vite admin |
 | `pnpm generate:types` | NSwag generate from OpenAPI snapshot |
 | `pnpm dev:api` / `dotnet run` | API |
 | `pnpm test:api` / `dotnet test` | Backend tests |
+
+### Local gates (catch broken builds before push / agent “done”)
+
+| Gate | Location | Runs |
+|------|----------|------|
+| Cursor agent verify | `.cursor/hooks/verify-build.py` via `afterFileEdit` + `stop` in `.cursor/hooks.json` | Marks dirty packages on edit; on agent stop runs `pnpm lint:app`, admin `tsc -b`, and/or `dotnet build` and follow-ups on failure |
+| Git pre-push | `.githooks/pre-push` | Same package-scoped checks for commits being pushed |
+
+After clone: `pnpm install` (runs `prepare`) so git uses `.githooks`.
 
 Local stack: Docker Postgres ↔ API ↔ Metro/Expo + Vite admin.
 
 ## Key files
 
 - `package.json`, `pnpm-workspace.yaml`
+- `.githooks/pre-push`
+- `.cursor/hooks.json`, `.cursor/hooks/verify-build.py`
 - `TazaKhabar.sln`
 - `docker-compose.yml`
 - `apps/README.md`

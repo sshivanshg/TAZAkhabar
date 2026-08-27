@@ -34,6 +34,8 @@ Thumbs.db
 
 # Cursor agent session archives (prompts / transcripts — may contain secrets)
 .cursor/sessions/
+# Cursor hook scratch state (dirty package marks for verify-build)
+.cursor/hooks-state/
 
 # Superpowers brainstorm / local session artifacts
 .superpowers/
