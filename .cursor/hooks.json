@@ -18,10 +18,21 @@
         "timeout": 15
       }
     ],
+    "afterFileEdit": [
+      {
+        "command": ".cursor/hooks/verify-build.py",
+        "timeout": 10
+      }
+    ],
     "stop": [
       {
         "command": ".cursor/hooks/session-store.py",
         "timeout": 10
+      },
+      {
+        "command": ".cursor/hooks/verify-build.py",
+        "timeout": 180,
+        "loop_limit": 3
       }
     ]
   }

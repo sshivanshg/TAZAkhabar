@@ -1,0 +1,83 @@
+#!/usr/bin/env bash
+# Block pushes that would fail the same gates CI uses for touched packages.
+set -euo pipefail
+
+root="$(git rev-parse --show-toplevel)"
+cd "$root"
+
+remote_sha="${2:-}"
+# stdin lines: <local_ref> <local_sha> <remote_ref> <remote_sha>
+changed=()
+while read -r _local_ref local_sha _remote_ref remote_sha_line; do
+  if [[ -z "${local_sha:-}" || "$local_sha" =~ ^0+$ ]]; then
+    continue
+  fi
+  if [[ -z "${remote_sha_line:-}" || "$remote_sha_line" =~ ^0+$ ]]; then
+    # New branch — compare against merge-base with main when available.
+    if git rev-parse --verify origin/main >/dev/null 2>&1; then
+      range="origin/main...$local_sha"
+    else
+      range="$local_sha"
+    fi
+  else
+    range="$remote_sha_line...$local_sha"
+  fi
+  while IFS= read -r file; do
+    [[ -n "$file" ]] && changed+=("$file")
+  done < <(git diff --name-only "$range" 2>/dev/null || true)
+done
+
+if [[ ${#changed[@]} -eq 0 ]]; then
+  # Fallback: dirty + last commit vs upstream.
+  while IFS= read -r file; do
+    [[ -n "$file" ]] && changed+=("$file")
+  done < <(git diff --name-only HEAD@{upstream}...HEAD 2>/dev/null || git diff --name-only HEAD~1...HEAD 2>/dev/null || true)
+fi
+
+need_app=0
+need_admin=0
+need_api=0
+for file in "${changed[@]+"${changed[@]}"}"; do
+  case "$file" in
+    apps/app/*|packages/shared-types/*) need_app=1 ;;
+  esac
+  case "$file" in
+    apps/admin/*|packages/shared-types/*) need_admin=1 ;;
+  esac
+  case "$file" in
+    apps/api/*|apps/api.Tests/*|infra/migrations/*|*.csproj|*.sln) need_api=1 ;;
+  esac
+done
+
+fail=0
+
+if [[ "$need_app" -eq 1 ]]; then
+  echo "pre-push: pnpm lint:app"
+  if ! pnpm lint:app; then
+    echo "pre-push: app typecheck failed" >&2
+    fail=1
+  fi
+fi
+
+if [[ "$need_admin" -eq 1 ]]; then
+  echo "pre-push: admin tsc -b"
+  if ! pnpm --filter @tazakhabar/admin exec tsc -b --pretty false; then
+    echo "pre-push: admin typecheck failed" >&2
+    fail=1
+  fi
+fi
+
+if [[ "$need_api" -eq 1 ]]; then
+  echo "pre-push: dotnet build"
+  if ! dotnet build TazaKhabar.sln -c Release --nologo -v q; then
+    echo "pre-push: api build failed" >&2
+    fail=1
+  fi
+fi
+
+if [[ "$fail" -ne 0 ]]; then
+  echo "pre-push: blocked — fix the errors above before pushing." >&2
+  exit 1
+fi
+
+exit 0
