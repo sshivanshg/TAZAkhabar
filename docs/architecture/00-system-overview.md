@@ -1,7 +1,7 @@
 # System overview
 
 > **Living doc** — update in the same change when topology, hosting, or cross-app contracts move.  
-> **Last verified against:** 2026-08-27 (actual Cloudflare Pages project names)
+> **Last verified against:** 2026-08-27 (actual Cloudflare Pages project names plus separate marketing site)
 
 ## Purpose
 
@@ -9,14 +9,15 @@ End-to-end picture of TazaKhabar: who talks to whom, where code lives, and why t
 
 ## Boundaries
 
-- **In scope:** Reader ↔ API ↔ Neon; admin ↔ API; Cloudflare Pages + proxied API; Render API + ingest crons; outbound RSS/HTML/Claude/OpenAI.
-- **Out of scope:** Marketing site, native EAS store details, future multi-editor identity.
+- **In scope:** Marketing site → reader handoff; reader ↔ API ↔ Neon; admin ↔ API; Cloudflare Pages + proxied API; Render API + ingest crons; outbound RSS/HTML/Claude/OpenAI.
+- **Out of scope:** Native EAS store details, future multi-editor identity.
 
 ## Context diagram
 
 ```mermaid
 flowchart TB
   subgraph clients [Clients]
+    Site[Marketing site<br/>apps/site<br/>Cloudflare Pages]
     Reader[Expo reader PWA<br/>apps/app<br/>Cloudflare Pages]
     Admin[Vite admin SPA<br/>apps/admin<br/>Cloudflare Pages]
   end
@@ -44,8 +45,10 @@ flowchart TB
     OpenAI[OpenAI scrape rewrite]
   end
 
+  Site --> CDN
   Reader --> CDN
   Admin --> CDN
+  Site -->|Open reader CTA| Reader
   Reader -->|EXPO_PUBLIC_API_BASE_URL<br/>no auth| APICF
   Admin -->|VITE_API_BASE_URL<br/>Bearer JWT + SSE| APICF
   APICF --> API
@@ -63,6 +66,7 @@ flowchart TB
 
 | Component | Path / host | Role |
 |-----------|-------------|------|
+| Marketing site | `apps/site` → Cloudflare Pages `tazakhabar-site` | Public landing, legal, support, corrections |
 | Reader | `apps/app` → Cloudflare Pages `newsfeed-web` | City feed, search, share, PWA |
 | Admin | `apps/admin` → Cloudflare Pages `newsfeed-admin` | Review queue, sources, uploads, live ingest |
 | API | `apps/api` → Render `tazakhabar-api` | Sole DB client; public + admin + ingest |
@@ -128,7 +132,7 @@ sequenceDiagram
 - `apps/api/Program.cs`
 - `render.yaml`
 - `.github/workflows/ci.yml`, `.github/workflows/deploy.yml`
-- `docs/adr/001-monorepo.md` … `006-internal-admin-spa.md`
+- `docs/adr/001-monorepo.md` … `007-public-marketing-site.md`
 - `docs/PRD.md`
 
 ## Public contracts
@@ -139,7 +143,9 @@ sequenceDiagram
 | Admin API | `/api/admin/*` Bearer JWT (login excepted) |
 | Ingest | `POST /api/ingest/rss\|scrape\|daily` + `X-Ingest-Key` |
 | Reader env | `EXPO_PUBLIC_API_BASE_URL` |
+| Reader → site env | `EXPO_PUBLIC_SITE_URL` |
 | Admin env | `VITE_API_BASE_URL` |
+| Site env | `VITE_READER_URL`, `VITE_SITE_URL`, `VITE_SUPPORT_EMAIL` |
 | OpenAPI | `GET /openapi/v1.json` |
 
 ## Failure modes & invariants
@@ -153,7 +159,7 @@ sequenceDiagram
 ## Related docs
 
 - Hub: [README](./README.md)
-- [ADR-001](../adr/001-monorepo.md) … [ADR-006](../adr/006-internal-admin-spa.md)
+- [ADR-001](../adr/001-monorepo.md) … [ADR-007](../adr/007-public-marketing-site.md)
 - [PRD](../PRD.md)
 - Hosting design: `docs/superpowers/specs/2026-08-03-render-cloudflare-hosting-design.md`
 
@@ -162,5 +168,5 @@ sequenceDiagram
 | When you change… | Update… |
 |------------------|---------|
 | Who talks to whom / hosting topology | This page + [08-hosting-and-ci](./08-hosting-and-ci.md) |
-| New app or package | This page + [01-monorepo](./01-monorepo.md) + hub README |
+| New app or package | This page + [01-monorepo](./01-monorepo.md) + hub README + subsystem page |
 | Stack rationale / ADR | Link ADR here; do not rewrite ADR text for “now” |

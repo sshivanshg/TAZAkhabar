@@ -13,6 +13,8 @@
     "generate:types": "pnpm --filter @tazakhabar/shared-types generate",
     "dev:admin": "pnpm --filter @tazakhabar/admin dev",
     "build:admin": "pnpm --filter @tazakhabar/admin build",
+    "dev:site": "pnpm --filter @tazakhabar/site dev",
+    "build:site": "pnpm --filter @tazakhabar/site build",
     "dev:api": "dotnet run --project apps/api/TazaKhabar.Api.csproj",
     "test:api": "dotnet test TazaKhabar.sln",
     "build:api": "dotnet build TazaKhabar.sln -c Release"
