@@ -1,11 +1,11 @@
 # @tazakhabar/app
 
-Expo universal client for **TazaKhabar** (placeholder name) — web is the primary MVP surface.
+Expo universal client for **TazaKhabar** — web is the primary MVP surface.
 iOS/Android builds use the same codebase later.
 
 ## UI
 
-Light shell (`#FAFAFA`) with a single blue accent (`#1D7BFF`). No auth — pick a city, read the feed, share stories.
+Light shell with TazaKhabar blue as the primary accent. No auth: pick a city, read the feed, share stories.
 
 ## Setup
 
@@ -28,7 +28,7 @@ the hosted API.
 |----------|---------|
 | `EXPO_PUBLIC_API_BASE_URL` | API origin (no trailing slash). For APK/device builds use the hosted API, not localhost |
 | `EXPO_PUBLIC_APP_ENV` | `local` / `staging` / `production` |
-| `EXPO_PUBLIC_SUPPORT_EMAIL` | Public support address shown on privacy, support, and corrections pages |
+| `EXPO_PUBLIC_SITE_URL` | Public marketing/legal website origin opened from the reader |
 
 When working on the API itself, temporarily set the local `.env` to
 `EXPO_PUBLIC_API_BASE_URL=http://localhost:8080` and

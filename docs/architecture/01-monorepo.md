@@ -1,7 +1,7 @@
 # Monorepo
 
 > **Living doc** — update when workspace packages, root scripts, or layout change.  
-> **Last verified against:** 2026-08-27 (local Gradle `pnpm build:apk`)
+> **Last verified against:** 2026-08-27 (local Gradle `pnpm build:apk` plus public marketing site package)
 
 ## Purpose
 
@@ -18,6 +18,7 @@ Describe package layout, tooling, and boundaries so API / types / clients stay c
 flowchart TB
   root[TazaKhabar monorepo]
   root --> app[apps/app<br/>Expo reader]
+  root --> site[apps/site<br/>Vite marketing site]
   root --> admin[apps/admin<br/>Vite admin]
   root --> api[apps/api<br/>.NET 8]
   root --> tests[apps/api.Tests]
@@ -35,6 +36,7 @@ flowchart TB
 | Path | Package / project | Role |
 |------|-------------------|------|
 | `apps/app` | `@tazakhabar/app` | Expo universal reader |
+| `apps/site` | `@tazakhabar/site` | Public marketing + legal site |
 | `apps/admin` | `@tazakhabar/admin` | Editorial Vite SPA |
 | `apps/api` | `TazaKhabar.Api` | Minimal API |
 | `apps/api.Tests` | `TazaKhabar.Api.Tests` | xUnit + WebApplicationFactory |
@@ -42,7 +44,7 @@ flowchart TB
 | `infra/docker` | — | `Dockerfile.api`, optional `Dockerfile.web` |
 | `infra/migrations` | `TazaKhabar.Api.Migrations` (legacy namespace) | EF migrations compiled into API |
 | `TazaKhabar.sln` | — | API + tests |
-| `pnpm-workspace.yaml` | — | `apps/app`, `apps/admin`, `packages/*` |
+| `pnpm-workspace.yaml` | — | `apps/app`, `apps/site`, `apps/admin`, `packages/*` |
 
 ## Data & control flows
 
@@ -55,6 +57,8 @@ Root scripts (see root `package.json`):
 | `pnpm build:web` | `expo export -p web` → `apps/app/dist` |
 | `pnpm build:apk` | Expo prebuild + Gradle `assembleRelease` → sideload APK under `apps/app/android/` |
 | `pnpm lint:app` | Expo app `tsc --noEmit` |
+| `pnpm dev:site` | Marketing site |
+| `pnpm build:site` | Vite build → `apps/site/dist` |
 | `pnpm dev:admin` | Vite admin |
 | `pnpm generate:types` | NSwag generate from OpenAPI snapshot |
 | `pnpm dev:api` / `dotnet run` | API |

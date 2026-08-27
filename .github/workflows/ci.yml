@@ -130,7 +130,14 @@ jobs:
         env:
           EXPO_PUBLIC_API_BASE_URL: https://api.example.com
           EXPO_PUBLIC_APP_ENV: ci
-          EXPO_PUBLIC_SUPPORT_EMAIL: support@example.com
+          EXPO_PUBLIC_SITE_URL: https://tazakhabar-site.pages.dev
+
+      - name: Build marketing site
+        run: pnpm build:site
+        env:
+          VITE_READER_URL: https://newsfeed-web.pages.dev/
+          VITE_SITE_URL: https://tazakhabar-site.pages.dev
+          VITE_SUPPORT_EMAIL: support@example.com
 
       - name: Build admin (Cloudflare Pages artifact)
         run: pnpm build:admin

@@ -1,17 +1,16 @@
 import { useMemo } from 'react'
-import { Platform, Pressable, StyleSheet, Text, View, type AccessibilityRole, type PressableStateCallbackType } from 'react-native'
+import { Linking, Platform, Pressable, StyleSheet, Text, View, type AccessibilityRole, type PressableStateCallbackType } from 'react-native'
 import { usePathname, useRouter, type Href } from 'expo-router'
 import Bookmark from 'lucide-react-native/icons/bookmark'
 import Home from 'lucide-react-native/icons/house'
 import User from 'lucide-react-native/icons/user'
-import Info from 'lucide-react-native/icons/info'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useTheme } from '../../preferences/ThemePreferenceContext'
 import { iconStroke, type AppIcon } from '../../theme/categoryIcons'
 import { HIT_TARGET, radius, space, typography, type AppColors } from '../../theme/tokens'
 
 type NavItem = {
-  id: 'home' | 'bookmarks' | 'profile' | 'about'
+  id: 'home' | 'bookmarks' | 'profile'
   label: string
   href: Href
   testID: string
@@ -22,8 +21,9 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'home', label: 'Home', href: '/(tabs)', testID: 'sidebar-nav-home', Icon: Home },
   { id: 'bookmarks', label: 'Bookmarks', href: '/(tabs)/bookmarks', testID: 'sidebar-nav-bookmarks', Icon: Bookmark },
   { id: 'profile', label: 'Profile', href: '/(tabs)/profile', testID: 'sidebar-nav-profile', Icon: User },
-  { id: 'about', label: 'About & help', href: '/about', testID: 'sidebar-nav-about', Icon: Info },
 ]
+
+const siteUrl = (process.env.EXPO_PUBLIC_SITE_URL ?? 'https://tazakhabar-site.pages.dev').replace(/\/+$/, '')
 
 type WebPressableState = PressableStateCallbackType & {
   hovered?: boolean
@@ -51,6 +51,9 @@ export function DesktopSidebar() {
   const insets = useSafeAreaInsets()
   const { colors } = useTheme()
   const styles = useMemo(() => createStyles(colors), [colors])
+  const openExternal = (path: string) => {
+    void Linking.openURL(`${siteUrl}${path}`)
+  }
 
   return (
     <View
@@ -109,7 +112,7 @@ export function DesktopSidebar() {
         <View style={styles.footerRule} />
         <View style={styles.footerLinks}>
           <Pressable
-            onPress={() => router.push('/privacy')}
+            onPress={() => openExternal('/privacy')}
             accessibilityRole="link"
             accessibilityLabel="Privacy"
             style={({ pressed }) => [styles.footerLink, pressed ? styles.itemPressed : null]}
@@ -117,7 +120,7 @@ export function DesktopSidebar() {
             <Text style={styles.footerLinkText}>Privacy</Text>
           </Pressable>
           <Pressable
-            onPress={() => router.push('/support')}
+            onPress={() => openExternal('/support')}
             accessibilityRole="link"
             accessibilityLabel="Support"
             style={({ pressed }) => [styles.footerLink, pressed ? styles.itemPressed : null]}

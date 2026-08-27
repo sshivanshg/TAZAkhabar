@@ -1,4 +1,5 @@
 packages:
   - "apps/app"
   - "apps/admin"
+  - "apps/site"
   - "packages/*"

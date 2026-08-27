@@ -1,11 +1,11 @@
 # Hosting and CI
 
 > **Living doc** — update when Render, Cloudflare, Neon, Docker, workflows, or env templates change.  
-> **Last verified against:** 2026-08-27 (public support env + CSP/HSTS; deploy fails closed without CF token)
+> **Last verified against:** 2026-08-27 (reader + admin + marketing site Pages deploys; deploy fails closed without CF token)
 
 ## Purpose
 
-How TazaKhabar is built, deployed, and wired in production: Render API + crons, Cloudflare Pages (reader + admin), Neon Postgres, GitHub Actions, local Docker.
+How TazaKhabar is built, deployed, and wired in production: Render API + crons, Cloudflare Pages (reader + marketing site + admin), Neon Postgres, GitHub Actions, local Docker.
 
 ## Boundaries
 
@@ -26,6 +26,7 @@ flowchart TB
   Main -->|auto| Render[Render tazakhabar-api<br/>Docker Dockerfile.api]
   Main --> Deploy
   Deploy --> PagesWeb[Cloudflare Pages<br/>newsfeed-web]
+  Deploy --> PagesSite[Cloudflare Pages<br/>tazakhabar-site]
   Deploy --> PagesAdmin[Cloudflare Pages<br/>newsfeed-admin]
   Render --> Neon[(Neon Postgres)]
   CronRSS[Render cron RSS] --> Render
@@ -46,10 +47,10 @@ flowchart TB
 | Optional web nginx preview | `infra/docker/Dockerfile.web`, `nginx.web.conf` |
 | Blueprint | `render.yaml` — web `tazakhabar-api` + ingest/purge crons |
 | Local DB | `docker-compose.yml` Postgres 16 |
-| CI | `.github/workflows/ci.yml` — API format/build/test + Postgres, migration SQL artifact, OpenAPI drift check; app lint/test/export; admin build |
-| Deploy | `.github/workflows/deploy.yml` — Pages for web + admin; API via Render auto-deploy |
+| CI | `.github/workflows/ci.yml` — API format/build/test + Postgres, migration SQL artifact, OpenAPI drift check; app lint/test/export; marketing site build; admin build |
+| Deploy | `.github/workflows/deploy.yml` — Pages for reader + marketing site + admin; API via Render auto-deploy |
 | DB migration workflow | `.github/workflows/migrate-production.yml` — manual production EF migration apply |
-| Env templates | `.env.example`, `.env.staging.example`, `.env.production.example`, `apps/app/.env.example`, `apps/admin/.env.example` |
+| Env templates | `.env.example`, `.env.staging.example`, `.env.production.example`, `apps/app/.env.example`, `apps/admin/.env.example`, `apps/site/.env.example` |
 
 No `wrangler.toml` in-repo — Pages deploy uses `cloudflare/pages-action` (wrangler 3) in Actions. Cache/security headers via each app’s `public/_headers`.
 
@@ -93,10 +94,12 @@ No `wrangler.toml` in-repo — Pages deploy uses `cloudflare/pages-action` (wran
 | `IngestHealth__MaxSilenceMinutes`, `IngestHealth__AlertWebhookUrl` | Render |
 | `INGEST_URL` | Render cron services and GitHub Actions `nightly-ingest.yml` |
 | `EXPO_PUBLIC_API_BASE_URL` | GitHub Actions **and** `apps/app/.env.production` (Expo inlines this at export) |
-| `EXPO_PUBLIC_SUPPORT_EMAIL` | GitHub Actions production variable; inlined into public support/privacy/corrections pages |
+| `EXPO_PUBLIC_SITE_URL` | GitHub Actions production variable for reader links to the public website |
 | `VITE_API_BASE_URL` | GitHub Actions **and** `apps/admin/.env.production` |
+| `VITE_READER_URL`, `VITE_SITE_URL`, `VITE_SUPPORT_EMAIL` | GitHub Actions production variables for the marketing site |
 | `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` | GitHub **production** environment secrets (required — Deploy fails if either is missing) |
 | `CLOUDFLARE_PAGES_PROJECT_NAME` | default `newsfeed-web` (existing Cloudflare Pages project) |
+| `CLOUDFLARE_PAGES_SITE_PROJECT_NAME` | default `tazakhabar-site` (marketing Pages project) |
 | `CLOUDFLARE_PAGES_ADMIN_PROJECT_NAME` | default `newsfeed-admin` (existing Cloudflare Pages project) |
 | `PRODUCTION_DATABASE_CONNECTION_STRING` | GitHub production environment secret for manual migration workflow |
 

@@ -1,7 +1,7 @@
 # Reader app
 
 > **Living doc** — update when Expo routes, city/feed/share behavior, or desktop web layer change.  
-> **Last verified against:** 2026-08-27 (public trust/support routes; Android PWA install; feed cache 45m TTL)
+> **Last verified against:** 2026-08-27 (external public site links; Android PWA install; feed cache 45m TTL)
 
 ## Purpose
 
@@ -56,8 +56,6 @@ flowchart LR
 | `(tabs)/profile.tsx` | Settings: city, appearance (Light/Dark/System), language, blocks |
 | `(tabs)/categories.tsx` | Hidden (`href: null`) |
 | `article/[id].tsx` | Continuous editorial article feed; hydrates `body` via `getArticle`; Back returns to Home |
-| `about.tsx`, `privacy.tsx`, `terms.tsx` | Public product, privacy, and legal information |
-| `support.tsx`, `corrections.tsx` | Reader support plus editorial correction/takedown process |
 | `feed.tsx` | Legacy redirect → tabs |
 
 ### Modules
@@ -85,7 +83,7 @@ flowchart LR
 | `src/pwa/installPrompt.ts` | Captures Chromium install event; `promptInstall()` opens the native dialog |
 | `src/pwa/registerWebServiceWorker.ts` | Registers `/sw.js` on web only (never Expo native) |
 | `src/utils/shouldOfferAddToHome.ts` | A2HS only on **mobile web browsers**; never Expo native; never installed PWA (`display-mode: standalone` / iOS `navigator.standalone`) |
-| `src/components/PublicInfoScreen.tsx`, `src/content/publicPages.ts` | Shared native-safe public information pages and launch policy copy |
+| `src/components/PublicLinks.tsx` | External links to the standalone public site |
 
 Stack: Expo ~54, expo-router, Gluestack UI, Moti, AsyncStorage.
 
@@ -138,7 +136,7 @@ API helpers used: `getHealth`, `getCities`, `getArticles`, `getArticleDates`, `g
 
 | Item | Value |
 |------|-------|
-| Env | `EXPO_PUBLIC_API_BASE_URL`, `EXPO_PUBLIC_APP_ENV`, `EXPO_PUBLIC_SUPPORT_EMAIL` |
+| Env | `EXPO_PUBLIC_API_BASE_URL`, `EXPO_PUBLIC_APP_ENV`, `EXPO_PUBLIC_SITE_URL` |
 | Deploy artifact | `pnpm build:web` → `apps/app/dist` |
 | Bundle report | `pnpm --filter @tazakhabar/app bundle:report` |
 | Android APK (local) | `pnpm build:apk` → `expo prebuild` + `gradlew assembleRelease` → `apps/app/android/app/build/outputs/apk/release/app-release.apk` |
@@ -172,6 +170,7 @@ Manual verification still required before claiming a comprehensive a11y sweep is
 - Do not add a second Vite reader app.
 - Appearance: Light / Dark / System (default System), persisted in AsyncStorage; Profile controls it. Brand accent fill stays `#155EEF`.
 - No login — city, theme, and first-page feed cache are device-local only.
+- Privacy, support, terms, and corrections live on the standalone public website and open externally from the reader.
 - Feed cache: first page only; TTL 45 minutes; max 16 key entries (LRU). Fresh cache skips the network until pull-to-refresh or key change (city / category / language / Discover `q`). Stale cache paints then revalidates.
 - List payloads omit `body`; the reader shows full plain-text `body` when `GET /api/articles/{id}` returns it, otherwise the summary. For translated reads, the API suppresses original-language `body` so the story shows translated headline/summary rather than mixing languages.
 - The article screen uses Reels-style vertical paging: each story is one viewport-tall page so two stories never share the screen. A scroll gesture snaps to the next story with a slower eased transition on web (~700ms; instant when the reader prefers reduced motion). Native paging uses the normal deceleration rate rather than the snappy `fast` default. Short stories pad to fill the page; longer stories scroll inside that page. Story content starts below the opaque top bar so hero images (including e-paper mastheads) do not bleed through the chrome. Publisher download CTAs such as “Download in high quality” are stripped from body copy. Later stories append as the reader approaches the end. The FlatList is the only paging surface (`flex: 1` inside an overflow-clipped root); the sticky top bar and compact bottom action bar sit outside that list (viewport-fixed on web) so chrome does not move with story content. Share and Save live only in that bottom bar — not duplicated in the story body.
