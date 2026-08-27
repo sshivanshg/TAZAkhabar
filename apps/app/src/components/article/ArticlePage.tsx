@@ -1,13 +1,11 @@
 import { useState } from 'react'
 import { Platform, ScrollView, StyleSheet, View } from 'react-native'
 import { readerColors } from '../../theme/readerTokens'
-import { StoryDivider } from './StoryDivider'
 
 type Props = {
   height: number
   padTop: number
   padBottom: number
-  showNextLabel?: boolean
   children: React.ReactNode
 }
 
@@ -16,7 +14,6 @@ export function ArticlePage({
   height,
   padTop,
   padBottom,
-  showNextLabel = false,
   children,
 }: Props) {
   const [scrollable, setScrollable] = useState(false)
@@ -40,7 +37,6 @@ export function ArticlePage({
           setScrollable(contentHeight > height + 8)
         }}
       >
-        {showNextLabel ? <StoryDivider /> : null}
         {children}
       </ScrollView>
     </View>

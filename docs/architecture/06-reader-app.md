@@ -1,7 +1,7 @@
 # Reader app
 
 > **Living doc** — update when Expo routes, city/feed/share behavior, or desktop web layer change.  
-> **Last verified against:** 2026-08-27 (slower article page transitions)
+> **Last verified against:** 2026-08-27 (no next-story divider between pages)
 
 ## Purpose
 

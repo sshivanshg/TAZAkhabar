@@ -592,7 +592,6 @@ function ArticleFeedBody() {
               height={pageHeight}
               padTop={padTop}
               padBottom={padBottom}
-              showNextLabel={itemIndex > 0}
             >
               <ArticleStory
                 article={item}

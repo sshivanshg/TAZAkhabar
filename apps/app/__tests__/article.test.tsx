@@ -181,12 +181,12 @@ describe('ArticleScreen', () => {
     expect(screen.queryByText('Download in high quality')).toBeNull()
   })
 
-  it('shows next-story continuation instead of a swipe-up cue', async () => {
+  it('does not show a next-story divider between pages', async () => {
     renderArticle()
 
-    expect(await screen.findByText('NEXT STORY')).toBeTruthy()
-    expect(screen.queryByText('↑ Next story')).toBeNull()
-    expect(screen.queryByText('Swipe up for the next story')).toBeNull()
+    expect(await screen.findByText('Fetched headline')).toBeTruthy()
+    expect(screen.queryByText('NEXT STORY')).toBeNull()
+    expect(screen.queryByTestId('next-story-divider')).toBeNull()
   })
 
   it('shows story position in the sticky header', async () => {
