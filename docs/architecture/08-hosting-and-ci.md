@@ -1,7 +1,7 @@
 # Hosting and CI
 
 > **Living doc** — update when Render, Cloudflare, Neon, Docker, workflows, or env templates change.  
-> **Last verified against:** 2026-08-27 (OpenAiRewrite Enabled flag)
+> **Last verified against:** 2026-08-27 (Pages package-name migration guard)
 
 ## Purpose
 
@@ -102,7 +102,7 @@ No `wrangler.toml` in-repo — Pages deploy uses `cloudflare/pages-action` (wran
 ## Failure modes & invariants
 
 - API deploys are owned by Render, not the Pages deploy job.
-- **Do not let Cloudflare dashboard Git builds replace Actions without env.** Connecting the repo in Pages Settings starts a second pipeline that does **not** see GitHub `vars.EXPO_PUBLIC_API_BASE_URL`. Expo then ships `EXPO_PUBLIC_API_BASE_URL is not configured`. Prefer: pause Pages automatic deployments and keep `.github/workflows/deploy.yml`. If Git builds stay on, set production env `EXPO_PUBLIC_API_BASE_URL`, build command `corepack enable && pnpm install --frozen-lockfile && pnpm --filter @tazakhabar/app build:web`, output `apps/app/dist`.
+- **Do not let Cloudflare dashboard Git builds replace Actions without env.** Connecting the repo in Pages Settings starts a second pipeline that does **not** see GitHub `vars.EXPO_PUBLIC_API_BASE_URL`. Expo then ships `EXPO_PUBLIC_API_BASE_URL is not configured`. Prefer: pause Pages automatic deployments and keep `.github/workflows/deploy.yml`. The workflow calls the stable root scripts (`pnpm build:web` / `pnpm build:admin`) so package renames do not leave stale filters behind. If Git builds stay on, set production env `EXPO_PUBLIC_API_BASE_URL`, build command `corepack enable && pnpm install --frozen-lockfile && pnpm build:web`, output `apps/app/dist`.
 - Edge caching implies up to ~60s feed staleness — tune deliberately.
 - `.github/workflows/nightly-ingest.yml` runs at `30 18 * * *` UTC (00:00 IST) and calls `/api/ingest/daily`, which avoids Claude summarization and OpenAI scrape rewrite.
 - Staging Render/Neon deferred; when added, separate service + Neon branch/project.

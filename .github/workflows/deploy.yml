@@ -32,7 +32,7 @@ jobs:
         env:
           EXPO_PUBLIC_API_BASE_URL: ${{ vars.EXPO_PUBLIC_API_BASE_URL }}
           EXPO_PUBLIC_APP_ENV: production
-        run: pnpm --filter @newsfeed/app build:web
+        run: pnpm build:web
 
       - name: Check Cloudflare credentials
         id: cf
@@ -53,7 +53,7 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          projectName: ${{ vars.CLOUDFLARE_PAGES_PROJECT_NAME || 'newsfeed-web' }}
+          projectName: ${{ vars.CLOUDFLARE_PAGES_PROJECT_NAME || 'tazakhabar-web' }}
           directory: apps/app/dist
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
           wranglerVersion: "3"
@@ -79,7 +79,7 @@ jobs:
       - name: Build admin
         env:
           VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL || vars.EXPO_PUBLIC_API_BASE_URL }}
-        run: pnpm --filter @newsfeed/admin build
+        run: pnpm build:admin
 
       - name: Check Cloudflare credentials
         id: cf
@@ -100,7 +100,7 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          projectName: ${{ vars.CLOUDFLARE_PAGES_ADMIN_PROJECT_NAME || 'newsfeed-admin' }}
+          projectName: ${{ vars.CLOUDFLARE_PAGES_ADMIN_PROJECT_NAME || 'tazakhabar-admin' }}
           directory: apps/admin/dist
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
           wranglerVersion: "3"

@@ -25,10 +25,10 @@ jobs:
           dotnet-version: "8.0.x"
 
       - name: Restore
-        run: dotnet restore NewsFeed.sln
+        run: dotnet restore TazaKhabar.sln
 
       - name: Install EF tool
         run: dotnet tool install --global dotnet-ef --version 8.*
 
       - name: Apply migrations
-        run: dotnet ef database update --project apps/api/NewsFeed.Api.csproj
+        run: dotnet ef database update --project apps/api/TazaKhabar.Api.csproj

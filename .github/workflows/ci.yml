@@ -41,13 +41,13 @@ jobs:
           dotnet-version: "8.0.x"
 
       - name: Restore
-        run: dotnet restore NewsFeed.sln
+        run: dotnet restore TazaKhabar.sln
 
       - name: Format check
-        run: dotnet format NewsFeed.sln --verify-no-changes --verbosity diagnostic
+        run: dotnet format TazaKhabar.sln --verify-no-changes --verbosity diagnostic
 
       - name: Build
-        run: dotnet build NewsFeed.sln -c Release --no-restore
+        run: dotnet build TazaKhabar.sln -c Release --no-restore
 
       - name: Install EF tool
         run: dotnet tool install --global dotnet-ef --version 8.*
@@ -56,7 +56,7 @@ jobs:
         run: |
           mkdir -p artifacts
           dotnet ef migrations script \
-            --project apps/api/NewsFeed.Api.csproj \
+            --project apps/api/TazaKhabar.Api.csproj \
             --idempotent \
             --output artifacts/newsfeed-migrations.sql
 
@@ -76,7 +76,7 @@ jobs:
           Admin__Password: ci-admin-password
           Admin__JwtSigningKey: ci-admin-jwt-signing-key-min-32-chars
         run: |
-          dotnet run --project apps/api/NewsFeed.Api.csproj -c Release --no-build > api-openapi.log 2>&1 &
+          dotnet run --project apps/api/TazaKhabar.Api.csproj -c Release --no-build > api-openapi.log 2>&1 &
           API_PID=$!
           trap 'kill $API_PID || true' EXIT
           for i in {1..30}; do
@@ -89,7 +89,7 @@ jobs:
           diff -u packages/shared-types/openapi/openapi.json /tmp/openapi.json
 
       - name: Test
-        run: dotnet test NewsFeed.sln -c Release --no-build --verbosity normal
+        run: dotnet test TazaKhabar.sln -c Release --no-build --verbosity normal
 
   frontend:
     name: Expo app lint, test, web export
@@ -120,18 +120,18 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Typecheck
-        run: pnpm --filter @newsfeed/app lint
+        run: pnpm lint:app
 
       - name: Unit / component tests
-        run: pnpm --filter @newsfeed/app test
+        run: pnpm test:app -- --runInBand
 
       - name: Export web (Cloudflare Pages artifact)
-        run: pnpm --filter @newsfeed/app build:web
+        run: pnpm build:web
         env:
           EXPO_PUBLIC_API_BASE_URL: https://api.example.com
           EXPO_PUBLIC_APP_ENV: ci
 
       - name: Build admin (Cloudflare Pages artifact)
-        run: pnpm --filter @newsfeed/admin build
+        run: pnpm build:admin
         env:
           VITE_API_BASE_URL: https://api.example.com
