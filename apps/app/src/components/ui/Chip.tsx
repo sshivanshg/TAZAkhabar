@@ -36,10 +36,8 @@ export function Chip({
     >
       {({ pressed }) => (
         <MotiView
-          animate={{
-            scale: selected ? 1 : 0.98,
-            backgroundColor: selected ? colors.accent : 'transparent',
-          }}
+          // Scale only: Moti cannot interpolate to/from `transparent`.
+          animate={{ scale: selected ? 1 : 0.98 }}
           transition={{ type: 'timing', duration: 180 }}
           style={[
             styles.chip,
