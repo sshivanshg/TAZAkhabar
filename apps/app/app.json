@@ -40,7 +40,13 @@
     },
     "plugins": [
       "expo-font",
-      "expo-router"
+      "expo-router",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Allow TazaKhabar to use your location once to find the nearest city news feed."
+        }
+      ]
     ]
   }
 }

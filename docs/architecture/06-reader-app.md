@@ -1,7 +1,7 @@
 # Reader app
 
 > **Living doc** — update when Expo routes, city/feed/share behavior, or desktop web layer change.  
-> **Last verified against:** 2026-08-27 (external public site links; Android PWA install; feed cache 45m TTL)
+> **Last verified against:** 2026-08-27 (optional location permission and 75-city nearest-city selection)
 
 ## Purpose
 
@@ -49,7 +49,7 @@ flowchart LR
 | File | Role |
 |------|------|
 | `index.tsx` | Boot: stored city → tabs else `/city` |
-| `city.tsx` | City picker (search, selected row, onboarding vs change-city copy) |
+| `city.tsx` | City picker (optional location detection, search, selected row, onboarding vs change-city copy) |
 | `(tabs)/index.tsx` | Home feed |
 | `(tabs)/search.tsx` | Search / Discover (hidden from tab bar; opened from home search) |
 | `(tabs)/bookmarks.tsx` | Local bookmarks |
@@ -65,6 +65,8 @@ flowchart LR
 | `src/api/client.ts` | Typed API calls |
 | `src/api/useAsyncResource.ts` | Shared async lifecycle hook for ordinary server-state reads |
 | `src/storage/cityPreference.ts` | Persisted city (`AsyncStorage`; device-local, no account) |
+| `src/location/getCurrentCoordinates.ts` | Explicit foreground permission + bounded current-location read; typed denial/service/timeout failures |
+| `src/location/nearestCity.ts` | Haversine match from device coordinates to public city-centre coordinates |
 | `src/storage/feedCache.ts` | First-page Home/Discover feed cache (`AsyncStorage`; 45m TTL; key = city+category+lang+q) |
 | `src/components/CityListItem.tsx` | Tappable city row + list skeleton |
 | `src/components/CitySearch.tsx` | Live city/state filter field |
@@ -109,6 +111,10 @@ sequenceDiagram
   U->>App: Open / QR land
   alt no city
     App->>U: City picker
+    opt User taps Use my current location
+      App->>U: Ask foreground location permission
+      App->>App: Match nearest supported city locally
+    end
     App->>App: AsyncStorage save
   end
   App->>API: getCities / getArticles / getArticleDates
@@ -123,6 +129,13 @@ sequenceDiagram
 ```
 
 API helpers used: `getHealth`, `getCities`, `getArticles`, `getArticleDates`, `getArticle`, `getTrendingArticles`, `recordArticleView`.
+
+Location is optional and requested only after a reader taps **Use my current
+location**. The reader performs the nearest-city calculation on-device against
+the latitude/longitude returned by `GET /api/cities`; raw device coordinates are
+not logged, persisted, or sent to TazaKhabar. Permission denial, disabled
+services, timeout, and unavailable position all leave the searchable manual
+picker usable. A successful match persists only the city slug.
 
 ## Key files
 
@@ -170,6 +183,7 @@ Manual verification still required before claiming a comprehensive a11y sweep is
 - Do not add a second Vite reader app.
 - Appearance: Light / Dark / System (default System), persisted in AsyncStorage; Profile controls it. Brand accent fill stays `#155EEF`.
 - No login — city, theme, and first-page feed cache are device-local only.
+- Location permission is foreground-only and user initiated. Never request it at boot or make it mandatory for reading.
 - Privacy, support, terms, and corrections live on the standalone public website and open externally from the reader.
 - Feed cache: first page only; TTL 45 minutes; max 16 key entries (LRU). Fresh cache skips the network until pull-to-refresh or key change (city / category / language / Discover `q`). Stale cache paints then revalidates.
 - List payloads omit `body`; the reader shows full plain-text `body` when `GET /api/articles/{id}` returns it, otherwise the summary. For translated reads, the API suppresses original-language `body` so the story shows translated headline/summary rather than mixing languages.

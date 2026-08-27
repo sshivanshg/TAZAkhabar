@@ -27,7 +27,7 @@ public sealed class CitiesEndpointTests : IClassFixture<TazaKhabarWebApplication
 
         var cities = await response.Content.ReadFromJsonAsync<List<CityResponse>>();
         Assert.NotNull(cities);
-        Assert.True(cities.Count >= 5);
+        Assert.Equal(76, cities.Count); // 75 production cities + Emptyville test fixture
 
         var slugs = cities.Select(c => c.Slug).ToHashSet();
         Assert.Contains("jhansi", slugs);
@@ -35,6 +35,15 @@ public sealed class CitiesEndpointTests : IClassFixture<TazaKhabarWebApplication
         Assert.Contains("lucknow", slugs);
         Assert.Contains("agra", slugs);
         Assert.Contains("delhi", slugs);
+        Assert.Contains("mumbai", slugs);
+        Assert.Contains("bengaluru", slugs);
+        Assert.Contains("chennai", slugs);
+        Assert.Contains("kolkata", slugs);
+        Assert.All(cities.Where(city => city.Slug != "emptyville"), city =>
+        {
+            Assert.InRange(city.Latitude, 6, 38);
+            Assert.InRange(city.Longitude, 68, 98);
+        });
 
         Assert.Equal(cities.OrderBy(c => c.Name).Select(c => c.Slug), cities.Select(c => c.Slug));
     }

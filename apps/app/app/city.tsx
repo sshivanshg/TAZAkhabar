@@ -5,6 +5,7 @@ import { useRouter } from 'expo-router'
 import { Text } from '@gluestack-ui/themed'
 import { MotiView } from 'moti'
 import ArrowLeft from 'lucide-react-native/icons/arrow-left'
+import LocateFixed from 'lucide-react-native/icons/locate-fixed'
 import type { CityResponse } from '@tazakhabar/shared-types'
 import { apiClient } from '../src/api/client'
 import { useAsyncResource } from '../src/api/useAsyncResource'
@@ -16,10 +17,17 @@ import { getStoredCitySlug, setStoredCitySlug } from '../src/storage/cityPrefere
 import { useTheme } from '../src/preferences/ThemePreferenceContext'
 import { HIT_TARGET, radius, space, typography, type AppColors } from '../src/theme/tokens'
 import { iconStroke } from '../src/theme/categoryIcons'
+import { getCurrentCoordinates } from '../src/location/getCurrentCoordinates'
+import { findNearestCity } from '../src/location/nearestCity'
 
 const EMPTY_CITIES: CityResponse[] = []
 const CONTENT_MAX = 560
 const TEST_CITY_SLUG = 'emptyville'
+
+type LocationNotice = {
+  tone: 'error' | 'info'
+  message: string
+} | null
 
 function isSelectableCity(city: CityResponse): boolean {
   return Boolean(city.slug && city.slug !== TEST_CITY_SLUG)
@@ -34,6 +42,8 @@ export default function CityPickerScreen() {
   const [query, setQuery] = useState('')
   const [storedSlug, setStoredSlug] = useState<string | null>(null)
   const [savingSlug, setSavingSlug] = useState<string | null>(null)
+  const [detectingLocation, setDetectingLocation] = useState(false)
+  const [locationNotice, setLocationNotice] = useState<LocationNotice>(null)
 
   const citiesResource = useAsyncResource(
     () => apiClient.getCities().then((result) => result.filter(isSelectableCity)),
@@ -72,18 +82,71 @@ export default function CityPickerScreen() {
   const onSelect = useCallback(
     async (city: CityResponse) => {
       if (!city.slug || savingSlug) {
-        return
+        return false
       }
       setSavingSlug(city.slug)
       try {
         await setStoredCitySlug(city.slug)
         router.replace({ pathname: '/(tabs)', params: { city: city.slug } })
+        return true
       } catch {
         setSavingSlug(null)
+        return false
       }
     },
     [router, savingSlug],
   )
+
+  const onDetectLocation = useCallback(async () => {
+    if (detectingLocation || savingSlug || cities.length === 0) {
+      return
+    }
+
+    setDetectingLocation(true)
+    setLocationNotice({ tone: 'info', message: 'Finding the nearest city…' })
+    try {
+      const coordinates = await getCurrentCoordinates()
+      const match = findNearestCity(coordinates, cities)
+      if (!match) {
+        setLocationNotice({
+          tone: 'error',
+          message: 'We could not match your location. Please choose a city below.',
+        })
+        return
+      }
+
+      setLocationNotice({
+        tone: 'info',
+        message: `Found ${match.city.name ?? 'your city'}. Opening local news…`,
+      })
+      const saved = await onSelect(match.city)
+      if (!saved) {
+        setLocationNotice({
+          tone: 'error',
+          message: 'We found your city but could not save it. Please try again.',
+        })
+      }
+    } catch (error) {
+      const reason =
+        typeof error === 'object' &&
+        error !== null &&
+        'reason' in error &&
+        typeof error.reason === 'string'
+          ? error.reason
+          : 'unavailable'
+      const message =
+        reason === 'permission-denied'
+          ? 'Location access was not allowed. You can still choose your city below.'
+          : reason === 'services-disabled'
+            ? 'Location services are turned off. Turn them on or choose your city below.'
+            : reason === 'timeout'
+              ? 'Location took too long. Try again or choose your city below.'
+              : 'We could not get your location. Try again or choose your city below.'
+      setLocationNotice({ tone: 'error', message })
+    } finally {
+      setDetectingLocation(false)
+    }
+  }, [cities, detectingLocation, onSelect, savingSlug])
 
   const heading = isChangingCity ? 'Change city' : 'Choose your city'
   const description = isChangingCity
@@ -169,6 +232,71 @@ export default function CityPickerScreen() {
 
         {!citiesResource.loading && !citiesResource.error ? (
           <View style={styles.body}>
+            <View style={styles.locationCard}>
+              <Text
+                fontSize={typography.headlineSm.fontSize}
+                lineHeight={typography.headlineSm.lineHeight}
+                fontWeight="$semibold"
+                color={colors.text}
+              >
+                Find my city
+              </Text>
+              <Text
+                fontSize={typography.summary.fontSize}
+                lineHeight={typography.summary.lineHeight}
+                color={colors.textSecondary}
+                mt="$1"
+              >
+                Use your location once to select the nearest supported city. Your precise
+                location stays on this device and is never sent to TazaKhabar.
+              </Text>
+              <Pressable
+                onPress={() => void onDetectLocation()}
+                disabled={detectingLocation || Boolean(savingSlug)}
+                accessibilityRole="button"
+                accessibilityLabel="Use my current location"
+                accessibilityState={{ disabled: detectingLocation || Boolean(savingSlug), busy: detectingLocation }}
+                style={({ pressed }) => [
+                  styles.locationButton,
+                  pressed ? styles.locationButtonPressed : null,
+                  detectingLocation || savingSlug ? styles.locationButtonDisabled : null,
+                ]}
+              >
+                <LocateFixed size={20} strokeWidth={iconStroke} color={colors.textOnAccent} />
+                <Text
+                  fontSize={typography.label.fontSize}
+                  lineHeight={typography.label.lineHeight}
+                  fontWeight="$semibold"
+                  color={colors.textOnAccent}
+                >
+                  {detectingLocation ? 'Detecting city…' : 'Use my current location'}
+                </Text>
+              </Pressable>
+              {locationNotice ? (
+                <Text
+                  accessibilityRole="alert"
+                  fontSize={typography.meta.fontSize}
+                  lineHeight={typography.meta.lineHeight}
+                  color={locationNotice.tone === 'error' ? colors.destructive : colors.textSecondary}
+                  mt="$2"
+                >
+                  {locationNotice.message}
+                </Text>
+              ) : null}
+            </View>
+
+            <View style={styles.manualHeader}>
+              <View style={styles.divider} />
+              <Text
+                fontSize={typography.meta.fontSize}
+                lineHeight={typography.meta.lineHeight}
+                fontWeight="$semibold"
+                color={colors.textMuted}
+              >
+                OR CHOOSE A CITY
+              </Text>
+              <View style={styles.divider} />
+            </View>
             <CitySearch value={query} onChange={setQuery} />
 
             {matches.length === 0 ? (
@@ -308,6 +436,41 @@ function createStyles(c: AppColors) {
     },
     body: {
       gap: space.sm,
+    },
+    locationCard: {
+      padding: space.lg,
+      borderRadius: radius.lg,
+      backgroundColor: c.surface,
+      borderWidth: 1,
+      borderColor: c.border,
+    },
+    locationButton: {
+      minHeight: HIT_TARGET,
+      marginTop: space.md,
+      paddingHorizontal: space.lg,
+      borderRadius: radius.full,
+      backgroundColor: c.accentFill,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: space.xs,
+    },
+    locationButtonPressed: {
+      opacity: 0.85,
+    },
+    locationButtonDisabled: {
+      opacity: 0.65,
+    },
+    manualHeader: {
+      marginTop: space.md,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: space.sm,
+    },
+    divider: {
+      flex: 1,
+      height: StyleSheet.hairlineWidth,
+      backgroundColor: c.border,
     },
     section: {
       marginTop: space.lg,

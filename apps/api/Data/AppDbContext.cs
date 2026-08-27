@@ -25,6 +25,8 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             entity.Property(c => c.Name).HasColumnName("name").HasMaxLength(120).IsRequired();
             entity.Property(c => c.State).HasColumnName("state").HasMaxLength(120).IsRequired();
             entity.Property(c => c.Slug).HasColumnName("slug").HasMaxLength(80).IsRequired();
+            entity.Property(c => c.Latitude).HasColumnName("latitude").IsRequired();
+            entity.Property(c => c.Longitude).HasColumnName("longitude").IsRequired();
             entity.HasIndex(c => c.Slug).IsUnique();
             entity.HasData(SeedData.Cities);
         });
@@ -52,7 +54,13 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             entity.HasIndex(s => s.FeedUrl)
                 .IsUnique()
                 .HasFilter("\"type\" = 'Rss' AND \"feed_url\" IS NOT NULL");
-            entity.HasData(SeedData.Sources);
+            // Sources 21-28 were inserted by the existing ExpandLocalNewsSourceCatalog
+            // migration rather than EF model seeding. Keep them out of HasData so a
+            // later migration never attempts to insert those production rows again.
+            entity.HasData([
+                .. SeedData.Sources.Where(source => source.Id <= 20),
+                .. SeedData.IndiaExpansionSources,
+            ]);
         });
 
         modelBuilder.Entity<IngestionRun>(entity =>

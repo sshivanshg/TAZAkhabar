@@ -1,7 +1,7 @@
 # API
 
 > **Living doc** — update when endpoints, auth, rate limits, CORS, or DI composition change.  
-> **Last verified against:** 2026-08-27 (actual + future-branded Cloudflare Pages CORS hosts)
+> **Last verified against:** 2026-08-27 (75-city response with coordinates for device-side matching)
 
 ## Purpose
 
@@ -43,7 +43,7 @@ Pipeline (order): Serilog request logging → RequestId header/log context → E
 |--------|------|--------------|-------|
 | GET | `/api/health` | `GetHealth` | App health |
 | GET | `/healthz` | — | ASP.NET + Npgsql; Render health check |
-| GET | `/api/cities` | `GetCities` | `Cache-Control: public, max-age=60` |
+| GET | `/api/cities` | `GetCities` | Alphabetical city catalog with latitude/longitude; `Cache-Control: public, max-age=60` |
 | GET | `/api/articles` | `GetArticles` | `city` required; published only; hides newspaper e-paper editions; cache 60s; **no `body`** |
 | GET | `/api/articles/dates` | `GetArticleDates` | City calendar (Asia/Kolkata) |
 | GET | `/api/articles/trending` | `GetTrendingArticles` | View-based; **no `body`** |
@@ -97,6 +97,10 @@ Pipeline (order): Serilog request logging → RequestId header/log context → E
 | `Upload__RootPath` | PDF/image storage |
 
 OpenAPI: `MapSwagger("/openapi/{documentName}.json")` → `/openapi/v1.json`. Swagger UI in Development only.
+
+`CityResponse` exposes the stable city id/name/state/slug plus public city-centre
+latitude and longitude. The reader uses those coordinates locally to choose the
+nearest supported city; it never sends device coordinates to the API.
 
 ## Failure modes & invariants
 

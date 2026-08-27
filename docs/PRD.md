@@ -37,10 +37,10 @@ Differentiation: (1) UX explicitly designed for 40+ readability (larger text, si
 5. Scope — MVP (Phase 1)
 5.1 In Scope
 Web app (mobile-responsive), used as the MVP surface before native app
-Coverage: 3-4 pilot cities
+Coverage: India-wide catalog of 75 major cities, seeded with a city-specific discovery RSS source; deepen publisher coverage city by city
 Content sourced via RSS (where available) from local newspapers, or direct partnership with 1-2 local outlets per pilot city
 Original short-form summaries for RSS/PDF (Claude); scrape stores an OpenAI-rewritten digest (summary + body) with source attribution and link-back (falls back to extracted plain text when rewrite is unavailable)
-City/locality selection on first use (manual selection; no GPS requirement for MVP)
+City selection on first use with an optional, explicit foreground-location permission to detect the nearest supported city; searchable manual selection always remains available
 Feed view: headline + 2-4 line summary + source attribution; tap opens an in-app swipe reader (full body when stored)
 Share button → WhatsApp (deep link / share intent)
 Basic categories: Local, State, National (optional), a couple of interest tags (e.g. Business, Health)
@@ -55,7 +55,7 @@ Push notifications (nice-to-have for Phase 2)
 Paid subscriptions / paywall
 Audio/video news formats
 6. Core User Flows
-First visit (via QR scan): Land on web app → select city/locality → land on localized feed → no login required
+First visit (via QR scan): Land on web app → optionally detect nearest city or select one manually → land on localized feed → no login required
 Daily use: Open app/bookmark → scroll short summaries → tap to read in the swipe reader (full extracted text when stored) → tap share → send to WhatsApp
 QR flyer flow: Printed flyer dropped at home → scan QR → lands on mobile web view → optionally prompted to "Add to Home Screen" (PWA-style) instead of a full native install for MVP
 7. Functional Requirements
@@ -70,6 +70,9 @@ System generates a short original summary for RSS/PDF (review queue). Scrape rew
 Must
 FR-3
 User can select/change their city on the web app
+Must
+FR-3A
+User can explicitly grant one-time foreground location access to select the nearest supported city; denial, timeout, or unavailable services must fall back to manual selection and raw coordinates must not be sent to the API
 Must
 FR-4
 Feed displays summaries newest-first, filterable by city
@@ -127,7 +130,7 @@ Near zero tolerance
 
 (Fill in real target numbers once pilot city sizing and flyer budget are decided — flagging these as placeholders rather than guessing numbers for you.)
 13. Open Questions
-Which 3-4 pilot cities are being finalized, and do we have RSS access confirmed for each?
+Which city clusters should receive direct publisher partnerships first beyond the seeded discovery feeds?
 Is any local publisher partnership already in conversation, or all still cold outreach?
 PWA "Add to Home Screen" vs. pushing straight to a native app for MVP — which does the team prefer, given the audience's comfort level with browser vs. app installs?
 Anonymous usage vs. lightweight signup (e.g. phone number) for MVP — affects ability to re-engage users and measure retention
@@ -136,9 +139,9 @@ Monetization plan post-MVP (ads, subscription, sponsored local content, or purel
 Phase
 Deliverable
 Phase 0
-Finalize pilot cities, confirm content sourcing (RSS/partnership) per city
+Launch 75-city catalog, location-assisted selection, and baseline discovery feeds; define source-quality monitoring by city
 Phase 1
-Web MVP live in 3-4 cities, QR flyer pilot in 1 city
+Deepen first-party/local publisher coverage in priority city clusters; keep QR flyer pilots measurable by city
 Phase 2
 Expand flyer distribution based on Phase 1 conversion data
 Phase 3

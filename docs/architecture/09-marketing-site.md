@@ -1,7 +1,7 @@
 # Marketing site
 
 > **Living doc** — update when the public website, legal routes, or reader handoff changes.  
-> **Last verified against:** 2026-08-27 (separate Cloudflare Pages marketing site with standalone legal/support routes)
+> **Last verified against:** 2026-08-27 (privacy disclosure for optional device-only location matching)
 
 ## Purpose
 
@@ -64,6 +64,7 @@ flowchart LR
 - The marketing site is a separate public surface, not a second reader client.
 - The Expo reader remains the only TazaKhabar reader codebase for web and native.
 - Legal/support content must stay externally linkable and not depend on in-app Expo routes.
+- Privacy copy must disclose optional foreground location permission and accurately state that nearest-city matching remains on-device.
 - Support email can be empty at launch; the site must render a clear fallback message instead of inventing contact details.
 
 ## Related docs

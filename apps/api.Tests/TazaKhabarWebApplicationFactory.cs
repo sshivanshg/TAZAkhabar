@@ -88,6 +88,8 @@ public sealed class TazaKhabarWebApplicationFactory : WebApplicationFactory<Prog
                 Name = SeedData.EmptyTestCity.Name,
                 State = SeedData.EmptyTestCity.State,
                 Slug = SeedData.EmptyTestCity.Slug,
+                Latitude = SeedData.EmptyTestCity.Latitude,
+                Longitude = SeedData.EmptyTestCity.Longitude,
             });
             db.SaveChanges();
         }

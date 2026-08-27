@@ -1,7 +1,7 @@
 # Shared types
 
 > **Living doc** — update when OpenAPI generation, NSwag config, or contract PR rules change.  
-> **Last verified against:** 2026-08-27 (CI OpenAPI drift check)
+> **Last verified against:** 2026-08-27 (`CityResponse` latitude/longitude contract)
 
 ## Purpose
 
@@ -57,6 +57,10 @@ CI starts the API after the backend build, fetches `/openapi/v1.json`, and diffs
 ## Public contracts
 
 Consumers import from `@tazakhabar/shared-types` only through the package `index` surface. Breaking DTO changes require coordinated client updates in the same PR (architecture hard rule).
+
+`CityResponse` includes `latitude` and `longitude` from the API contract so the
+Expo reader can calculate the nearest supported city without uploading a
+reader's location.
 
 ## Failure modes & invariants
 

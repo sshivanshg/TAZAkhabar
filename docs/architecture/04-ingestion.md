@@ -1,7 +1,7 @@
 # Ingestion
 
 > **Living doc** — update when pipelines, article status on insert, cron, SSE, or intelligence providers change.  
-> **Last verified against:** 2026-08-27 (skip Amar Ujala e-paper editions)
+> **Last verified against:** 2026-08-27 (75-city baseline discovery source catalog)
 
 ## Purpose
 
@@ -16,7 +16,10 @@ The daily feed is filled from a layered source mix rather than a single publishe
 3. **Discovery backfill:** Google News RSS city queries to catch late-breaking items and widen coverage.
 4. **Editorial safety net:** the admin review queue and manual uploads remain available when a city is sparse or a source goes dark.
 
-The seeded pilot catalog currently favors Agra, Jhansi, Kanpur, Lucknow, and Delhi, with a mix of:
+The seeded catalog covers 75 major Indian cities. Agra, Jhansi, Kanpur, Lucknow,
+and Delhi retain the deeper pilot source mix; each of the other 70 cities starts
+with an active Google News RSS city query so scheduled ingestion can populate a
+baseline feed while direct publisher sources are added. The overall mix includes:
 
 - local publisher RSS where it exists,
 - TOI city pages for scrape fallback,

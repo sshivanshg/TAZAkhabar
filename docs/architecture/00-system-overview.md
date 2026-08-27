@@ -1,7 +1,7 @@
 # System overview
 
 > **Living doc** — update in the same change when topology, hosting, or cross-app contracts move.  
-> **Last verified against:** 2026-08-27 (actual Cloudflare Pages project names plus separate marketing site)
+> **Last verified against:** 2026-08-27 (75-city catalog and device-only nearest-city detection)
 
 ## Purpose
 
@@ -87,7 +87,10 @@ sequenceDiagram
   U->>P: Load PWA
   U->>A: GET /api/cities
   A->>N: query
-  A-->>U: cities
+  A-->>U: cities + public coordinates
+  opt Reader taps Use my current location
+    U->>U: foreground permission + nearest-city match on device
+  end
   U->>A: GET /api/articles?city=…
   A->>N: published articles
   A-->>U: Cache-Control 60s

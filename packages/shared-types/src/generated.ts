@@ -85,6 +85,8 @@ export interface CityResponse {
     name?: string | undefined;
     state?: string | undefined;
     slug?: string | undefined;
+    latitude?: number;
+    longitude?: number;
 }
 
 export interface CreateAdminArticleRequest {

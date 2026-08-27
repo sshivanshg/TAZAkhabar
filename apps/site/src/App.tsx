@@ -56,7 +56,7 @@ const legalPages: Record<Exclude<PageId, 'home'>, LegalPage> = {
       {
         title: 'Coverage',
         body: [
-          'TazaKhabar is launching city by city. Story volume and source coverage can differ between locations while the rollout expands.',
+          'TazaKhabar supports 75 major Indian cities. Story volume and source depth can differ between locations while direct publisher coverage expands.',
         ],
       },
     ],
@@ -84,10 +84,17 @@ const legalPages: Record<Exclude<PageId, 'home'>, LegalPage> = {
         ],
       },
       {
-        title: 'What we do not request',
+        title: 'Optional location access',
+        body: [
+          'If you tap “Use my current location,” the reader asks for foreground location permission and uses the result once on your device to choose the nearest supported city. Your precise coordinates are not sent to or stored by TazaKhabar.',
+          'Location access is optional. If you decline, turn off location services, or the lookup fails, you can always search for and choose a city manually.',
+        ],
+      },
+      {
+        title: 'What we do not require',
         bullets: [
           'No reader account, password, or phone number.',
-          'No GPS or precise location permission.',
+          'No mandatory GPS or precise location access for reading.',
           'No payment information.',
           'No contact, camera, or microphone access for ordinary reading.',
         ],
@@ -108,7 +115,7 @@ const legalPages: Record<Exclude<PageId, 'home'>, LegalPage> = {
       {
         title: 'Your choices',
         body: [
-          'You can reset local preferences at any time by clearing site or app storage. You may also contact us with privacy questions or a deletion request for information you believe can be linked to you.',
+          'You can deny or revoke location permission in your browser or device settings and choose a city manually. You can reset local preferences at any time by clearing site or app storage. You may also contact us with privacy questions or a deletion request for information you believe can be linked to you.',
         ],
       },
     ],

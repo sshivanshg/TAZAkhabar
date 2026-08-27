@@ -18,7 +18,13 @@ public static class CitiesEndpoints
                 var cities = await db.Cities
                     .AsNoTracking()
                     .OrderBy(c => c.Name)
-                    .Select(c => new CityResponse(c.Id, c.Name, c.State, c.Slug))
+                    .Select(c => new CityResponse(
+                        c.Id,
+                        c.Name,
+                        c.State,
+                        c.Slug,
+                        c.Latitude,
+                        c.Longitude))
                     .ToListAsync(cancellationToken);
 
                 httpContext.Response.Headers.CacheControl = PublicCacheControl;

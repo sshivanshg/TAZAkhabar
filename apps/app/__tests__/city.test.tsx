@@ -9,6 +9,16 @@ const mockCanGoBack = jest.fn(() => false)
 const mockGetCities = jest.fn()
 const mockSetStoredCitySlug = jest.fn()
 const mockGetStoredCitySlug = jest.fn()
+const mockGetCurrentCoordinates = jest.fn()
+
+class MockLocationFailure extends Error {
+  constructor(
+    readonly reason: string,
+    readonly canAskAgain = true,
+  ) {
+    super(reason)
+  }
+}
 
 jest.mock('expo-router', () => ({
   useRouter: () => ({
@@ -30,6 +40,13 @@ jest.mock('../src/storage/cityPreference', () => ({
   getStoredCitySlug: (...args: unknown[]) => mockGetStoredCitySlug(...args),
   clearStoredCitySlug: jest.fn(),
 }))
+
+jest.mock('../src/location/getCurrentCoordinates', () => {
+  return {
+    LocationFailure: MockLocationFailure,
+    getCurrentCoordinates: (...args: unknown[]) => mockGetCurrentCoordinates(...args),
+  }
+})
 
 jest.mock('moti', () => {
   const React = require('react')
@@ -99,12 +116,12 @@ jest.mock('@gluestack-ui/themed', () => {
 import CityPickerScreen from '../app/city'
 
 const cities: CityResponse[] = [
-  { id: 1, name: 'Agra', state: 'Uttar Pradesh', slug: 'agra' },
-  { id: 5, name: 'Delhi', state: 'Delhi', slug: 'delhi' },
-  { id: 2, name: 'Jhansi', state: 'Uttar Pradesh', slug: 'jhansi' },
-  { id: 3, name: 'Kanpur', state: 'Uttar Pradesh', slug: 'kanpur' },
-  { id: 4, name: 'Lucknow', state: 'Uttar Pradesh', slug: 'lucknow' },
-  { id: 99, name: 'Emptyville', state: 'Test', slug: 'emptyville' },
+  { id: 1, name: 'Agra', state: 'Uttar Pradesh', slug: 'agra', latitude: 27.1767, longitude: 78.0081 },
+  { id: 5, name: 'Delhi', state: 'Delhi', slug: 'delhi', latitude: 28.6139, longitude: 77.209 },
+  { id: 2, name: 'Jhansi', state: 'Uttar Pradesh', slug: 'jhansi', latitude: 25.4484, longitude: 78.5685 },
+  { id: 3, name: 'Kanpur', state: 'Uttar Pradesh', slug: 'kanpur', latitude: 26.4499, longitude: 80.3319 },
+  { id: 4, name: 'Lucknow', state: 'Uttar Pradesh', slug: 'lucknow', latitude: 26.8467, longitude: 80.9462 },
+  { id: 99, name: 'Emptyville', state: 'Test', slug: 'emptyville', latitude: 0, longitude: 0 },
 ]
 
 function renderCity() {
@@ -139,6 +156,7 @@ describe('CityPickerScreen', () => {
     mockGetCities.mockResolvedValue(cities)
     mockSetStoredCitySlug.mockResolvedValue(undefined)
     mockGetStoredCitySlug.mockResolvedValue(null)
+    mockGetCurrentCoordinates.mockResolvedValue({ latitude: 26.85, longitude: 80.95 })
     mockCanGoBack.mockReturnValue(false)
   })
 
@@ -167,6 +185,42 @@ describe('CityPickerScreen', () => {
     renderCity()
     expect(await screen.findByText('Jhansi')).toBeTruthy()
     expect(screen.queryByText('Emptyville')).toBeNull()
+  })
+
+  it('asks for location only after a tap and opens the nearest city feed', async () => {
+    renderCity()
+
+    expect(await screen.findByText('Use my current location')).toBeTruthy()
+    expect(mockGetCurrentCoordinates).not.toHaveBeenCalled()
+
+    fireEvent.press(screen.getByLabelText('Use my current location'))
+
+    await waitFor(() => {
+      expect(mockGetCurrentCoordinates).toHaveBeenCalledTimes(1)
+      expect(mockSetStoredCitySlug).toHaveBeenCalledWith('lucknow')
+      expect(mockReplace).toHaveBeenCalledWith({
+        pathname: '/(tabs)',
+        params: { city: 'lucknow' },
+      })
+    })
+  })
+
+  it('keeps manual city selection available when location permission is denied', async () => {
+    mockGetCurrentCoordinates.mockRejectedValueOnce(
+      new MockLocationFailure('permission-denied', false),
+    )
+    renderCity()
+
+    expect(await screen.findByText('Jhansi')).toBeTruthy()
+    fireEvent.press(screen.getByLabelText('Use my current location'))
+
+    expect(
+      await screen.findByText(
+        'Location access was not allowed. You can still choose your city below.',
+      ),
+    ).toBeTruthy()
+    expect(screen.getByText('Jhansi')).toBeTruthy()
+    expect(mockSetStoredCitySlug).not.toHaveBeenCalled()
   })
 
   it('filters the list live from the search field', async () => {

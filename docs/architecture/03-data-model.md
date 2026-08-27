@@ -1,7 +1,7 @@
 # Data model
 
 > **Living doc** — update when entities, statuses, or migration ownership change.  
-> **Last verified against:** 2026-08-27 (scrape publishes directly; production migrations are explicit, not boot-time)
+> **Last verified against:** 2026-08-27 (75-city India catalog with location coordinates and discovery sources)
 
 ## Purpose
 
@@ -35,7 +35,7 @@ erDiagram
 
 | Entity | Table | Notes |
 |--------|-------|-------|
-| `City` | `cities` | `Name`, `State`, unique `Slug` |
+| `City` | `cities` | `Name`, `State`, unique `Slug`, city-centre `Latitude`/`Longitude` used for device-side nearest-city matching |
 | `Source` | `sources` | `FeedUrl`, `Type`, `Kind`, `Language`, `IsActive`, fetch status, `ScrapeConfig` |
 | `Article` | `articles` | Headline/summary, optional plain-text `Body` (max ~50k at extract), source fields, `Status`, `IsMock`, review fields, `DetectedLanguage`, `ImageUrl`, unique `SourceUrl` |
 | `IngestionRun` | `ingestion_runs` | Counts found/added/skipped/failed, `ErrorSummary` |
@@ -78,6 +78,11 @@ dotnet ef migrations add <Name> \
 ```
 
 Migrations are compiled into the API via csproj include of `infra/migrations/**/*.cs`.
+
+`ExpandIndiaCityCoverage` adds coordinates to the original five city rows,
+adds 70 more major-city rows (75 production cities total), and seeds one active
+Google News discovery RSS source for each new city. Existing applied source
+catalog migrations remain unchanged.
 
 ## Key files
 
