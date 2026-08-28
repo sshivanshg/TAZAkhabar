@@ -1,7 +1,7 @@
 # Hosting and CI
 
 > **Living doc** — update when Render, Cloudflare, Neon, Docker, workflows, or env templates change.  
-> **Last verified against:** 2026-08-27 (reader + admin + marketing site Pages deploys; deploy fails closed without CF token)
+> **Last verified against:** 2026-08-27 (production applies pending EF migrations on API boot)
 
 ## Purpose
 
@@ -44,9 +44,10 @@ flowchart TB
 | Piece | File / service |
 |-------|----------------|
 | API image | `infra/docker/Dockerfile.api` |
-| Optional web nginx preview | `infra/docker/Dockerfile.web`, `nginx.web.conf` |
+| Frontend containers | `infra/docker/Dockerfile.frontend-dev` (hot reload), `Dockerfile.web` (static preview) |
+| Android APK builder | `infra/docker/Dockerfile.android`, invoked by `scripts/docker-build-apk.sh` |
 | Blueprint | `render.yaml` — web `tazakhabar-api` + ingest/purge crons |
-| Local DB | `docker-compose.yml` Postgres 16 |
+| Local stack | `docker-compose.yml` Postgres 16 + API + Expo reader; optional `tools` profile for admin/site |
 | CI | `.github/workflows/ci.yml` — API format/build/test + Postgres, migration SQL artifact, OpenAPI drift check; app lint/test/export; marketing site build; admin build |
 | Deploy | `.github/workflows/deploy.yml` — Pages for reader + marketing site + admin; API via Render auto-deploy |
 | DB migration workflow | `.github/workflows/migrate-production.yml` — manual production EF migration apply |
@@ -55,6 +56,25 @@ flowchart TB
 No `wrangler.toml` in-repo — Pages deploy uses `cloudflare/pages-action` (wrangler 3) in Actions. Cache/security headers via each app’s `public/_headers`.
 
 ## Data & control flows
+
+### Docker-only local development
+
+1. `docker compose up --build` starts Postgres, waits for its health check,
+   starts the .NET API, then starts Expo web with host source mounted for hot
+   reload.
+2. The browser loads the reader at `localhost:19006` and calls the API at
+   `localhost:8080`; only the API connects to Postgres over the Compose network.
+3. `docker compose --profile tools up --build` additionally exposes admin on
+   `5173` and the marketing site on `5174`.
+4. Frontend dependency directories and pnpm stores use named volumes, so pnpm
+   is not required on the host and dependencies do not pollute the bind mount.
+
+The `apk` Compose build profile (also wrapped by
+`scripts/docker-build-apk.sh`) is separate from the running stack. It builds a
+Linux/amd64 image containing JDK 17 and Android API 36, runs Expo prebuild plus
+Gradle `assembleRelease`, and exports only
+`artifacts/android/tazakhabar-release.apk` to the host. The output uses the
+generated debug keystore for sideload testing, not Play Store signing.
 
 ### Production traffic
 
@@ -68,7 +88,7 @@ No `wrangler.toml` in-repo — Pages deploy uses `cloudflare/pages-action` (wran
 - Health: `/healthz`
 - Port: `8080`
 - Secrets in dashboard (`sync: false`): DB, CORS origins, ingest secret, admin password/JWT key, Claude key, OpenAI rewrite key, upload root.
-- Production API boot does not apply EF migrations. Review the CI SQL artifact, then run `Migrate Production Database` manually.
+- Production applies pending EF migrations on API boot (same as dev/test). Review the CI SQL artifact before merging schema PRs; the manual `Migrate Production Database` workflow remains available for pre-deploy applies.
 
 ## Key files
 

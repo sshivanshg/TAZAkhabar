@@ -2,7 +2,7 @@
 
 Migrations for `NewsFeed.Api` are generated into this folder and compiled into the API assembly.
 
-Development and test API boots apply pending relational migrations automatically. Production does **not** auto-apply migrations on API startup; schema changes are an explicit release step.
+All environments (development, test, and production) apply pending relational migrations on API boot. Review the CI SQL artifact before merging schema-changing PRs; the manual workflow below can still apply migrations ahead of deploy if needed.
 
 CI generates an idempotent SQL artifact (`backend-migration-sql`) with:
 
