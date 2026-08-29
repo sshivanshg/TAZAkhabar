@@ -1,7 +1,7 @@
 # Monorepo
 
 > **Living doc** — update when workspace packages, root scripts, or layout change.  
-> **Last verified against:** 2026-08-27 (local Gradle `pnpm build:apk` plus public marketing site package)
+> **Last verified against:** 2026-08-27 (Docker-only development and APK export plus local pnpm workflows)
 
 ## Purpose
 
@@ -52,10 +52,11 @@ Root scripts (see root `package.json`):
 
 | Script | Does |
 |--------|------|
-| `pnpm prepare` | Sets `core.hooksPath` to `.githooks` (local git hooks) |
+| `pnpm prepare` | Sets `core.hooksPath` to `.githooks` in a real Git checkout; no-op in Docker build contexts |
 | `pnpm dev:web` | Expo web reader |
 | `pnpm build:web` | `expo export -p web` → `apps/app/dist` |
 | `pnpm build:apk` | Expo prebuild + Gradle `assembleRelease` → sideload APK under `apps/app/android/` |
+| `docker compose run --build --rm apk` | Linux/amd64 Docker build of the sideload APK → `artifacts/android/tazakhabar-release.apk` |
 | `pnpm lint:app` | Expo app `tsc --noEmit` |
 | `pnpm dev:site` | Marketing site |
 | `pnpm build:site` | Vite build → `apps/site/dist` |
@@ -63,6 +64,12 @@ Root scripts (see root `package.json`):
 | `pnpm generate:types` | NSwag generate from OpenAPI snapshot |
 | `pnpm dev:api` / `dotnet run` | API |
 | `pnpm test:api` / `dotnet test` | Backend tests |
+
+Host pnpm and .NET are optional for local work. `docker compose up --build`
+starts Postgres, the API, and the hot-reloading Expo web reader. The `tools`
+Compose profile adds the admin and marketing Vite servers. Frontend source is
+bind-mounted while dependency directories and the pnpm store stay in named
+Docker volumes.
 
 ### Local gates (catch broken builds before push / agent “done”)
 

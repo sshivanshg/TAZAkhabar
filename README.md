@@ -27,10 +27,47 @@ UI is **light** (`#FAFAFA` shell) with a **single blue accent** (`#1D7BFF`) — 
 
 ## Prerequisites
 
-- .NET 8 SDK
-- Node 20+ and pnpm 9 (`corepack enable`)
-- Docker (for local Postgres / full stack)
+- Docker Desktop (the only requirement for the container workflow)
+- For running without Docker: .NET 8 SDK, Node 20+, and pnpm 9 (`corepack enable`)
 - Optional: Expo Go / Xcode / Android Studio for device builds
+
+## Quick start (Docker only — no host pnpm/.NET)
+
+This is the recommended setup for a restricted company laptop. Docker contains
+Node, pnpm, .NET, and Postgres; source files remain editable on the laptop and
+the Expo reader hot-reloads when they change.
+
+```bash
+# Reader + API + Postgres
+docker compose up --build
+```
+
+Open:
+
+- Reader: http://localhost:19006
+- API health: http://localhost:8080/api/health
+- OpenAPI: http://localhost:8080/openapi/v1.json
+
+To also run the internal admin and public marketing site:
+
+```bash
+docker compose --profile tools up --build
+```
+
+- Admin: http://localhost:5173
+- Marketing site: http://localhost:5174
+
+Useful commands:
+
+```bash
+docker compose down                 # stop containers; keep database data
+docker compose logs -f reader api   # follow reader/API logs
+docker compose down --volumes       # reset local DB and dependency caches
+```
+
+The first start downloads images and pnpm packages, so it is slower. Later
+starts reuse Docker volumes. The local reader talks to the containerized API at
+`http://localhost:8080`; no production database is used.
 
 ## Quick start (local)
 
@@ -60,6 +97,41 @@ pnpm dev:web
 Native later: `pnpm --filter @tazakhabar/app ios` / `android` (same app).
 
 ## Build an Android APK (local Gradle)
+
+### Docker build (recommended on the restricted laptop)
+
+No host Node, pnpm, JDK, Gradle, or Android Studio is required:
+
+```bash
+docker compose run --build --rm apk
+```
+
+The first build downloads the Linux Android toolchain and can take several
+minutes. The result is:
+
+`artifacts/android/tazakhabar-release.apk`
+
+The Compose command works from Docker Desktop terminals on macOS, Windows, and
+Linux. macOS/Linux users can alternatively run the convenience wrapper
+`./scripts/docker-build-apk.sh`.
+
+The script always builds a Linux/amd64 container because the Android build
+tools are x86_64; Docker Desktop emulates it on Apple Silicon. To build against
+a different reachable API, override the public build value explicitly:
+
+```bash
+EXPO_PUBLIC_API_BASE_URL=https://api.example.com ./scripts/docker-build-apk.sh
+```
+
+Do not use `localhost` for an APK: on a physical phone it refers to the phone,
+not the development laptop. `EXPO_PUBLIC_*` values are compiled into the app
+and must never contain secrets.
+
+The APK uses the generated debug keystore and is for sideloading/internal
+testing. For Play Store delivery, use the `production` EAS profile to create a
+properly credentialed AAB.
+
+### Host toolchain alternative
 
 Builds run on your machine with Expo prebuild + Gradle — no EAS/Expo cloud account required.
 

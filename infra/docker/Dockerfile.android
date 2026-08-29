@@ -1,0 +1,76 @@
+# syntax=docker/dockerfile:1
+
+# Linux/amd64 is selected by scripts/docker-build-apk.sh because Google's
+# Android build tools are distributed for x86_64 Linux. Docker Desktop can
+# emulate this image on Apple Silicon.
+FROM node:22-bookworm AS build
+
+ARG ANDROID_COMMAND_LINE_TOOLS_VERSION=15859902
+ARG ANDROID_COMMAND_LINE_TOOLS_SHA256=4e4c464f145a7512b57d088ac6c278c03c9eea610886b35a5e0804e74eedf583
+ARG EXPO_PUBLIC_API_BASE_URL=https://buildy-140j.onrender.com
+ARG EXPO_PUBLIC_APP_ENV=production
+ARG EXPO_PUBLIC_SITE_URL=https://tazakhabar-site.pages.dev
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV ANDROID_HOME=/opt/android-sdk
+ENV ANDROID_SDK_ROOT=/opt/android-sdk
+ENV JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+ENV PNPM_HOME=/pnpm
+ENV PATH=/pnpm:/opt/android-sdk/cmdline-tools/latest/bin:/opt/android-sdk/platform-tools:$PATH
+ENV EXPO_NO_TELEMETRY=1
+ENV CI=1
+ENV EXPO_PUBLIC_API_BASE_URL=$EXPO_PUBLIC_API_BASE_URL
+ENV EXPO_PUBLIC_APP_ENV=$EXPO_PUBLIC_APP_ENV
+ENV EXPO_PUBLIC_SITE_URL=$EXPO_PUBLIC_SITE_URL
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        ca-certificates \
+        curl \
+        g++ \
+        git \
+        make \
+        openjdk-17-jdk-headless \
+        python3 \
+        unzip \
+    && rm -rf /var/lib/apt/lists/* \
+    && corepack enable \
+    && corepack prepare pnpm@9.15.0 --activate
+
+RUN mkdir -p "$ANDROID_HOME/cmdline-tools" \
+    && curl -fsSLo /tmp/android-command-line-tools.zip \
+        "https://dl.google.com/android/repository/commandlinetools-linux-${ANDROID_COMMAND_LINE_TOOLS_VERSION}_latest.zip" \
+    && echo "${ANDROID_COMMAND_LINE_TOOLS_SHA256}  /tmp/android-command-line-tools.zip" | sha256sum -c - \
+    && unzip -q /tmp/android-command-line-tools.zip -d "$ANDROID_HOME/cmdline-tools" \
+    && mv "$ANDROID_HOME/cmdline-tools/cmdline-tools" "$ANDROID_HOME/cmdline-tools/latest" \
+    && rm /tmp/android-command-line-tools.zip \
+    && yes | sdkmanager --licenses >/dev/null \
+    && sdkmanager \
+        "build-tools;36.0.0" \
+        "cmake;3.22.1" \
+        "ndk;27.1.12297006" \
+        "platform-tools" \
+        "platforms;android-36"
+
+WORKDIR /workspace
+
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml .npmrc ./
+COPY scripts/configure-git-hooks.mjs scripts/
+COPY apps/app/package.json apps/app/
+COPY apps/admin/package.json apps/admin/
+COPY apps/site/package.json apps/site/
+COPY packages/shared-types/package.json packages/shared-types/
+
+# The root prepare helper is a no-op because Docker contexts exclude .git;
+# dependency install scripts remain enabled for Expo and React Native tooling.
+RUN pnpm install --frozen-lockfile
+
+COPY apps/app/ apps/app/
+COPY packages/shared-types/ packages/shared-types/
+
+RUN pnpm --filter @tazakhabar/app exec expo prebuild --platform android \
+    && cd apps/app/android \
+    && ./gradlew --no-daemon assembleRelease
+
+FROM scratch AS artifact
+COPY --from=build /workspace/apps/app/android/app/build/outputs/apk/release/app-release.apk /tazakhabar-release.apk

@@ -1,7 +1,7 @@
 # Reader app
 
 > **Living doc** — update when Expo routes, city/feed/share behavior, or desktop web layer change.  
-> **Last verified against:** 2026-08-27 (optional location permission and 75-city nearest-city selection)
+> **Last verified against:** 2026-08-27 (Docker-only web development/APK export and 75-city reader behavior)
 
 ## Purpose
 
@@ -153,6 +153,7 @@ picker usable. A successful match persists only the city slug.
 | Deploy artifact | `pnpm build:web` → `apps/app/dist` |
 | Bundle report | `pnpm --filter @tazakhabar/app bundle:report` |
 | Android APK (local) | `pnpm build:apk` → `expo prebuild` + `gradlew assembleRelease` → `apps/app/android/app/build/outputs/apk/release/app-release.apk` |
+| Android APK (Docker) | `docker compose run --build --rm apk` → Linux/amd64 Android SDK builder → `artifacts/android/tazakhabar-release.apk` |
 | Native project | `apps/app/android/` generated, gitignored; regenerate with `pnpm --filter @tazakhabar/app prebuild:android` |
 | Pages project | `newsfeed-web` |
 | Auth | None for MVP |
@@ -162,6 +163,12 @@ Render API. This avoids requiring a local .NET API, Postgres, or Docker. API
 work can opt into `http://localhost:8080` in the ignored local `.env`, followed
 by an Expo restart. The `web` script uses port `19006`, which is allowlisted by
 the hosted API for browser development.
+
+On a host where Node/pnpm/.NET cannot be installed, `docker compose up --build`
+runs the reader with hot reload on port `19006` alongside the local API and
+Postgres. Compose injects `http://localhost:8080` into the browser bundle. The
+Docker APK builder defaults to the public production API because a physical
+Android device cannot reach the laptop through its own `localhost`.
 
 ## Frontend quality baselines
 

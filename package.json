@@ -3,7 +3,7 @@
   "private": true,
   "packageManager": "pnpm@9.15.0",
   "scripts": {
-    "prepare": "git config core.hooksPath .githooks",
+    "prepare": "node scripts/configure-git-hooks.mjs",
     "dev:app": "pnpm --filter @tazakhabar/app start",
     "dev:web": "pnpm --filter @tazakhabar/app web",
     "build:web": "pnpm --filter @tazakhabar/app build:web",
