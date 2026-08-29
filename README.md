@@ -33,6 +33,9 @@ UI is **light** (`#FAFAFA` shell) with a **single blue accent** (`#1D7BFF`) — 
 
 ## Quick start (Docker only — no host pnpm/.NET)
 
+For complete setup, daily-use, APK, Windows, and troubleshooting instructions,
+see [DOCKER_INSTRUCTIONS.md](DOCKER_INSTRUCTIONS.md).
+
 This is the recommended setup for a restricted company laptop. Docker contains
 Node, pnpm, .NET, and Postgres; source files remain editable on the laptop and
 the Expo reader hot-reloads when they change.
