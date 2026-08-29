@@ -2,9 +2,9 @@ import { Platform, Share } from 'react-native'
 import {
   canUseNativeShare,
   formatWhatsAppShareText,
-  isHttpsUrl,
   type ShareableArticle,
 } from './shareToWhatsApp'
+import { getPublicSiteUrl } from './publicSiteUrl'
 
 export type ShareResult = 'shared' | 'copied' | 'cancelled' | 'unavailable'
 
@@ -23,11 +23,8 @@ export function getInAppArticleUrl(): string | undefined {
   return undefined
 }
 
-export function articleShareUrl(article: ShareableArticle): string | undefined {
-  if (isHttpsUrl(article.sourceUrl)) {
-    return article.sourceUrl!.trim()
-  }
-  return getInAppArticleUrl()
+export function articleShareUrl(_article: ShareableArticle): string {
+  return getPublicSiteUrl()
 }
 
 export async function copyTextToClipboard(text: string): Promise<boolean> {

@@ -63,17 +63,18 @@ public sealed class IngestEndpointTests : IClassFixture<TazaKhabarWebApplication
     [Fact]
     public async Task IngestRss_ValidKey_ReturnsCounts()
     {
+        var publishedAt = DateTimeOffset.UtcNow.ToString("r", System.Globalization.CultureInfo.InvariantCulture);
         var fake = new FakeRssFeedClient
         {
             Responses =
             {
-                [FeedUrl] = """
+                [FeedUrl] = $$"""
                     <?xml version="1.0"?><rss version="2.0"><channel>
                       <item>
                         <title>Jhansi municipal budget</title>
                         <link>https://www.amarujala.com/jhansi/story-ingest-endpoint</link>
                         <description>Nagar nigam session</description>
-                        <pubDate>Thu, 13 Aug 2026 04:17:33 +0530</pubDate>
+                        <pubDate>{{publishedAt}}</pubDate>
                         <source url="https://www.amarujala.com">Amar Ujala</source>
                       </item>
                     </channel></rss>
@@ -120,6 +121,15 @@ public sealed class IngestEndpointTests : IClassFixture<TazaKhabarWebApplication
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var body = await response.Content.ReadFromJsonAsync<IngestRunResponse>();
         Assert.True(body!.Inserted >= 1);
+
+        var publicFeed = await client.GetFromJsonAsync<PagedArticlesResponse>("/api/articles?city=jhansi");
+        Assert.Contains(publicFeed!.Items, article => article.SourceUrl == "https://www.amarujala.com/jhansi/story-ingest-endpoint");
+
+        using var verifyScope = factory.Services.CreateScope();
+        var verifyDb = verifyScope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var article = await verifyDb.Articles.SingleAsync(a => a.SourceUrl == "https://www.amarujala.com/jhansi/story-ingest-endpoint");
+        Assert.Equal(ArticleStatus.Published, article.Status);
+        Assert.Null(article.Body);
     }
 
     [Fact]
@@ -318,7 +328,9 @@ public sealed class IngestEndpointTests : IClassFixture<TazaKhabarWebApplication
         using var verifyScope = factory.Services.CreateScope();
         var verifyDb = verifyScope.ServiceProvider.GetRequiredService<AppDbContext>();
         var rssArticle = await verifyDb.Articles.SingleAsync(a => a.SourceUrl.Contains("daily-rss"));
+        Assert.Equal(ArticleStatus.Published, rssArticle.Status);
         Assert.Equal("Feed supplied summary", rssArticle.Summary);
+        Assert.Null(rssArticle.Body);
         var scrapeArticle = await verifyDb.Articles.SingleAsync(a => a.SourceUrl == storyUrl);
         Assert.Equal("Jhansi water supply restored", scrapeArticle.Headline);
         Assert.Contains("piped water", scrapeArticle.Summary, StringComparison.Ordinal);

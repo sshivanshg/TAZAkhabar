@@ -8,6 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useTheme } from '../../preferences/ThemePreferenceContext'
 import { iconStroke, type AppIcon } from '../../theme/categoryIcons'
 import { HIT_TARGET, radius, space, typography, type AppColors } from '../../theme/tokens'
+import { getPublicSiteUrl } from '../../utils/publicSiteUrl'
 
 type NavItem = {
   id: 'home' | 'bookmarks' | 'profile'
@@ -23,7 +24,7 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'profile', label: 'Profile', href: '/(tabs)/profile', testID: 'sidebar-nav-profile', Icon: User },
 ]
 
-const siteUrl = (process.env.EXPO_PUBLIC_SITE_URL ?? 'https://tazakhabar-site.pages.dev').replace(/\/+$/, '')
+const siteUrl = getPublicSiteUrl()
 
 type WebPressableState = PressableStateCallbackType & {
   hovered?: boolean

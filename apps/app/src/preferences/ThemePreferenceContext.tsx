@@ -9,6 +9,7 @@ import {
 } from 'react'
 import { Appearance, Platform } from 'react-native'
 import {
+  DEFAULT_THEME_PREFERENCE,
   getStoredThemePreference,
   getSystemColorScheme,
   resolveColorScheme,
@@ -37,7 +38,8 @@ const ThemePreferenceContext = createContext<ThemePreferenceContextValue | null>
 
 export function ThemePreferenceProvider({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false)
-  const [preference, setPreferenceState] = useState<ThemePreference>('system')
+  const [preference, setPreferenceState] =
+    useState<ThemePreference>(DEFAULT_THEME_PREFERENCE)
   const [systemScheme, setSystemScheme] = useState<ColorScheme>(() => getSystemColorScheme())
 
   useEffect(() => {

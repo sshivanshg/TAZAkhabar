@@ -3,8 +3,9 @@ import { Linking, Pressable, StyleSheet, View, type AccessibilityRole } from 're
 import { Text } from '@gluestack-ui/themed'
 import { useTheme } from '../preferences/ThemePreferenceContext'
 import { HIT_TARGET, radius, space, typography, type AppColors } from '../theme/tokens'
+import { getPublicSiteUrl } from '../utils/publicSiteUrl'
 
-const siteUrl = (process.env.EXPO_PUBLIC_SITE_URL ?? 'https://tazakhabar-site.pages.dev').replace(/\/+$/, '')
+const siteUrl = getPublicSiteUrl()
 
 const PUBLIC_PAGE_LINKS = [
   { id: 'about', label: 'About', href: `${siteUrl}/about` },

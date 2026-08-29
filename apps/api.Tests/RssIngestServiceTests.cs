@@ -53,6 +53,47 @@ public sealed class RssIngestServiceTests
     }
 
     [Fact]
+    public async Task AutoPublishRun_InsertsPublishedArticle_WithoutFetchingBody()
+    {
+        await using var db = CreateDb();
+        await AddSourceAsync(db, "Google News", CityFeedUrl, SourceKind.CityEdition);
+        var client = new FakeRssFeedClient
+        {
+            Responses =
+            {
+                [CityFeedUrl] = CityEditionXml(CityItemUrl, "Jhansi latest update", "Feed supplied summary"),
+            },
+        };
+        var scrape = new FakeScrapeHttpClient
+        {
+            Responses =
+            {
+                [CityItemUrl] = "<html><body><p>This body should not be fetched.</p></body></html>",
+            },
+        };
+        var service = new RssIngestService(
+            db,
+            client,
+            scrape,
+            new FakeArticleIntelligence(),
+            new IngestionEventBus(),
+            new ImageEnrichmentQueue(),
+            NullLogger<RssIngestService>.Instance);
+
+        var result = await service.RunAsync(
+            CancellationToken.None,
+            useIntelligence: false,
+            autoPublish: true,
+            fetchArticleBodies: false);
+
+        Assert.Equal(1, result.Inserted);
+        var stored = Assert.Single(await db.Articles.ToListAsync());
+        Assert.Equal(ArticleStatus.Published, stored.Status);
+        Assert.Equal("Feed supplied summary", stored.Summary);
+        Assert.Null(stored.Body);
+    }
+
+    [Fact]
     public async Task WiderFeed_KeepsOrchha_DropsLucknowOnly()
     {
         await using var db = CreateDb();
@@ -111,6 +152,33 @@ public sealed class RssIngestServiceTests
         Assert.Equal(FetchStatus.Error, dead.LastFetchStatus);
 
         Assert.Single(await db.IngestionRuns.Where(r => r.SourceId == healthy.Id).ToListAsync());
+    }
+
+    [Fact]
+    public async Task RunAsync_PrioritizesNeverFetchedSources()
+    {
+        await using var db = CreateDb();
+        var recent = await AddSourceAsync(db, "Recent", HealthyFeedUrl, SourceKind.CityEdition);
+        recent.LastFetchedAt = DateTimeOffset.UtcNow;
+        var never = await AddSourceAsync(db, "Never", CityFeedUrl, SourceKind.CityEdition);
+        await db.SaveChangesAsync();
+        var client = new FakeRssFeedClient
+        {
+            Responses =
+            {
+                [CityFeedUrl] = CityEditionXml(CityItemUrl, "Jhansi municipal budget", "Nagar nigam session"),
+                [HealthyFeedUrl] = CityEditionXml(
+                    "https://www.amarujala.com/jhansi/story-recent",
+                    "Recent source story",
+                    "Recent source summary"),
+            },
+        };
+        var service = CreateService(db, client);
+
+        await service.RunAsync(CancellationToken.None);
+
+        var firstRun = await db.IngestionRuns.OrderBy(r => r.Id).FirstAsync();
+        Assert.Equal(never.Id, firstRun.SourceId);
     }
 
     [Fact]

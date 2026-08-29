@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using Microsoft.OpenApi.Models;
 using NewsFeed.Api.Data;
 using NewsFeed.Api.Data.Entities;
 using NewsFeed.Api.Dtos;
@@ -116,8 +117,30 @@ public static class AdminUploadsEndpoints
             })
             .WithName("AdminCreateUpload")
             .DisableAntiforgery()
-            .WithOpenApi()
-            .Accepts<IFormFile>("multipart/form-data")
+            .WithOpenApi(operation =>
+            {
+                operation.RequestBody = new OpenApiRequestBody
+                {
+                    Required = true,
+                    Content =
+                    {
+                        ["multipart/form-data"] = new OpenApiMediaType
+                        {
+                            Schema = new OpenApiSchema
+                            {
+                                Type = "object",
+                                Required = new HashSet<string> { "file" },
+                                Properties =
+                                {
+                                    ["file"] = new OpenApiSchema { Type = "string", Format = "binary" },
+                                    ["cityHintId"] = new OpenApiSchema { Type = "integer", Format = "int32" },
+                                },
+                            },
+                        },
+                    },
+                };
+                return operation;
+            })
             .Produces<DocumentUploadResponseDto>(StatusCodes.Status201Created)
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status401Unauthorized);

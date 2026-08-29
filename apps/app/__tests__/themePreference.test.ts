@@ -4,12 +4,18 @@ jest.mock('@react-native-async-storage/async-storage', () => ({
 }))
 
 import {
+  DEFAULT_THEME_PREFERENCE,
   getSystemColorScheme,
   isThemePreference,
   resolveColorScheme,
 } from '../src/storage/themePreference'
 
 describe('themePreference', () => {
+  it('defaults new installs to light appearance', () => {
+    expect(DEFAULT_THEME_PREFERENCE).toBe('light')
+    expect(resolveColorScheme(DEFAULT_THEME_PREFERENCE, 'dark')).toBe('light')
+  })
+
   it('accepts light, dark, and system', () => {
     expect(isThemePreference('light')).toBe(true)
     expect(isThemePreference('dark')).toBe(true)

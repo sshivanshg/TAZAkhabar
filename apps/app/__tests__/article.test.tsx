@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react-native'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native'
 import { FlatList } from 'react-native'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import type { ArticleResponse } from '@tazakhabar/shared-types'
@@ -161,6 +161,29 @@ describe('ArticleScreen', () => {
     expect(screen.getAllByTestId('article-page').length).toBeGreaterThanOrEqual(2)
     // Constrained flex list so chrome stays viewport-fixed while stories scroll.
     expect(feed.props.style).toEqual(expect.objectContaining({ flex: 1 }))
+  })
+
+  it('refreshes the article feed with pull-to-refresh', async () => {
+    renderArticle()
+
+    await screen.findByText('Fetched headline')
+    const callsBeforeRefresh = mockGetArticles.mock.calls.length
+
+    const feed = screen.UNSAFE_getByType(FlatList)
+    await act(async () => {
+      await feed.props.refreshControl.props.onRefresh()
+    })
+
+    await waitFor(() => {
+      expect(mockGetArticles).toHaveBeenCalledTimes(callsBeforeRefresh + 1)
+    })
+    expect(mockGetArticles).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        city: 'jhansi',
+        offset: 0,
+        limit: 20,
+      }),
+    )
   })
 
   it('hides publisher download CTAs from story copy', async () => {

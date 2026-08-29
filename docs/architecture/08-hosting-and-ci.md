@@ -1,7 +1,7 @@
 # Hosting and CI
 
 > **Living doc** — update when Render, Cloudflare, Neon, Docker, workflows, or env templates change.  
-> **Last verified against:** 2026-08-27 (production applies pending EF migrations on API boot)
+> **Last verified against:** 2026-08-29 (RSS cron timeout raised for 75-city baseline feed)
 
 ## Purpose
 
@@ -81,7 +81,7 @@ generated debug keystore for sideload testing, not Play Store signing.
 1. Static assets: browser → Cloudflare Pages CDN.
 2. JSON: browser → Cloudflare-proxied `api.<domain>` → Render Docker.
 3. `GET /api/articles` and `GET /api/cities` send `Cache-Control: public, max-age=60` so the edge can cut Neon load ([ADR-004](../adr/004-render-cloudflare-neon-hosting.md)).
-4. Render crons hit the 45m ingest endpoints with `X-Ingest-Key`; GitHub Actions runs the nightly midnight IST batch and calls `/api/ingest/daily` with the same key.
+4. Render crons hit the 45m ingest endpoints with `X-Ingest-Key`; RSS cron uses the fast no-AI auto-publish baseline path so the reader feed receives fresh city headlines, and GitHub Actions runs the nightly midnight IST batch via `/api/ingest/daily` with the same key.
 
 ### Render web service
 

@@ -1,4 +1,5 @@
 import { Linking, Platform, Share } from 'react-native'
+import { getPublicSiteUrl } from './publicSiteUrl'
 
 export type ShareableArticle = {
   headline?: string | null
@@ -23,11 +24,8 @@ export function isHttpsUrl(url: string | null | undefined): boolean {
 export function formatWhatsAppShareText(article: ShareableArticle): string {
   const headline = (article.headline ?? '').trim()
   const summary = (article.summary ?? '').trim()
-  const sourceUrl = (article.sourceUrl ?? '').trim()
   const parts = [headline, '', summary]
-  if (sourceUrl) {
-    parts.push('', `Read more: ${sourceUrl}`)
-  }
+  parts.push('', `Read more: ${getPublicSiteUrl()}`)
   return parts.join('\n')
 }
 

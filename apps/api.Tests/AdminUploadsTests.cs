@@ -117,6 +117,14 @@ public sealed class AdminUploadsTests : IClassFixture<TazaKhabarWebApplicationFa
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
+    [Fact]
+    public async Task Uploads_JsonWithoutBearer_Returns401BeforeContentTypeValidation()
+    {
+        var client = _factory.CreateSeededClient();
+        var response = await client.PostAsJsonAsync("/api/admin/uploads", new { });
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
     private async Task<DocumentUploadResponseDto> WaitUntilProcessedAsync(HttpClient client, int id)
     {
         DocumentUploadResponseDto? current = null;

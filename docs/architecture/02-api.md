@@ -1,7 +1,7 @@
 # API
 
 > **Living doc** — update when endpoints, auth, rate limits, CORS, or DI composition change.  
-> **Last verified against:** 2026-08-27 (75-city response with coordinates for device-side matching)
+> **Last verified against:** 2026-08-29 (scheduled RSS endpoints publish fast baseline feed)
 
 ## Purpose
 
@@ -49,9 +49,9 @@ Pipeline (order): Serilog request logging → RequestId header/log context → E
 | GET | `/api/articles/trending` | `GetTrendingArticles` | View-based; **no `body`** |
 | POST | `/api/articles/{id}/view` | `RecordArticleView` | Optional `sessionId` |
 | GET | `/api/articles/{id}` | `GetArticleById` | Published only; includes plain-text `body` when stored |
-| POST | `/api/ingest/rss` | `IngestRss` | `X-Ingest-Key` |
+| POST | `/api/ingest/rss` | `IngestRss` | `X-Ingest-Key`; scheduled no-AI baseline, auto-publishes feed snippets |
 | POST | `/api/ingest/scrape` | `IngestScrape` | `X-Ingest-Key` |
-| POST | `/api/ingest/daily` | `IngestDaily` | `X-Ingest-Key`; nightly RSS + scrape batch, no Claude summarization and no OpenAI rewrite |
+| POST | `/api/ingest/daily` | `IngestDaily` | `X-Ingest-Key`; nightly RSS + scrape batch, RSS auto-publishes feed snippets, no Claude summarization and no OpenAI rewrite |
 | POST | `/api/ingest/backfill-bodies` | `IngestBackfillBodies` | `X-Ingest-Key`; fills missing `body` from source HTML |
 
 ### Admin endpoints
