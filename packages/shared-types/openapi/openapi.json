@@ -2270,7 +2270,7 @@
             "nullable": true
           }
         },
-        "additionalProperties": {}
+        "additionalProperties": { }
       },
       "PurgeOldArticlesResponse": {
         "type": "object",
