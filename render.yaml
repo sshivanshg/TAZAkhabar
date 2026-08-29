@@ -63,7 +63,7 @@ services:
     plan: starter
     schedule: "*/45 * * * *"
     buildCommand: "pip install requests"
-    startCommand: "python -c \"import os,requests; r=requests.post(os.environ['INGEST_URL'].rstrip('/')+'/api/ingest/rss', headers={'X-Ingest-Key': os.environ['RssIngest__Secret']}, timeout=120); r.raise_for_status()\""
+    startCommand: "python -c \"import os,requests; r=requests.post(os.environ['INGEST_URL'].rstrip('/')+'/api/ingest/rss', headers={'X-Ingest-Key': os.environ['RssIngest__Secret']}, timeout=600); r.raise_for_status()\""
     envVars:
       - key: INGEST_URL
         sync: false

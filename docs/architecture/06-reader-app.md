@@ -1,7 +1,7 @@
 # Reader app
 
 > **Living doc** — update when Expo routes, city/feed/share behavior, or desktop web layer change.  
-> **Last verified against:** 2026-08-27 (Docker-only web development/APK export and 75-city reader behavior)
+> **Last verified against:** 2026-08-29 (pull-to-refresh reader surfaces and light default appearance)
 
 ## Purpose
 
@@ -188,7 +188,7 @@ Manual verification still required before claiming a comprehensive a11y sweep is
 
 - Use RN primitives (`View`/`Text`/`Pressable`) so web and native stay aligned — avoid raw HTML/CSS except thin `Platform` forks.
 - Do not add a second Vite reader app.
-- Appearance: Light / Dark / System (default System), persisted in AsyncStorage; Profile controls it. Brand accent fill stays `#155EEF`.
+- Appearance: Light / Dark / System (default Light), persisted in AsyncStorage; Profile controls it. Brand accent fill stays `#155EEF`.
 - No login — city, theme, and first-page feed cache are device-local only.
 - Location permission is foreground-only and user initiated. Never request it at boot or make it mandatory for reading.
 - Privacy, support, terms, and corrections live on the standalone public website and open externally from the reader.

@@ -23,7 +23,11 @@ public static class IngestEndpoints
                         statusCode: StatusCodes.Status401Unauthorized);
                 }
 
-                var result = await ingest.RunAsync(cancellationToken);
+                var result = await ingest.RunAsync(
+                    cancellationToken,
+                    useIntelligence: false,
+                    autoPublish: true,
+                    fetchArticleBodies: false);
                 return Results.Ok(new IngestRunResponse(
                     result.FeedsAttempted,
                     result.FeedsFailed,
@@ -78,7 +82,11 @@ public static class IngestEndpoints
                         statusCode: StatusCodes.Status401Unauthorized);
                 }
 
-                var rss = await rssIngest.RunAsync(cancellationToken, useIntelligence: false);
+                var rss = await rssIngest.RunAsync(
+                    cancellationToken,
+                    useIntelligence: false,
+                    autoPublish: true,
+                    fetchArticleBodies: false);
                 var scrape = await scrapeIngest.RunAllActiveAsync(cancellationToken, useRewrite: false);
                 return Results.Ok(new IngestRunResponse(
                     rss.FeedsAttempted + scrape.FeedsAttempted,

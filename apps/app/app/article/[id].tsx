@@ -5,6 +5,7 @@ import {
   Image,
   Platform,
   Pressable,
+  RefreshControl,
   StyleSheet,
   Text,
   View,
@@ -145,6 +146,7 @@ function ArticleFeedBody() {
   const [feedStart, setFeedStart] = useState(0)
   const [activeLocalIndex, setActiveLocalIndex] = useState(0)
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [loadMoreError, setLoadMoreError] = useState(false)
   const [bookmarkedIds, setBookmarkedIds] = useState<Set<number>>(new Set())
@@ -179,7 +181,7 @@ function ArticleFeedBody() {
     }
   }, [routeCity])
 
-  const loadStack = useCallback(async () => {
+  const loadStack = useCallback(async (mode: 'replace' | 'refresh' = 'replace') => {
     if (!citySlug) {
       if (!id) {
         setError('Article not found')
@@ -188,7 +190,11 @@ function ArticleFeedBody() {
       return
     }
 
-    setLoading(true)
+    if (mode === 'refresh') {
+      setRefreshing(true)
+    } else {
+      setLoading(true)
+    }
     setError(null)
     setLoadMoreError(false)
     try {
@@ -240,7 +246,6 @@ function ArticleFeedBody() {
       activeIndexRef.current = 0
       setHeaderElevated(false)
       headerElevatedRef.current = false
-      setLoading(false)
     } catch (err) {
       if (initialFromParams) {
         setStack([initialFromParams])
@@ -249,11 +254,12 @@ function ArticleFeedBody() {
         setHasMore(false)
         setActiveLocalIndex(0)
         activeIndexRef.current = 0
-        setLoading(false)
         return
       }
       setError(err instanceof Error ? err.message : 'Could not load article')
+    } finally {
       setLoading(false)
+      setRefreshing(false)
     }
   }, [citySlug, feedCategory, lang, routeDate, id, initialFromParams])
 
@@ -641,6 +647,17 @@ function ArticleFeedBody() {
         })}
         onScroll={onScroll}
         scrollEventThrottle={16}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => void loadStack('refresh')}
+            tintColor={readerColors.accent}
+            colors={[readerColors.accent]}
+            progressBackgroundColor={
+              Platform.OS === 'android' ? readerColors.sheet : undefined
+            }
+          />
+        }
         onEndReached={() => void loadMore()}
         onEndReachedThreshold={0.7}
         onViewableItemsChanged={onViewableItemsChanged}

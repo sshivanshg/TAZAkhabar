@@ -157,7 +157,7 @@ function ProfileBody() {
             color={colors.textSecondary}
             mb="$3"
           >
-            Choose light, dark, or match your device. Preference is saved on this device.
+            Light is the default. Preference is saved on this device.
           </Text>
           <View style={styles.langRow}>
             {(

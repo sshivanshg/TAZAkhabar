@@ -1,7 +1,7 @@
 # Ingestion
 
 > **Living doc** — update when pipelines, article status on insert, cron, SSE, or intelligence providers change.  
-> **Last verified against:** 2026-08-27 (75-city baseline discovery source catalog)
+> **Last verified against:** 2026-08-29 (scheduled RSS auto-publishes the no-AI baseline feed)
 
 ## Purpose
 
@@ -65,7 +65,7 @@ flowchart TB
 
 | Pipeline | Service | Trigger | Insert status (current) |
 |----------|---------|---------|-------------------------|
-| RSS | `RssIngestService.cs` | Cron or admin source trigger | `PendingReview` |
+| RSS | `RssIngestService.cs` | Cron or admin source trigger | Scheduled no-AI endpoints: `Published`; default/manual service path: `PendingReview` |
 | Scrape | `ScrapeIngestService.cs` + `HtmlArticleExtractor`, `ScrapeHttpClient`, `OpenAiArticleRewriter` | Cron or admin trigger | `Published` |
 | PDF / image | `PdfIngestService.cs`, `PdfTextExtractor` (PdfPig), `PdfProcessingQueue` + `PdfProcessingWorker` | Admin uploads | `PendingReview` |
 | Image OG | `ArticleImageEnrichmentService`, `OgImageExtractor`, `ImageEnrichmentQueue` + worker | After ingest | Updates `ImageUrl` |
@@ -111,10 +111,19 @@ Every 45 minutes (`render.yaml`):
 - `tazakhabar-rss-ingest` → `POST {INGEST_URL}/api/ingest/rss`
 - `tazakhabar-scrape-ingest` → `POST {INGEST_URL}/api/ingest/scrape`
 
+The protected RSS endpoint is the fast public baseline path: it disables Claude,
+skips per-article body fetches, publishes feed snippets immediately, and orders
+sources by oldest/never fetched first so time-limited cron runs rotate through
+the 75-city catalog instead of repeatedly favoring low source IDs. Admin/manual
+RSS source runs still use the default service behavior (`PendingReview`) unless
+the caller explicitly opts into auto-publish.
+
 Nightly at midnight IST (`30 18 * * *` UTC):
 
 - `nightly-ingest.yml` → `POST {INGEST_URL}/api/ingest/daily`
-- Runs all active RSS sources with Claude summarization disabled, then all active scrape sources with OpenAI rewrite disabled.
+- Runs all active RSS sources with Claude summarization and body fetch disabled
+  and auto-publish enabled, then all active scrape sources with OpenAI rewrite
+  disabled.
 
 Render crons and the GitHub Actions job send header `X-Ingest-Key: RssIngest__Secret`.
 
@@ -127,7 +136,7 @@ OpenAI scrape rewrite via `OpenAiRewrite__Enabled` (default `true`), `OpenAiRewr
 | Pipeline | LLM | Stored `summary` | Stored `body` |
 |----------|-----|------------------|---------------|
 | **Scrape** | `OpenAiArticleRewriter.RewriteScrapedArticleAsync` (fallback to extract on missing key/failure); disabled for `/api/ingest/daily` | OpenAI digest, or extracted snippet | OpenAI digest body, or `HtmlArticleExtractor.ExtractBody` (~50k chars, never raw HTML) |
-| **RSS** | Claude `SummarizeArticleAsync` (fallback to feed snippet on failure); disabled for `/api/ingest/daily` | Claude digest, or feed snippet in daily no-AI cron | Fetched HTML body when the link is reachable |
+| **RSS** | Claude `SummarizeArticleAsync` (fallback to feed snippet on failure); disabled for scheduled `/api/ingest/rss` and `/api/ingest/daily` | Claude digest for review-mode runs, or feed snippet for scheduled no-AI public runs | Fetched HTML body when review-mode link is reachable; omitted for scheduled no-AI public runs |
 | **PDF** | Claude `ExtractStoriesAsync` / image extract | Claude story summary | PdfPig plain text (shared across stories from that file) |
 
 Translate still runs on read for headline/summary when `?lang=` differs from detected language. Body is not translated.

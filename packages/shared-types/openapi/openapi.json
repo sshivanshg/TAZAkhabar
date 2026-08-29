@@ -1412,8 +1412,20 @@
           "content": {
             "multipart/form-data": {
               "schema": {
-                "type": "string",
-                "format": "binary"
+                "required": [
+                  "file"
+                ],
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  },
+                  "cityHintId": {
+                    "type": "integer",
+                    "format": "int32"
+                  }
+                }
               }
             }
           },

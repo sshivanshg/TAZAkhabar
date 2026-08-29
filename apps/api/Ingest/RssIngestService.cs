@@ -14,12 +14,18 @@ public sealed class RssIngestService(
     ImageEnrichmentQueue imageEnrichmentQueue,
     ILogger<RssIngestService> logger)
 {
-    public async Task<IngestRunResult> RunAsync(CancellationToken cancellationToken, bool useIntelligence = true)
+    public async Task<IngestRunResult> RunAsync(
+        CancellationToken cancellationToken,
+        bool useIntelligence = true,
+        bool autoPublish = false,
+        bool fetchArticleBodies = true)
     {
         var sources = await db.Sources
             .AsNoTracking()
             .Where(s => s.Type == SourceType.Rss && s.IsActive)
-            .OrderBy(s => s.Id)
+            .OrderBy(s => s.LastFetchedAt != null)
+            .ThenBy(s => s.LastFetchedAt)
+            .ThenBy(s => s.Id)
             .ToListAsync(cancellationToken);
 
         var attempted = 0;
@@ -30,7 +36,12 @@ public sealed class RssIngestService(
         foreach (var source in sources)
         {
             attempted++;
-            var run = await RunSourceAsync(source.Id, cancellationToken, useIntelligence: useIntelligence);
+            var run = await RunSourceAsync(
+                source.Id,
+                cancellationToken,
+                useIntelligence: useIntelligence,
+                autoPublish: autoPublish,
+                fetchArticleBodies: fetchArticleBodies);
             inserted += run.ArticlesAdded;
             skipped += run.ArticlesSkipped;
             if (run.ArticlesFailed > 0 || !string.IsNullOrEmpty(run.ErrorSummary))
@@ -46,7 +57,9 @@ public sealed class RssIngestService(
         int sourceId,
         CancellationToken cancellationToken,
         int? existingRunId = null,
-        bool useIntelligence = true)
+        bool useIntelligence = true,
+        bool autoPublish = false,
+        bool fetchArticleBodies = true)
     {
         var source = await db.Sources.FirstOrDefaultAsync(s => s.Id == sourceId, cancellationToken)
             ?? throw new InvalidOperationException($"Source {sourceId} not found.");
@@ -141,7 +154,15 @@ public sealed class RssIngestService(
                     continue;
                 }
 
-                if (await TryInsertAsync(city, source, item, run, cancellationToken, useIntelligence))
+                if (await TryInsertAsync(
+                    city,
+                    source,
+                    item,
+                    run,
+                    cancellationToken,
+                    useIntelligence,
+                    autoPublish,
+                    fetchArticleBodies))
                 {
                     inserted++;
                     IngestionEvents.Emit(
@@ -248,7 +269,9 @@ public sealed class RssIngestService(
         ParsedRssItem item,
         IngestionRun run,
         CancellationToken cancellationToken,
-        bool useIntelligence)
+        bool useIntelligence,
+        bool autoPublish,
+        bool fetchArticleBodies)
     {
         var sourceUrl = HtmlText.Truncate(item.SourceUrl.Trim(), 500);
         if (string.IsNullOrWhiteSpace(sourceUrl))
@@ -305,7 +328,9 @@ public sealed class RssIngestService(
             IngestionEvents.Emit(events, run.Id, "progress", $"Using feed snippet · {HtmlText.Truncate(item.Title, 80)}");
         }
 
-        var body = await TryFetchArticleBodyAsync(sourceUrl, cancellationToken);
+        var body = fetchArticleBodies
+            ? await TryFetchArticleBodyAsync(sourceUrl, cancellationToken)
+            : null;
 
         var now = DateTimeOffset.UtcNow;
         var article = new Article
@@ -319,7 +344,7 @@ public sealed class RssIngestService(
             PublishedAt = ToUtc(item.PublishedAt ?? now),
             Category = "Local",
             ImageUrl = NormalizeImageUrl(item.ImageUrl),
-            Status = ArticleStatus.PendingReview,
+            Status = autoPublish ? ArticleStatus.Published : ArticleStatus.PendingReview,
             IsMock = false,
             IngestedAt = now,
             SourceId = source.Id,
