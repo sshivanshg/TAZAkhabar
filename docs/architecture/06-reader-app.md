@@ -1,7 +1,7 @@
 # Reader app
 
 > **Living doc** — update when Expo routes, city/feed/share behavior, or desktop web layer change.  
-> **Last verified against:** 2026-08-29 (pull-to-refresh reader surfaces and light default appearance)
+> **Last verified against:** 2026-08-29 (reader share links target public site)
 
 ## Purpose
 
@@ -70,7 +70,7 @@ flowchart LR
 | `src/storage/feedCache.ts` | First-page Home/Discover feed cache (`AsyncStorage`; 45m TTL; key = city+category+lang+q) |
 | `src/components/CityListItem.tsx` | Tappable city row + list skeleton |
 | `src/components/CitySearch.tsx` | Live city/state filter field |
-| `src/utils/shareToWhatsApp.ts` | Share deep link / intent |
+| `src/utils/shareToWhatsApp.ts` | Share deep link / intent to the public TazaKhabar website |
 | `src/components/desktop/*` | Desktop shell / sidebar / hero row |
 | `src/storage/viewSession.ts` | Anonymous view sessions for trending |
 | `src/preferences/ThemePreferenceContext.tsx` | Light/dark/system preference → `useTheme()` (`colors`, `readerColors`, `shadows`) |
@@ -125,7 +125,7 @@ sequenceDiagram
   App->>API: getArticles (stack) + getArticle (body)
   App->>API: recordArticleView
   U->>App: Share
-  App->>U: system share sheet / copy link / WhatsApp
+  App->>U: system share sheet / copy link / WhatsApp with EXPO_PUBLIC_SITE_URL
 ```
 
 API helpers used: `getHealth`, `getCities`, `getArticles`, `getArticleDates`, `getArticle`, `getTrendingArticles`, `recordArticleView`.
@@ -197,7 +197,7 @@ Manual verification still required before claiming a comprehensive a11y sweep is
 - The article screen uses Reels-style vertical paging: each story is one viewport-tall page so two stories never share the screen. A scroll gesture snaps to the next story with a slower eased transition on web (~700ms; instant when the reader prefers reduced motion). Native paging uses the normal deceleration rate rather than the snappy `fast` default. Short stories pad to fill the page; longer stories scroll inside that page. Story content starts below the opaque top bar so hero images (including e-paper mastheads) do not bleed through the chrome. Publisher download CTAs such as “Download in high quality” are stripped from body copy. Later stories append as the reader approaches the end. The FlatList is the only paging surface (`flex: 1` inside an overflow-clipped root); the sticky top bar and compact bottom action bar sit outside that list (viewport-fixed on web) so chrome does not move with story content. Share and Save live only in that bottom bar — not duplicated in the story body.
 - Active story is detected with FlatList viewability (and an IntersectionObserver sentinel on web). `6 of 8` updates from that active item. On web the `/article/:id` path is `history.replaceState`’d while reading. The article Back control always `replace`s to Home (`/(tabs)`) so history never drops the reader on Discover.
 - Source URLs appear once as “Read original article” near the headline. Publisher name stays in metadata as plain text. Only valid `https` URLs become that link.
-- Share prefers the platform share sheet, then copy-link; WhatsApp remains an optional destination rather than the only action.
+- Share prefers the platform share sheet, then copy-link; WhatsApp remains an optional destination rather than the only action. Shared links point to `EXPO_PUBLIC_SITE_URL`, while Read original keeps publisher attribution separate.
 
 ## Related docs
 

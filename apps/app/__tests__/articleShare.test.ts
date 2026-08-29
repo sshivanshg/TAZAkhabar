@@ -4,22 +4,22 @@ import { nextArticlePath } from '../src/utils/syncArticleUrl'
 import { openArticleSource } from '../src/utils/openArticleSource'
 
 describe('articleShareUrl', () => {
-  it('prefers a https source URL', () => {
+  it('uses the TazaKhabar website URL instead of the source URL', () => {
     expect(
       articleShareUrl({
         headline: 'A',
         sourceUrl: 'https://example.com/story',
       }),
-    ).toBe('https://example.com/story')
+    ).toBe('https://tazakhabar-site.pages.dev')
   })
 
-  it('ignores non-https source URLs', () => {
+  it('still shares the website URL when the source URL is not share-safe', () => {
     expect(
       articleShareUrl({
         headline: 'A',
         sourceUrl: 'http://example.com/story',
       }),
-    ).toBeUndefined()
+    ).toBe('https://tazakhabar-site.pages.dev')
   })
 })
 

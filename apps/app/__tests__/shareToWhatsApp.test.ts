@@ -5,7 +5,7 @@ import {
 } from '../src/utils/shareToWhatsApp'
 
 describe('formatWhatsAppShareText', () => {
-  it('formats headline, summary, and read-more url', () => {
+  it('formats headline, summary, and the TazaKhabar website URL', () => {
     expect(
       formatWhatsAppShareText({
         headline: 'Budget approved',
@@ -13,17 +13,17 @@ describe('formatWhatsAppShareText', () => {
         sourceUrl: 'https://example.com/story/1',
       }),
     ).toBe(
-      'Budget approved\n\nCouncil passed the annual plan.\n\nRead more: https://example.com/story/1',
+      'Budget approved\n\nCouncil passed the annual plan.\n\nRead more: https://tazakhabar-site.pages.dev',
     )
   })
 
-  it('omits read-more when sourceUrl is missing', () => {
+  it('includes the website URL when sourceUrl is missing', () => {
     expect(
       formatWhatsAppShareText({
         headline: 'Headline',
         summary: 'Summary',
       }),
-    ).toBe('Headline\n\nSummary')
+    ).toBe('Headline\n\nSummary\n\nRead more: https://tazakhabar-site.pages.dev')
   })
 })
 
