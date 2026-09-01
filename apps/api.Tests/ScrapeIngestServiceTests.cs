@@ -4,6 +4,7 @@ using NewsFeed.Api.Data;
 using NewsFeed.Api.Data.Entities;
 using NewsFeed.Api.Ingest;
 using NewsFeed.Api.Options;
+using NewsFeed.Api.Services;
 
 namespace NewsFeed.Api.Tests;
 
@@ -397,6 +398,7 @@ public sealed class ScrapeIngestServiceTests
             Microsoft.Extensions.Options.Options.Create(rewriteOptions ?? new OpenAiRewriteOptions()),
             new IngestionEventBus(),
             new ImageEnrichmentQueue(),
+            new NotificationDispatchQueue(),
             NullLogger<ScrapeIngestService>.Instance,
             TimeSpan.Zero);
 

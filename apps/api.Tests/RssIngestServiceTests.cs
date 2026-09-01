@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using NewsFeed.Api.Data;
 using NewsFeed.Api.Data.Entities;
 using NewsFeed.Api.Ingest;
+using NewsFeed.Api.Services;
 
 namespace NewsFeed.Api.Tests;
 
@@ -78,6 +79,7 @@ public sealed class RssIngestServiceTests
             new FakeArticleIntelligence(),
             new IngestionEventBus(),
             new ImageEnrichmentQueue(),
+            new NotificationDispatchQueue(),
             NullLogger<RssIngestService>.Instance);
 
         var result = await service.RunAsync(
@@ -383,7 +385,7 @@ public sealed class RssIngestServiceTests
     }
 
     private static RssIngestService CreateService(AppDbContext db, FakeRssFeedClient client) =>
-        new(db, client, new FakeScrapeHttpClient(), new FakeArticleIntelligence(), new IngestionEventBus(), new ImageEnrichmentQueue(), NullLogger<RssIngestService>.Instance);
+        new(db, client, new FakeScrapeHttpClient(), new FakeArticleIntelligence(), new IngestionEventBus(), new ImageEnrichmentQueue(), new NotificationDispatchQueue(), NullLogger<RssIngestService>.Instance);
 
     private static string CityEditionXml(string itemUrl, string title, string description) => $"""
         <?xml version="1.0"?><rss version="2.0"><channel>
