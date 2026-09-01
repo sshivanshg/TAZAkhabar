@@ -2,6 +2,7 @@ import type {
   ArticleDatesResponse,
   ArticleResponse,
   CityResponse,
+  FeedSectionsResponse,
   HealthResponse,
   PagedArticlesResponse,
   ProblemDetails,
@@ -100,6 +101,13 @@ export type GetPersonalizedArticlesParams = {
   limit?: number
 }
 
+export type GetFeedSectionsParams = {
+  city: string
+  /** Persistent anonymous id from getPersonalizationId — drives section ordering. */
+  sessionId: string
+  lang?: string
+}
+
 export type GetArticleDatesParams = {
   city: string
   category?: string
@@ -160,6 +168,16 @@ export const apiClient = {
       search.set('limit', String(params.limit))
     }
     return request<PagedArticlesResponse>(`/api/articles/personalized?${search.toString()}`)
+  },
+
+  getFeedSections(params: GetFeedSectionsParams): Promise<FeedSectionsResponse> {
+    const search = new URLSearchParams()
+    search.set('city', params.city)
+    search.set('sessionId', params.sessionId)
+    if (params.lang) {
+      search.set('lang', params.lang)
+    }
+    return request<FeedSectionsResponse>(`/api/articles/sections?${search.toString()}`)
   },
 
   getArticleDates(params: GetArticleDatesParams): Promise<ArticleDatesResponse> {

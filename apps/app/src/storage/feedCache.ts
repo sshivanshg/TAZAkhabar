@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import type { ArticleResponse } from '@tazakhabar/shared-types'
+import type { ArticleResponse, FeedSection } from '@tazakhabar/shared-types'
 
 export const FEED_CACHE_STORAGE_KEY = 'tazakhabar.feedCache.v1'
 
@@ -19,6 +19,8 @@ export type FeedCacheEntry = {
   fetchedAt: number
   items: ArticleResponse[]
   total: number
+  /** Sectioned For-you partition when the entry came from getFeedSections. */
+  sections?: FeedSection[]
 }
 
 type FeedCacheStore = {
@@ -129,9 +131,10 @@ export async function writeFeedCache(
   items: ArticleResponse[],
   total: number,
   fetchedAt: number = Date.now(),
+  sections?: FeedSection[],
 ): Promise<void> {
   const store = await readStore()
-  store.entries[key] = { fetchedAt, items, total }
+  store.entries[key] = { fetchedAt, items, total, ...(sections ? { sections } : {}) }
   store.order = touchOrder(store.order, key)
   await writeStore(trimStore(store))
 }

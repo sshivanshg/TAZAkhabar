@@ -1,7 +1,13 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native'
 import { StyleSheet } from 'react-native'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
-import type { ArticleResponse, CityResponse, PagedArticlesResponse } from '@tazakhabar/shared-types'
+import type {
+  ArticleResponse,
+  CityResponse,
+  FeedSection,
+  FeedSectionsResponse,
+  PagedArticlesResponse,
+} from '@tazakhabar/shared-types'
 import { FeedPreferencesProvider } from '../src/preferences/FeedPreferencesContext'
 import { LanguagePreferenceProvider } from '../src/preferences/LanguagePreferenceContext'
 import { ThemePreferenceProvider } from '../src/preferences/ThemePreferenceContext'
@@ -11,6 +17,7 @@ const mockPush = jest.fn()
 const mockReplace = jest.fn()
 const mockGetArticles = jest.fn()
 const mockGetPersonalizedArticles = jest.fn()
+const mockGetFeedSections = jest.fn()
 const mockGetCities = jest.fn()
 
 jest.mock('expo-router', () => {
@@ -34,6 +41,7 @@ jest.mock('../src/api/client', () => ({
   apiClient: {
     getArticles: (...args: unknown[]) => mockGetArticles(...args),
     getPersonalizedArticles: (...args: unknown[]) => mockGetPersonalizedArticles(...args),
+    getFeedSections: (...args: unknown[]) => mockGetFeedSections(...args),
     getCities: (...args: unknown[]) => mockGetCities(...args),
     getTrendingArticles: jest.fn(async () => ({ items: [] })),
   },
@@ -172,6 +180,28 @@ function makeArticles(count: number): ArticleResponse[] {
   }))
 }
 
+/** Mirrors the API partition: first 5 ranked stories in "top", rest in "more". */
+function sectioned(items: ArticleResponse[]): FeedSectionsResponse {
+  const sections: FeedSection[] = []
+  if (items.length > 0) {
+    sections.push({
+      key: 'top',
+      title: 'Top stories',
+      category: undefined,
+      items: items.slice(0, 5),
+    })
+  }
+  if (items.length > 5) {
+    sections.push({
+      key: 'more',
+      title: 'More stories',
+      category: undefined,
+      items: items.slice(5),
+    })
+  }
+  return { sections, total: items.length }
+}
+
 function renderFeed() {
   return render(
     <SafeAreaProvider
@@ -198,8 +228,9 @@ describe('FeedScreen', () => {
     mockGetCities.mockResolvedValue(cities)
     // Need more than BREAKING_NEWS_COUNT so recommendation list has the sample headline
     mockGetArticles.mockResolvedValue(paged(makeArticles(6)))
-    // Home "For you" loads through the personalized endpoint by default.
+    // Home "For you" loads through the sectioned feed endpoint by default.
     mockGetPersonalizedArticles.mockResolvedValue(paged(makeArticles(6)))
+    mockGetFeedSections.mockResolvedValue(sectioned(makeArticles(6)))
   })
 
   it('renders articles from the API', async () => {
@@ -208,7 +239,9 @@ describe('FeedScreen', () => {
     expect(
       await screen.findByText('[MOCK] Local municipal budget approved for FY26'),
     ).toBeTruthy()
-    expect(screen.queryByText('Top stories')).toBeNull()
+    // Sectioned For-you feed: section headers lead each partition on mobile too.
+    expect(screen.getByText('Top stories')).toBeTruthy()
+    expect(screen.getByText('More stories')).toBeTruthy()
     expect(screen.getByLabelText('Filter For you')).toBeTruthy()
     // Actions live in the overflow sheet — Google News–style clean card face.
     expect(screen.queryByText('Read original')).toBeNull()
@@ -218,8 +251,54 @@ describe('FeedScreen', () => {
     expect(screen.queryByTestId('article-row')).toBeNull()
   })
 
+  it('renders category sections with their headers', async () => {
+    const healthArticles: ArticleResponse[] = [
+      { ...sampleArticle, id: 6, headline: '[MOCK] Health story one', category: 'Health' },
+      { ...sampleArticle, id: 7, headline: '[MOCK] Health story two', category: 'Health' },
+    ]
+    mockGetFeedSections.mockResolvedValue({
+      sections: [
+        { key: 'top', title: 'Top stories', category: undefined, items: makeArticles(5) },
+        { key: 'health', title: 'Health', category: 'Health', items: healthArticles },
+      ],
+      total: 7,
+    } satisfies FeedSectionsResponse)
+    renderFeed()
+
+    // Wait for the section content; the "Health" category chip paints first and
+    // would satisfy findAllByText before the section header renders.
+    await waitFor(() => {
+      expect(screen.getByText('[MOCK] Health story one')).toBeTruthy()
+    })
+    // "Health" appears both as a category chip and as the section header.
+    expect(screen.getAllByText('Health').length).toBeGreaterThanOrEqual(2)
+    expect(screen.getByText('[MOCK] Health story two')).toBeTruthy()
+    expect(screen.getByText('Top stories')).toBeTruthy()
+  })
+
+  it('applies feed preference filters inside sections', async () => {
+    const asyncStorage = require('@react-native-async-storage/async-storage')
+    asyncStorage.getItem.mockImplementation(async (key: string) =>
+      key === 'tazakhabar.feedPreferences.v1'
+        ? JSON.stringify({ hiddenStoryIds: [6] })
+        : null,
+    )
+    try {
+      renderFeed()
+
+      expect(
+        await screen.findByText('[MOCK] Local municipal budget approved for FY26'),
+      ).toBeTruthy()
+      // Story 6 is hidden, so the "More stories" section it alone filled drops out.
+      expect(screen.queryByText('[MOCK] Story 6')).toBeNull()
+      expect(screen.queryByText('More stories')).toBeNull()
+    } finally {
+      asyncStorage.getItem.mockImplementation(async () => null)
+    }
+  })
+
   it('shows empty state when there are no articles', async () => {
-    mockGetPersonalizedArticles.mockResolvedValue(paged([]))
+    mockGetFeedSections.mockResolvedValue({ sections: [], total: 0 })
     renderFeed()
 
     expect(await screen.findByText('No stories yet')).toBeTruthy()
@@ -227,8 +306,8 @@ describe('FeedScreen', () => {
   })
 
   it('shows error state with retry', async () => {
-    // Both the personalized attempt and its chronological fallback must fail.
-    mockGetPersonalizedArticles.mockRejectedValueOnce(new Error('Personalization down'))
+    // Both the sections attempt and its chronological fallback must fail.
+    mockGetFeedSections.mockRejectedValueOnce(new Error('Sections down'))
     mockGetArticles.mockRejectedValueOnce(new Error('Server unavailable'))
     renderFeed()
 
@@ -236,7 +315,7 @@ describe('FeedScreen', () => {
     expect(screen.getByText('Server unavailable')).toBeTruthy()
     expect(screen.queryByTestId('error-column')).toBeNull()
 
-    mockGetPersonalizedArticles.mockResolvedValueOnce(paged(makeArticles(6)))
+    mockGetFeedSections.mockResolvedValueOnce(sectioned(makeArticles(6)))
     fireEvent.press(screen.getByLabelText('Retry loading articles'))
 
     await waitFor(() => {
@@ -248,7 +327,7 @@ describe('FeedScreen', () => {
 
   it('pairs recommendation articles into a 2-column row on tablet', async () => {
     useBreakpoint.mockReturnValue('tablet')
-    mockGetPersonalizedArticles.mockResolvedValue(paged(makeArticles(7)))
+    mockGetFeedSections.mockResolvedValue(sectioned(makeArticles(7)))
     renderFeed()
 
     expect(await screen.findByText('[MOCK] Story 6')).toBeTruthy()
@@ -259,7 +338,7 @@ describe('FeedScreen', () => {
 
   it('keeps a single-column article list on desktop', async () => {
     useBreakpoint.mockReturnValue('desktop')
-    mockGetPersonalizedArticles.mockResolvedValue(paged(makeArticles(7)))
+    mockGetFeedSections.mockResolvedValue(sectioned(makeArticles(7)))
     renderFeed()
 
     expect(await screen.findByText('[MOCK] Story 6')).toBeTruthy()
@@ -269,7 +348,7 @@ describe('FeedScreen', () => {
 
   it('lists leftover breaking stories that do not fit the desktop hero', async () => {
     useBreakpoint.mockReturnValue('desktop')
-    mockGetPersonalizedArticles.mockResolvedValue(paged(makeArticles(7)))
+    mockGetFeedSections.mockResolvedValue(sectioned(makeArticles(7)))
     renderFeed()
 
     expect(await screen.findByText('[MOCK] Story 4')).toBeTruthy()
@@ -278,7 +357,7 @@ describe('FeedScreen', () => {
 
   it('centers the error column at ERROR_COLUMN_MAX on desktop', async () => {
     useBreakpoint.mockReturnValue('desktop')
-    mockGetPersonalizedArticles.mockRejectedValueOnce(new Error('Personalization down'))
+    mockGetFeedSections.mockRejectedValueOnce(new Error('Sections down'))
     mockGetArticles.mockRejectedValueOnce(new Error('Server unavailable'))
     renderFeed()
 
@@ -330,26 +409,24 @@ describe('FeedScreen', () => {
     expect(screen.getByLabelText(/Hide all stories from Dainik Jagran/)).toBeTruthy()
   })
 
-  it('loads the For you feed through the personalized endpoint', async () => {
+  it('loads the For you feed through the sections endpoint', async () => {
     renderFeed()
 
     expect(
       await screen.findByText('[MOCK] Local municipal budget approved for FY26'),
     ).toBeTruthy()
-    expect(mockGetPersonalizedArticles).toHaveBeenCalledWith(
+    expect(mockGetFeedSections).toHaveBeenCalledWith(
       expect.objectContaining({
         city: 'jhansi',
         sessionId: expect.any(String),
-        limit: 20,
-        offset: 0,
       }),
     )
     // Chronological endpoint is only the fallback — not used on success.
     expect(mockGetArticles).not.toHaveBeenCalled()
   })
 
-  it('falls back to the chronological feed when personalization fails', async () => {
-    mockGetPersonalizedArticles.mockRejectedValueOnce(new Error('Personalization down'))
+  it('falls back to the chronological feed when the sections endpoint fails', async () => {
+    mockGetFeedSections.mockRejectedValueOnce(new Error('Sections down'))
     renderFeed()
 
     expect(

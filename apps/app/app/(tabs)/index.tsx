@@ -3,7 +3,7 @@ import { FlatList, Platform, Pressable, RefreshControl, StyleSheet, useWindowDim
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router'
 import { Box, HStack, Text } from '@gluestack-ui/themed'
 import { MotiView } from 'moti'
-import type { ArticleResponse, CityResponse } from '@tazakhabar/shared-types'
+import type { ArticleResponse, CityResponse, FeedSection } from '@tazakhabar/shared-types'
 import { apiClient } from '../../src/api/client'
 import { useAsyncResource } from '../../src/api/useAsyncResource'
 import { BreakingHeroCard } from '../../src/components/BreakingHeroCard'
@@ -77,7 +77,7 @@ import { shareArticle } from '../../src/utils/shareArticle'
 type ListRow =
   | { kind: 'breaking'; key: 'breaking' }
   | { kind: 'trending'; key: 'trending' }
-  | { kind: 'section'; key: 'section' }
+  | { kind: 'section'; key: string; title: string; showAction?: boolean }
   | { kind: 'empty'; key: 'empty' }
   | { kind: 'featured'; key: string; article: ArticleResponse; index: number }
   | { kind: 'related'; key: string; articles: ArticleResponse[] }
@@ -163,6 +163,9 @@ function HomeFeedBody() {
   )
   const [trendingEpoch, setTrendingEpoch] = useState(0)
   const [articles, setArticles] = useState<ArticleResponse[]>([])
+  // Sectioned For-you partition from getFeedSections; null = flat list mode
+  // (category drill-down, fallback, or cached entry without sections).
+  const [sections, setSections] = useState<FeedSection[] | null>(null)
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
@@ -286,6 +289,7 @@ function HomeFeedBody() {
           return
         }
         if (cached && isFeedCacheFresh(cached)) {
+          setSections(cached.sections ?? null)
           setArticles(cached.items)
           setTotal(cached.total)
           offsetRef.current = cached.items.length
@@ -298,12 +302,14 @@ function HomeFeedBody() {
         if (cached) {
           // Stale-while-revalidate: paint last feed while we refresh in the background.
           paintedFromCache = true
+          setSections(cached.sections ?? null)
           setArticles(cached.items)
           setTotal(cached.total)
           offsetRef.current = cached.items.length
           setLoading(false)
           requestAnimationFrame(() => setShowContent(true))
         } else {
+          setSections(null)
           setLoading(true)
           setShowContent(false)
         }
@@ -325,15 +331,40 @@ function HomeFeedBody() {
         const offset = mode === 'append' ? offsetRef.current : 0
         const base = { city: citySlug, lang: preferredLanguage, offset, limit: PAGE_SIZE }
         let result
+        let nextSections: FeedSection[] | null = null
         if (category === 'All') {
-          try {
-            // "For you" is personalized per anonymous device profile; explicit
-            // category chips stay a predictable newest-first drill-down.
-            const sessionId = await getPersonalizationId()
-            result = await apiClient.getPersonalizedArticles({ ...base, sessionId })
-          } catch {
-            // Personalization is an enhancement — never block the feed on it.
-            result = await apiClient.getArticles(base)
+          if (mode === 'append') {
+            try {
+              // "For you" is personalized per anonymous device profile; explicit
+              // category chips stay a predictable newest-first drill-down.
+              const sessionId = await getPersonalizationId()
+              result = await apiClient.getPersonalizedArticles({ ...base, sessionId })
+            } catch {
+              // Personalization is an enhancement — never block the feed on it.
+              result = await apiClient.getArticles(base)
+            }
+          } else {
+            try {
+              // First screen is the sectioned For-you partition (Top stories,
+              // one section per content-analyzed category, More stories).
+              const sessionId = await getPersonalizationId()
+              const sectionsRes = await apiClient.getFeedSections({
+                city: citySlug,
+                sessionId,
+                lang: preferredLanguage,
+              })
+              const list = sectionsRes.sections ?? []
+              nextSections = list
+              result = {
+                items: list.flatMap((section) => section.items ?? []),
+                total: sectionsRes.total ?? 0,
+                offset: 0,
+                limit: PAGE_SIZE,
+              }
+            } catch {
+              // Sections are an enhancement — never block the feed on them.
+              result = await apiClient.getArticles(base)
+            }
           }
         } else {
           result = await apiClient.getArticles({ ...base, category })
@@ -345,11 +376,14 @@ function HomeFeedBody() {
         const nextTotal = result.total ?? items.length
         setTotal(nextTotal)
         setArticles((prev) => (mode === 'append' ? [...prev, ...items] : items))
+        if (mode !== 'append') {
+          setSections(nextSections)
+        }
         offsetRef.current = offset + items.length
         setError(null)
         setAppendError(false)
         if (mode === 'replace' || mode === 'refresh') {
-          void writeFeedCache(cacheKey, items, nextTotal)
+          void writeFeedCache(cacheKey, items, nextTotal, Date.now(), nextSections ?? undefined)
           setTrendingEpoch((n) => n + 1)
         }
         requestAnimationFrame(() => setShowContent(true))
@@ -365,6 +399,7 @@ function HomeFeedBody() {
         // Keep prior items on refresh/append/stale-cache failure; clear only when replace had nothing.
         if (mode === 'replace' && !paintedFromCache) {
           setArticles([])
+          setSections(null)
         }
         if (mode === 'replace' || mode === 'refresh') {
           setShowContent(true)
@@ -392,6 +427,18 @@ function HomeFeedBody() {
     () => prefs.filterArticles(articles),
     [articles, prefs],
   )
+  // Preference filters (hidden stories, blocked sources/categories) apply
+  // inside each section; sections that filter to nothing are dropped.
+  const visibleSections = useMemo(
+    () =>
+      sections
+        ?.map((section) => ({
+          ...section,
+          items: prefs.filterArticles(section.items ?? []),
+        }))
+        .filter((section) => section.items.length > 0) ?? null,
+    [sections, prefs],
+  )
   const visibleTrending = useMemo(
     () => prefs.filterArticles(trendingResource.data),
     [trendingResource.data, prefs],
@@ -409,10 +456,14 @@ function HomeFeedBody() {
     [prefs],
   )
 
-  const breaking = useMemo(
-    () => visibleArticles.slice(0, BREAKING_NEWS_COUNT),
-    [visibleArticles],
-  )
+  // In sections mode the hero/carousel shows the "top" section; otherwise the
+  // flat feed's first stories as before.
+  const breaking = useMemo(() => {
+    if (visibleSections) {
+      return visibleSections.find((s) => s.key === 'top')?.items ?? []
+    }
+    return visibleArticles.slice(0, BREAKING_NEWS_COUNT)
+  }, [visibleSections, visibleArticles])
   const listStart = desktop
     ? desktopHeroVisibleCount(estimateDesktopRailWidth(windowWidth))
     : BREAKING_NEWS_COUNT
@@ -423,10 +474,30 @@ function HomeFeedBody() {
         .filter((a) => a.id == null || !trendingIds.has(a.id)),
     [visibleArticles, listStart, trendingIds],
   )
-  const hasMore = articles.length < total
+  // Sections already partition the whole ranked pool — no further pages.
+  const hasMore = sections ? false : articles.length < total
 
   const listData: ListRow[] = useMemo(() => {
     if (mobile) {
+      if (visibleSections) {
+        const rows: ListRow[] = []
+        for (const section of visibleSections) {
+          rows.push({
+            kind: 'section',
+            key: `section-${section.key ?? 'general'}`,
+            title: section.title ?? '',
+          })
+          for (const row of buildMobileFeedRows(section.items)) {
+            if (row.kind !== 'empty') {
+              rows.push(row)
+            }
+          }
+        }
+        if (rows.length === 0) {
+          rows.push({ kind: 'empty', key: 'empty' })
+        }
+        return rows
+      }
       return buildMobileFeedRows(visibleArticles)
     }
     const rows: ListRow[] = []
@@ -436,8 +507,66 @@ function HomeFeedBody() {
     if (visibleTrending.length > 0) {
       rows.push({ kind: 'trending', key: 'trending' })
     }
+    if (visibleSections) {
+      // Top stories that do not fit the desktop hero stay as compact rows
+      // directly under it (the carousel on tablet shows them all).
+      const topItems = visibleSections.find((s) => s.key === 'top')?.items ?? []
+      if (desktop) {
+        for (const [index, article] of topItems.slice(listStart).entries()) {
+          rows.push({
+            kind: 'article',
+            key: `top-${String(article.id ?? index)}`,
+            article,
+            index,
+          })
+        }
+      }
+      for (const section of visibleSections) {
+        if (section.key === 'top') {
+          continue
+        }
+        const items = section.items.filter((a) => a.id == null || !trendingIds.has(a.id))
+        if (items.length === 0) {
+          continue
+        }
+        rows.push({
+          kind: 'section',
+          key: `section-${section.key ?? 'general'}`,
+          title: section.title ?? '',
+        })
+        if (tablet) {
+          for (let i = 0; i < items.length; i += 2) {
+            const left = items[i]
+            if (!left) {
+              continue
+            }
+            const right = items[i + 1]
+            rows.push({
+              kind: 'article-row',
+              key: `row-${left.id ?? i}-${right?.id ?? 'end'}`,
+              left,
+              right,
+              index: i,
+            })
+          }
+        } else {
+          for (const [index, article] of items.entries()) {
+            rows.push({
+              kind: 'article',
+              key: String(article.id),
+              article,
+              index,
+            })
+          }
+        }
+      }
+      if (rows.length === 0 && !loading) {
+        rows.push({ kind: 'empty', key: 'empty' })
+      }
+      return rows
+    }
     if (recommendations.length > 0) {
-      rows.push({ kind: 'section', key: 'section' })
+      rows.push({ kind: 'section', key: 'section', title: 'For you', showAction: true })
       if (tablet) {
         for (let i = 0; i < recommendations.length; i += 2) {
           const left = recommendations[i]
@@ -467,7 +596,7 @@ function HomeFeedBody() {
       rows.push({ kind: 'empty', key: 'empty' })
     }
     return rows
-  }, [breaking, recommendations, loading, mobile, tablet, visibleArticles, visibleTrending])
+  }, [breaking, recommendations, loading, mobile, tablet, desktop, listStart, trendingIds, visibleArticles, visibleSections, visibleTrending])
 
   const openArticle = useCallback(
     (article: ArticleResponse) => {
@@ -743,9 +872,9 @@ function HomeFeedBody() {
                     return (
                       <View style={styles.sectionPad}>
                         <SectionHeader
-                          title="For you"
-                          actionLabel="View all"
-                          onAction={goDiscover}
+                          title={item.title}
+                          actionLabel={item.showAction ? 'View all' : undefined}
+                          onAction={item.showAction ? goDiscover : undefined}
                         />
                       </View>
                     )
