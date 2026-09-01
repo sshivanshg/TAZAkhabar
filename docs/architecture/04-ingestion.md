@@ -1,7 +1,7 @@
 # Ingestion
 
 > **Living doc** — update when pipelines, article status on insert, cron, SSE, or intelligence providers change.  
-> **Last verified against:** 2026-09-01 (GitHub Actions scheduler for Render free tier; no Render crons)
+> **Last verified against:** 2026-09-01 (The Print Jhansi sources; GHA scheduler for Render free tier)
 
 ## Purpose
 
@@ -21,7 +21,8 @@ and Delhi retain the deeper pilot source mix; each of the other 70 cities starts
 with an active Google News RSS city query so scheduled ingestion can populate a
 baseline feed while direct publisher sources are added. A second migration deepens
 coverage with Amar Ujala city RSS, Dainik Bhaskar local scrape, Times of India
-city scrape (metros), and English Google News discovery feeds. The overall mix includes:
+city scrape (metros), English Google News discovery feeds, and **The Print** India
+RSS (Jhansi pilot — wider feed filtered by place name). The overall mix includes:
 
 - local publisher RSS where it exists,
 - TOI city pages for scrape fallback,
