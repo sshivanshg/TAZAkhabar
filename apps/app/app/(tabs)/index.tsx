@@ -55,6 +55,7 @@ import {
 import {
   BREAKING_NEWS_COUNT,
   FEED_CATEGORIES,
+  FEED_CATEGORY_LABELS,
   type FeedCategory,
   PAGE_SIZE,
   ERROR_COLUMN_MAX,
@@ -69,11 +70,17 @@ import { useTabBarClearance } from '../../src/theme/useTabBarClearance'
 import { isDesktopLayout, isExpandedLayout, useBreakpoint } from '../../src/hooks/useBreakpoint'
 import { articleRouteParams } from '../../src/utils/articleRouteParams'
 import { buildMobileFeedRows } from '../../src/utils/feedLayout'
+import {
+  buildExpandedFeedRows,
+  buildExpandedFeedSlices,
+} from '../../src/utils/expandedFeedLayout'
 import { openArticleSource } from '../../src/utils/openArticleSource'
 import { shareArticle } from '../../src/utils/shareArticle'
 
 type ListRow =
   | { kind: 'breaking'; key: 'breaking' }
+  | { kind: 'picks-section'; key: 'picks-section' }
+  | { kind: 'for-you-section'; key: 'for-you-section' }
   | { kind: 'trending'; key: 'trending' }
   | { kind: 'section'; key: 'section' }
   | { kind: 'empty'; key: 'empty' }
@@ -403,27 +410,34 @@ function HomeFeedBody() {
     () => visibleArticles.slice(0, BREAKING_NEWS_COUNT),
     [visibleArticles],
   )
-  const listStart = expanded ? 4 : BREAKING_NEWS_COUNT
+
+  const feedSlices = useMemo(
+    () =>
+      buildExpandedFeedSlices(visibleArticles, visibleTrending, {
+        category,
+        desktop,
+        categoryLabel: FEED_CATEGORY_LABELS[category],
+      }),
+    [visibleArticles, visibleTrending, category, desktop],
+  )
+
   const recommendations = useMemo(
     () =>
-      visibleArticles
-        .slice(listStart)
-        .filter((a) => a.id == null || !trendingIds.has(a.id)),
-    [visibleArticles, listStart, trendingIds],
+      expanded
+        ? feedSlices.forYou
+        : visibleArticles
+            .slice(BREAKING_NEWS_COUNT)
+            .filter((a) => a.id == null || !trendingIds.has(a.id)),
+    [expanded, feedSlices.forYou, visibleArticles, trendingIds],
   )
   const hasMore = articles.length < total
-
-  const localArticles = useMemo(
-    () =>
-      expanded && category === 'All'
-        ? visibleArticles.filter((a) => a.category === 'Local').slice(0, 8)
-        : [],
-    [visibleArticles, expanded, category],
-  )
 
   const listData: ListRow[] = useMemo(() => {
     if (mobile) {
       return buildMobileFeedRows(visibleArticles)
+    }
+    if (expanded) {
+      return buildExpandedFeedRows(feedSlices, loading)
     }
     const rows: ListRow[] = []
     if (breaking.length > 0) {
@@ -452,7 +466,7 @@ function HomeFeedBody() {
       rows.push({ kind: 'empty', key: 'empty' })
     }
     return rows
-  }, [breaking, recommendations, loading, mobile, visibleArticles, visibleTrending])
+  }, [breaking, recommendations, loading, mobile, expanded, feedSlices, visibleArticles, visibleTrending])
 
   const openArticle = useCallback(
     (article: ArticleResponse) => {
@@ -653,7 +667,16 @@ function HomeFeedBody() {
             }}
           />
         )}
-        {expanded ? <BriefingHeader cityTitle={cityTitle} /> : null}
+        {expanded ? (
+          <BriefingHeader
+            title={feedSlices.showBriefing ? undefined : feedSlices.pageTitle}
+            subtitle={
+              feedSlices.showBriefing
+                ? undefined
+                : 'Stories in this section'
+            }
+          />
+        ) : null}
 
         {(loading && !showContent) || !prefs.ready ? (
           <Box pt="$2" px="$4">
@@ -706,7 +729,7 @@ function HomeFeedBody() {
                         />
                         {expanded ? (
                           <TopStoriesCluster
-                            articles={breaking}
+                            articles={feedSlices.topStories}
                             onPress={openArticle}
                             onSeeAll={goDiscover}
                           />
@@ -717,6 +740,29 @@ function HomeFeedBody() {
                             onMorePress={setActionArticle}
                           />
                         )}
+                      </View>
+                    )
+                  }
+                  if (item.kind === 'picks-section') {
+                    return (
+                      <View style={styles.sectionBlock}>
+                        <SectionHeader
+                          title="Picks for you"
+                          subtitle="Recommended based on your interests"
+                          expanded={expanded}
+                        />
+                      </View>
+                    )
+                  }
+                  if (item.kind === 'for-you-section') {
+                    return (
+                      <View style={styles.sectionPad}>
+                        <SectionHeader
+                          title="For you"
+                          actionLabel="View all"
+                          onAction={goDiscover}
+                          expanded={expanded}
+                        />
                       </View>
                     )
                   }
@@ -875,12 +921,11 @@ function HomeFeedBody() {
                   ) : null
                 }
               />
-              {desktop && localArticles.length > 0 ? (
+              {feedSlices.showLocalRail ? (
                 <LocalNewsRail
-                  articles={localArticles}
-                  cityTitle={cityTitle}
+                  articles={feedSlices.localRail}
                   onPress={openArticle}
-                  onCityPress={() => router.push('/city')}
+                  onFilterPress={() => setCategory('Local')}
                 />
               ) : null}
             </View>
@@ -940,11 +985,13 @@ function HomeFeedBody() {
 
 function SectionHeader({
   title,
+  subtitle,
   actionLabel,
   onAction,
   expanded = false,
 }: {
   title: string
+  subtitle?: string
   actionLabel?: string
   onAction?: () => void
   expanded?: boolean
@@ -952,10 +999,11 @@ function SectionHeader({
   const { colors } = useTheme()
   const styles = useMemo(() => createStyles(colors), [colors])
   return (
+    <View style={styles.sectionHeaderWrap}>
     <HStack
       px="$4"
       mt={expanded ? '$1' : '$3'}
-      mb="$2"
+      mb={subtitle ? '$1' : '$2'}
       alignItems="center"
       justifyContent="space-between"
       minHeight={36}
@@ -993,6 +1041,18 @@ function SectionHeader({
         </Pressable>
       ) : null}
     </HStack>
+    {subtitle ? (
+      <Text
+        px="$4"
+        mb="$2"
+        fontSize={typography.meta.fontSize}
+        lineHeight={typography.meta.lineHeight}
+        color={colors.textMuted}
+      >
+        {subtitle}
+      </Text>
+    ) : null}
+    </View>
   )
 }
 
@@ -1015,6 +1075,9 @@ function createStyles(c: AppColors) {
   },
   sectionBlock: {
     marginBottom: space.md,
+  },
+  sectionHeaderWrap: {
+    marginBottom: space.xs,
   },
   sectionPad: {
     marginBottom: space.xs,
