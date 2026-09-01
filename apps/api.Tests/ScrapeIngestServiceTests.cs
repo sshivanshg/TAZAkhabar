@@ -54,7 +54,7 @@ public sealed class ScrapeIngestServiceTests
         Assert.False(stored.IsMock);
         Assert.Equal(source.Id, stored.SourceId);
         Assert.NotNull(stored.IngestedAt);
-        Assert.Equal(new DateTimeOffset(2026, 8, 24, 4, 30, 0, TimeSpan.Zero), stored.PublishedAt);
+        Assert.Equal(new DateTimeOffset(2026, 8, 31, 4, 30, 0, TimeSpan.Zero), stored.PublishedAt);
 
         await db.Entry(source).ReloadAsync();
         Assert.Equal(FetchStatus.Success, source.LastFetchStatus);

@@ -18,15 +18,19 @@ public sealed class RssIngestService(
         CancellationToken cancellationToken,
         bool useIntelligence = true,
         bool autoPublish = false,
-        bool fetchArticleBodies = true)
+        bool fetchArticleBodies = true,
+        int? maxSources = null)
     {
-        var sources = await db.Sources
+        var query = db.Sources
             .AsNoTracking()
             .Where(s => s.Type == SourceType.Rss && s.IsActive)
             .OrderBy(s => s.LastFetchedAt != null)
             .ThenBy(s => s.LastFetchedAt)
-            .ThenBy(s => s.Id)
-            .ToListAsync(cancellationToken);
+            .ThenBy(s => s.Id);
+
+        var sources = maxSources is > 0
+            ? await query.Take(maxSources.Value).ToListAsync(cancellationToken)
+            : await query.ToListAsync(cancellationToken);
 
         var attempted = 0;
         var failed = 0;

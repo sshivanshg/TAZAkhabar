@@ -1,7 +1,7 @@
 # Ingestion
 
 > **Living doc** — update when pipelines, article status on insert, cron, SSE, or intelligence providers change.  
-> **Last verified against:** 2026-08-29 (scheduled RSS auto-publishes the no-AI baseline feed)
+> **Last verified against:** 2026-09-01 (in-process ingest scheduler, deepened publisher catalog, batched RSS cron)
 
 ## Purpose
 
@@ -13,13 +13,15 @@ The daily feed is filled from a layered source mix rather than a single publishe
 
 1. **Primary:** official RSS feeds from local or city editions when available.
 2. **Secondary:** official city pages scraped into plain text when RSS is absent or too thin.
-3. **Discovery backfill:** Google News RSS city queries to catch late-breaking items and widen coverage.
+3. **Discovery backfill:** Google News RSS city queries (`when:7d`) to catch late-breaking items and widen coverage.
 4. **Editorial safety net:** the admin review queue and manual uploads remain available when a city is sparse or a source goes dark.
 
 The seeded catalog covers 75 major Indian cities. Agra, Jhansi, Kanpur, Lucknow,
 and Delhi retain the deeper pilot source mix; each of the other 70 cities starts
 with an active Google News RSS city query so scheduled ingestion can populate a
-baseline feed while direct publisher sources are added. The overall mix includes:
+baseline feed while direct publisher sources are added. A second migration deepens
+coverage with Amar Ujala city RSS, Dainik Bhaskar local scrape, Times of India
+city scrape (metros), and English Google News discovery feeds. The overall mix includes:
 
 - local publisher RSS where it exists,
 - TOI city pages for scrape fallback,
@@ -80,6 +82,7 @@ flowchart TB
 | Durable manual job | `IngestionJob` entity + `IngestionJobWorker` |
 | Result DTO | `IngestRunResponse` |
 | Silence alert | `IngestSilenceMonitor` (`IngestHealth__MaxSilenceMinutes`, optional webhook) |
+| In-process scheduler | `ScheduledIngestHostedService` (`IngestSchedule__*`) — RSS batches + scrape when external crons are missing |
 
 Categories allowed for intelligence: Local, State, National, Business, Health, Sports.
 
@@ -106,10 +109,15 @@ Manual admin source triggers create both an `IngestionRun` and a queued `Ingesti
 
 ### Scheduled triggers
 
-Every 45 minutes (`render.yaml`):
+**In-process (Render API web service, `IngestSchedule__Enabled=true`):**
 
-- `tazakhabar-rss-ingest` → `POST {INGEST_URL}/api/ingest/rss`
-- `tazakhabar-scrape-ingest` → `POST {INGEST_URL}/api/ingest/scrape`
+- `ScheduledIngestHostedService` runs RSS every 15 minutes (`maxSources=30` per batch) and scrape every 45 minutes.
+- Requires non-empty `RssIngest__Secret`. Complements (does not replace) external cron/GitHub triggers.
+
+Every 45 minutes (`render.yaml` and `.github/workflows/scheduled-ingest.yml`):
+
+- `tazakhabar-rss-ingest` / GHA → `POST {INGEST_URL}/api/ingest/rss?maxSources=30`
+- `tazakhabar-scrape-ingest` / GHA → `POST {INGEST_URL}/api/ingest/scrape?useRewrite=false`
 
 The protected RSS endpoint is the fast public baseline path: it disables Claude,
 skips per-article body fetches, publishes feed snippets immediately, and orders
@@ -160,7 +168,7 @@ Existing rows without body: `POST /api/ingest/backfill-bodies?take=&afterId=` (i
 | Admin trigger | `POST /api/admin/sources/{id}/trigger` → 202 + durable `IngestionJob` |
 | SSE | `GET /api/admin/ingestion-runs/{id}/events` |
 | Uploads | `POST /api/admin/uploads` multipart |
-| Env | `RssIngest__Secret`, `INGEST_URL` (Render cron), `ArticleIntelligence__*`, `OpenAiRewrite__*`, `Upload__RootPath`, `IngestHealth__*` |
+| Env | `RssIngest__Secret`, `INGEST_URL` (Render cron), `IngestSchedule__*`, `ArticleIntelligence__*`, `OpenAiRewrite__*`, `Upload__RootPath`, `IngestHealth__*` |
 
 Event types: `started`, `fetch`, `progress`, `completed`, `error` (terminal: `completed` \| `error`).
 

@@ -185,7 +185,7 @@ public sealed class IngestEndpointTests : IClassFixture<TazaKhabarWebApplication
         }
 
         client.DefaultRequestHeaders.Add("X-Ingest-Key", TazaKhabarWebApplicationFactory.TestIngestKey);
-        var response = await client.PostAsync("/api/ingest/scrape", null);
+        var response = await client.PostAsync("/api/ingest/scrape?useRewrite=true", null);
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var body = await response.Content.ReadFromJsonAsync<IngestRunResponse>();
         Assert.True(body!.FeedsAttempted >= 1);
