@@ -416,6 +416,16 @@
           "TazaKhabar.Api"
         ],
         "operationId": "IngestRss",
+        "parameters": [
+          {
+            "name": "maxSources",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "OK",
@@ -456,6 +466,15 @@
           "TazaKhabar.Api"
         ],
         "operationId": "IngestScrape",
+        "parameters": [
+          {
+            "name": "useRewrite",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "OK",
