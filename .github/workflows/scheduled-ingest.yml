@@ -34,8 +34,8 @@ jobs:
             exit 1
           fi
 
-          for batch in 1 2 3; do
-            echo "RSS batch ${batch}/3"
+          for batch in 1 2 3 4; do
+            echo "RSS batch ${batch}/4"
             curl --fail-with-body --silent --show-error \
               --request POST \
               --header "X-Ingest-Key: ${RSS_INGEST_SECRET}" \

@@ -8,7 +8,8 @@ public sealed class NationalPublisherSourceCatalogTests
     public void Sources_CoversAllCities_WithEveryPublisher()
     {
         Assert.Equal(SeedData.Cities.Length * NationalPublisherSourceCatalog.Publishers.Length, NationalPublisherSourceCatalog.Sources.Length);
-        Assert.Equal(1425, NationalPublisherSourceCatalog.Sources.Length);
+        Assert.Equal(1875, NationalPublisherSourceCatalog.Sources.Length);
+        Assert.Equal(25, NationalPublisherSourceCatalog.Publishers.Length);
     }
 
     [Fact]
@@ -17,7 +18,7 @@ public sealed class NationalPublisherSourceCatalogTests
         var ids = NationalPublisherSourceCatalog.Sources.Select(s => s.Id).ToList();
         Assert.Equal(ids.Count, ids.Distinct().Count());
         Assert.Equal(3000, ids.Min());
-        Assert.Equal(4498, ids.Max());
+        Assert.Equal(5244, ids.Max());
     }
 
     [Fact]
@@ -31,13 +32,25 @@ public sealed class NationalPublisherSourceCatalogTests
     }
 
     [Fact]
-    public void JagranSources_UseHindiLanguageTag()
+    public void HindiPublishers_UseHindiLanguageTag()
     {
         var jhansiJagran = NationalPublisherSourceCatalog.Sources.Single(s =>
             s.CityId == 2 && s.Name == "Jagran");
+        var lucknowNbt = NationalPublisherSourceCatalog.Sources.Single(s =>
+            s.CityId == 4 && s.Name == "Navbharat Times");
 
         Assert.Equal("hi", jhansiJagran.Language);
-        Assert.Contains("site%3Ajagran.com", jhansiJagran.FeedUrl, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal("hi", lucknowNbt.Language);
+    }
+
+    [Fact]
+    public void DainikBhaskarEnglish_UsesBhaskarDomain()
+    {
+        var kanpurBhaskar = NationalPublisherSourceCatalog.Sources.Single(s =>
+            s.CityId == 3 && s.Name == "Dainik Bhaskar");
+
+        Assert.Equal("en", kanpurBhaskar.Language);
+        Assert.Contains("site%3Abhaskar.com", kanpurBhaskar.FeedUrl, StringComparison.OrdinalIgnoreCase);
     }
 
     [Theory]

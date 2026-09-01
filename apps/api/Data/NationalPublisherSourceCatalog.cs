@@ -5,14 +5,14 @@ namespace NewsFeed.Api.Data;
 /// <summary>
 /// National publishers surfaced in Google News "Local" for every seeded city.
 /// Uses site-scoped Google News RSS (7-day window).
-/// IDs 3000+ reserved (20 slots per city × 75 cities; publishers fill first N slots).
+/// IDs 3000+ reserved (30 slots per city × 75 cities; publishers fill first N slots).
 /// </summary>
 public static class NationalPublisherSourceCatalog
 {
     public const int BaseId = 3000;
 
     /// <summary>Fixed stride per city so new publishers can be appended without renumbering.</summary>
-    public const int MaxSlotsPerCity = 20;
+    public const int MaxSlotsPerCity = 30;
 
     public sealed record PublisherDefinition(string Name, string Host, string Language = "en");
 
@@ -42,6 +42,13 @@ public static class NationalPublisherSourceCatalog
         new("The Wire", "thewire.in"),
         // Hindi national
         new("Jagran", "jagran.com", "hi"),
+        new("Navbharat Times", "navbharattimes.indiatimes.com", "hi"),
+        // More English national / business
+        new("Outlook", "outlookindia.com"),
+        new("News18", "news18.com"),
+        new("Moneycontrol", "moneycontrol.com"),
+        new("Republic TV", "republicworld.com"),
+        new("Dainik Bhaskar", "bhaskar.com", "en"),
     ];
 
     /// <summary>Google News search terms for cities with common alternate spellings.</summary>

@@ -1,7 +1,7 @@
 # Ingestion
 
 > **Living doc** — update when pipelines, article status on insert, cron, SSE, or intelligence providers change.  
-> **Last verified against:** 2026-09-01 (19 national publishers × 75 cities)
+> **Last verified against:** 2026-09-01 (25 national publishers × 75 cities)
 
 ## Purpose
 
@@ -24,7 +24,8 @@ coverage with Amar Ujala city RSS, Dainik Bhaskar local scrape, Times of India
 city scrape (metros), English Google News discovery feeds, and **national publisher**
 Google News site feeds (The Print, The Hindu, TOI, NDTV, Indian Express, Hindustan Times,
 Telegraph India, India Today, Economic Times, Livemint, Business Standard, BBC, Al Jazeera,
-Scroll.in, Firstpost, The News Minute, Deccan Herald, The Wire, Jagran) for every seeded city. The overall mix includes:
+Scroll.in, Firstpost, The News Minute, Deccan Herald, The Wire, Jagran, Navbharat Times,
+Outlook, News18, Moneycontrol, Republic TV, Dainik Bhaskar English) for every seeded city. The overall mix includes:
 
 - local publisher RSS where it exists,
 - TOI city pages for scrape fallback,
@@ -124,7 +125,7 @@ Render **cron jobs require a paid plan**. On the free tier, ingestion is driven 
 
 **GitHub Actions (`scheduled-ingest.yml`, every 15 minutes):**
 
-- Three RSS batches → `POST {API}/api/ingest/rss?maxSources=50` (rotates ~150 feeds per cycle)
+- Four RSS batches → `POST {API}/api/ingest/rss?maxSources=50` (rotates ~200 feeds per cycle)
 - One scrape batch → `POST {API}/api/ingest/scrape?useRewrite=false`
 - Uses `vars.EXPO_PUBLIC_API_BASE_URL` and `secrets.RssIngest__Secret`
 
