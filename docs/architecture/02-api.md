@@ -1,7 +1,7 @@
 # API
 
 > **Living doc** — update when endpoints, auth, rate limits, CORS, or DI composition change.  
-> **Last verified against:** 2026-09-01 (anonymous personalized feed endpoint)
+> **Last verified against:** 2026-09-01 (content-analyzed feed sections)
 
 ## Purpose
 
@@ -46,6 +46,7 @@ Pipeline (order): Serilog request logging → RequestId header/log context → E
 | GET | `/api/cities` | `GetCities` | Alphabetical city catalog with latitude/longitude; `Cache-Control: public, max-age=60` |
 | GET | `/api/articles` | `GetArticles` | `city` required; published only; hides newspaper e-paper editions; cache 60s; **no `body`** |
 | GET | `/api/articles/personalized` | `GetPersonalizedArticles` | `city` required; optional `sessionId` re-ranks the recency-bounded pool per anonymous session (affinity + trending + seen demotion + source diversification); `private, no-store` when `sessionId` present, else cache 60s; **no `body`** |
+| GET | `/api/articles/sections` | `GetFeedSections` | `city` required; optional `sessionId` + `lang` + per-section `limit` (default 8, max 25); same ranked pool as `personalized`, partitioned into ordered sections (`top` 5 → affinity-ordered content-analyzed category sections → `more`); `private, no-store` when `sessionId` present, else cache 60s; **no `body`** |
 | GET | `/api/articles/dates` | `GetArticleDates` | City calendar (Asia/Kolkata) |
 | GET | `/api/articles/trending` | `GetTrendingArticles` | View-based; **no `body`** |
 | POST | `/api/articles/{id}/view` | `RecordArticleView` | Optional `sessionId` |
@@ -73,7 +74,9 @@ Pipeline (order): Serilog request logging → RequestId header/log context → E
 ### Personalized feed ranking
 
 `FeedPersonalizationService` (`Services/FeedPersonalizationService.cs`) powers
-`GET /api/articles/personalized`. It re-ranks a recency-bounded candidate pool
+`GET /api/articles/personalized` (paged) and `GET /api/articles/sections`
+(partitioned — see [Content classification & feed sections](#content-classification--feed-sections)).
+It re-ranks a recency-bounded candidate pool
 (newest `CandidatePoolSize` published stories for the city, default 200) with:
 
 ```
@@ -92,6 +95,30 @@ which stays edge-cacheable; session-ranked responses are `private, no-store`.
 All signals derive from the anonymous `ArticleView.SessionKey` — no user
 identity, consistent with [ADR-002](../adr/002-no-auth-mvp.md). Weights and
 windows bind from the `FeedPersonalization` config section.
+
+### Content classification & feed sections
+
+Stored `Article.Category` comes from source/feed defaults at ingest, so a
+sports story filed under a source's default "Local" used to land in the wrong
+section. `ContentCategoryClassifier`
+(`Services/ContentCategoryClassifier.cs`) re-derives the **effective category**
+from headline + summary text: deterministic weighted keyword rules in English
+and Hindi (Devanagari), headline hits weigh double, and a match requires a
+minimum score plus a clear margin over the runner-up — otherwise it returns
+null and callers keep the stored category. Classification is computed on the
+fly only; it is never persisted and never re-categorizes e-paper rows (those
+are filtered out upstream).
+
+The effective category is used consistently for (a) affinity keys in
+`LoadSignalsAsync` (viewed articles are classified in memory) and the affinity
+lookup in `Rank`, and (b) section assignment in `GET /api/articles/sections`.
+That endpoint ranks the same recency-bounded pool, then `FeedSectionBuilder`
+(`Services/FeedSectionBuilder.cs`) partitions it into an ordered section list:
+`top` ("Top stories", first 5 ranked), one section per remaining effective
+category ordered by session affinity (zero-affinity sections after, by their
+best-ranked story), and `more` ("More stories") with everything left. Empty
+sections are omitted; an empty pool returns `{ sections: [], total: 0 }`. The
+flat `/api/articles/personalized` endpoint remains the paged variant.
 
 ### Auth model
 

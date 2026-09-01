@@ -1,7 +1,7 @@
 # Reader app
 
 > **Living doc** — update when Expo routes, city/feed/share behavior, or desktop web layer change.  
-> **Last verified against:** 2026-09-01 (personalized For-you feed via anonymous session ranking)
+> **Last verified against:** 2026-09-01 (sectioned For-you feed via content-analyzed categories)
 
 ## Purpose
 
@@ -117,10 +117,10 @@ sequenceDiagram
     end
     App->>App: AsyncStorage save
   end
-  App->>API: getCities / getPersonalizedArticles (For you) or getArticles / getArticleDates
+  App->>API: getCities / getFeedSections (For you) or getArticles / getArticleDates
   Note over App: First-page feed skipped when feed cache is fresh (45m)
   U->>App: Pull to refresh
-  App->>API: getPersonalizedArticles / getArticles (force) + write feed cache
+  App->>API: getFeedSections / getArticles (force) + write feed cache
   U->>App: Open article
   App->>API: getArticles (stack) + getArticle (body)
   App->>API: recordArticleView
@@ -128,17 +128,25 @@ sequenceDiagram
   App->>U: system share sheet / copy link / WhatsApp with EXPO_PUBLIC_SITE_URL
 ```
 
-API helpers used: `getHealth`, `getCities`, `getArticles`, `getPersonalizedArticles`, `getArticleDates`, `getArticle`, `getTrendingArticles`, `recordArticleView`.
+API helpers used: `getHealth`, `getCities`, `getArticles`, `getPersonalizedArticles`, `getFeedSections`, `getArticleDates`, `getArticle`, `getTrendingArticles`, `recordArticleView`.
 
-Home "For you" (category **All**) loads through `getPersonalizedArticles` with
-the persistent anonymous personalization id; the API re-ranks the recency pool
-by the session's category affinity, city trending, and seen-story demotion
-(see [02-api](./02-api.md#personalized-feed-ranking)). If the personalized call
-fails, Home silently falls back to chronological `getArticles` — personalization
-never blocks reading. Explicit category chips stay newest-first drill-downs.
-Article views are recorded under the same personalization id so affinity and
-seen signals accumulate across visits; the id is a random device-local value
-(no account, per ADR-002) and resets when app/site data is cleared.
+Home "For you" (category **All**) loads through `getFeedSections` with the
+persistent anonymous personalization id; the API ranks the recency pool by the
+session's category affinity, city trending, and seen-story demotion, then
+partitions it into ordered sections — "Top stories" (hero row on desktop,
+compact rows on mobile), one section per content-analyzed category ordered by
+affinity, and "More stories" (see
+[02-api](./02-api.md#content-classification--feed-sections)). Each section
+renders with the existing `SectionHeader` + compact card primitives; feed
+preference filters (hidden stories, blocked sources/categories) apply inside
+each section and empty sections drop out. Sections are a first-screen partition
+of the whole ranked pool, so "load more" pagination does not append in sections
+mode. If the sections call fails, Home silently falls back to chronological
+`getArticles` — personalization never blocks reading. Explicit category chips
+stay newest-first drill-downs via `getArticles`. Article views are recorded
+under the same personalization id so affinity and seen signals accumulate across
+visits; the id is a random device-local value (no account, per ADR-002) and
+resets when app/site data is cleared.
 
 Location is optional and requested only after a reader taps **Use my current
 location**. The reader performs the nearest-city calculation on-device against
