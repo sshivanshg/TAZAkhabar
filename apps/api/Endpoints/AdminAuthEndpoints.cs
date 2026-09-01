@@ -11,7 +11,7 @@ namespace NewsFeed.Api.Endpoints;
 
 public static class AdminAuthEndpoints
 {
-    public const int DisplayNameMaxLength = 80;
+    private const string AdminIdentity = "Admin";
     public static readonly TimeSpan TokenLifetime = TimeSpan.FromHours(8);
 
     public static RouteGroupBuilder MapAdminAuthEndpoints(this RouteGroupBuilder admin)
@@ -20,23 +20,6 @@ public static class AdminAuthEndpoints
                 AdminLoginRequest request,
                 IOptions<AdminOptions> options) =>
             {
-                var displayName = request.DisplayName?.Trim() ?? "";
-                if (string.IsNullOrWhiteSpace(displayName))
-                {
-                    return Results.Problem(
-                        title: "Invalid displayName",
-                        detail: "displayName is required.",
-                        statusCode: StatusCodes.Status400BadRequest);
-                }
-
-                if (displayName.Length > DisplayNameMaxLength)
-                {
-                    return Results.Problem(
-                        title: "Invalid displayName",
-                        detail: $"displayName must be at most {DisplayNameMaxLength} characters.",
-                        statusCode: StatusCodes.Status400BadRequest);
-                }
-
                 var configured = options.Value;
                 if (!SecretMatches(request.Password ?? "", configured.Password)
                     || string.IsNullOrEmpty(configured.JwtSigningKey))
@@ -48,7 +31,7 @@ public static class AdminAuthEndpoints
                 }
 
                 var expiresAt = DateTimeOffset.UtcNow.Add(TokenLifetime);
-                var token = CreateToken(displayName, configured.JwtSigningKey, expiresAt);
+                var token = CreateToken(configured.JwtSigningKey, expiresAt);
                 return Results.Ok(new AdminLoginResponse(token, expiresAt));
             })
             .WithName("AdminLogin")
@@ -56,7 +39,6 @@ public static class AdminAuthEndpoints
             .RequireRateLimiting("admin-login")
             .WithOpenApi()
             .Produces<AdminLoginResponse>(StatusCodes.Status200OK)
-            .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status429TooManyRequests);
 
@@ -76,14 +58,14 @@ public static class AdminAuthEndpoints
             && CryptographicOperations.FixedTimeEquals(providedBytes, configuredBytes);
     }
 
-    private static string CreateToken(string displayName, string signingKey, DateTimeOffset expiresAt)
+    private static string CreateToken(string signingKey, DateTimeOffset expiresAt)
     {
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(signingKey));
         var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
         var claims = new[]
         {
             new Claim(JwtRegisteredClaimNames.Sub, "admin"),
-            new Claim(ClaimTypes.Name, displayName),
+            new Claim(ClaimTypes.Name, AdminIdentity),
         };
         var token = new JwtSecurityToken(
             claims: claims,

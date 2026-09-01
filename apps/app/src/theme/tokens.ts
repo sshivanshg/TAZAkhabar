@@ -278,5 +278,8 @@ export const breakpoints = {
 } as const
 
 export const SIDEBAR_WIDTH = 240
-export const CONTENT_RAIL_MAX = 720
+/** Centered feed column on tablet+ (Google News–scale width). */
+export const CONTENT_RAIL_MAX = 1200
+/** Right sidebar for local news on desktop/wide. */
+export const RIGHT_RAIL_WIDTH = 360
 export const ERROR_COLUMN_MAX = 400

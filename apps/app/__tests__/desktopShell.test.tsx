@@ -7,7 +7,8 @@ import { DesktopSidebar } from '../src/components/desktop/DesktopSidebar'
 jest.mock('../src/hooks/useBreakpoint', () => ({
   useBreakpoint: jest.fn(),
   isDesktopLayout: (bp: string) => bp === 'desktop' || bp === 'wide',
-  isCompactNav: (bp: string) => bp === 'mobile' || bp === 'tablet',
+  isExpandedLayout: (bp: string) => bp !== 'mobile',
+  isCompactNav: (bp: string) => bp === 'mobile',
 }))
 
 const mockUsePathname = jest.fn(() => '/')
@@ -29,10 +30,10 @@ it('passthrough on mobile — no shell chrome', () => {
   expect(screen.getByText('ChildOnly')).toBeTruthy()
   expect(screen.queryByText('Sidebar')).toBeNull()
   // tree root should be the child text node path, not a shell row labeled AppShell
-  expect(JSON.stringify(toJSON())).not.toContain('Desktop shell')
+  expect(JSON.stringify(toJSON())).not.toContain('Expanded shell')
 })
 
-it('passthrough on tablet — no shell chrome', () => {
+it('renders expanded shell on tablet', () => {
   useBreakpoint.mockReturnValue('tablet')
   const { toJSON } = render(
     <AppShell sidebar={<Text>Sidebar</Text>}>
@@ -41,29 +42,30 @@ it('passthrough on tablet — no shell chrome', () => {
   )
   expect(screen.getByText('ChildOnly')).toBeTruthy()
   expect(screen.queryByText('Sidebar')).toBeNull()
-  expect(JSON.stringify(toJSON())).not.toContain('Desktop shell')
+  expect(JSON.stringify(toJSON())).toContain('Expanded shell')
 })
 
-it('renders sidebar on desktop', () => {
+it('renders expanded shell on desktop', () => {
   useBreakpoint.mockReturnValue('desktop')
   render(
     <AppShell sidebar={<Text>Sidebar</Text>}>
       <Text>ChildOnly</Text>
     </AppShell>,
   )
-  expect(screen.getByText('Sidebar')).toBeTruthy()
   expect(screen.getByText('ChildOnly')).toBeTruthy()
+  expect(screen.queryByText('Sidebar')).toBeNull()
+  expect(screen.getByLabelText('Expanded shell')).toBeTruthy()
 })
 
-it('renders sidebar on wide', () => {
+it('renders expanded shell on wide', () => {
   useBreakpoint.mockReturnValue('wide')
   render(
     <AppShell sidebar={<Text>Sidebar</Text>}>
       <Text>ChildOnly</Text>
     </AppShell>,
   )
-  expect(screen.getByText('Sidebar')).toBeTruthy()
   expect(screen.getByText('ChildOnly')).toBeTruthy()
+  expect(screen.queryByText('Sidebar')).toBeNull()
 })
 
 function renderSidebar() {

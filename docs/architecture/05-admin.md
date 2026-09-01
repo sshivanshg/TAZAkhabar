@@ -1,7 +1,7 @@
 # Admin
 
 > **Living doc** — update when admin routes, auth client behavior, or live-ingest UI change.  
-> **Last verified against:** 2026-08-27 (actual Cloudflare Pages admin project name)
+> **Last verified against:** 2026-09-01 (password-only admin login)
 
 ## Purpose
 
@@ -46,7 +46,7 @@ sequenceDiagram
   participant E as Editor
   participant A as Admin SPA
   participant API as API
-  E->>A: password + displayName
+  E->>A: password
   A->>API: POST /api/admin/login
   API-->>A: JWT 8h
   A->>API: Bearer on /api/admin/*
@@ -54,7 +54,7 @@ sequenceDiagram
   API-->>A: SSE ingest events
 ```
 
-Session keys: `tazakhabar_admin_token`, `tazakhabar_admin_token_expires`, `tazakhabar_admin_name`.
+Session keys: `tazakhabar_admin_token`, `tazakhabar_admin_expires`, `tazakhabar_admin_identity`.
 
 May copy **token values** (colors/spacing) from reader theme; own table/form components — do not embed reader cards.
 
@@ -75,14 +75,14 @@ Source “run now” returns `202` after creating an `IngestionRun` plus durable
 | Item | Value |
 |------|-------|
 | Env | `VITE_API_BASE_URL` (default `http://localhost:8080`) |
-| Login | `POST /api/admin/login` `{ password, displayName }` |
+| Login | `POST /api/admin/login` `{ password }` |
 | Deploy | Cloudflare Pages project `newsfeed-admin` → `apps/admin/dist` |
 | CORS | Admin origin must be in `Cors__AllowedOrigins__*` |
 
 ## Failure modes & invariants
 
 - Do not ship admin routes inside `apps/app`.
-- Shared password is not per-editor identity — `ReviewedBy` uses display name only.
+- Shared password is not per-editor identity — `ReviewedBy` uses the fixed `Admin` identity.
 - Audit history is append-only in `article_audit_logs`; do not rely only on mutable article status fields for action history.
 - Login rate-limited server-side (5/IP/min).
 - Separate Pages origin from reader.

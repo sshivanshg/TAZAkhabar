@@ -1,6 +1,6 @@
 const TOKEN_KEY = 'tazakhabar_admin_token'
 const EXPIRES_KEY = 'tazakhabar_admin_expires'
-const NAME_KEY = 'tazakhabar_admin_name'
+const IDENTITY_KEY = 'tazakhabar_admin_identity'
 
 export function getToken(): string | null {
   const token = sessionStorage.getItem(TOKEN_KEY)
@@ -13,20 +13,20 @@ export function getToken(): string | null {
   return token
 }
 
-export function getDisplayName(): string | null {
-  return sessionStorage.getItem(NAME_KEY)
+export function getAdminIdentity(): string {
+  return sessionStorage.getItem(IDENTITY_KEY) ?? 'Admin'
 }
 
-export function setSession(token: string, expiresAt: string, displayName: string) {
+export function setSession(token: string, expiresAt: string) {
   sessionStorage.setItem(TOKEN_KEY, token)
   sessionStorage.setItem(EXPIRES_KEY, expiresAt)
-  sessionStorage.setItem(NAME_KEY, displayName)
+  sessionStorage.setItem(IDENTITY_KEY, 'Admin')
 }
 
 export function clearSession() {
   sessionStorage.removeItem(TOKEN_KEY)
   sessionStorage.removeItem(EXPIRES_KEY)
-  sessionStorage.removeItem(NAME_KEY)
+  sessionStorage.removeItem(IDENTITY_KEY)
 }
 
 export function isAuthenticated(): boolean {

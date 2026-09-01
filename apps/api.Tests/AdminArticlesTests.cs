@@ -21,7 +21,7 @@ public sealed class AdminArticlesTests : IClassFixture<TazaKhabarWebApplicationF
     [Fact]
     public async Task Publish_StampsReviewedBy_And_DoesNotChangePublishedAt()
     {
-        var client = await AdminAuthTests.CreateAuthedClientAsync(_factory, "Editor One");
+        var client = await AdminAuthTests.CreateAuthedClientAsync(_factory);
         DateTimeOffset publishedAt;
         int id;
         using (var scope = _factory.Services.CreateScope())
@@ -51,7 +51,7 @@ public sealed class AdminArticlesTests : IClassFixture<TazaKhabarWebApplicationF
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var body = await response.Content.ReadFromJsonAsync<AdminArticleResponse>(TestJson.Options);
         Assert.Equal("Published", body!.Status);
-        Assert.Equal("Editor One", body.ReviewedBy);
+        Assert.Equal("Admin", body.ReviewedBy);
         Assert.NotNull(body.ReviewedAt);
         Assert.Equal(publishedAt, body.PublishedAt);
 
@@ -62,7 +62,7 @@ public sealed class AdminArticlesTests : IClassFixture<TazaKhabarWebApplicationF
         var verifyDb = verifyScope.ServiceProvider.GetRequiredService<AppDbContext>();
         var audit = Assert.Single(verifyDb.ArticleAuditLogs.Where(l => l.ArticleId == id));
         Assert.Equal("publish", audit.Action);
-        Assert.Equal("Editor One", audit.Actor);
+        Assert.Equal("Admin", audit.Actor);
     }
 
     [Fact]
@@ -238,7 +238,7 @@ public sealed class AdminArticlesTests : IClassFixture<TazaKhabarWebApplicationF
     [Fact]
     public async Task ArchivePublished_HidesFromPublicFeed()
     {
-        var client = await AdminAuthTests.CreateAuthedClientAsync(_factory, "Editor One");
+        var client = await AdminAuthTests.CreateAuthedClientAsync(_factory);
         var create = await client.PostAsJsonAsync("/api/admin/articles", new
         {
             headline = "Live then archived",
@@ -260,7 +260,7 @@ public sealed class AdminArticlesTests : IClassFixture<TazaKhabarWebApplicationF
         Assert.Equal(HttpStatusCode.OK, archive.StatusCode);
         var archived = await archive.Content.ReadFromJsonAsync<AdminArticleResponse>(TestJson.Options);
         Assert.Equal("Archived", archived!.Status);
-        Assert.Equal("Editor One", archived.ReviewedBy);
+        Assert.Equal("Admin", archived.ReviewedBy);
         Assert.NotNull(archived.ReviewedAt);
 
         var publicAfter = await client.GetFromJsonAsync<PagedArticlesResponse>("/api/articles?city=jhansi");

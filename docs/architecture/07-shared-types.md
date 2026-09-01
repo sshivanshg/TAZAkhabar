@@ -1,7 +1,7 @@
 # Shared types
 
 > **Living doc** — update when OpenAPI generation, NSwag config, or contract PR rules change.  
-> **Last verified against:** 2026-08-27 (`CityResponse` latitude/longitude contract)
+> **Last verified against:** 2026-09-01 (password-only admin login contract)
 
 ## Purpose
 

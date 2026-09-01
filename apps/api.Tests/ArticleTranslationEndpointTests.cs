@@ -175,7 +175,7 @@ public sealed class ArticleTranslationEndpointTests : IClassFixture<TazaKhabarWe
     [Fact]
     public async Task AdminPatch_InvalidatesCachedTranslations()
     {
-        var client = await AdminAuthTests.CreateAuthedClientAsync(_factory, "Editor");
+        var client = await AdminAuthTests.CreateAuthedClientAsync(_factory);
         int id;
         using (var scope = _factory.Services.CreateScope())
         {

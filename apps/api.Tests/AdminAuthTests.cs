@@ -24,7 +24,6 @@ public sealed class AdminAuthTests : IClassFixture<TazaKhabarWebApplicationFacto
         var response = await client.PostAsJsonAsync("/api/admin/login", new
         {
             password = TazaKhabarWebApplicationFactory.TestAdminPassword,
-            displayName = "Ada",
         });
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -40,33 +39,8 @@ public sealed class AdminAuthTests : IClassFixture<TazaKhabarWebApplicationFacto
         var response = await client.PostAsJsonAsync("/api/admin/login", new
         {
             password = "nope",
-            displayName = "Ada",
         });
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
-    }
-
-    [Fact]
-    public async Task Login_BlankDisplayName_Returns400()
-    {
-        var client = _factory.CreateSeededClient();
-        var response = await client.PostAsJsonAsync("/api/admin/login", new
-        {
-            password = TazaKhabarWebApplicationFactory.TestAdminPassword,
-            displayName = "   ",
-        });
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-    }
-
-    [Fact]
-    public async Task Login_DisplayNameTooLong_Returns400()
-    {
-        var client = _factory.CreateSeededClient();
-        var response = await client.PostAsJsonAsync("/api/admin/login", new
-        {
-            password = TazaKhabarWebApplicationFactory.TestAdminPassword,
-            displayName = new string('x', 81),
-        });
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
     [Fact]
@@ -87,17 +61,15 @@ public sealed class AdminAuthTests : IClassFixture<TazaKhabarWebApplicationFacto
     }
 
     public static async Task<HttpClient> CreateAuthedClientAsync(
-        TazaKhabarWebApplicationFactory factory,
-        string displayName = "Ada")
+        TazaKhabarWebApplicationFactory factory)
     {
         var client = factory.CreateSeededClient();
-        var cacheKey = (factory, displayName);
+        var cacheKey = (factory, "Admin");
         if (!Tokens.TryGetValue(cacheKey, out var token))
         {
             var login = await client.PostAsJsonAsync("/api/admin/login", new
             {
                 password = TazaKhabarWebApplicationFactory.TestAdminPassword,
-                displayName,
             });
             login.EnsureSuccessStatusCode();
             var body = await login.Content.ReadFromJsonAsync<AdminLoginResponse>();

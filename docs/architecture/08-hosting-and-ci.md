@@ -86,6 +86,19 @@ generated debug keystore for sideload testing, not Play Store signing.
 3. `GET /api/articles` and `GET /api/cities` send `Cache-Control: public, max-age=60` so the edge can cut Neon load ([ADR-004](../adr/004-render-cloudflare-neon-hosting.md)).
 4. GitHub Actions hits ingest endpoints every 15 minutes with `X-Ingest-Key` (wakes free-tier API + runs RSS/scrape batches). Nightly midnight IST runs `/api/ingest/daily`; daily purge runs at 03:00 UTC. In-process `ScheduledIngestHostedService` also runs while the instance is awake.
 
+### Pages deployment hygiene
+
+- `newsfeed-web.pages.dev` is the only canonical reader frontend deployment.
+  Keep it on the Cloudflare Pages project `newsfeed-web`.
+- Manual Wrangler reader deploys that should go live must target
+  `newsfeed-web` with `--branch main` and directory `apps/app/dist`.
+- Feature-branch Pages deployment URLs are temporary previews. After production
+  is verified, prune stale preview and old immutable deployment URLs from
+  `newsfeed-web` so agents and operators do not confuse them with the main
+  frontend.
+- Do not delete `tazakhabar-site` or `newsfeed-admin` when consolidating reader
+  frontend deployments; those are distinct hosted surfaces.
+
 ### Render web service
 
 - Health: `/healthz`

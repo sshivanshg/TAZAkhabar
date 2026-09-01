@@ -161,7 +161,6 @@ public sealed class AdminSourcesTests : IClassFixture<TazaKhabarWebApplicationFa
         var login = await client.PostAsJsonAsync("/api/admin/login", new
         {
             password = TazaKhabarWebApplicationFactory.TestAdminPassword,
-            displayName = "Ada",
         });
         var token = (await login.Content.ReadFromJsonAsync<AdminLoginResponse>())!.Token;
         client.DefaultRequestHeaders.Authorization =

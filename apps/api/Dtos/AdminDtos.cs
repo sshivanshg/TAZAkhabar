@@ -1,6 +1,6 @@
 namespace NewsFeed.Api.Dtos;
 
-public sealed record AdminLoginRequest(string? Password, string? DisplayName);
+public sealed record AdminLoginRequest(string? Password);
 
 public sealed record AdminLoginResponse(string Token, DateTimeOffset ExpiresAt);
 

@@ -1,5 +1,5 @@
 import { NavLink, Outlet } from 'react-router-dom'
-import { clearSession, getDisplayName } from '../auth'
+import { clearSession, getAdminIdentity } from '../auth'
 import { LiveRunProvider } from '../live/LiveRunContext'
 import { LiveRunDock } from './LiveRunDock'
 
@@ -31,7 +31,7 @@ export function Layout() {
             </NavLink>
           ))}
           <div className="shell-user">
-            <div>{getDisplayName()}</div>
+            <div>{getAdminIdentity()}</div>
             <button
               type="button"
               className="btn-ghost"
