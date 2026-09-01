@@ -1,7 +1,7 @@
 # Reader app
 
 > **Living doc** — update when Expo routes, city/feed/share behavior, or desktop web layer change.  
-> **Last verified against:** 2026-08-29 (reader share links target public site)
+> **Last verified against:** 2026-09-01 (personalized For-you feed via anonymous session ranking)
 
 ## Purpose
 
@@ -72,7 +72,7 @@ flowchart LR
 | `src/components/CitySearch.tsx` | Live city/state filter field |
 | `src/utils/shareToWhatsApp.ts` | Share deep link / intent to the public TazaKhabar website |
 | `src/components/desktop/*` | Desktop shell / sidebar / hero row |
-| `src/storage/viewSession.ts` | Anonymous view sessions for trending |
+| `src/storage/personalizationId.ts` | Persistent anonymous id (AsyncStorage/localStorage) for view recording + personalized feed |
 | `src/preferences/ThemePreferenceContext.tsx` | Light/dark/system preference → `useTheme()` (`colors`, `readerColors`, `shadows`) |
 | `src/theme/tokens.ts` | Shell palettes (light `#F4F6FA` / Google News grey dark `#202124`) + accent `#155EEF` (`accentFill`) |
 | `src/theme/readerTokens.ts` | Article reader palette per color scheme |
@@ -117,10 +117,10 @@ sequenceDiagram
     end
     App->>App: AsyncStorage save
   end
-  App->>API: getCities / getArticles / getArticleDates
-  Note over App: First-page getArticles skipped when feed cache is fresh (45m)
+  App->>API: getCities / getPersonalizedArticles (For you) or getArticles / getArticleDates
+  Note over App: First-page feed skipped when feed cache is fresh (45m)
   U->>App: Pull to refresh
-  App->>API: getArticles (force) + write feed cache
+  App->>API: getPersonalizedArticles / getArticles (force) + write feed cache
   U->>App: Open article
   App->>API: getArticles (stack) + getArticle (body)
   App->>API: recordArticleView
@@ -128,7 +128,17 @@ sequenceDiagram
   App->>U: system share sheet / copy link / WhatsApp with EXPO_PUBLIC_SITE_URL
 ```
 
-API helpers used: `getHealth`, `getCities`, `getArticles`, `getArticleDates`, `getArticle`, `getTrendingArticles`, `recordArticleView`.
+API helpers used: `getHealth`, `getCities`, `getArticles`, `getPersonalizedArticles`, `getArticleDates`, `getArticle`, `getTrendingArticles`, `recordArticleView`.
+
+Home "For you" (category **All**) loads through `getPersonalizedArticles` with
+the persistent anonymous personalization id; the API re-ranks the recency pool
+by the session's category affinity, city trending, and seen-story demotion
+(see [02-api](./02-api.md#personalized-feed-ranking)). If the personalized call
+fails, Home silently falls back to chronological `getArticles` — personalization
+never blocks reading. Explicit category chips stay newest-first drill-downs.
+Article views are recorded under the same personalization id so affinity and
+seen signals accumulate across visits; the id is a random device-local value
+(no account, per ADR-002) and resets when app/site data is cleared.
 
 Location is optional and requested only after a reader taps **Use my current
 location**. The reader performs the nearest-city calculation on-device against
@@ -189,7 +199,7 @@ Manual verification still required before claiming a comprehensive a11y sweep is
 - Use RN primitives (`View`/`Text`/`Pressable`) so web and native stay aligned — avoid raw HTML/CSS except thin `Platform` forks.
 - Do not add a second Vite reader app.
 - Appearance: Light / Dark / System (default Light), persisted in AsyncStorage; Profile controls it. Brand accent fill stays `#155EEF`.
-- No login — city, theme, and first-page feed cache are device-local only.
+- No login — city, theme, first-page feed cache, and the anonymous personalization id are device-local only.
 - Location permission is foreground-only and user initiated. Never request it at boot or make it mandatory for reading.
 - Privacy, support, terms, and corrections live on the standalone public website and open externally from the reader.
 - Feed cache: first page only; TTL 45 minutes; max 16 key entries (LRU). Fresh cache skips the network until pull-to-refresh or key change (city / category / language / Discover `q`). Stale cache paints then revalidates.
