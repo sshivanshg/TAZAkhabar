@@ -5,6 +5,7 @@ import { MotiView } from 'moti'
 import BellRing from 'lucide-react-native/icons/bell-ring'
 import ShieldAlert from 'lucide-react-native/icons/shield-alert'
 import { useTheme } from '../preferences/ThemePreferenceContext'
+import { PrimaryButton, SecondaryButton } from './ui/PrimaryButton'
 import { getStoredCitySlug } from '../storage/cityPreference'
 import {
   getNotificationPromptState,
@@ -27,7 +28,7 @@ export function NotificationOptInBanner() {
   const [promptState, setPromptState] = useState<NotificationPromptState | null>(null)
   const [visible, setVisible] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const { colors } = useTheme()
+  const { colors, shadows } = useTheme()
   const styles = useMemo(() => createStyles(colors), [colors])
 
   useEffect(() => {
@@ -106,52 +107,68 @@ export function NotificationOptInBanner() {
             from={{ opacity: 0, scale: 0.94, translateY: 12 }}
             animate={{ opacity: visible ? 1 : 0, scale: visible ? 1 : 0.94, translateY: visible ? 0 : 12 }}
             transition={{ type: 'timing', duration: 220 }}
-            style={styles.card}
+            style={[styles.card, shadows.card]}
           >
             <View style={styles.cardBody}>
               <View style={styles.iconWrap}>
-                <BellRing size={20} color={colors.accentFill} strokeWidth={2.2} />
+                <BellRing size={21} color={colors.accentFill} strokeWidth={2} />
               </View>
-              <Text fontSize={22} lineHeight={28} fontWeight="$bold" color={colors.text} mt="$3">
-                Stay close to what matters
+              <Text
+                fontSize={typography.section.fontSize}
+                lineHeight={typography.section.lineHeight}
+                fontWeight="$bold"
+                color={colors.text}
+                mt="$4"
+                style={styles.title}
+              >
+                Get important local alerts
               </Text>
-              <Text fontSize={typography.summary.fontSize} lineHeight={typography.summary.lineHeight} color={colors.textSecondary} mt="$2">
-                Get breaking stories from {citySlug}. Alerts are optional and can be turned off anytime in Profile.
+              <Text
+                fontSize={typography.summary.fontSize}
+                lineHeight={typography.summary.lineHeight}
+                color={colors.textSecondary}
+                mt="$2"
+                style={styles.message}
+              >
+                We will send only breaking stories from {citySlug}. You can turn alerts off anytime in Profile.
               </Text>
               <View style={styles.trustRow}>
                 <ShieldAlert size={15} color={colors.textMuted} strokeWidth={2} />
-                <Text fontSize={typography.meta.fontSize} lineHeight={typography.meta.lineHeight} color={colors.textMuted}>
-                  We will only send important local updates.
+                <Text
+                  fontSize={typography.meta.fontSize}
+                  lineHeight={typography.meta.lineHeight}
+                  color={colors.textMuted}
+                  style={styles.trustCopy}
+                >
+                  No daily noise. Just useful updates.
                 </Text>
               </View>
               {error ? (
-                <Text fontSize={typography.meta.fontSize} lineHeight={typography.meta.lineHeight} color={colors.destructive} mt="$3">
+                <Text
+                  fontSize={typography.meta.fontSize}
+                  lineHeight={typography.meta.lineHeight}
+                  color={colors.destructive}
+                  style={styles.error}
+                >
                   {error}
                 </Text>
               ) : null}
             </View>
             <View style={styles.actions}>
-              <Pressable
+              <SecondaryButton
+                label="Not now"
                 onPress={onLater}
-                accessibilityRole="button"
                 accessibilityLabel="Not now"
-                style={({ pressed }) => [styles.secondaryAction, pressed ? styles.secondaryPressed : null]}
-              >
-                <Text fontSize={typography.button.fontSize} lineHeight={typography.button.lineHeight} fontWeight="$semibold" color={colors.textSecondary}>
-                  Not now
-                </Text>
-              </Pressable>
-              <Pressable
+                style={styles.secondaryAction}
+              />
+              <PrimaryButton
+                label="Enable alerts"
                 onPress={onEnable}
                 disabled={loading}
-                accessibilityRole="button"
                 accessibilityLabel="Enable news alerts"
-                style={({ pressed }) => [styles.primaryAction, pressed ? styles.pressed : null]}
-              >
-                <Text fontSize={typography.button.fontSize} lineHeight={typography.button.lineHeight} fontWeight="$semibold" color={colors.surface}>
-                  {loading ? 'Working…' : 'Enable alerts'}
-                </Text>
-              </Pressable>
+                style={styles.primaryAction}
+                loading={loading}
+              />
             </View>
           </MotiView>
         </View>
@@ -166,7 +183,7 @@ function createStyles(colors: AppColors) {
       flex: 1,
       justifyContent: 'center',
       alignItems: 'center',
-      paddingHorizontal: space.xl,
+      paddingHorizontal: space.md,
     },
     overlay: {
       ...StyleSheet.absoluteFillObject,
@@ -182,47 +199,57 @@ function createStyles(colors: AppColors) {
     },
     card: {
       width: '100%',
-      maxWidth: 360,
-      borderRadius: radius.xl,
+      maxWidth: 384,
+      borderRadius: radius.lg,
       backgroundColor: colors.surface,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: colors.border,
       overflow: 'hidden',
     },
     cardBody: {
-      padding: space.xl,
+      paddingHorizontal: space.xl,
+      paddingTop: space.xl,
+      paddingBottom: space.lg,
+    },
+    title: {
+      letterSpacing: typography.section.letterSpacing,
+    },
+    message: {
+      maxWidth: 340,
     },
     trustRow: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: 6,
-      marginTop: space.lg,
+      marginTop: space.md,
+    },
+    trustCopy: {
+      flexShrink: 1,
+    },
+    error: {
+      marginTop: space.md,
+      padding: space.sm,
+      borderRadius: radius.md,
+      backgroundColor: colors.destructiveSoft,
     },
     actions: {
       flexDirection: 'row',
       borderTopWidth: StyleSheet.hairlineWidth,
       borderTopColor: colors.border,
-      minHeight: 58,
+      justifyContent: 'flex-end',
+      alignItems: 'center',
+      gap: space.xs,
+      paddingHorizontal: space.md,
+      paddingVertical: space.sm,
     },
     primaryAction: {
-      flex: 1,
-      alignItems: 'center',
-      justifyContent: 'center',
-      paddingHorizontal: space.sm,
-      backgroundColor: colors.accentFill,
+      minHeight: 48,
+      borderRadius: radius.md,
+      paddingHorizontal: space.md,
     },
     secondaryAction: {
-      flex: 1,
-      alignItems: 'center',
-      justifyContent: 'center',
+      minHeight: 48,
       paddingHorizontal: space.sm,
-      backgroundColor: colors.surface,
-      borderRightWidth: StyleSheet.hairlineWidth,
-      borderRightColor: colors.border,
-    },
-    pressed: {
-      opacity: 0.86,
-    },
-    secondaryPressed: {
-      backgroundColor: colors.accentSoft,
     },
   })
 }
