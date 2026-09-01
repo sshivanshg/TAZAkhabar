@@ -196,6 +196,25 @@ def dirty_from_git(root: Path) -> set[str]:
     return packages
 
 
+def ensure_pnpm_dependencies(root: Path) -> None:
+    """Workspace packages are linked only after `pnpm install`."""
+    marker = root / "apps" / "app" / "node_modules" / "@tazakhabar" / "shared-types"
+    if marker.exists():
+        return
+    print("verify-build: workspace deps missing; running pnpm install", file=sys.stderr)
+    completed = subprocess.run(
+        ["pnpm", "install", "--frozen-lockfile"],
+        cwd=root,
+        env=sanitize_env(),
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if completed.returncode != 0:
+        output = ((completed.stdout or "") + (completed.stderr or "")).strip()
+        raise RuntimeError(f"pnpm install failed (exit {completed.returncode}): {output}")
+
+
 def handle_stop(payload: dict, root: Path) -> dict:
     status = payload.get("status") or "completed"
     if status != "completed":
@@ -214,6 +233,17 @@ def handle_stop(payload: dict, root: Path) -> dict:
     if not checks:
         clear_state(root)
         return {}
+
+    if packages & {"app", "admin", "shared-types"}:
+        try:
+            ensure_pnpm_dependencies(root)
+        except RuntimeError as exc:
+            return {
+                "followup_message": (
+                    "Local verify-build hook failed: could not install pnpm workspace "
+                    f"dependencies.\n\n```\n{exc}\n```"
+                )
+            }
 
     failures: list[str] = []
     for label, command in checks:
