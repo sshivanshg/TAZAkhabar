@@ -1,7 +1,7 @@
 # Ingestion
 
 > **Living doc** — update when pipelines, article status on insert, cron, SSE, or intelligence providers change.  
-> **Last verified against:** 2026-09-01 (in-process ingest scheduler, deepened publisher catalog, batched RSS cron)
+> **Last verified against:** 2026-09-01 (GitHub Actions scheduler for Render free tier; no Render crons)
 
 ## Purpose
 
@@ -32,16 +32,19 @@ Public output still stays conservative: headline, short summary, source attribut
 
 ## Boundaries
 
-- **In scope:** `apps/api/Ingest/*`, ingest HTTP triggers, Render crons, event bus + SSE, queues/workers.
+- **In scope:** `apps/api/Ingest/*`, ingest HTTP triggers, GitHub Actions schedulers, event bus + SSE, queues/workers.
 - **Out of scope:** Admin UI chrome ([05-admin](./05-admin.md)); hosting blueprint details beyond cron ([08-hosting-and-ci](./08-hosting-and-ci.md)).
 
 ## Context diagram
 
 ```mermaid
 flowchart TB
-  Cron[Render cron 45m] -->|X-Ingest-Key| RssEP[POST /api/ingest/rss]
+  Cron[GHA every 15m] -->|X-Ingest-Key| RssEP[POST /api/ingest/rss]
   Cron -->|X-Ingest-Key| ScrapeEP[POST /api/ingest/scrape]
+  InProcess[ScheduledIngestHostedService] --> RssEP
+  InProcess --> ScrapeEP
   DailyCron[GitHub Actions nightly 00:00 IST] -->|X-Ingest-Key| DailyEP[POST /api/ingest/daily]
+  PurgeCron[GHA daily 03:00 UTC] -->|X-Ingest-Key| PurgeEP[POST /api/maintenance/purge-old-articles]
   Admin[Admin JWT] -->|trigger / uploads| API[Ingest services]
   API --> Job[IngestionJobWorker]
   RssEP --> RssSvc[RssIngestService]
@@ -109,31 +112,38 @@ Manual admin source triggers create both an `IngestionRun` and a queued `Ingesti
 
 ### Scheduled triggers
 
+Render **cron jobs require a paid plan**. On the free tier, ingestion is driven by GitHub Actions plus the in-process scheduler while the web instance is awake.
+
 **In-process (Render API web service, `IngestSchedule__Enabled=true`):**
 
 - `ScheduledIngestHostedService` runs RSS every 15 minutes (`maxSources=30` per batch) and scrape every 45 minutes.
-- Requires non-empty `RssIngest__Secret`. Complements (does not replace) external cron/GitHub triggers.
+- Requires non-empty `RssIngest__Secret`. On free tier the instance may sleep; GHA POSTs wake it and trigger ingest.
 
-Every 45 minutes (`render.yaml` and `.github/workflows/scheduled-ingest.yml`):
+**GitHub Actions (`scheduled-ingest.yml`, every 15 minutes):**
 
-- `tazakhabar-rss-ingest` / GHA → `POST {INGEST_URL}/api/ingest/rss?maxSources=30`
-- `tazakhabar-scrape-ingest` / GHA → `POST {INGEST_URL}/api/ingest/scrape?useRewrite=false`
+- Two RSS batches → `POST {API}/api/ingest/rss?maxSources=30` (rotates ~60 feeds per cycle)
+- One scrape batch → `POST {API}/api/ingest/scrape?useRewrite=false`
+- Uses `vars.EXPO_PUBLIC_API_BASE_URL` and `secrets.RssIngest__Secret`
+
+**GitHub Actions (`purge-old-articles.yml`, daily 03:00 UTC):**
+
+- `POST {API}/api/maintenance/purge-old-articles`
 
 The protected RSS endpoint is the fast public baseline path: it disables Claude,
 skips per-article body fetches, publishes feed snippets immediately, and orders
-sources by oldest/never fetched first so time-limited cron runs rotate through
+sources by oldest/never fetched first so time-limited runs rotate through
 the 75-city catalog instead of repeatedly favoring low source IDs. Admin/manual
 RSS source runs still use the default service behavior (`PendingReview`) unless
 the caller explicitly opts into auto-publish.
 
 Nightly at midnight IST (`30 18 * * *` UTC):
 
-- `nightly-ingest.yml` → `POST {INGEST_URL}/api/ingest/daily`
+- `nightly-ingest.yml` → `POST {API}/api/ingest/daily`
 - Runs all active RSS sources with Claude summarization and body fetch disabled
   and auto-publish enabled, then all active scrape sources with OpenAI rewrite
   disabled.
 
-Render crons and the GitHub Actions job send header `X-Ingest-Key: RssIngest__Secret`.
+All scheduled jobs send header `X-Ingest-Key: RssIngest__Secret`.
 
 ### Intelligence calls
 
@@ -168,7 +178,7 @@ Existing rows without body: `POST /api/ingest/backfill-bodies?take=&afterId=` (i
 | Admin trigger | `POST /api/admin/sources/{id}/trigger` → 202 + durable `IngestionJob` |
 | SSE | `GET /api/admin/ingestion-runs/{id}/events` |
 | Uploads | `POST /api/admin/uploads` multipart |
-| Env | `RssIngest__Secret`, `INGEST_URL` (Render cron), `IngestSchedule__*`, `ArticleIntelligence__*`, `OpenAiRewrite__*`, `Upload__RootPath`, `IngestHealth__*` |
+| Env | `RssIngest__Secret`, `IngestSchedule__*`, `ArticleIntelligence__*`, `OpenAiRewrite__*`, `Upload__RootPath`, `IngestHealth__*` |
 
 Event types: `started`, `fetch`, `progress`, `completed`, `error` (terminal: `completed` \| `error`).
 

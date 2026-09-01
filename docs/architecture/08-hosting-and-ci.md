@@ -1,11 +1,11 @@
 # Hosting and CI
 
 > **Living doc** — update when Render, Cloudflare, Neon, Docker, workflows, or env templates change.  
-> **Last verified against:** 2026-08-29 (RSS cron timeout raised for 75-city baseline feed)
+> **Last verified against:** 2026-09-01 (Render free tier — GitHub Actions ingest/purge; no Render crons)
 
 ## Purpose
 
-How TazaKhabar is built, deployed, and wired in production: Render API + crons, Cloudflare Pages (reader + marketing site + admin), Neon Postgres, GitHub Actions, local Docker.
+How TazaKhabar is built, deployed, and wired in production: Render API (free tier), Cloudflare Pages (reader + marketing site + admin), Neon Postgres, GitHub Actions schedulers, local Docker.
 
 ## Boundaries
 
@@ -29,8 +29,8 @@ flowchart TB
   Deploy --> PagesSite[Cloudflare Pages<br/>tazakhabar-site]
   Deploy --> PagesAdmin[Cloudflare Pages<br/>newsfeed-admin]
   Render --> Neon[(Neon Postgres)]
-  CronRSS[Render cron RSS] --> Render
-  CronScrape[Render cron scrape] --> Render
+  GHAIngest[GitHub Actions scheduled ingest] --> Render
+  GHAPurge[GitHub Actions purge] --> Render
   CronDaily[GitHub Actions nightly ingest] --> Render
   Readers[Readers] --> PagesWeb
   Editors[Editors] --> PagesAdmin
@@ -46,10 +46,13 @@ flowchart TB
 | API image | `infra/docker/Dockerfile.api` |
 | Frontend containers | `infra/docker/Dockerfile.frontend-dev` (hot reload), `Dockerfile.web` (static preview) |
 | Android APK builder | `infra/docker/Dockerfile.android`, invoked by `scripts/docker-build-apk.sh` |
-| Blueprint | `render.yaml` — web `tazakhabar-api` + ingest/purge crons |
+| Blueprint | `render.yaml` — web `tazakhabar-api` only (free tier; no Render crons) |
 | Local stack | `docker-compose.yml` Postgres 16 + API + Expo reader; optional `tools` profile for admin/site |
 | CI | `.github/workflows/ci.yml` — API format/build/test + Postgres, migration SQL artifact, OpenAPI drift check; app lint/test/export; marketing site build; admin build |
 | Deploy | `.github/workflows/deploy.yml` — Pages for reader + marketing site + admin; API via Render auto-deploy |
+| Scheduled ingest | `.github/workflows/scheduled-ingest.yml` — RSS + scrape every 15 min (free-tier scheduler) |
+| Article purge | `.github/workflows/purge-old-articles.yml` — daily retention purge |
+| Nightly ingest | `.github/workflows/nightly-ingest.yml` — midnight IST full batch |
 | DB migration workflow | `.github/workflows/migrate-production.yml` — manual production EF migration apply |
 | Env templates | `.env.example`, `.env.staging.example`, `.env.production.example`, `apps/app/.env.example`, `apps/admin/.env.example`, `apps/site/.env.example` |
 
@@ -81,7 +84,7 @@ generated debug keystore for sideload testing, not Play Store signing.
 1. Static assets: browser → Cloudflare Pages CDN.
 2. JSON: browser → Cloudflare-proxied `api.<domain>` → Render Docker.
 3. `GET /api/articles` and `GET /api/cities` send `Cache-Control: public, max-age=60` so the edge can cut Neon load ([ADR-004](../adr/004-render-cloudflare-neon-hosting.md)).
-4. Render crons hit the 45m ingest endpoints with `X-Ingest-Key`; RSS cron uses the fast no-AI auto-publish baseline path so the reader feed receives fresh city headlines, and GitHub Actions runs the nightly midnight IST batch via `/api/ingest/daily` with the same key.
+4. GitHub Actions hits ingest endpoints every 15 minutes with `X-Ingest-Key` (wakes free-tier API + runs RSS/scrape batches). Nightly midnight IST runs `/api/ingest/daily`; daily purge runs at 03:00 UTC. In-process `ScheduledIngestHostedService` also runs while the instance is awake.
 
 ### Render web service
 
@@ -106,13 +109,13 @@ generated debug keystore for sideload testing, not Play Store signing.
 | `ConnectionStrings__Database` | Render |
 | `Cors__AllowedOrigins__0` / `__1` | Render (reader + admin origins) |
 | `RateLimiting__PermitLimit` / `WindowSeconds` | Render (defaults 60/60) |
-| `RssIngest__Secret` | Render + crons + GitHub Actions nightly ingest |
+| `RssIngest__Secret` | Render API + GitHub Actions (`scheduled-ingest`, `nightly-ingest`, `purge-old-articles`) |
 | `Admin__Password`, `Admin__JwtSigningKey` | Render |
 | `ArticleIntelligence__ApiKey` / `BaseUrl` / `Model` | Render |
 | `OpenAiRewrite__ApiKey` / `BaseUrl` / `Model` / `Enabled` | Render |
 | `Upload__RootPath` | Render |
 | `IngestHealth__MaxSilenceMinutes`, `IngestHealth__AlertWebhookUrl` | Render |
-| `INGEST_URL` | Render cron services and GitHub Actions `nightly-ingest.yml` |
+| `IngestSchedule__Enabled`, `IngestSchedule__RssIntervalMinutes`, `IngestSchedule__RssMaxSourcesPerRun`, `IngestSchedule__ScrapeIntervalMinutes` | Render API (in-process scheduler while instance is awake) |
 | `EXPO_PUBLIC_API_BASE_URL` | GitHub Actions **and** `apps/app/.env.production` (Expo inlines this at export) |
 | `EXPO_PUBLIC_SITE_URL` | GitHub Actions production variable for reader links to the public website |
 | `VITE_API_BASE_URL` | GitHub Actions **and** `apps/admin/.env.production` |

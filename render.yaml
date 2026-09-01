@@ -1,5 +1,10 @@
 # Render Blueprint — TazaKhabar API (ADR-004)
 # Secrets (ConnectionStrings__Database, Cors origins, Admin, ingest) are set in the Render dashboard (sync: false).
+#
+# Free-tier note: Render cron jobs require a paid plan. Scheduled ingest and article
+# purge run via GitHub Actions (.github/workflows/scheduled-ingest.yml and
+# purge-old-articles.yml). The API web service also runs ScheduledIngestHostedService
+# while the instance is awake (IngestSchedule__Enabled=true).
 
 services:
   - type: web
@@ -7,7 +12,7 @@ services:
     runtime: docker
     dockerfilePath: ./infra/docker/Dockerfile.api
     dockerContext: .
-    plan: starter
+    plan: free
     healthCheckPath: /healthz
     envVars:
       - key: PORT
@@ -37,9 +42,9 @@ services:
       - key: ArticleIntelligence__ApiKey
         sync: false
       - key: ArticleIntelligence__BaseUrl
-        value: "https://api.anthropic.com"
+        value: "[REDACTED]"
       - key: ArticleIntelligence__Model
-        value: "claude-sonnet-4-5"
+        value: "[REDACTED]"
       - key: OpenAiRewrite__Enabled
         value: "true"
       - key: OpenAiRewrite__ApiKey
@@ -64,42 +69,3 @@ services:
         value: "30"
       - key: IngestSchedule__ScrapeIntervalMinutes
         value: "45"
-
-  - type: cron
-    name: tazakhabar-rss-ingest
-    runtime: python
-    plan: starter
-    schedule: "*/45 * * * *"
-    buildCommand: "pip install requests"
-    startCommand: "python -c \"import os,requests; r=requests.post(os.environ['INGEST_URL'].rstrip('/')+'/api/ingest/rss?maxSources=30', headers={'X-Ingest-Key': os.environ['RssIngest__Secret']}, timeout=600); r.raise_for_status()\""
-    envVars:
-      - key: INGEST_URL
-        sync: false
-      - key: RssIngest__Secret
-        sync: false
-
-  - type: cron
-    name: tazakhabar-scrape-ingest
-    runtime: python
-    plan: starter
-    schedule: "*/45 * * * *"
-    buildCommand: "pip install requests"
-    startCommand: "python -c \"import os,requests; r=requests.post(os.environ['INGEST_URL'].rstrip('/')+'/api/ingest/scrape?useRewrite=false', headers={'X-Ingest-Key': os.environ['RssIngest__Secret']}, timeout=300); r.raise_for_status()\""
-    envVars:
-      - key: INGEST_URL
-        sync: false
-      - key: RssIngest__Secret
-        sync: false
-
-  - type: cron
-    name: tazakhabar-purge-old-articles
-    runtime: python
-    plan: starter
-    schedule: "0 3 * * *"
-    buildCommand: "pip install requests"
-    startCommand: "python -c \"import os,requests; r=requests.post(os.environ['INGEST_URL'].rstrip('/')+'/api/maintenance/purge-old-articles', headers={'X-Ingest-Key': os.environ['RssIngest__Secret']}, timeout=300); r.raise_for_status()\""
-    envVars:
-      - key: INGEST_URL
-        sync: false
-      - key: RssIngest__Secret
-        sync: false
