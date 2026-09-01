@@ -1,7 +1,7 @@
 # Notifications
 
 > **Living doc** — update in the same change when push subscription, delivery, or prompt behavior changes.  
-> **Last verified against:** 2026-09-01 (opt-in breaking alerts + async dispatch foundation)
+> **Last verified against:** 2026-09-01 (popup-only opt-in, resilient web subscription registration, and native channel setup)
 
 ## Purpose
 
@@ -85,8 +85,9 @@ sequenceDiagram
 ## Failure modes & invariants
 
 - Permission prompts are throttled locally; a dismissal should not cause repeated nagging on every open.
-- Denial disables automatic reprompting until the user explicitly re-enters the flow from settings.
+- A browser or device-level denial stays visible as an actionable error in the popup and does not create a permanent inline prompt.
 - Web Push requires HTTPS, a service worker, and a valid VAPID keypair.
+- Existing browser subscriptions are recreated when their application server key no longer matches the configured VAPID public key.
 - Push send failures must not block article ingest or editorial publish flows.
 - Anonymous subscriptions are device/browser scoped and can be removed without an account.
 

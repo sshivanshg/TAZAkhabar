@@ -26,6 +26,7 @@ export function NotificationOptInBanner() {
   const [citySlug, setCitySlug] = useState<string | null>(null)
   const [promptState, setPromptState] = useState<NotificationPromptState | null>(null)
   const [visible, setVisible] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const { colors } = useTheme()
   const styles = useMemo(() => createStyles(colors), [colors])
 
@@ -55,6 +56,7 @@ export function NotificationOptInBanner() {
 
   const onEnable = async () => {
     setLoading(true)
+    setError(null)
     try {
       await markNotificationPromptShown()
       const result = await registerNewsNotifications(citySlug)
@@ -63,10 +65,17 @@ export function NotificationOptInBanner() {
         return
       }
       if (result.status === 'denied') {
+        if (result.reason) {
+          setError(result.reason)
+          return
+        }
         await suppressNotificationPrompt('denied')
         setVisible(false)
         return
       }
+      setError(result.reason)
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'Could not enable news alerts.')
     } finally {
       setLoading(false)
     }
@@ -115,6 +124,11 @@ export function NotificationOptInBanner() {
                   We will only send important local updates.
                 </Text>
               </View>
+              {error ? (
+                <Text fontSize={typography.meta.fontSize} lineHeight={typography.meta.lineHeight} color={colors.destructive} mt="$3">
+                  {error}
+                </Text>
+              ) : null}
             </View>
             <View style={styles.actions}>
               <Pressable

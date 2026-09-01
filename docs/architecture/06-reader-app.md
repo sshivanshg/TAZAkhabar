@@ -86,8 +86,8 @@ flowchart LR
 | `src/pwa/registerWebServiceWorker.ts` | Registers `/sw.js` on web only (never Expo native) |
 | `src/utils/shouldOfferAddToHome.ts` | A2HS only on **mobile web browsers**; never Expo native; never installed PWA (`display-mode: standalone` / iOS `navigator.standalone`) |
 | `src/components/PublicLinks.tsx` | External links to the standalone public site |
-| `src/components/NotificationOptInBanner.tsx` | Calm breaking-news opt-in banner with local prompt backoff |
-| `src/notifications/registerNotifications.ts` | Native Expo token + web push subscription registration |
+| `src/components/NotificationOptInBanner.tsx` | Popup-only breaking-news opt-in with local prompt backoff and actionable registration errors |
+| `src/notifications/registerNotifications.ts` | Native Expo token + Android channel + web push subscription registration |
 | `src/storage/notificationPreferences.ts` | Client id and prompt-state storage for permission backoff |
 
 Stack: Expo ~54, expo-router, Gluestack UI, Moti, AsyncStorage.

@@ -13,7 +13,7 @@ import {
 
 export type RegisterNotificationsResult =
   | { status: 'granted'; platform: 'native' | 'web' }
-  | { status: 'denied'; platform: 'native' | 'web' }
+  | { status: 'denied'; platform: 'native' | 'web'; reason?: string }
   | { status: 'unsupported'; platform: 'native' | 'web'; reason: string }
 
 function getExpoProjectId(): string | undefined {
@@ -34,10 +34,40 @@ function base64UrlToUint8Array(base64Url: string): Uint8Array {
   return output
 }
 
+function hasMatchingApplicationServerKey(
+  subscription: PushSubscription,
+  expectedKey: Uint8Array,
+): boolean {
+  const configuredKey = subscription.options.applicationServerKey
+  if (!configuredKey) {
+    return true
+  }
+
+  const actualKey = new Uint8Array(configuredKey)
+  if (actualKey.length !== expectedKey.length) {
+    return false
+  }
+
+  return actualKey.every((byte, index) => byte === expectedKey[index])
+}
+
 async function registerNativeNotifications(citySlug: string, preferredLanguage?: string | null) {
+  if (Platform.OS === 'android') {
+    await Notifications.setNotificationChannelAsync('default', {
+      name: 'Breaking news',
+      importance: Notifications.AndroidImportance.DEFAULT,
+      vibrationPattern: [0, 250, 250, 250],
+      lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
+    })
+  }
+
   const permission = await Notifications.requestPermissionsAsync()
   if (!permission.granted) {
-    return { status: 'denied' as const, platform: 'native' as const }
+    return {
+      status: 'denied' as const,
+      platform: 'native' as const,
+      reason: 'Notifications are blocked for this app. Allow them in device settings, then try again.',
+    }
   }
 
   const projectId = getExpoProjectId()
@@ -88,11 +118,6 @@ async function registerWebNotifications(citySlug: string, preferredLanguage?: st
     }
   }
 
-  const permission = await Notification.requestPermission()
-  if (permission !== 'granted') {
-    return { status: 'denied' as const, platform: 'web' as const }
-  }
-
   const publicKey = process.env.EXPO_PUBLIC_WEB_PUSH_PUBLIC_KEY
   if (!publicKey) {
     return {
@@ -102,9 +127,42 @@ async function registerWebNotifications(citySlug: string, preferredLanguage?: st
     }
   }
 
-  const registration = await navigator.serviceWorker.ready
-  const existing = await registration.pushManager.getSubscription()
   const applicationServerKey = base64UrlToUint8Array(publicKey)
+  if (applicationServerKey.length !== 65) {
+    return {
+      status: 'unsupported' as const,
+      platform: 'web' as const,
+      reason: 'Web push public key is invalid.',
+    }
+  }
+
+  if (Notification.permission === 'denied') {
+    return {
+      status: 'denied' as const,
+      platform: 'web' as const,
+      reason: 'Notifications are blocked for this site. Allow them in browser site settings, then try again.',
+    }
+  }
+
+  const permission = await Notification.requestPermission()
+  if (permission !== 'granted') {
+    return {
+      status: 'denied' as const,
+      platform: 'web' as const,
+      reason: permission === 'denied'
+        ? 'Notifications are blocked for this site. Allow them in browser site settings, then try again.'
+        : 'Permission was not granted. Tap Enable alerts again when you are ready.',
+    }
+  }
+
+  const registration = await navigator.serviceWorker.register('/sw.js')
+  await navigator.serviceWorker.ready
+  let existing = await registration.pushManager.getSubscription()
+  if (existing && !hasMatchingApplicationServerKey(existing, applicationServerKey)) {
+    await existing.unsubscribe()
+    existing = null
+  }
+
   const applicationServerKeyBuffer = applicationServerKey.buffer.slice(
     applicationServerKey.byteOffset,
     applicationServerKey.byteOffset + applicationServerKey.byteLength,
