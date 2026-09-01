@@ -79,6 +79,14 @@ export interface ArticleResponse {
     displayLanguage?: string | undefined;
 }
 
+export interface ArticleSourceUrlBackfillResponse {
+    examined?: number;
+    updated?: number;
+    skipped?: number;
+    failed?: number;
+    nextAfterId?: number | undefined;
+}
+
 export interface CityResponse {
     id?: number;
     name?: string | undefined;

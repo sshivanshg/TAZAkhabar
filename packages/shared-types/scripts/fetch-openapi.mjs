@@ -21,7 +21,10 @@ if (!response.ok) {
   process.exit(1)
 }
 
-const document = await response.json()
+// CI diffs this snapshot byte-for-byte against the live document, so persist
+// the exact response bytes — re-serializing would change empty-object spacing
+// (`{ }` vs `{}`), key order, and the trailing newline and fail the check.
+const document = await response.text()
 await mkdir(outDir, { recursive: true })
-await writeFile(outFile, `${JSON.stringify(document, null, 2)}\n`, 'utf8')
+await writeFile(outFile, document, 'utf8')
 console.log(`Wrote ${outFile}`)
