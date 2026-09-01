@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Pressable, StyleSheet, View } from 'react-native'
+import { Modal, Pressable, StyleSheet, View } from 'react-native'
 import { Text } from '@gluestack-ui/themed'
 import { MotiView } from 'moti'
 import BellRing from 'lucide-react-native/icons/bell-ring'
@@ -83,102 +83,126 @@ export function NotificationOptInBanner() {
       animate={{ opacity: 1, translateY: 0 }}
       transition={{ type: 'timing', duration: 220 }}
     >
-      <View style={styles.banner}>
-        <View style={styles.introRow}>
-          <View style={styles.iconWrap}>
-            <BellRing size={18} color={colors.accentFill} strokeWidth={2.2} />
-          </View>
-          <View style={styles.textWrap}>
-            <Text fontSize={typography.headlineSm.fontSize} lineHeight={typography.headlineSm.lineHeight} fontWeight="$semibold" color={colors.text}>
-              Get breaking news for {citySlug}
-            </Text>
-            <Text fontSize={typography.meta.fontSize} lineHeight={typography.meta.lineHeight} color={colors.textSecondary} mt="$1">
-              Alerts are optional and can be turned off in Profile.
-            </Text>
-          </View>
-          <ShieldAlert size={15} color={colors.textMuted} strokeWidth={2} />
-        </View>
-        <View style={styles.actions}>
+      <Modal visible={visible} transparent animationType="none" onRequestClose={onLater}>
+        <View style={styles.modalRoot}>
           <Pressable
-            onPress={onEnable}
-            disabled={loading}
-            accessibilityRole="button"
-            accessibilityLabel="Enable news alerts"
-            style={({ pressed }) => [styles.primaryAction, pressed ? styles.pressed : null]}
-          >
-            <Text fontSize={typography.label.fontSize} lineHeight={typography.label.lineHeight} fontWeight="$semibold" color={colors.surface}>
-              {loading ? 'Working…' : 'Enable alerts'}
-            </Text>
-          </Pressable>
-          <Pressable
+            style={StyleSheet.absoluteFill}
             onPress={onLater}
             accessibilityRole="button"
-            accessibilityLabel="Not now"
-            style={({ pressed }) => [styles.secondaryAction, pressed ? styles.secondaryPressed : null]}
+            accessibilityLabel="Close news alerts prompt"
           >
-            <Text fontSize={typography.label.fontSize} lineHeight={typography.label.lineHeight} fontWeight="$semibold" color={colors.accentFill}>
-              Not now
-            </Text>
+            <View style={styles.overlay} />
           </Pressable>
+          <MotiView
+            from={{ opacity: 0, scale: 0.94, translateY: 12 }}
+            animate={{ opacity: visible ? 1 : 0, scale: visible ? 1 : 0.94, translateY: visible ? 0 : 12 }}
+            transition={{ type: 'timing', duration: 220 }}
+            style={styles.card}
+          >
+            <View style={styles.cardBody}>
+              <View style={styles.iconWrap}>
+                <BellRing size={20} color={colors.accentFill} strokeWidth={2.2} />
+              </View>
+              <Text fontSize={22} lineHeight={28} fontWeight="$bold" color={colors.text} mt="$3">
+                Stay close to what matters
+              </Text>
+              <Text fontSize={typography.summary.fontSize} lineHeight={typography.summary.lineHeight} color={colors.textSecondary} mt="$2">
+                Get breaking stories from {citySlug}. Alerts are optional and can be turned off anytime in Profile.
+              </Text>
+              <View style={styles.trustRow}>
+                <ShieldAlert size={15} color={colors.textMuted} strokeWidth={2} />
+                <Text fontSize={typography.meta.fontSize} lineHeight={typography.meta.lineHeight} color={colors.textMuted}>
+                  We will only send important local updates.
+                </Text>
+              </View>
+            </View>
+            <View style={styles.actions}>
+              <Pressable
+                onPress={onLater}
+                accessibilityRole="button"
+                accessibilityLabel="Not now"
+                style={({ pressed }) => [styles.secondaryAction, pressed ? styles.secondaryPressed : null]}
+              >
+                <Text fontSize={typography.button.fontSize} lineHeight={typography.button.lineHeight} fontWeight="$semibold" color={colors.textSecondary}>
+                  Not now
+                </Text>
+              </Pressable>
+              <Pressable
+                onPress={onEnable}
+                disabled={loading}
+                accessibilityRole="button"
+                accessibilityLabel="Enable news alerts"
+                style={({ pressed }) => [styles.primaryAction, pressed ? styles.pressed : null]}
+              >
+                <Text fontSize={typography.button.fontSize} lineHeight={typography.button.lineHeight} fontWeight="$semibold" color={colors.surface}>
+                  {loading ? 'Working…' : 'Enable alerts'}
+                </Text>
+              </Pressable>
+            </View>
+          </MotiView>
         </View>
-      </View>
+      </Modal>
     </MotiView>
   )
 }
 
 function createStyles(colors: AppColors) {
   return StyleSheet.create({
-    banner: {
-      marginHorizontal: space.screen,
-      marginBottom: space.xs,
-      padding: space.sm,
-      borderRadius: radius.md,
-      backgroundColor: colors.surface,
-      borderWidth: StyleSheet.hairlineWidth,
-      borderColor: colors.border,
-      gap: space.sm,
-    },
-    introRow: {
-      flexDirection: 'row',
+    modalRoot: {
+      flex: 1,
+      justifyContent: 'center',
       alignItems: 'center',
-      gap: space.sm,
+      paddingHorizontal: space.xl,
+    },
+    overlay: {
+      ...StyleSheet.absoluteFillObject,
+      backgroundColor: colors.overlay,
     },
     iconWrap: {
-      width: 34,
-      height: 34,
+      width: 42,
+      height: 42,
       borderRadius: 12,
       backgroundColor: colors.accentSoft,
       alignItems: 'center',
       justifyContent: 'center',
     },
-    textWrap: {
-      flex: 1,
-      minWidth: 0,
+    card: {
+      width: '100%',
+      maxWidth: 360,
+      borderRadius: radius.xl,
+      backgroundColor: colors.surface,
+      overflow: 'hidden',
+    },
+    cardBody: {
+      padding: space.xl,
+    },
+    trustRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      marginTop: space.lg,
     },
     actions: {
       flexDirection: 'row',
-      gap: space.xs,
-      paddingLeft: 34 + space.sm,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: colors.border,
+      minHeight: 58,
     },
     primaryAction: {
-      minHeight: 40,
       flex: 1,
-      paddingHorizontal: space.sm,
       alignItems: 'center',
       justifyContent: 'center',
-      borderRadius: radius.sm,
+      paddingHorizontal: space.sm,
       backgroundColor: colors.accentFill,
     },
     secondaryAction: {
-      minHeight: 40,
       flex: 1,
-      paddingHorizontal: space.sm,
       alignItems: 'center',
       justifyContent: 'center',
-      borderRadius: radius.sm,
-      backgroundColor: colors.surfaceRaised,
-      borderWidth: StyleSheet.hairlineWidth,
-      borderColor: colors.border,
+      paddingHorizontal: space.sm,
+      backgroundColor: colors.surface,
+      borderRightWidth: StyleSheet.hairlineWidth,
+      borderRightColor: colors.border,
     },
     pressed: {
       opacity: 0.86,
