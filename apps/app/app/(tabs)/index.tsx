@@ -21,17 +21,16 @@ import {
 import { RelatedStoriesStrip } from '../../src/components/RelatedStoriesStrip'
 import { ConfirmModal } from '../../src/components/ConfirmModal'
 import { AddToHomeBanner } from '../../src/components/AddToHomeBanner'
-import {
-  DesktopHeroRow,
-  desktopHeroVisibleCount,
-  estimateDesktopRailWidth,
-} from '../../src/components/desktop/DesktopHeroRow'
+import { BriefingHeader } from '../../src/components/desktop/BriefingHeader'
+import { CategoryNavBar } from '../../src/components/desktop/CategoryNavBar'
+import { ExpandedTopBar } from '../../src/components/desktop/ExpandedTopBar'
+import { LocalNewsRail } from '../../src/components/desktop/LocalNewsRail'
+import { TopStoriesCluster } from '../../src/components/desktop/TopStoriesCluster'
 import {
   StoryOptionsPopover,
   captureMoreButtonAnchor,
   type StoryOptionsAnchor,
 } from '../../src/components/desktop/StoryOptionsPopover'
-import { DesktopTopBar } from '../../src/components/desktop/DesktopTopBar'
 import { HomeTopBar } from '../../src/components/HomeTopBar'
 import { ScreenErrorBoundary } from '../../src/components/ScreenErrorBoundary'
 import { TabScreenShell } from '../../src/components/TabScreenShell'
@@ -67,7 +66,7 @@ import {
   type AppColors,
 } from '../../src/theme/tokens'
 import { useTabBarClearance } from '../../src/theme/useTabBarClearance'
-import { isDesktopLayout, useBreakpoint } from '../../src/hooks/useBreakpoint'
+import { isDesktopLayout, isExpandedLayout, useBreakpoint } from '../../src/hooks/useBreakpoint'
 import { articleRouteParams } from '../../src/utils/articleRouteParams'
 import { buildMobileFeedRows } from '../../src/utils/feedLayout'
 import { openArticleSource } from '../../src/utils/openArticleSource'
@@ -152,7 +151,7 @@ function HomeFeedBody() {
   const tabClearance = useTabBarClearance()
   const bp = useBreakpoint()
   const desktop = isDesktopLayout(bp)
-  const tablet = bp === 'tablet'
+  const expanded = isExpandedLayout(bp)
   const mobile = bp === 'mobile'
   const { width: windowWidth } = useWindowDimensions()
   const [citySlug, setCitySlug] = useState<string | null>(params.city ?? null)
@@ -404,9 +403,7 @@ function HomeFeedBody() {
     () => visibleArticles.slice(0, BREAKING_NEWS_COUNT),
     [visibleArticles],
   )
-  const listStart = desktop
-    ? desktopHeroVisibleCount(estimateDesktopRailWidth(windowWidth))
-    : BREAKING_NEWS_COUNT
+  const listStart = expanded ? 4 : BREAKING_NEWS_COUNT
   const recommendations = useMemo(
     () =>
       visibleArticles
@@ -415,6 +412,14 @@ function HomeFeedBody() {
     [visibleArticles, listStart, trendingIds],
   )
   const hasMore = articles.length < total
+
+  const localArticles = useMemo(
+    () =>
+      expanded && category === 'All'
+        ? visibleArticles.filter((a) => a.category === 'Local').slice(0, 8)
+        : [],
+    [visibleArticles, expanded, category],
+  )
 
   const listData: ListRow[] = useMemo(() => {
     if (mobile) {
@@ -429,36 +434,25 @@ function HomeFeedBody() {
     }
     if (recommendations.length > 0) {
       rows.push({ kind: 'section', key: 'section' })
-      if (tablet) {
-        for (let i = 0; i < recommendations.length; i += 2) {
-          const left = recommendations[i]
-          if (!left) {
-            continue
-          }
-          const right = recommendations[i + 1]
-          rows.push({
-            kind: 'article-row',
-            key: `row-${left.id ?? i}-${right?.id ?? 'end'}`,
-            left,
-            right,
-            index: i,
-          })
+      for (let i = 0; i < recommendations.length; i += 2) {
+        const left = recommendations[i]
+        if (!left) {
+          continue
         }
-      } else {
-        for (const [index, article] of recommendations.entries()) {
-          rows.push({
-            kind: 'article',
-            key: String(article.id),
-            article,
-            index,
-          })
-        }
+        const right = recommendations[i + 1]
+        rows.push({
+          kind: 'article-row',
+          key: `row-${left.id ?? i}-${right?.id ?? 'end'}`,
+          left,
+          right,
+          index: i,
+        })
       }
     } else if (!loading && breaking.length === 0 && visibleTrending.length === 0) {
       rows.push({ kind: 'empty', key: 'empty' })
     }
     return rows
-  }, [breaking, recommendations, loading, mobile, tablet, visibleArticles, visibleTrending])
+  }, [breaking, recommendations, loading, mobile, visibleArticles, visibleTrending])
 
   const openArticle = useCallback(
     (article: ArticleResponse) => {
@@ -515,7 +509,7 @@ function HomeFeedBody() {
 
   const bindCardHost = useCallback(
     (article: ArticleResponse, fallbackKey: string) =>
-      desktop
+      expanded
         ? (node: View | null) => {
             const key = article.id != null ? String(article.id) : fallbackKey
             if (node) {
@@ -525,7 +519,7 @@ function HomeFeedBody() {
             }
           }
         : undefined,
-    [desktop],
+    [expanded],
   )
 
   const renderArticleCard = (
@@ -534,7 +528,7 @@ function HomeFeedBody() {
     padStyle: StyleProp<ViewStyle>,
   ) => (
     <ArticleCardSlot
-      desktop={desktop}
+      desktop={expanded}
       padStyle={padStyle}
       hostRef={bindCardHost(article, String(article.id ?? index))}
     >
@@ -543,8 +537,8 @@ function HomeFeedBody() {
         index={index}
         density={mobile ? 'default' : 'compact'}
         onPress={openArticle}
-        onLongPress={desktop ? openStoryActions : setActionArticle}
-        onMorePress={desktop ? openStoryActions : setActionArticle}
+        onLongPress={expanded ? openStoryActions : setActionArticle}
+        onMorePress={expanded ? openStoryActions : setActionArticle}
         onSeeMorePress={goSeeMore}
         saved={article.id != null && bookmarkedIds.has(article.id)}
       />
@@ -619,8 +613,8 @@ function HomeFeedBody() {
       style={{ flex: 1, backgroundColor: colors.background }}
     >
       <Box flex={1} bg={colors.background}>
-        {desktop ? (
-          <DesktopTopBar
+        {expanded ? (
+          <ExpandedTopBar
             cityTitle={cityTitle}
             onCityPress={() => router.push('/city')}
             readingLanguage={preferredLanguage}
@@ -636,16 +630,30 @@ function HomeFeedBody() {
           />
         )}
         {Platform.OS === 'web' ? <AddToHomeBanner /> : null}
-        <CategoryChipRow
-          selected={category}
-          onSelect={setCategory}
-          categories={visibleCategories}
-          onLongPressCategory={(chip) => {
-            if (chip !== 'All') {
-              setBlockCategoryName(chip)
-            }
-          }}
-        />
+        {expanded ? (
+          <CategoryNavBar
+            selected={category}
+            onSelect={setCategory}
+            categories={visibleCategories}
+            onLongPressCategory={(chip) => {
+              if (chip !== 'All') {
+                setBlockCategoryName(chip)
+              }
+            }}
+          />
+        ) : (
+          <CategoryChipRow
+            selected={category}
+            onSelect={setCategory}
+            categories={visibleCategories}
+            onLongPressCategory={(chip) => {
+              if (chip !== 'All') {
+                setBlockCategoryName(chip)
+              }
+            }}
+          />
+        )}
+        {expanded ? <BriefingHeader cityTitle={cityTitle} /> : null}
 
         {(loading && !showContent) || !prefs.ready ? (
           <Box pt="$2" px="$4">
@@ -669,8 +677,8 @@ function HomeFeedBody() {
           >
             {error && articles.length === 0 ? (
               <View
-                testID={desktop ? 'error-column' : undefined}
-                style={desktop ? styles.errorColumn : undefined}
+                testID={expanded ? 'error-column' : undefined}
+                style={expanded ? styles.errorColumn : undefined}
               >
                 <ErrorState
                   title="Something went wrong"
@@ -680,6 +688,7 @@ function HomeFeedBody() {
                 />
               </View>
             ) : (
+            <View style={desktop ? styles.feedRow : styles.feedSingle}>
             <FlatList
               style={styles.listFlex}
               data={listData}
@@ -693,9 +702,14 @@ function HomeFeedBody() {
                           title="Top stories"
                           actionLabel="View all"
                           onAction={goDiscover}
+                          expanded={expanded}
                         />
-                        {desktop ? (
-                          <DesktopHeroRow articles={breaking} onPress={openArticle} />
+                        {expanded ? (
+                          <TopStoriesCluster
+                            articles={breaking}
+                            onPress={openArticle}
+                            onSeeAll={goDiscover}
+                          />
                         ) : (
                           <BreakingNewsCarousel
                             articles={breaking}
@@ -737,6 +751,7 @@ function HomeFeedBody() {
                           title="For you"
                           actionLabel="View all"
                           onAction={goDiscover}
+                          expanded={expanded}
                         />
                       </View>
                     )
@@ -860,12 +875,21 @@ function HomeFeedBody() {
                   ) : null
                 }
               />
+              {desktop && localArticles.length > 0 ? (
+                <LocalNewsRail
+                  articles={localArticles}
+                  cityTitle={cityTitle}
+                  onPress={openArticle}
+                  onCityPress={() => router.push('/city')}
+                />
+              ) : null}
+            </View>
             )}
           </MotiView>
         ) : null}
       </Box>
 
-      {desktop ? (
+      {expanded ? (
         <StoryOptionsPopover
           visible={actionArticle != null}
           anchor={popoverAnchor}
@@ -918,32 +942,34 @@ function SectionHeader({
   title,
   actionLabel,
   onAction,
+  expanded = false,
 }: {
   title: string
   actionLabel?: string
   onAction?: () => void
+  expanded?: boolean
 }) {
   const { colors } = useTheme()
   const styles = useMemo(() => createStyles(colors), [colors])
-  // Soft accent section label (Google News “Top stories” rhythm).
   return (
     <HStack
       px="$4"
-      mt="$3"
+      mt={expanded ? '$1' : '$3'}
       mb="$2"
       alignItems="center"
       justifyContent="space-between"
       minHeight={36}
     >
       <Text
-        fontSize={18}
-        lineHeight={24}
+        fontSize={expanded ? typography.headlineSm.fontSize : 18}
+        lineHeight={expanded ? typography.headlineSm.lineHeight : 24}
         fontWeight="$semibold"
         letterSpacing={-0.2}
-        color={colors.accent}
+        color={expanded ? colors.text : colors.accent}
         flex={1}
       >
         {title}
+        {expanded ? ' ›' : ''}
       </Text>
       {actionLabel && onAction ? (
         <Pressable
@@ -973,6 +999,14 @@ function SectionHeader({
 function createStyles(c: AppColors) {
   return StyleSheet.create({
   listFlex: {
+    flex: 1,
+  },
+  feedRow: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'stretch',
+  },
+  feedSingle: {
     flex: 1,
   },
   listContent: {

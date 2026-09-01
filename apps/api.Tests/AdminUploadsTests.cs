@@ -21,7 +21,7 @@ public sealed class AdminUploadsTests : IClassFixture<TazaKhabarWebApplicationFa
     [Fact]
     public async Task UploadPdf_ReturnsQueuedAndCreatesPendingReview()
     {
-        var client = await AdminAuthTests.CreateAuthedClientAsync(_factory, "Editor One");
+        var client = await AdminAuthTests.CreateAuthedClientAsync(_factory);
         using var content = PdfMultipart("hello.pdf", cityHintId: 2);
 
         var response = await client.PostAsync("/api/admin/uploads", content);

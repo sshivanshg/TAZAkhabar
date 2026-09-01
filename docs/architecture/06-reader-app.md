@@ -1,13 +1,13 @@
 # Reader app
 
 > **Living doc** — update when Expo routes, city/feed/share behavior, or desktop web layer change.  
-> **Last verified against:** 2026-08-29 (reader share links target public site)
+> **Last verified against:** 2026-09-01 (Google News–style expanded feed on tablet/desktop)
 
 ## Purpose
 
 Universal Expo client (`apps/app`) for readers: web/PWA now, native later. Phone-first localized feed with WhatsApp share ([ADR-003](../adr/003-expo-universal-client.md)).
 
-Build **mobile-first** (touch targets, feed density, bottom tabs) while keeping breakpoint responsiveness: tablet pairing and desktop sidebar/rail remain active from `useBreakpoint`.
+Build **mobile-first** (touch targets, feed density, bottom tabs) while keeping breakpoint responsiveness from `useBreakpoint`. **Phone** (`<768px`) keeps the existing mobile feed: bottom tabs, chip category row, featured/related/compact card stream. **Tablet and desktop** (`≥768px`, `isExpandedLayout`) switch to Google News–style chrome: top logo + pill search + bookmarks/profile actions, underline category nav, “Your briefing” header, top-stories cluster card (lead image + related headlines), two-column “For you” grid, and on desktop/wide a right **Local news** rail when the feed category is All. Bottom tabs are hidden on tablet+; navigation moves to the top bar.
 
 On mobile, the top bar and category rail sit outside the only vertical scroll
 surface, the virtualized feed. The bottom tab bar remains in the navigator shell
@@ -19,8 +19,8 @@ cluster is a horizontal related strip; remaining stories are compact rows with a
 source avatar, right-aligned thumb when present, and a See more pill. Save /
 Share / Read original live in the overflow sheet (Google News copy: Save for later,
 Go to [source], I like this), not on the card face. Tab scenes fade in on focus;
-articles open with a fade-from-bottom; city picker slides from the right. Tablet
-and desktop retain denser rows and the desktop content rail.
+articles open with a fade-from-bottom; city picker slides from the right. Expanded
+layouts use denser compact cards inside a centered wide content rail (`CONTENT_RAIL_MAX` 1200px).
 
 The compact web shell does not add native safe-area padding below the tab bar;
 native layouts retain device safe-area padding. The web document also keeps
@@ -71,7 +71,7 @@ flowchart LR
 | `src/components/CityListItem.tsx` | Tappable city row + list skeleton |
 | `src/components/CitySearch.tsx` | Live city/state filter field |
 | `src/utils/shareToWhatsApp.ts` | Share deep link / intent to the public TazaKhabar website |
-| `src/components/desktop/*` | Desktop shell / sidebar / hero row |
+| `src/components/desktop/*` | Expanded shell, top bar, category nav, top-stories cluster, local rail |
 | `src/storage/viewSession.ts` | Anonymous view sessions for trending |
 | `src/preferences/ThemePreferenceContext.tsx` | Light/dark/system preference → `useTheme()` (`colors`, `readerColors`, `shadows`) |
 | `src/theme/tokens.ts` | Shell palettes (light `#F4F6FA` / Google News grey dark `#202124`) + accent `#155EEF` (`accentFill`) |

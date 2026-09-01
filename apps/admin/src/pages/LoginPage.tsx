@@ -6,7 +6,6 @@ import { setSession } from '../auth'
 export function LoginPage() {
   const navigate = useNavigate()
   const [password, setPassword] = useState('')
-  const [displayName, setDisplayName] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
 
@@ -15,8 +14,8 @@ export function LoginPage() {
     setError(null)
     setBusy(true)
     try {
-      const res = await api.login(password, displayName.trim())
-      setSession(res.token, res.expiresAt, displayName.trim())
+      const res = await api.login(password)
+      setSession(res.token, res.expiresAt)
       navigate('/', { replace: true })
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Login failed')
@@ -30,16 +29,6 @@ export function LoginPage() {
       <form className="login-card" onSubmit={onSubmit}>
         <h1>TazaKhabar Admin</h1>
         <p className="sub">Sign in to review stories and watch ingest runs.</p>
-        <label className="field">
-          Display name
-          <input
-            value={displayName}
-            onChange={(e) => setDisplayName(e.target.value)}
-            required
-            maxLength={80}
-            autoComplete="username"
-          />
-        </label>
         <label className="field">
           Password
           <input

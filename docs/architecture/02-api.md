@@ -72,7 +72,7 @@ Pipeline (order): Serilog request logging → RequestId header/log context → E
 ### Auth model
 
 - Readers: none ([ADR-002](../adr/002-no-auth-mvp.md)).
-- Admin: shared password + display name → HS256 JWT 8h ([ADR-005](../adr/005-admin-shared-credential.md)).
+- Admin: shared password → HS256 JWT 8h with the fixed `Admin` identity ([ADR-005](../adr/005-admin-shared-credential.md)).
 - Production startup fails if admin password/JWT signing key are missing, default, or too short.
 - Ingest key is **not** accepted on admin routes.
 - CORS: configured `Cors__AllowedOrigins__*` plus HTTPS hosts under the actual `*.newsfeed-web.pages.dev` / `*.newsfeed-admin.pages.dev` projects and future-branded `*.tazakhabar-web.pages.dev` / `*.tazakhabar-admin.pages.dev` aliases. Never `AllowAnyOrigin`.

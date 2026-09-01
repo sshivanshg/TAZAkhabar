@@ -115,6 +115,7 @@ jest.mock('@gluestack-ui/themed', () => {
 jest.mock('../src/hooks/useBreakpoint', () => ({
   useBreakpoint: jest.fn(() => 'mobile'),
   isDesktopLayout: (bp: string) => bp === 'desktop' || bp === 'wide',
+  isExpandedLayout: (bp: string) => bp !== 'mobile',
 }))
 
 jest.mock('react-native-svg', () => {
@@ -160,10 +161,11 @@ function paged(items: ArticleResponse[]): PagedArticlesResponse {
   return { items, total: items.length, offset: 0, limit: 20 }
 }
 
-function makeArticles(count: number): ArticleResponse[] {
+function makeArticles(count: number, category = 'Local'): ArticleResponse[] {
   return Array.from({ length: count }, (_, i) => ({
     ...sampleArticle,
     id: i + 1,
+    category,
     headline: i === 0
       ? '[MOCK] Local municipal budget approved for FY26'
       : `[MOCK] Story ${i + 1}`,
@@ -242,32 +244,33 @@ describe('FeedScreen', () => {
 
   it('pairs recommendation articles into a 2-column row on tablet', async () => {
     useBreakpoint.mockReturnValue('tablet')
-    mockGetArticles.mockResolvedValue(paged(makeArticles(7)))
+    mockGetArticles.mockResolvedValue(paged(makeArticles(7, 'Business')))
     renderFeed()
 
     expect(await screen.findByText('[MOCK] Story 6')).toBeTruthy()
     expect(screen.getByText('[MOCK] Story 7')).toBeTruthy()
-    expect(screen.getByTestId('article-row')).toBeTruthy()
+    expect(screen.getAllByTestId('article-row').length).toBeGreaterThan(0)
     expect(screen.queryByTestId('error-column')).toBeNull()
   })
 
-  it('keeps a single-column article list on desktop', async () => {
+  it('pairs recommendation articles into a 2-column row on desktop', async () => {
     useBreakpoint.mockReturnValue('desktop')
-    mockGetArticles.mockResolvedValue(paged(makeArticles(7)))
+    mockGetArticles.mockResolvedValue(paged(makeArticles(7, 'Business')))
     renderFeed()
 
     expect(await screen.findByText('[MOCK] Story 6')).toBeTruthy()
     expect(screen.getByText('[MOCK] Story 7')).toBeTruthy()
-    expect(screen.queryByTestId('article-row')).toBeNull()
+    expect(screen.getAllByTestId('article-row').length).toBeGreaterThan(0)
+    expect(screen.queryByTestId('error-column')).toBeNull()
   })
 
-  it('lists leftover breaking stories that do not fit the desktop hero', async () => {
+  it('lists leftover stories after the top-stories cluster on desktop', async () => {
     useBreakpoint.mockReturnValue('desktop')
-    mockGetArticles.mockResolvedValue(paged(makeArticles(7)))
+    mockGetArticles.mockResolvedValue(paged(makeArticles(7, 'Business')))
     renderFeed()
 
-    expect(await screen.findByText('[MOCK] Story 4')).toBeTruthy()
-    expect(screen.getByText('[MOCK] Story 5')).toBeTruthy()
+    expect(await screen.findByText('[MOCK] Story 5')).toBeTruthy()
+    expect(screen.getByText('[MOCK] Story 6')).toBeTruthy()
   })
 
   it('centers the error column at ERROR_COLUMN_MAX on desktop', async () => {

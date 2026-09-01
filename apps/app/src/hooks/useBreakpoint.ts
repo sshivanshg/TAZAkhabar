@@ -19,6 +19,12 @@ export function isDesktopLayout(bp: Breakpoint): boolean {
   return bp === 'desktop' || bp === 'wide'
 }
 
+/** Tablet, desktop, and wide — Google News–style expanded chrome (not phone). */
+export function isExpandedLayout(bp: Breakpoint): boolean {
+  return bp !== 'mobile'
+}
+
+/** Bottom tab bar — phone only; tablet+ uses top navigation. */
 export function isCompactNav(bp: Breakpoint): boolean {
-  return bp === 'mobile' || bp === 'tablet'
+  return bp === 'mobile'
 }

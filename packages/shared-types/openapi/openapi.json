@@ -1635,10 +1635,6 @@
           "password": {
             "type": "string",
             "nullable": true
-          },
-          "displayName": {
-            "type": "string",
-            "nullable": true
           }
         },
         "additionalProperties": false

@@ -1,4 +1,4 @@
-import { breakpointFromWidth, isCompactNav, isDesktopLayout } from '../src/hooks/useBreakpoint'
+import { breakpointFromWidth, isCompactNav, isDesktopLayout, isExpandedLayout } from '../src/hooks/useBreakpoint'
 
 describe('breakpointFromWidth', () => {
   it('maps boundaries', () => {
@@ -16,8 +16,10 @@ describe('breakpointFromWidth', () => {
     expect(isDesktopLayout('desktop')).toBe(true)
     expect(isDesktopLayout('wide')).toBe(true)
     expect(isDesktopLayout('tablet')).toBe(false)
+    expect(isExpandedLayout('tablet')).toBe(true)
+    expect(isExpandedLayout('mobile')).toBe(false)
     expect(isCompactNav('mobile')).toBe(true)
-    expect(isCompactNav('tablet')).toBe(true)
+    expect(isCompactNav('tablet')).toBe(false)
     expect(isCompactNav('desktop')).toBe(false)
   })
 })

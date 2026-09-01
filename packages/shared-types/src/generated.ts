@@ -30,7 +30,6 @@ export interface AdminArticleResponse {
 
 export interface AdminLoginRequest {
     password?: string | undefined;
-    displayName?: string | undefined;
 }
 
 export interface AdminLoginResponse {

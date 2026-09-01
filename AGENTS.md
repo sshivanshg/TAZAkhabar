@@ -145,6 +145,10 @@ For `apps/app/**/*.{ts,tsx}`:
   `test:`, `ci:`.
 - No direct commits to `main`. Use feature branches and PR review.
 - Squash merge to keep `main` history linear and readable.
+- Do not leave completed work stranded on a feature branch. At the end of each
+  finished task, run the relevant checks, commit all intentional changes, push
+  the branch, and move the work toward `main` through the approved PR/squash
+  merge path unless the user explicitly asks for local-only work.
 - Every PR must include what changed, why it changed, how it was tested, and
   which `docs/architecture/` pages changed or N/A with a one-line reason.
 - Contract/OpenAPI changes must update `packages/shared-types` and web
@@ -153,6 +157,21 @@ For `apps/app/**/*.{ts,tsx}`:
 For architecture-relevant PRs, ensure atlas pages are updated or explicitly N/A,
 Mermaid remains accurate, "Last verified" is bumped on edited pages, and the hub
 index is updated when a page is added.
+
+## Deployment Hygiene
+
+- The canonical reader frontend is the Cloudflare Pages project
+  `newsfeed-web`, served at `https://newsfeed-web.pages.dev`.
+- Do not create or keep parallel reader frontend projects. The marketing site
+  `tazakhabar-site` and admin app `newsfeed-admin` are separate surfaces, not
+  duplicate reader frontends.
+- If deploying the reader manually with Wrangler, deploy `apps/app/dist` to
+  `newsfeed-web` with `--branch main` when the change should be live on the
+  canonical frontend. Feature-branch preview deployments are temporary and
+  should be pruned once production is verified.
+- If asked to consolidate deployments, keep the latest intended production
+  deployment behind `newsfeed-web.pages.dev` and delete stale preview/old
+  deployment URLs from the `newsfeed-web` project.
 
 ## Security
 

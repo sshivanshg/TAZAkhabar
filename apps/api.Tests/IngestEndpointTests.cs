@@ -213,7 +213,6 @@ public sealed class IngestEndpointTests : IClassFixture<TazaKhabarWebApplication
         var login = await client.PostAsJsonAsync("/api/admin/login", new
         {
             password = TazaKhabarWebApplicationFactory.TestAdminPassword,
-            displayName = "Editor One",
         });
         login.EnsureSuccessStatusCode();
         var token = (await login.Content.ReadFromJsonAsync<AdminLoginResponse>(TestJson.Options))!.Token;

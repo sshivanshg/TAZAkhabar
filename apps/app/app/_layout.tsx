@@ -12,7 +12,7 @@ import {
   useTheme,
 } from '../src/preferences/ThemePreferenceContext'
 import { ScreenErrorBoundary } from '../src/components/ScreenErrorBoundary'
-import { AppShell, DesktopSidebar } from '../src/components/desktop'
+import { AppShell } from '../src/components/desktop'
 import { tazakhabarConfig } from '../src/theme/gluestack-config'
 import { applyWebColorScheme } from '../src/theme/applyWebColorScheme'
 import { registerWebServiceWorker } from '../src/pwa/registerWebServiceWorker'
@@ -34,7 +34,7 @@ function RootNavigation() {
   return (
     <>
       <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
-      <AppShell sidebar={<DesktopSidebar />}>
+      <AppShell>
         <Stack
           screenOptions={{
             headerStyle: { backgroundColor: colors.background },

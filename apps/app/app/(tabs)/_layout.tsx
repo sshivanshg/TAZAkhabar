@@ -13,7 +13,7 @@ import {
 } from '../../src/theme/tokens'
 import { iconStroke } from '../../src/theme/categoryIcons'
 import { ScreenErrorBoundary } from '../../src/components/ScreenErrorBoundary'
-import { isDesktopLayout, useBreakpoint } from '../../src/hooks/useBreakpoint'
+import { isExpandedLayout, useBreakpoint } from '../../src/hooks/useBreakpoint'
 import { useTheme } from '../../src/preferences/ThemePreferenceContext'
 
 function TabIcon({
@@ -46,11 +46,12 @@ function TabIcon({
 
 export default function TabsLayout() {
   const insets = useSafeAreaInsets()
-  const desktop = isDesktopLayout(useBreakpoint())
+  const bp = useBreakpoint()
+  const expanded = isExpandedLayout(bp)
   // The web tab bar already ends at the viewport edge. The extra shell pad
   // is only needed for native safe-area insets (home indicator / navigation
   // bar) and otherwise creates a visible strip below the web nav.
-  const bottomPad = Platform.OS === 'web' || desktop ? 0 : Math.max(insets.bottom, space.xs)
+  const bottomPad = Platform.OS === 'web' || expanded ? 0 : Math.max(insets.bottom, space.xs)
   const { colors } = useTheme()
   const styles = useMemo(() => createStyles(colors), [colors])
 
@@ -78,7 +79,7 @@ export default function TabsLayout() {
               ...(Platform.OS === 'web'
                 ? ({ overflow: 'hidden' } as const)
                 : null),
-              ...(desktop
+              ...(expanded
                 ? { display: 'none' as const, height: 0, marginBottom: 0, overflow: 'hidden' as const }
                 : null),
             },

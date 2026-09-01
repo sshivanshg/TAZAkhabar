@@ -210,11 +210,12 @@ function mapUpload(u: DocumentUploadResponseDto): DocumentUpload {
 }
 
 export const api = {
-  login: async (password: string, displayName: string) => {
+  login: async (password: string) => {
     const res = await request<AdminLoginResponse>('/api/admin/login', {
       method: 'POST',
       auth: false,
-      body: JSON.stringify({ password, displayName }),
+      // Keep login compatible with the currently deployed API while identity is fixed server-side.
+      body: JSON.stringify({ password, displayName: 'Admin' }),
     })
     if (!res.token || !res.expiresAt) throw new ApiError(500, 'Invalid login response')
     return { token: res.token, expiresAt: res.expiresAt }
