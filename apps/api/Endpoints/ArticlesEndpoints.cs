@@ -12,6 +12,8 @@ public static class ArticlesEndpoints
     private const int DefaultLimit = 20;
     private const int MaxLimit = 50;
     private const int MaxQueryLength = 100;
+    private const int DefaultSectionLimit = 8;
+    private const int MaxSectionLimit = 25;
     private const string PublicCacheControl = "public, max-age=60";
 
     public static RouteGroupBuilder MapArticlesEndpoints(this RouteGroupBuilder api)
@@ -387,6 +389,102 @@ public static class ArticlesEndpoints
             .WithName("GetPersonalizedArticles")
             .WithOpenApi()
             .Produces<PagedArticlesResponse>(StatusCodes.Status200OK)
+            .ProducesProblem(StatusCodes.Status400BadRequest)
+            .ProducesProblem(StatusCodes.Status429TooManyRequests);
+
+        api.MapGet("/articles/sections", async (
+                string? city,
+                string? sessionId,
+                string? lang,
+                int? limit,
+                AppDbContext db,
+                IArticlePresentationService presentation,
+                IFeedPersonalizationService personalization,
+                IOptions<ArticleRetentionOptions> retentionOptions,
+                IOptions<FeedPersonalizationOptions> personalizationOptions,
+                HttpContext httpContext,
+                CancellationToken cancellationToken) =>
+            {
+                if (string.IsNullOrWhiteSpace(city))
+                {
+                    return Results.Problem(
+                        title: "Invalid city",
+                        detail: "Query parameter 'city' (slug) is required.",
+                        statusCode: StatusCodes.Status400BadRequest);
+                }
+
+                var slug = city.Trim().ToLowerInvariant();
+                var cityEntity = await db.Cities
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(c => c.Slug == slug, cancellationToken);
+
+                if (cityEntity is null)
+                {
+                    return Results.Problem(
+                        title: "Unknown city",
+                        detail: $"No city found with slug '{slug}'.",
+                        statusCode: StatusCodes.Status400BadRequest);
+                }
+
+                var perSectionLimit = limit ?? DefaultSectionLimit;
+                if (perSectionLimit < 1)
+                {
+                    perSectionLimit = DefaultSectionLimit;
+                }
+
+                perSectionLimit = Math.Min(perSectionLimit, MaxSectionLimit);
+
+                var cutoff = ArticleRetention.CutoffUtc(DateTimeOffset.UtcNow, retentionOptions.Value.Days);
+
+                var query = db.Articles
+                    .AsNoTracking()
+                    .Where(a => a.CityId == cityEntity.Id
+                        && a.Status == ArticleStatus.Published
+                        && !a.IsMock
+                        && a.PublishedAt >= cutoff)
+                    .ExcludeEpaperEditions();
+
+                // Same recency-bounded pool and ranking as the flat personalized
+                // feed; sections partition that pool instead of paging it.
+                var poolSize = Math.Max(1, personalizationOptions.Value.CandidatePoolSize);
+                var candidates = await query
+                    .OrderByDescending(a => a.PublishedAt)
+                    .ThenByDescending(a => a.Id)
+                    .Take(poolSize)
+                    .ToListAsync(cancellationToken);
+
+                var sessionKey = NormalizeSessionKey(sessionId);
+                var now = DateTimeOffset.UtcNow;
+                var candidateIds = candidates.Select(a => a.Id).ToList();
+                var signals = await personalization.LoadSignalsAsync(
+                    cityEntity.Id, sessionKey, candidateIds, now, cancellationToken);
+                var ranked = personalization.Rank(candidates, signals, now);
+
+                var sections = FeedSectionBuilder.Build(ranked, signals, perSectionLimit);
+
+                // Present the whole partition in one pass (single translation-cache
+                // lookup); PresentManyAsync preserves input order 1:1.
+                var flat = sections.SelectMany(s => s.Articles).ToList();
+                var presented = await presentation.PresentManyAsync(flat, lang, cancellationToken);
+
+                var sectionDtos = new List<FeedSection>(sections.Count);
+                var cursor = 0;
+                foreach (var section in sections)
+                {
+                    var items = presented.Skip(cursor).Take(section.Articles.Count).ToList();
+                    cursor += section.Articles.Count;
+                    sectionDtos.Add(new FeedSection(section.Key, section.Title, section.Category, items));
+                }
+
+                // Ranked output is session-specific; only the anonymous cold-start
+                // variant is safe to share at the edge.
+                httpContext.Response.Headers.CacheControl =
+                    sessionKey is null ? PublicCacheControl : "private, no-store";
+                return Results.Ok(new FeedSectionsResponse(sectionDtos, ranked.Count));
+            })
+            .WithName("GetFeedSections")
+            .WithOpenApi()
+            .Produces<FeedSectionsResponse>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status429TooManyRequests);
 

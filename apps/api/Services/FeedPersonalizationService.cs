@@ -61,19 +61,23 @@ public sealed class FeedPersonalizationService(
         if (!string.IsNullOrWhiteSpace(sessionKey))
         {
             // Affinity is intentionally not city-scoped: category taste travels
-            // with the reader when they switch cities.
+            // with the reader when they switch cities. Viewed articles are
+            // content-classified in memory so affinity keys match the effective
+            // categories used for sectioning (stored categories are feed defaults).
             var sessionViews = await db.ArticleViews
                 .AsNoTracking()
                 .Where(v => v.SessionKey == sessionKey && v.ViewedAt >= affinitySince)
-                .Select(v => new { v.ArticleId, v.Article.Category })
+                .Select(v => new { v.ArticleId, v.Article.Category, v.Article.Headline, v.Article.Summary })
                 .ToListAsync(cancellationToken);
 
             var counts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
             foreach (var view in sessionViews)
             {
                 seenArticleIds.Add(view.ArticleId);
-                var category = view.Category?.Trim();
-                if (!string.IsNullOrEmpty(category))
+                var category = ContentCategoryClassifier
+                    .EffectiveCategory(view.Category ?? string.Empty, view.Headline, view.Summary)
+                    .Trim();
+                if (category.Length > 0)
                 {
                     counts[category] = counts.TryGetValue(category, out var n) ? n + 1 : 1;
                 }
@@ -133,7 +137,11 @@ public sealed class FeedPersonalizationService(
             {
                 var ageHours = Math.Max(0, (now - article.PublishedAt).TotalHours);
                 var recency = Math.Pow(0.5, ageHours / halfLifeHours);
-                var affinity = signals.CategoryAffinity.TryGetValue(article.Category ?? string.Empty, out var a)
+                // Affinity keys are content-analyzed categories, so rank by the
+                // effective category rather than the stored ingest default.
+                var effectiveCategory = ContentCategoryClassifier.EffectiveCategory(
+                    article.Category ?? string.Empty, article.Headline, article.Summary);
+                var affinity = signals.CategoryAffinity.TryGetValue(effectiveCategory, out var a)
                     ? a
                     : 0d;
                 var trending = signals.TrendingScores.TryGetValue(article.Id, out var t)
