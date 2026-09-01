@@ -47,6 +47,7 @@ import {
   addBookmark,
 } from '../../src/storage/bookmarks'
 import { getStoredCitySlug, setStoredCitySlug } from '../../src/storage/cityPreference'
+import { getPersonalizationId } from '../../src/storage/personalizationId'
 import {
   feedCacheKey,
   isFeedCacheFresh,
@@ -322,13 +323,21 @@ function HomeFeedBody() {
 
       try {
         const offset = mode === 'append' ? offsetRef.current : 0
-        const result = await apiClient.getArticles({
-          city: citySlug,
-          category: category === 'All' ? undefined : category,
-          lang: preferredLanguage,
-          offset,
-          limit: PAGE_SIZE,
-        })
+        const base = { city: citySlug, lang: preferredLanguage, offset, limit: PAGE_SIZE }
+        let result
+        if (category === 'All') {
+          try {
+            // "For you" is personalized per anonymous device profile; explicit
+            // category chips stay a predictable newest-first drill-down.
+            const sessionId = await getPersonalizationId()
+            result = await apiClient.getPersonalizedArticles({ ...base, sessionId })
+          } catch {
+            // Personalization is an enhancement — never block the feed on it.
+            result = await apiClient.getArticles(base)
+          }
+        } else {
+          result = await apiClient.getArticles({ ...base, category })
+        }
         if (gen !== loadGenRef.current) {
           return
         }

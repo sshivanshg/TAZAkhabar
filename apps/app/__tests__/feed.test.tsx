@@ -10,6 +10,7 @@ import { ERROR_COLUMN_MAX } from '../src/theme/tokens'
 const mockPush = jest.fn()
 const mockReplace = jest.fn()
 const mockGetArticles = jest.fn()
+const mockGetPersonalizedArticles = jest.fn()
 const mockGetCities = jest.fn()
 
 jest.mock('expo-router', () => {
@@ -32,6 +33,7 @@ jest.mock('expo-router', () => {
 jest.mock('../src/api/client', () => ({
   apiClient: {
     getArticles: (...args: unknown[]) => mockGetArticles(...args),
+    getPersonalizedArticles: (...args: unknown[]) => mockGetPersonalizedArticles(...args),
     getCities: (...args: unknown[]) => mockGetCities(...args),
     getTrendingArticles: jest.fn(async () => ({ items: [] })),
   },
@@ -196,6 +198,8 @@ describe('FeedScreen', () => {
     mockGetCities.mockResolvedValue(cities)
     // Need more than BREAKING_NEWS_COUNT so recommendation list has the sample headline
     mockGetArticles.mockResolvedValue(paged(makeArticles(6)))
+    // Home "For you" loads through the personalized endpoint by default.
+    mockGetPersonalizedArticles.mockResolvedValue(paged(makeArticles(6)))
   })
 
   it('renders articles from the API', async () => {
@@ -215,7 +219,7 @@ describe('FeedScreen', () => {
   })
 
   it('shows empty state when there are no articles', async () => {
-    mockGetArticles.mockResolvedValue(paged([]))
+    mockGetPersonalizedArticles.mockResolvedValue(paged([]))
     renderFeed()
 
     expect(await screen.findByText('No stories yet')).toBeTruthy()
@@ -223,6 +227,8 @@ describe('FeedScreen', () => {
   })
 
   it('shows error state with retry', async () => {
+    // Both the personalized attempt and its chronological fallback must fail.
+    mockGetPersonalizedArticles.mockRejectedValueOnce(new Error('Personalization down'))
     mockGetArticles.mockRejectedValueOnce(new Error('Server unavailable'))
     renderFeed()
 
@@ -230,7 +236,7 @@ describe('FeedScreen', () => {
     expect(screen.getByText('Server unavailable')).toBeTruthy()
     expect(screen.queryByTestId('error-column')).toBeNull()
 
-    mockGetArticles.mockResolvedValueOnce(paged(makeArticles(6)))
+    mockGetPersonalizedArticles.mockResolvedValueOnce(paged(makeArticles(6)))
     fireEvent.press(screen.getByLabelText('Retry loading articles'))
 
     await waitFor(() => {
@@ -242,7 +248,7 @@ describe('FeedScreen', () => {
 
   it('pairs recommendation articles into a 2-column row on tablet', async () => {
     useBreakpoint.mockReturnValue('tablet')
-    mockGetArticles.mockResolvedValue(paged(makeArticles(7)))
+    mockGetPersonalizedArticles.mockResolvedValue(paged(makeArticles(7)))
     renderFeed()
 
     expect(await screen.findByText('[MOCK] Story 6')).toBeTruthy()
@@ -253,7 +259,7 @@ describe('FeedScreen', () => {
 
   it('keeps a single-column article list on desktop', async () => {
     useBreakpoint.mockReturnValue('desktop')
-    mockGetArticles.mockResolvedValue(paged(makeArticles(7)))
+    mockGetPersonalizedArticles.mockResolvedValue(paged(makeArticles(7)))
     renderFeed()
 
     expect(await screen.findByText('[MOCK] Story 6')).toBeTruthy()
@@ -263,7 +269,7 @@ describe('FeedScreen', () => {
 
   it('lists leftover breaking stories that do not fit the desktop hero', async () => {
     useBreakpoint.mockReturnValue('desktop')
-    mockGetArticles.mockResolvedValue(paged(makeArticles(7)))
+    mockGetPersonalizedArticles.mockResolvedValue(paged(makeArticles(7)))
     renderFeed()
 
     expect(await screen.findByText('[MOCK] Story 4')).toBeTruthy()
@@ -272,6 +278,7 @@ describe('FeedScreen', () => {
 
   it('centers the error column at ERROR_COLUMN_MAX on desktop', async () => {
     useBreakpoint.mockReturnValue('desktop')
+    mockGetPersonalizedArticles.mockRejectedValueOnce(new Error('Personalization down'))
     mockGetArticles.mockRejectedValueOnce(new Error('Server unavailable'))
     renderFeed()
 
@@ -321,5 +328,35 @@ describe('FeedScreen', () => {
     expect(screen.getByLabelText('Go to Dainik Jagran')).toBeTruthy()
     expect(screen.getByLabelText('I like this')).toBeTruthy()
     expect(screen.getByLabelText(/Hide all stories from Dainik Jagran/)).toBeTruthy()
+  })
+
+  it('loads the For you feed through the personalized endpoint', async () => {
+    renderFeed()
+
+    expect(
+      await screen.findByText('[MOCK] Local municipal budget approved for FY26'),
+    ).toBeTruthy()
+    expect(mockGetPersonalizedArticles).toHaveBeenCalledWith(
+      expect.objectContaining({
+        city: 'jhansi',
+        sessionId: expect.any(String),
+        limit: 20,
+        offset: 0,
+      }),
+    )
+    // Chronological endpoint is only the fallback — not used on success.
+    expect(mockGetArticles).not.toHaveBeenCalled()
+  })
+
+  it('falls back to the chronological feed when personalization fails', async () => {
+    mockGetPersonalizedArticles.mockRejectedValueOnce(new Error('Personalization down'))
+    renderFeed()
+
+    expect(
+      await screen.findByText('[MOCK] Local municipal budget approved for FY26'),
+    ).toBeTruthy()
+    expect(mockGetArticles).toHaveBeenCalledWith(
+      expect.objectContaining({ city: 'jhansi', offset: 0, limit: 20 }),
+    )
   })
 })

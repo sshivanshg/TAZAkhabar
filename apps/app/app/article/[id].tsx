@@ -40,7 +40,7 @@ import {
   removeBookmark,
 } from '../../src/storage/bookmarks'
 import { getStoredCitySlug } from '../../src/storage/cityPreference'
-import { getViewSessionId } from '../../src/storage/viewSession'
+import { getPersonalizationId } from '../../src/storage/personalizationId'
 import { PAGE_SIZE } from '../../src/theme/tokens'
 import {
   articleChromeBottom,
@@ -360,7 +360,7 @@ function ArticleFeedBody() {
     if (articleId == null) {
       return
     }
-    const sessionId = await getViewSessionId()
+    const sessionId = await getPersonalizationId()
     await apiClient.recordArticleView(String(articleId), sessionId)
   }, [])
 
