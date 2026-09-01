@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using NewsFeed.Api.Data;
 using NewsFeed.Api.Data.Entities;
+using NewsFeed.Api.Services;
 using Serilog.Context;
 
 namespace NewsFeed.Api.Ingest;
@@ -12,6 +13,7 @@ public sealed class RssIngestService(
     IArticleIntelligence intelligence,
     IIngestionEventBus events,
     ImageEnrichmentQueue imageEnrichmentQueue,
+    NotificationDispatchQueue notificationQueue,
     ILogger<RssIngestService> logger)
 {
     public async Task<IngestRunResult> RunAsync(
@@ -365,6 +367,10 @@ public sealed class RssIngestService(
             if (ArticleImageEnrichmentService.IsEligible(article))
             {
                 await imageEnrichmentQueue.EnqueueAsync(article.Id, cancellationToken);
+            }
+            if (article.Status == ArticleStatus.Published)
+            {
+                await notificationQueue.EnqueueAsync(article.Id, cancellationToken);
             }
 
             return true;

@@ -1,7 +1,7 @@
 # Shared types
 
 > **Living doc** — update when OpenAPI generation, NSwag config, or contract PR rules change.  
-> **Last verified against:** 2026-09-01 (password-only admin login contract)
+> **Last verified against:** 2026-09-01 (password-only admin login contract + notifications contract)
 
 ## Purpose
 
@@ -35,6 +35,10 @@ flowchart LR
 | `packages/shared-types/src/index.ts` | Selected re-exports |
 | `packages/shared-types/scripts/fetch-openapi.mjs` | Pulls `OPENAPI_URL` or `http://localhost:8080/openapi/v1.json` |
 | `packages/shared-types/scripts/generate.mjs` | Runs NSwag |
+| `NotificationPermissionStatusResponse` | Reader notification status response |
+| `NotificationSubscriptionResponse` | Upsert/read notification subscription response |
+| `UpsertNotificationSubscriptionRequest` | Reader registration request body |
+| `WebPushSubscriptionDto` | Browser push subscription payload |
 
 ## Data & control flows
 
@@ -67,6 +71,7 @@ reader's location.
 - Hand-editing `generated.ts` causes silent drift — always regenerate.
 - Fetching OpenAPI from a stale or wrong environment publishes the wrong contract — prefer local running API for generation during feature work.
 - Do not publish shared-types as an independent versioned npm package for MVP; workspace dependency only.
+- Notification contract changes must update the API snapshot, generated types, and the reader/admin consumers in the same PR.
 
 ## Related docs
 

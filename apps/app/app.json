@@ -41,6 +41,7 @@
     "plugins": [
       "expo-font",
       "expo-router",
+      "expo-notifications",
       [
         "expo-location",
         {

@@ -1,7 +1,7 @@
 # API
 
 > **Living doc** — update when endpoints, auth, rate limits, CORS, or DI composition change.  
-> **Last verified against:** 2026-09-01 (content-analyzed feed sections)
+> **Last verified against:** 2026-09-01 (content-analyzed feed sections, scheduled RSS endpoints, notifications contract)
 
 ## Purpose
 
@@ -29,7 +29,7 @@ flowchart LR
 |------|----------|
 | Entry | `apps/api/Program.cs` |
 | Endpoints | `apps/api/Endpoints/` |
-| Options | `apps/api/Options/` (`Cors`, `RateLimiting`, `RssIngest`, `Admin`, `ArticleIntelligence`, `OpenAiRewrite`, `Upload`) |
+| Options | `apps/api/Options/` (`Cors`, `RateLimiting`, `RssIngest`, `Admin`, `ArticleIntelligence`, `OpenAiRewrite`, `Notifications`, `Upload`) |
 | Presentation | `Services/ArticlePresentationService.cs`, `Services/CityCalendar.cs` |
 | Logging | Serilog console + request/ingestion correlation properties |
 
@@ -55,6 +55,9 @@ Pipeline (order): Serilog request logging → RequestId header/log context → E
 | POST | `/api/ingest/scrape` | `IngestScrape` | `X-Ingest-Key` |
 | POST | `/api/ingest/daily` | `IngestDaily` | `X-Ingest-Key`; nightly RSS + scrape batch, RSS auto-publishes feed snippets, no Claude summarization and no OpenAI rewrite |
 | POST | `/api/ingest/backfill-bodies` | `IngestBackfillBodies` | `X-Ingest-Key`; fills missing `body` from source HTML |
+| GET | `/api/notifications/status` | `GetNotificationStatus` | Anonymous client/status probe for opt-in UI |
+| POST | `/api/notifications/subscriptions` | `UpsertNotificationSubscription` | Anonymous device/browser registration |
+| DELETE | `/api/notifications/subscriptions/{clientId}` | `DeleteNotificationSubscription` | Disable a subscription without an account |
 
 ### Admin endpoints
 
@@ -147,6 +150,7 @@ flat `/api/articles/personalized` endpoint remains the paged variant.
 | `ArticleIntelligence__*` | Claude |
 | `OpenAiRewrite__*` | OpenAI scrape rewrite (`Enabled` + key); `Enabled=false` or empty key stores extract as-is |
 | `Upload__RootPath` | PDF/image storage |
+| `Notifications__*` | Push dispatch config (Expo + Web Push) |
 
 OpenAPI: `MapSwagger("/openapi/{documentName}.json")` → `/openapi/v1.json`. Swagger UI in Development only.
 
@@ -163,6 +167,7 @@ nearest supported city; it never sends device coordinates to the API.
 - Responses include `X-Request-ID`, and logs include `RequestId`; ingest logs include `IngestionRunId` where a run exists.
 - Production startup does not apply EF migrations; use the explicit migration workflow.
 - New endpoints must appear in OpenAPI and regenerate shared-types in the same PR.
+- Notification writes are anonymous and device-scoped. Permission prompts are handled by the reader and should not be repeated aggressively server-side.
 
 ## Related docs
 

@@ -46,12 +46,12 @@ Share button → WhatsApp (deep link / share intent)
 Basic categories: Local, State, National (optional), a couple of interest tags (e.g. Business, Health)
 Simple onboarding flow optimized for low digital literacy
 QR code landing page for the flyer campaign (tracks scan → install/visit conversion)
+- Opt-in city alerts for breaking news across web/PWA/native, with a respectful prompt that backs off after dismissal or denial
 5.2 Out of Scope (Phase 1)
 Native mobile app (React Native build comes Phase 2, once web MVP validates demand)
 Personalized ML-based recommendation engine
 User accounts / login (consider anonymous + local-storage preference for MVP; login can come later)
 Comments, social features, user-generated content
-Push notifications (nice-to-have for Phase 2)
 Paid subscriptions / paywall
 Audio/video news formats
 6. Core User Flows
@@ -102,6 +102,7 @@ Performance: Feed loads in under 2 seconds on 4G
 Accessibility: Large tap targets, minimum 16px base font, WCAG AA contrast — critical given the 40+ target audience
 Reliability: Content pipeline must handle source site downtime/layout changes gracefully (fallback/error logging, not a broken feed)
 Legal/Compliance: Always attribute and link to source; maintain a takedown process if a publisher objects. Scrape stores plain-text digests (OpenAI rewrite or extracted body from already-fetched HTML — never raw HTML). RSS/PDF remain digest-first with editorial review.
+- Permission UX: notification prompts should be calm and non-coercive; do not keep re-requesting after the user says no.
 9. Content Sourcing & Legal Notes
 Prioritize sources with public RSS feeds
 For sources without RSS, scrape list pages and store extracted plain text for in-app reading; keep a takedown process

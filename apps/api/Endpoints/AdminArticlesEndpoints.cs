@@ -4,6 +4,7 @@ using NewsFeed.Api.Data;
 using NewsFeed.Api.Data.Entities;
 using NewsFeed.Api.Dtos;
 using NewsFeed.Api.Ingest;
+using NewsFeed.Api.Services;
 
 namespace NewsFeed.Api.Endpoints;
 
@@ -205,8 +206,9 @@ public static class AdminArticlesEndpoints
                 int id,
                 ClaimsPrincipal user,
                 AppDbContext db,
+                NotificationDispatchQueue notificationQueue,
                 CancellationToken cancellationToken) =>
-            await Transition(id, ArticleStatus.Published, user, db, cancellationToken))
+            await Transition(id, ArticleStatus.Published, user, db, notificationQueue, cancellationToken))
             .WithName("AdminPublishArticle")
             .WithOpenApi()
             .Produces<AdminArticleResponse>(StatusCodes.Status200OK)
@@ -219,7 +221,7 @@ public static class AdminArticlesEndpoints
                 ClaimsPrincipal user,
                 AppDbContext db,
                 CancellationToken cancellationToken) =>
-            await Transition(id, ArticleStatus.Rejected, user, db, cancellationToken))
+            await Transition(id, ArticleStatus.Rejected, user, db, null, cancellationToken))
             .WithName("AdminRejectArticle")
             .WithOpenApi()
             .Produces<AdminArticleResponse>(StatusCodes.Status200OK)
@@ -278,6 +280,7 @@ public static class AdminArticlesEndpoints
                 CreateAdminArticleRequest? request,
                 ClaimsPrincipal user,
                 AppDbContext db,
+                NotificationDispatchQueue notificationQueue,
                 CancellationToken cancellationToken) =>
             {
                 if (AdminValidation.ValidateCreateArticle(request) is { } validationError)
@@ -356,6 +359,10 @@ public static class AdminArticlesEndpoints
                 await db.SaveChangesAsync(cancellationToken);
                 AddAudit(db, article.Id, validRequest.PublishNow.Value ? "create_publish" : "create_draft", editor, now);
                 await db.SaveChangesAsync(cancellationToken);
+                if (article.Status == ArticleStatus.Published)
+                {
+                    await notificationQueue.EnqueueAsync(article.Id, cancellationToken);
+                }
                 return Results.Ok(ToResponse(article));
             })
             .WithName("AdminCreateArticle")
@@ -373,6 +380,7 @@ public static class AdminArticlesEndpoints
         ArticleStatus target,
         ClaimsPrincipal user,
         AppDbContext db,
+        NotificationDispatchQueue? notificationQueue,
         CancellationToken cancellationToken)
     {
         var article = await db.Articles.FirstOrDefaultAsync(a => a.Id == id, cancellationToken);
@@ -407,6 +415,10 @@ public static class AdminArticlesEndpoints
         article.ReviewedAt = now;
         AddAudit(db, article.Id, target == ArticleStatus.Published ? "publish" : "reject", editor, now);
         await db.SaveChangesAsync(cancellationToken);
+        if (target == ArticleStatus.Published && notificationQueue is not null)
+        {
+            await notificationQueue.EnqueueAsync(article.Id, cancellationToken);
+        }
         return Results.Ok(ToResponse(article));
     }
 

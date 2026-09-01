@@ -10,17 +10,20 @@ import Info from 'lucide-react-native/icons/info'
 import Languages from 'lucide-react-native/icons/languages'
 import MapPin from 'lucide-react-native/icons/map-pin'
 import Moon from 'lucide-react-native/icons/moon'
+import BellRing from 'lucide-react-native/icons/bell-ring'
 import Tag from 'lucide-react-native/icons/tag'
 import type { CityResponse } from '@tazakhabar/shared-types'
 import { apiClient } from '../../src/api/client'
 import { ScreenErrorBoundary } from '../../src/components/ScreenErrorBoundary'
 import { TabScreenShell } from '../../src/components/TabScreenShell'
 import { Card } from '../../src/components/ui/Card'
-import { PrimaryButton } from '../../src/components/ui/PrimaryButton'
+import { PrimaryButton, SecondaryButton } from '../../src/components/ui/PrimaryButton'
 import { PublicLinks } from '../../src/components/PublicLinks'
 import { useFeedPreferences } from '../../src/preferences/FeedPreferencesContext'
 import { useLanguagePreference } from '../../src/preferences/LanguagePreferenceContext'
 import { useTheme } from '../../src/preferences/ThemePreferenceContext'
+import { registerNewsNotifications, suppressNotificationPrompt } from '../../src/notifications/registerNotifications'
+import { getNotificationPromptState, getNotificationPlatform, getOrCreateNotificationClientId } from '../../src/storage/notificationPreferences'
 import { READING_LANGUAGES } from '../../src/storage/languagePreference'
 import {
   type ThemePreference,
@@ -59,6 +62,8 @@ function ProfileBody() {
   const desktop = isDesktopLayout(useBreakpoint())
   const [cityMeta, setCityMeta] = useState<CityResponse | null>(null)
   const [citySlug, setCitySlug] = useState<string | null>(null)
+  const [notificationStatus, setNotificationStatus] = useState<'unknown' | 'granted' | 'denied' | 'dismissed'>('unknown')
+  const [notificationBusy, setNotificationBusy] = useState(false)
 
   const loadCity = useCallback(async () => {
     const slug = await getStoredCitySlug()
@@ -75,10 +80,16 @@ function ProfileBody() {
     }
   }, [])
 
+  const loadNotificationState = useCallback(async () => {
+    const state = await getNotificationPromptState()
+    setNotificationStatus(state.status)
+  }, [])
+
   useFocusEffect(
     useCallback(() => {
       void loadCity()
-    }, [loadCity]),
+      void loadNotificationState()
+    }, [loadCity, loadNotificationState]),
   )
 
   const cityTitle = cityMeta?.name ?? citySlug ?? 'Not set'
@@ -259,6 +270,69 @@ function ProfileBody() {
             items={prefs.blockedCategories}
             onRemove={(name) => prefs.unblockCategory(name)}
           />
+        </Section>
+
+        <Section title="Alerts" Icon={BellRing}>
+          <Text
+            fontSize={typography.summary.fontSize}
+            lineHeight={typography.summary.lineHeight}
+            color={colors.textSecondary}
+            mb="$3"
+          >
+            Turn on city-specific news alerts for breaking stories. We ask once, then back off if you say not now.
+          </Text>
+          <Text
+            fontSize={typography.bodySemibold.fontSize}
+            lineHeight={typography.bodySemibold.lineHeight}
+            fontWeight="$semibold"
+            color={colors.text}
+            mb="$2"
+          >
+            Status: {notificationStatus === 'granted' ? 'On' : notificationStatus === 'denied' ? 'Off' : 'Not set'}
+          </Text>
+          <View style={styles.alertActions}>
+            <PrimaryButton
+              label={notificationStatus === 'granted' ? 'Refresh alerts' : 'Enable alerts'}
+              onPress={() => {
+                void (async () => {
+                  if (!citySlug) {
+                    return
+                  }
+                  setNotificationBusy(true)
+                  try {
+                    const result = await registerNewsNotifications(citySlug, preferredLanguage)
+                    setNotificationStatus(result.status === 'granted' ? 'granted' : result.status === 'denied' ? 'denied' : 'dismissed')
+                  } finally {
+                    setNotificationBusy(false)
+                  }
+                })()
+              }}
+              accessibilityLabel="Enable alerts"
+              style={styles.alertPrimary}
+              disabled={notificationBusy}
+            />
+            <SecondaryButton
+              label="Turn off"
+              onPress={() => {
+                void (async () => {
+                  const clientId = await getOrCreateNotificationClientId()
+                  const platform = getNotificationPlatform()
+                  setNotificationBusy(true)
+                  try {
+                    await apiClient.deleteNotificationSubscription(clientId, platform)
+                    await suppressNotificationPrompt('dismissed')
+                    setNotificationStatus('dismissed')
+                  } finally {
+                    setNotificationBusy(false)
+                  }
+                })()
+              }}
+              accessibilityLabel="Turn off alerts"
+              style={styles.alertSecondary}
+              outline
+              disabled={notificationBusy || notificationStatus !== 'granted'}
+            />
+          </View>
         </Section>
 
         <Section title="About this app" Icon={Info}>
@@ -447,6 +521,16 @@ function createStyles(c: AppColors) {
     langChipSelected: {
       backgroundColor: c.accentFill,
       borderColor: c.accentFill,
+    },
+    alertActions: {
+      gap: space.xs,
+      alignItems: 'flex-start',
+    },
+    alertPrimary: {
+      alignSelf: 'flex-start',
+    },
+    alertSecondary: {
+      alignSelf: 'flex-start',
     },
     spacer: {
       height: space.md,

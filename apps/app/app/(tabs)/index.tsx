@@ -21,6 +21,7 @@ import {
 import { RelatedStoriesStrip } from '../../src/components/RelatedStoriesStrip'
 import { ConfirmModal } from '../../src/components/ConfirmModal'
 import { AddToHomeBanner } from '../../src/components/AddToHomeBanner'
+import { NotificationOptInBanner } from '../../src/components/NotificationOptInBanner'
 import { BriefingHeader } from '../../src/components/desktop/BriefingHeader'
 import { CategoryNavBar } from '../../src/components/desktop/CategoryNavBar'
 import { ExpandedTopBar } from '../../src/components/desktop/ExpandedTopBar'
@@ -724,6 +725,7 @@ function HomeFeedBody() {
           />
         )}
         {Platform.OS === 'web' ? <AddToHomeBanner /> : null}
+        <NotificationOptInBanner />
         {expanded ? (
           <CategoryNavBar
             selected={category}

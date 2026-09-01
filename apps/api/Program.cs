@@ -47,6 +47,8 @@ try
         builder.Configuration.GetSection(ArticleIntelligenceOptions.SectionName));
     builder.Services.Configure<OpenAiRewriteOptions>(
         builder.Configuration.GetSection(OpenAiRewriteOptions.SectionName));
+    builder.Services.Configure<NotificationsOptions>(
+        builder.Configuration.GetSection(NotificationsOptions.SectionName));
     builder.Services.Configure<UploadOptions>(builder.Configuration.GetSection(UploadOptions.SectionName));
     builder.Services.Configure<IngestHealthOptions>(builder.Configuration.GetSection(IngestHealthOptions.SectionName));
     builder.Services.Configure<IngestScheduleOptions>(builder.Configuration.GetSection(IngestScheduleOptions.SectionName));
@@ -92,6 +94,11 @@ try
         client.Timeout = TimeSpan.FromSeconds(60);
         client.DefaultRequestHeaders.UserAgent.ParseAdd("NewsFeedIngest/0.1");
     });
+    builder.Services.AddHttpClient("expo-push", client =>
+    {
+        client.Timeout = TimeSpan.FromSeconds(15);
+        client.DefaultRequestHeaders.UserAgent.ParseAdd("TazaKhabarNotifications/0.1");
+    });
     builder.Services.AddHttpClient("alerts", client =>
     {
         client.Timeout = TimeSpan.FromSeconds(10);
@@ -105,6 +112,7 @@ try
     builder.Services.AddSingleton<IArticleRewriter, OpenAiArticleRewriter>();
     builder.Services.AddSingleton<PdfProcessingQueue>();
     builder.Services.AddSingleton<ImageEnrichmentQueue>();
+    builder.Services.AddSingleton<NotificationDispatchQueue>();
     builder.Services.AddScoped<RssIngestService>();
     builder.Services.AddScoped<ArticlePurgeService>();
     builder.Services.AddScoped<ArticleBodyBackfillService>();
@@ -112,10 +120,12 @@ try
     builder.Services.AddScoped<PdfIngestService>();
     builder.Services.AddScoped<ScrapeIngestService>();
     builder.Services.AddScoped<ArticleImageEnrichmentService>();
+    builder.Services.AddScoped<NotificationDispatchService>();
     builder.Services.AddScoped<NewsFeed.Api.Services.IArticlePresentationService, NewsFeed.Api.Services.ArticlePresentationService>();
     builder.Services.AddScoped<NewsFeed.Api.Services.IFeedPersonalizationService, NewsFeed.Api.Services.FeedPersonalizationService>();
     builder.Services.AddHostedService<PdfProcessingWorker>();
     builder.Services.AddHostedService<ImageEnrichmentWorker>();
+    builder.Services.AddHostedService<NotificationDispatchWorker>();
     builder.Services.AddHostedService<IngestionJobWorker>();
     builder.Services.AddHostedService<IngestSilenceMonitor>();
     builder.Services.AddHostedService<ScheduledIngestHostedService>();
@@ -328,6 +338,7 @@ try
 
     api.MapCitiesEndpoints();
     api.MapArticlesEndpoints();
+    api.MapNotificationsEndpoints();
     api.MapIngestEndpoints();
     api.MapMaintenanceEndpoints();
 

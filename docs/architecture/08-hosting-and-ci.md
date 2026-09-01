@@ -1,7 +1,7 @@
 # Hosting and CI
 
 > **Living doc** — update when Render, Cloudflare, Neon, Docker, workflows, or env templates change.  
-> **Last verified against:** 2026-09-01 (RSS batch size 50; national publisher feeds for all cities)
+> **Last verified against:** 2026-09-01 (RSS batch size 50; national publisher feeds for all cities + notifications env)
 
 ## Purpose
 
@@ -129,8 +129,10 @@ generated debug keystore for sideload testing, not Play Store signing.
 | `Upload__RootPath` | Render |
 | `IngestHealth__MaxSilenceMinutes`, `IngestHealth__AlertWebhookUrl` | Render |
 | `IngestSchedule__Enabled`, `IngestSchedule__RssIntervalMinutes`, `IngestSchedule__RssMaxSourcesPerRun`, `IngestSchedule__ScrapeIntervalMinutes` | Render API (in-process scheduler while instance is awake) |
+| `Notifications__ExpoAccessToken`, `Notifications__ExpoPushApiUrl`, `Notifications__WebPushSubject`, `Notifications__WebPushPublicKey`, `Notifications__WebPushPrivateKey` | Render API push dispatch secrets/config |
 | `EXPO_PUBLIC_API_BASE_URL` | GitHub Actions **and** `apps/app/.env.production` (Expo inlines this at export) |
 | `EXPO_PUBLIC_SITE_URL` | GitHub Actions production variable for reader links to the public website |
+| `EXPO_PUBLIC_WEB_PUSH_PUBLIC_KEY` | GitHub Actions **and** `apps/app/.env.production` for browser push registration |
 | `VITE_API_BASE_URL` | GitHub Actions **and** `apps/admin/.env.production` |
 | `VITE_READER_URL`, `VITE_SITE_URL`, `VITE_SUPPORT_EMAIL` | GitHub Actions production variables for the marketing site |
 | `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` | GitHub **production** environment secrets (required — Deploy fails if either is missing) |
@@ -149,6 +151,7 @@ generated debug keystore for sideload testing, not Play Store signing.
 - Never commit real secrets; only `*.example` templates.
 - Local tools must not point at production Neon.
 - Production admin password must be non-default and at least 12 chars; JWT signing key must be non-default and at least 32 chars.
+- Browser push on the reader requires `public/sw.js`, HTTPS hosting, and matching VAPID keys in both Render and the reader export env.
 - Before launch, confirm Neon backup retention in the dashboard and perform a real restore test into a non-production branch/project. Record date, source backup, target branch/project, migration version, and smoke-test result in the PR or release notes.
 
 ## Related docs
