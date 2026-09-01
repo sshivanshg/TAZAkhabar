@@ -6,76 +6,50 @@ import { formatPickerDateLabel, todayCityIso } from '../../utils/cityCalendar'
 import { space, typography, type AppColors } from '../../theme/tokens'
 
 type Props = {
-  cityTitle?: string
+  /** When omitted, shows the default “Your briefing” home title with today’s date. */
+  title?: string
+  subtitle?: string
 }
 
-/** "Your briefing" header with today's date — Google News home rhythm. */
-export function BriefingHeader({ cityTitle }: Props) {
+/** Page title for expanded home — briefing date or a category-focused heading. */
+export function BriefingHeader({ title = 'Your briefing', subtitle }: Props) {
   const { colors } = useTheme()
   const styles = useMemo(() => createStyles(colors), [colors])
   const todayLabel = formatPickerDateLabel(todayCityIso())
+  const resolvedSubtitle =
+    subtitle ?? (title === 'Your briefing' ? todayLabel : undefined)
 
   return (
-    <View style={styles.row}>
-      <View style={styles.left}>
-        <Text
-          fontSize={typography.display.fontSize}
-          lineHeight={typography.display.lineHeight}
-          fontWeight="$bold"
-          color={colors.text}
-          letterSpacing={-0.5}
-        >
-          Your briefing
-        </Text>
+    <View style={styles.wrap}>
+      <Text
+        fontSize={typography.display.fontSize}
+        lineHeight={typography.display.lineHeight}
+        fontWeight="$bold"
+        color={colors.text}
+        letterSpacing={-0.5}
+      >
+        {title}
+      </Text>
+      {resolvedSubtitle ? (
         <Text
           fontSize={typography.meta.fontSize}
           lineHeight={typography.meta.lineHeight}
           color={colors.textMuted}
           mt="$1"
         >
-          {todayLabel}
+          {resolvedSubtitle}
         </Text>
-      </View>
-      {cityTitle ? (
-        <View style={styles.cityChip} accessibilityLabel={`Edition: ${cityTitle}`}>
-          <Text
-            fontSize={typography.meta.fontSize}
-            lineHeight={typography.meta.lineHeight}
-            fontWeight="$semibold"
-            color={colors.text}
-            numberOfLines={1}
-          >
-            {cityTitle}
-          </Text>
-        </View>
       ) : null}
     </View>
   )
 }
 
-function createStyles(c: AppColors) {
+function createStyles(_c: AppColors) {
   return StyleSheet.create({
-    row: {
-      flexDirection: 'row',
-      alignItems: 'flex-start',
-      justifyContent: 'space-between',
+    wrap: {
       paddingHorizontal: space.screen,
       paddingTop: space.md,
       paddingBottom: space.sm,
-      gap: space.md,
-    },
-    left: {
-      flex: 1,
-      minWidth: 0,
-    },
-    cityChip: {
-      paddingHorizontal: space.md,
-      paddingVertical: space.sm,
-      borderRadius: 12,
-      backgroundColor: c.surface,
-      borderWidth: StyleSheet.hairlineWidth,
-      borderColor: c.border,
-      maxWidth: 160,
     },
   })
 }

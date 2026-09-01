@@ -12,13 +12,12 @@ import { SourceAvatar } from '../SourceAvatar'
 
 type Props = {
   articles: ArticleResponse[]
-  cityTitle?: string
   onPress: (article: ArticleResponse) => void
-  onCityPress?: () => void
+  onFilterPress?: () => void
 }
 
 /** Right-rail local news list — Google News desktop sidebar. */
-export function LocalNewsRail({ articles, cityTitle, onPress, onCityPress }: Props) {
+export function LocalNewsRail({ articles, onPress, onFilterPress }: Props) {
   const { colors } = useTheme()
   const styles = useMemo(() => createStyles(colors), [colors])
 
@@ -30,11 +29,11 @@ export function LocalNewsRail({ articles, cityTitle, onPress, onCityPress }: Pro
     <View style={styles.rail} accessibilityLabel="Local news">
       <View style={styles.header}>
         <Text style={styles.title}>Local news</Text>
-        {onCityPress ? (
+        {onFilterPress ? (
           <Pressable
-            onPress={onCityPress}
+            onPress={onFilterPress}
             accessibilityRole="button"
-            accessibilityLabel="Change local edition"
+            accessibilityLabel="Filter local news"
             hitSlop={8}
             style={({ pressed }) => [styles.settingsBtn, pressed ? styles.pressed : null]}
           >
@@ -42,16 +41,6 @@ export function LocalNewsRail({ articles, cityTitle, onPress, onCityPress }: Pro
           </Pressable>
         ) : null}
       </View>
-
-      {cityTitle ? (
-        <View style={styles.chipRow}>
-          <View style={styles.chipActive}>
-            <Text style={styles.chipTextActive} numberOfLines={1}>
-              {cityTitle}
-            </Text>
-          </View>
-        </View>
-      ) : null}
 
       <ScrollView
         showsVerticalScrollIndicator={false}
@@ -131,26 +120,6 @@ function createStyles(c: AppColors) {
       alignItems: 'center',
       justifyContent: 'center',
       borderRadius: radius.full,
-    },
-    chipRow: {
-      flexDirection: 'row',
-      gap: space.xs,
-      marginBottom: space.md,
-    },
-    chipActive: {
-      paddingHorizontal: space.md,
-      paddingVertical: 6,
-      borderRadius: radius.full,
-      backgroundColor: c.accentSoft,
-      borderWidth: StyleSheet.hairlineWidth,
-      borderColor: c.accent,
-      maxWidth: '100%',
-    },
-    chipTextActive: {
-      fontSize: typography.chip.fontSize,
-      lineHeight: typography.chip.lineHeight,
-      fontWeight: '600',
-      color: c.accent,
     },
     list: {
       paddingBottom: space.xxl,
