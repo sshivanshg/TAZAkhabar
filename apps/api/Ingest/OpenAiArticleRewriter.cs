@@ -18,7 +18,7 @@ public sealed class OpenAiArticleRewriter(
     private const int MaxSummaryChars = 1000;
     private const int MaxBodyChars = 50_000;
     private const int MaxHeadlineChars = 300;
-    private const int MaxTokens = 2048;
+    private const int MaxTokens = 4096;
     private const int MaxAttempts = 3;
 
     private static readonly JsonSerializerOptions JsonOptions = new()
@@ -36,7 +36,7 @@ public sealed class OpenAiArticleRewriter(
         Do not copy the source verbatim. Do not include HTML.
         headline is a clear, short title.
         summary is 2-4 original sentences for the feed card.
-        body is a few short plain-text paragraphs for in-app reading (digest, not a full reprint).
+        body is 6-10 plain-text paragraphs (about 400-900 words) for in-app reading: open with the key development, then context, who is affected, supporting detail, and what happens next. Digest in original wording, not a full reprint.
         """;
 
     public async Task<RewrittenArticle?> RewriteScrapedArticleAsync(

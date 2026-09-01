@@ -137,6 +137,36 @@ public static class IngestEndpoints
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status429TooManyRequests);
 
+        api.MapPost("/ingest/backfill-source-urls", async (
+                HttpContext http,
+                ArticleSourceUrlBackfillService backfill,
+                IOptions<RssIngestOptions> options,
+                int? take,
+                int? afterId,
+                CancellationToken cancellationToken) =>
+            {
+                if (!IngestKeyAuth.Matches(http.Request.Headers["X-Ingest-Key"].ToString(), options.Value.Secret))
+                {
+                    return Results.Problem(
+                        title: "Unauthorized",
+                        detail: "Invalid or missing ingest key.",
+                        statusCode: StatusCodes.Status401Unauthorized);
+                }
+
+                var result = await backfill.RunAsync(take ?? 40, afterId ?? 0, cancellationToken);
+                return Results.Ok(new ArticleSourceUrlBackfillResponse(
+                    result.Examined,
+                    result.Updated,
+                    result.Skipped,
+                    result.Failed,
+                    result.NextAfterId));
+            })
+            .WithName("IngestBackfillSourceUrls")
+            .WithOpenApi()
+            .Produces<ArticleSourceUrlBackfillResponse>(StatusCodes.Status200OK)
+            .ProducesProblem(StatusCodes.Status401Unauthorized)
+            .ProducesProblem(StatusCodes.Status429TooManyRequests);
+
         return api;
     }
 }

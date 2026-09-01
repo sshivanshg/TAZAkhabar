@@ -84,7 +84,7 @@ public sealed class ScheduledIngestHostedService(
                 stoppingToken,
                 useIntelligence: false,
                 autoPublish: true,
-                fetchArticleBodies: false,
+                fetchArticleBodies: true,
                 maxSources: maxSources);
 
             logger.Log(

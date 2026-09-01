@@ -359,6 +359,29 @@ public sealed class RssIngestServiceTests
         return source;
     }
 
+    [Fact]
+    public async Task Inserts_PreservesLongGoogleNewsSourceUrl()
+    {
+        await using var db = CreateDb();
+        await AddSourceAsync(db, "Google News", CityFeedUrl, SourceKind.CityEdition);
+        var longUrl = "https://news.google.com/rss/articles/" + new string('A', 620) + "?oc=5";
+        var client = new FakeRssFeedClient
+        {
+            Responses =
+            {
+                [CityFeedUrl] = CityEditionXml(longUrl, "Long link story", "Summary"),
+            },
+        };
+        var service = CreateService(db, client);
+
+        var result = await service.RunAsync(CancellationToken.None, autoPublish: true);
+        Assert.Equal(1, result.Inserted);
+
+        var stored = Assert.Single(await db.Articles.Where(a => a.CityId == 2).ToListAsync());
+        Assert.Equal(longUrl, stored.SourceUrl);
+        Assert.True(stored.SourceUrl.Length > 500);
+    }
+
     private static RssIngestService CreateService(AppDbContext db, FakeRssFeedClient client) =>
         new(db, client, new FakeScrapeHttpClient(), new FakeArticleIntelligence(), new IngestionEventBus(), new ImageEnrichmentQueue(), NullLogger<RssIngestService>.Instance);
 

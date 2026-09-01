@@ -39,9 +39,9 @@ internal static class AdminValidation
             Add(errors, nameof(request.SourceName), "sourceName must be at most 120 characters.");
         }
 
-        if (!string.IsNullOrWhiteSpace(request.SourceUrl) && request.SourceUrl.Trim().Length > 500)
+        if (!string.IsNullOrWhiteSpace(request.SourceUrl) && request.SourceUrl.Trim().Length > ArticleSourceUrl.MaxLength)
         {
-            Add(errors, nameof(request.SourceUrl), "sourceUrl must be at most 500 characters.");
+            Add(errors, nameof(request.SourceUrl), $"sourceUrl must be at most {ArticleSourceUrl.MaxLength} characters.");
         }
 
         if (!string.IsNullOrWhiteSpace(request.DetectedLanguage)

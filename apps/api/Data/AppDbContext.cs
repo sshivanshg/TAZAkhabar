@@ -1,4 +1,5 @@
 using NewsFeed.Api.Data.Entities;
+using NewsFeed.Api.Ingest;
 using Microsoft.EntityFrameworkCore;
 
 namespace NewsFeed.Api.Data;
@@ -158,7 +159,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             entity.Property(a => a.Summary).HasColumnName("summary").HasMaxLength(1000).IsRequired();
             entity.Property(a => a.Body).HasColumnName("body");
             entity.Property(a => a.SourceName).HasColumnName("source_name").HasMaxLength(120).IsRequired();
-            entity.Property(a => a.SourceUrl).HasColumnName("source_url").HasMaxLength(500).IsRequired();
+            entity.Property(a => a.SourceUrl).HasColumnName("source_url").HasMaxLength(ArticleSourceUrl.MaxLength).IsRequired();
             entity.Property(a => a.PublishedAt).HasColumnName("published_at");
             entity.Property(a => a.Category).HasColumnName("category").HasMaxLength(40).IsRequired();
             entity.Property(a => a.ImageUrl).HasColumnName("image_url").HasMaxLength(500);

@@ -215,12 +215,12 @@ describe('ArticleScreen', () => {
     expect(screen.queryByTestId('next-story-divider')).toBeNull()
   })
 
-  it('shows story position in the sticky header', async () => {
+  it('does not show a story count in the sticky header', async () => {
     renderArticle()
 
-    expect(await screen.findByLabelText('Story 1 of 2')).toBeTruthy()
-    expect(screen.getByText('1 of 2')).toBeTruthy()
-    expect(screen.getAllByText('JHANSI').length).toBeGreaterThan(0)
+    expect(await screen.findByText('Fetched headline')).toBeTruthy()
+    expect(screen.queryByText('1 of 2')).toBeNull()
+    expect(screen.queryByLabelText('Story 1 of 2')).toBeNull()
   })
 
   it('returns to Home when Back is pressed', async () => {

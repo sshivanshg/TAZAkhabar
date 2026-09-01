@@ -17,8 +17,8 @@ import type { ReadingLanguageCode } from '../../storage/languagePreference'
 
 type Props = {
   elevated: boolean
-  position: number
-  total: number
+  /** 0–1 progress through stories loaded so far (no total count shown). */
+  scrollProgress: number
   readingLanguage: ReadingLanguageCode
   onSelectLanguage: (code: ReadingLanguageCode) => void
   onBack: () => void
@@ -26,8 +26,7 @@ type Props = {
 
 export function ArticleTopBar({
   elevated,
-  position,
-  total,
+  scrollProgress,
   readingLanguage,
   onSelectLanguage,
   onBack,
@@ -39,7 +38,7 @@ export function ArticleTopBar({
   const styles = useMemo(() => createStyles(readerColors), [readerColors])
   const showBackLabel = breakpoint === 'desktop' || breakpoint === 'wide'
   const safeTop = Math.max(insets.top, 8)
-  const progress = total > 0 ? Math.min(1, Math.max(0, position / total)) : 0
+  const progress = Math.min(1, Math.max(0, scrollProgress))
 
   return (
     <View
@@ -71,18 +70,15 @@ export function ArticleTopBar({
         </Pressable>
 
         <LanguageSegment value={readingLanguage} onChange={onSelectLanguage} />
-
-        <Text
-          style={styles.progressLabel}
-          accessibilityLabel={`Story ${position} of ${total}`}
-        >
-          {position} of {total}
-        </Text>
       </View>
       <View
         style={styles.track}
         accessibilityRole="progressbar"
-        accessibilityValue={{ min: 0, max: total, now: position }}
+        accessibilityValue={{
+          min: 0,
+          max: 100,
+          now: Math.round(progress * 100),
+        }}
       >
         <View style={[styles.fill, { width: `${progress * 100}%` }]} />
       </View>
@@ -125,14 +121,6 @@ function createStyles(c: ReaderColors) {
     },
     pressed: {
       opacity: 0.72,
-    },
-    progressLabel: {
-      minWidth: 58,
-      textAlign: 'right',
-      color: c.textSecondary,
-      fontSize: 13,
-      fontWeight: '600',
-      fontVariant: ['tabular-nums'],
     },
     track: {
       height: 2,

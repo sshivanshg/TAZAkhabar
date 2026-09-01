@@ -142,7 +142,6 @@ function ArticleFeedBody() {
   const [stack, setStack] = useState<ArticleResponse[]>(
     initialFromParams ? [initialFromParams] : [],
   )
-  const [total, setTotal] = useState(initialFromParams ? 1 : 0)
   const [feedStart, setFeedStart] = useState(0)
   const [activeLocalIndex, setActiveLocalIndex] = useState(0)
   const [loading, setLoading] = useState(true)
@@ -154,6 +153,7 @@ function ArticleFeedBody() {
   const [headerElevated, setHeaderElevated] = useState(false)
   const [notice, setNotice] = useState<string | null>(null)
   const [shareTarget, setShareTarget] = useState<ArticleResponse | null>(null)
+  const [loadingBodyIds, setLoadingBodyIds] = useState<Set<number>>(() => new Set())
   const offsetRef = useRef(0)
   const loadingMoreRef = useRef(false)
   const hydratedIdsRef = useRef(new Set<number>())
@@ -240,7 +240,6 @@ function ArticleFeedBody() {
       hydratedIdsRef.current = new Set()
       setStack(items)
       setFeedStart(safeStart)
-      setTotal(Math.max(pageTotal, items.length))
       setHasMore(items.length < pageTotal)
       setActiveLocalIndex(0)
       activeIndexRef.current = 0
@@ -250,7 +249,6 @@ function ArticleFeedBody() {
       if (initialFromParams) {
         setStack([initialFromParams])
         setFeedStart(0)
-        setTotal(1)
         setHasMore(false)
         setActiveLocalIndex(0)
         activeIndexRef.current = 0
@@ -288,6 +286,10 @@ function ArticleFeedBody() {
         setHasMore(false)
         return
       }
+      const nextOffset = offsetRef.current + items.length
+      offsetRef.current = nextOffset
+      const pageTotal = result.total ?? nextOffset
+      setHasMore(nextOffset < pageTotal)
       setStack((prev) => {
         const seen = new Set(prev.map((a) => a.id))
         const merged = [...prev]
@@ -296,11 +298,8 @@ function ArticleFeedBody() {
             merged.push(item)
           }
         }
-        offsetRef.current = merged.length
-        setHasMore(merged.length < (result.total ?? merged.length))
         return merged
       })
-      setTotal(result.total ?? offsetRef.current)
     } catch {
       setLoadMoreError(true)
     } finally {
@@ -312,6 +311,7 @@ function ArticleFeedBody() {
 
   useEffect(() => {
     hydratedIdsRef.current = new Set()
+    setLoadingBodyIds(new Set())
   }, [lang])
 
   useEffect(() => {
@@ -332,19 +332,36 @@ function ArticleFeedBody() {
         continue
       }
       hydratedIdsRef.current.add(article.id)
+      setLoadingBodyIds((prev) => {
+        const next = new Set(prev)
+        next.add(article.id!)
+        return next
+      })
       void apiClient
         .getArticle(String(article.id), lang)
         .then((full) => {
           setStack((prev) => prev.map((item) => (item.id === full.id ? { ...item, ...full } : item)))
+          setLoadingBodyIds((prev) => {
+            const next = new Set(prev)
+            if (full.id != null) {
+              next.delete(full.id)
+            }
+            return next
+          })
         })
         .catch(() => {
           hydratedIdsRef.current.delete(article.id!)
+          setLoadingBodyIds((prev) => {
+            const next = new Set(prev)
+            next.delete(article.id!)
+            return next
+          })
         })
     }
   }, [activeLocalIndex, visibleStack, lang])
 
   useEffect(() => {
-    if (activeLocalIndex >= visibleStack.length - 2 && hasMore) {
+    if (activeLocalIndex >= visibleStack.length - 3 && hasMore) {
       void loadMore()
     }
   }, [activeLocalIndex, visibleStack.length, hasMore, loadMore])
@@ -503,8 +520,9 @@ function ArticleFeedBody() {
     minimumViewTime: 160,
   }).current
 
-  const storyTotal = Math.max(total, stack.length)
-  const storyPosition = Math.min(storyTotal, feedStart + activeLocalIndex + 1)
+  const loadedCount = visibleStack.length
+  const scrollProgress =
+    loadedCount <= 1 ? 0 : activeLocalIndex / Math.max(1, loadedCount - 1)
   const cityLabel = formatLocationLabel(citySlug)
   const pageHeight = viewportHeight > 0 ? viewportHeight : windowHeight
   const padTop = articleChromeTop(insets.top)
@@ -593,7 +611,7 @@ function ArticleFeedBody() {
         style={styles.list}
         data={visibleStack}
         keyExtractor={(item) => String(item.id ?? item.headline)}
-        extraData={{ activeLocalIndex, lang }}
+        extraData={{ activeLocalIndex, lang, loadingBodyIds }}
         renderItem={({ item, index: itemIndex }) => {
           const globalIndex = feedStart + itemIndex
           return (
@@ -606,6 +624,11 @@ function ArticleFeedBody() {
                 article={item}
                 cityLabel={cityLabel}
                 priorityImage={itemIndex <= 1}
+                bodyLoading={
+                  item.id != null &&
+                  loadingBodyIds.has(item.id) &&
+                  !(item.body ?? '').trim()
+                }
                 onReadSource={() => onReadSource(item, globalIndex)}
                 onRetry={() => void retryArticle(item)}
               />
@@ -670,8 +693,7 @@ function ArticleFeedBody() {
 
       <ArticleTopBar
         elevated={headerElevated}
-        position={storyPosition}
-        total={storyTotal}
+        scrollProgress={scrollProgress}
         readingLanguage={preferredLanguage}
         onSelectLanguage={setPreferredLanguage}
         onBack={onBack}

@@ -309,7 +309,7 @@ public static class AdminArticlesEndpoints
                 var headline = HtmlText.Truncate(validRequest.Headline.Trim(), 300);
                 var summary = HtmlText.Truncate(validRequest.Summary.Trim(), 1000);
                 var sourceName = HtmlText.Truncate(validRequest.SourceName.Trim(), 120);
-                var sourceUrl = HtmlText.Truncate(validRequest.SourceUrl.Trim(), 500);
+                var sourceUrl = ArticleSourceUrl.Normalize(validRequest.SourceUrl);
                 if (string.IsNullOrWhiteSpace(headline)
                     || string.IsNullOrWhiteSpace(summary)
                     || string.IsNullOrWhiteSpace(sourceName)

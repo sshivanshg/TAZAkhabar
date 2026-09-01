@@ -1,5 +1,6 @@
 import { Linking, Platform } from 'react-native'
 import { isHttpsUrl } from './shareToWhatsApp'
+import { normalizeArticleSourceUrl } from './normalizeArticleSourceUrl'
 
 export type OpenSourceContext = {
   articleId?: number | string | null
@@ -15,19 +16,20 @@ export async function openArticleSource(
   sourceUrl: string | null | undefined,
   _context?: OpenSourceContext,
 ): Promise<boolean> {
-  if (!isHttpsUrl(sourceUrl)) {
+  const url = normalizeArticleSourceUrl(sourceUrl)
+  if (!isHttpsUrl(url)) {
     return false
   }
 
-  const url = sourceUrl!.trim()
+  const openUrl = url!
 
   if (Platform.OS === 'web' && typeof window !== 'undefined') {
-    window.open(url, '_blank', 'noopener,noreferrer')
+    window.open(openUrl, '_blank', 'noopener,noreferrer')
     return true
   }
 
   try {
-    await Linking.openURL(url)
+    await Linking.openURL(openUrl)
     return true
   } catch {
     return false

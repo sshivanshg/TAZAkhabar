@@ -277,7 +277,7 @@ public sealed class RssIngestService(
         bool autoPublish,
         bool fetchArticleBodies)
     {
-        var sourceUrl = HtmlText.Truncate(item.SourceUrl.Trim(), 500);
+        var sourceUrl = ArticleSourceUrl.Normalize(item.SourceUrl);
         if (string.IsNullOrWhiteSpace(sourceUrl))
         {
             return false;

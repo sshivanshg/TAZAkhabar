@@ -201,7 +201,7 @@ public sealed class ScrapeIngestService
 
             foreach (var link in links)
             {
-                var sourceUrl = HtmlText.Truncate(link.AbsoluteUri, 500);
+                var sourceUrl = ArticleSourceUrl.Normalize(link.AbsoluteUri);
                 if (HtmlArticleExtractor.LooksLikeEpaperLink(link))
                 {
                     skipped++;

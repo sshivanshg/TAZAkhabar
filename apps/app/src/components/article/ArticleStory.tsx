@@ -1,5 +1,6 @@
 import { memo, useMemo, useState } from 'react'
 import {
+  ActivityIndicator,
   Image,
   Platform,
   Pressable,
@@ -18,15 +19,21 @@ import {
   type ReaderColors,
 } from '../../theme/readerTokens'
 import { formatRelativeTime } from '../../utils/relativeTime'
+import {
+  buildArticleDisplayContent,
+  estimateArticleReadableText,
+} from '../../utils/articleContent'
 import { estimateReadingMinutes, formatReadingTime } from '../../utils/readingTime'
 import { isHttpsUrl } from '../../utils/shareToWhatsApp'
-import { parseArticleBlocks } from '../../utils/splitArticleBody'
+import { normalizeArticleSourceUrl } from '../../utils/normalizeArticleSourceUrl'
+import type { ArticleBlock } from '../../utils/splitArticleBody'
 import { pressableState, webFocusRing } from './focusStyle'
 
 type Props = {
   article: ArticleResponse
   cityLabel?: string
   priorityImage?: boolean
+  bodyLoading?: boolean
   onReadSource: () => void
   onRetry?: () => void
 }
@@ -81,6 +88,7 @@ function ArticleStoryBase({
   article,
   cityLabel,
   priorityImage = false,
+  bodyLoading = false,
   onReadSource,
   onRetry,
 }: Props) {
@@ -92,22 +100,55 @@ function ArticleStoryBase({
   const displayCategory = category?.toLowerCase() === 'local' ? undefined : category
   const location = cityLabel?.trim() || displayCategory
   const publisher = publisherName(article)
-  const sourceUrl = isHttpsUrl(article.sourceUrl) ? article.sourceUrl!.trim() : undefined
+  const sourceUrl = (() => {
+    const normalized = normalizeArticleSourceUrl(article.sourceUrl)
+    return isHttpsUrl(normalized) ? normalized : undefined
+  })()
   const time = article.publishedAt ? formatRelativeTime(article.publishedAt) : null
-  const rawBody = (article.body ?? '').trim()
-  const rawSummary = (article.summary ?? '').trim()
-  const bodyText = rawBody || rawSummary
-  const blocks = useMemo(() => parseArticleBlocks(bodyText), [bodyText])
-  const readableText = blocks
-    .map((block) => (block.type === 'ul' ? block.items.join(' ') : block.text))
-    .join(' ')
-  const readingTime = formatReadingTime(estimateReadingMinutes(readableText))
+  const displayContent = useMemo(
+    () => buildArticleDisplayContent(article.body, article.summary),
+    [article.body, article.summary],
+  )
+  const readingTime = formatReadingTime(
+    estimateReadingMinutes(estimateArticleReadableText(displayContent)),
+  )
   const metaParts = [publisher, time, readingTime].filter(Boolean)
   const headline = (article.headline ?? '').trim() || 'Untitled story'
   const headlineSize = width >= 768 ? 36 : 30
   const headlineLine = width >= 768 ? 40 : 34
-  const hasContent = blocks.length > 0
-  const showLoadError = !hasContent && !rawBody && !rawSummary
+  const hasContent = displayContent.hasReadableContent
+  const showLoadError = !hasContent && !bodyLoading
+  const showBodyLoading = bodyLoading && !hasContent
+
+  const renderBlocks = (blocks: ArticleBlock[], keyPrefix: string) =>
+    blocks.map((block, index) => {
+      if (block.type === 'ul') {
+        return (
+          <View key={`${keyPrefix}-ul-${index}`} style={styles.list}>
+            {block.items.map((item, itemIndex) => (
+              <View key={itemIndex} style={styles.listItem}>
+                <Text style={styles.bullet}>•</Text>
+                <Text style={styles.paragraph}>{item}</Text>
+              </View>
+            ))}
+          </View>
+        )
+      }
+      if (block.type === 'quote') {
+        return (
+          <View key={`${keyPrefix}-q-${index}`} style={styles.quote}>
+            <Text style={styles.quoteText}>{block.text}</Text>
+          </View>
+        )
+      }
+      const paragraphStyle =
+        keyPrefix === 'lede' ? [styles.paragraph, styles.lede] : styles.paragraph
+      return (
+        <Text key={`${keyPrefix}-p-${index}`} style={paragraphStyle}>
+          {block.text}
+        </Text>
+      )
+    })
 
   return (
     <View
@@ -142,54 +183,22 @@ function ArticleStoryBase({
           ) : null}
         </View>
 
-        {sourceUrl ? (
-          <Pressable
-            testID="read-original"
-            accessibilityRole="link"
-            accessibilityLabel={`Read original article from ${publisher ?? 'the publisher'}`}
-            onPress={onReadSource}
-            style={(state) => {
-              const { pressed, focused } = pressableState(state)
-              return [
-                styles.originalCta,
-                pressed ? styles.pressed : null,
-                webFocusRing(Boolean(focused), readerColors),
-              ]
-            }}
-          >
-            <Text style={styles.originalCtaText}>Read original article ↗</Text>
-          </Pressable>
-        ) : null}
-
-        {hasContent || showLoadError ? (
+        {hasContent || showBodyLoading || showLoadError ? (
           <View style={styles.body}>
             {hasContent ? (
-              blocks.map((block, index) => {
-                if (block.type === 'ul') {
-                  return (
-                    <View key={`ul-${index}`} style={styles.list}>
-                      {block.items.map((item, itemIndex) => (
-                        <View key={itemIndex} style={styles.listItem}>
-                          <Text style={styles.bullet}>•</Text>
-                          <Text style={styles.paragraph}>{item}</Text>
-                        </View>
-                      ))}
-                    </View>
-                  )
-                }
-                if (block.type === 'quote') {
-                  return (
-                    <View key={`q-${index}`} style={styles.quote}>
-                      <Text style={styles.quoteText}>{block.text}</Text>
-                    </View>
-                  )
-                }
-                return (
-                  <Text key={`p-${index}`} style={styles.paragraph}>
-                    {block.text}
-                  </Text>
-                )
-              })
+              <>
+                {displayContent.ledeBlocks.length > 0 ? (
+                  <View style={styles.ledeWrap}>
+                    {renderBlocks(displayContent.ledeBlocks, 'lede')}
+                  </View>
+                ) : null}
+                {renderBlocks(displayContent.bodyBlocks, 'body')}
+              </>
+            ) : showBodyLoading ? (
+              <View style={styles.loadingBody} accessibilityLabel="Loading full story">
+                <ActivityIndicator color={readerColors.accent} />
+                <Text style={styles.loadingLabel}>Loading full story…</Text>
+              </View>
             ) : (
               <View style={styles.emptyBody}>
                 <Text style={styles.emptyTitle}>Unable to load this story.</Text>
@@ -213,6 +222,25 @@ function ArticleStoryBase({
               </View>
             )}
           </View>
+        ) : null}
+
+        {sourceUrl ? (
+          <Pressable
+            testID="read-original"
+            accessibilityRole="link"
+            accessibilityLabel={`Read original article from ${publisher ?? 'the publisher'}`}
+            onPress={onReadSource}
+            style={(state) => {
+              const { pressed, focused } = pressableState(state)
+              return [
+                styles.originalCta,
+                pressed ? styles.pressed : null,
+                webFocusRing(Boolean(focused), readerColors),
+              ]
+            }}
+          >
+            <Text style={styles.originalCtaText}>Read original article ↗</Text>
+          </Pressable>
         ) : null}
 
         {publisher || sourceUrl ? (
@@ -287,7 +315,7 @@ function createStyles(c: ReaderColors) {
     },
     originalCta: {
       alignSelf: 'flex-start',
-      marginTop: 20,
+      marginTop: 24,
       marginBottom: 4,
       minHeight: 44,
       paddingHorizontal: 16,
@@ -302,8 +330,32 @@ function createStyles(c: ReaderColors) {
       fontWeight: '700',
     },
     body: {
-      marginTop: 28,
+      marginTop: 20,
       gap: 18,
+    },
+    ledeWrap: {
+      gap: 14,
+      paddingBottom: 4,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: c.sheetBorder,
+      marginBottom: 4,
+    },
+    lede: {
+      color: c.textSecondary,
+      fontSize: 19,
+      lineHeight: 30,
+      fontWeight: '500',
+    },
+    loadingBody: {
+      minHeight: 120,
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 12,
+    },
+    loadingLabel: {
+      color: c.textMuted,
+      fontSize: 15,
+      lineHeight: 22,
     },
     paragraph: {
       color: c.text,

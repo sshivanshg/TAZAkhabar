@@ -2,6 +2,7 @@ import { isHttpsUrl } from '../src/utils/shareToWhatsApp'
 import { articleShareUrl } from '../src/utils/shareArticle'
 import { nextArticlePath } from '../src/utils/syncArticleUrl'
 import { openArticleSource } from '../src/utils/openArticleSource'
+import { normalizeArticleSourceUrl } from '../src/utils/normalizeArticleSourceUrl'
 
 describe('articleShareUrl', () => {
   it('uses the TazaKhabar website URL instead of the source URL', () => {
@@ -33,6 +34,14 @@ describe('nextArticlePath', () => {
   it('returns null when the path does not change', () => {
     expect(nextArticlePath('/article/7', '', '', 7)).toBeNull()
     expect(nextArticlePath('/feed', '', '', 8)).toBeNull()
+  })
+})
+
+describe('normalizeArticleSourceUrl', () => {
+  it('decodes ampersand entities', () => {
+    expect(normalizeArticleSourceUrl('https://example.com/story?a=1&amp;b=2')).toBe(
+      'https://example.com/story?a=1&b=2',
+    )
   })
 })
 
