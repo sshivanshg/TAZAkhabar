@@ -41,7 +41,7 @@ jobs:
               --header "X-Ingest-Key: ${RSS_INGEST_SECRET}" \
               --header "Accept: application/json" \
               --max-time 600 \
-              "${INGEST_URL%/}/api/ingest/rss?maxSources=30"
+              "${INGEST_URL%/}/api/ingest/rss?maxSources=50"
           done
 
   scrape-batch:

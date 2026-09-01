@@ -21,13 +21,27 @@ public static class PlaceNameMatcher
 
     public static bool MatchesCity(string citySlug, string? title, string? snippet)
     {
-        if (!Places.TryGetValue(citySlug, out var names)) return false;
+        var cityName = citySlug.Replace('-', ' ');
+        return MatchesCity(citySlug, cityName, title, snippet);
+    }
+
+    public static bool MatchesCity(string citySlug, string cityName, string? title, string? snippet)
+    {
+        var names = ResolvePlaceNames(citySlug, cityName);
         var text = $"{title} {snippet}";
         return names.Any(n => text.Contains(n, StringComparison.OrdinalIgnoreCase));
     }
 
+    private static IReadOnlyList<string> ResolvePlaceNames(string citySlug, string cityName)
+    {
+        if (Places.TryGetValue(citySlug, out var aliases))
+            return aliases;
+
+        return [cityName, cityName.Replace('-', ' ')];
+    }
+
     public static bool MatchesJhansiEdition(string? title, string? snippet) =>
-        MatchesCity("jhansi", title, snippet);
+        MatchesCity("jhansi", "Jhansi", title, snippet);
 
     public static string? DetectCitySlug(string? title, string? snippet)
     {

@@ -53,6 +53,13 @@ public sealed class PlaceNameMatcherTests
     }
 
     [Fact]
+    public void MatchesCity_DefaultsToCityName_ForUnlistedSlug()
+    {
+        Assert.True(PlaceNameMatcher.MatchesCity("mumbai", "Mumbai", "Local train delay in Mumbai suburbs", ""));
+        Assert.False(PlaceNameMatcher.MatchesCity("mumbai", "Mumbai", "Chennai rains continue", ""));
+    }
+
+    [Fact]
     public void DetectCitySlug_ReturnsDelhiForNcr()
     {
         Assert.Equal("delhi", PlaceNameMatcher.DetectCitySlug("NCR air quality advisory", null));

@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace TazaKhabar.Api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260901043233_AddThePrintJhansiSources")]
-    partial class AddThePrintJhansiSources
+    [Migration("20260901043730_AddNationalPublisherSources")]
+    partial class AddNationalPublisherSources
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
