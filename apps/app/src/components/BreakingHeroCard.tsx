@@ -42,9 +42,9 @@ function heroMetrics(size: HeroCardSize) {
       }
     default:
       return {
-        imageHeight: media.heroHeight,
-        titleSize: 20,
-        titleLine: 26,
+        imageHeight: 176,
+        titleSize: 18,
+        titleLine: 24,
         titleLines: 3,
       }
   }
@@ -199,8 +199,8 @@ function createStyles(c: AppColors) {
       backgroundColor: c.skeleton,
     },
     body: {
-      paddingTop: space.sm + 2,
-      gap: 6,
+      paddingTop: space.sm,
+      gap: 5,
     },
     bodyCompact: {
       paddingTop: space.xs + 2,
@@ -211,7 +211,7 @@ function createStyles(c: AppColors) {
       alignItems: 'center',
       justifyContent: 'space-between',
       marginTop: 2,
-      minHeight: 28,
+      minHeight: 26,
     },
     moreBtn: {
       width: 32,

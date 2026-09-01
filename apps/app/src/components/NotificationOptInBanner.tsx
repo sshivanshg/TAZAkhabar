@@ -84,16 +84,19 @@ export function NotificationOptInBanner() {
       transition={{ type: 'timing', duration: 220 }}
     >
       <View style={styles.banner}>
-        <View style={styles.iconWrap}>
-          <BellRing size={18} color={colors.accentFill} strokeWidth={2.2} />
-        </View>
-        <View style={styles.textWrap}>
-          <Text fontSize={typography.headlineSm.fontSize} lineHeight={typography.headlineSm.lineHeight} fontWeight="$semibold" color={colors.text}>
-            Turn on news alerts
-          </Text>
-          <Text fontSize={typography.meta.fontSize} lineHeight={typography.meta.lineHeight} color={colors.textSecondary} mt="$1">
-            Get city-specific breaking stories. We only ask again after a pause if you tap not now.
-          </Text>
+        <View style={styles.introRow}>
+          <View style={styles.iconWrap}>
+            <BellRing size={18} color={colors.accentFill} strokeWidth={2.2} />
+          </View>
+          <View style={styles.textWrap}>
+            <Text fontSize={typography.headlineSm.fontSize} lineHeight={typography.headlineSm.lineHeight} fontWeight="$semibold" color={colors.text}>
+              Get breaking news for {citySlug}
+            </Text>
+            <Text fontSize={typography.meta.fontSize} lineHeight={typography.meta.lineHeight} color={colors.textSecondary} mt="$1">
+              Alerts are optional and can be turned off in Profile.
+            </Text>
+          </View>
+          <ShieldAlert size={15} color={colors.textMuted} strokeWidth={2} />
         </View>
         <View style={styles.actions}>
           <Pressable
@@ -104,25 +107,19 @@ export function NotificationOptInBanner() {
             style={({ pressed }) => [styles.primaryAction, pressed ? styles.pressed : null]}
           >
             <Text fontSize={typography.label.fontSize} lineHeight={typography.label.lineHeight} fontWeight="$semibold" color={colors.surface}>
-              {loading ? 'Working…' : 'Enable'}
+              {loading ? 'Working…' : 'Enable alerts'}
             </Text>
           </Pressable>
           <Pressable
             onPress={onLater}
             accessibilityRole="button"
-            accessibilityLabel="Maybe later"
+            accessibilityLabel="Not now"
             style={({ pressed }) => [styles.secondaryAction, pressed ? styles.secondaryPressed : null]}
           >
             <Text fontSize={typography.label.fontSize} lineHeight={typography.label.lineHeight} fontWeight="$semibold" color={colors.accentFill}>
-              Maybe later
+              Not now
             </Text>
           </Pressable>
-          <View style={styles.notice}>
-            <ShieldAlert size={14} color={colors.textMuted} strokeWidth={2} />
-            <Text fontSize={typography.meta.fontSize} lineHeight={typography.meta.lineHeight} color={colors.textMuted}>
-              One prompt per cooldown window.
-            </Text>
-          </View>
         </View>
       </View>
     </MotiView>
@@ -133,59 +130,55 @@ function createStyles(colors: AppColors) {
   return StyleSheet.create({
     banner: {
       marginHorizontal: space.screen,
-      marginBottom: space.sm,
-      padding: space.md,
-      borderRadius: radius.lg,
+      marginBottom: space.xs,
+      padding: space.sm,
+      borderRadius: radius.md,
       backgroundColor: colors.surface,
       borderWidth: StyleSheet.hairlineWidth,
       borderColor: colors.border,
+      gap: space.sm,
+    },
+    introRow: {
       flexDirection: 'row',
-      alignItems: 'flex-start',
+      alignItems: 'center',
       gap: space.sm,
     },
     iconWrap: {
-      width: 36,
-      height: 36,
-      borderRadius: 18,
+      width: 34,
+      height: 34,
+      borderRadius: 12,
       backgroundColor: colors.accentSoft,
       alignItems: 'center',
       justifyContent: 'center',
-      marginTop: 2,
     },
     textWrap: {
       flex: 1,
       minWidth: 0,
     },
     actions: {
+      flexDirection: 'row',
       gap: space.xs,
-      alignItems: 'flex-end',
+      paddingLeft: 34 + space.sm,
     },
     primaryAction: {
-      minHeight: 44,
-      minWidth: 96,
-      paddingHorizontal: space.md,
+      minHeight: 40,
+      flex: 1,
+      paddingHorizontal: space.sm,
       alignItems: 'center',
       justifyContent: 'center',
-      borderRadius: radius.md,
+      borderRadius: radius.sm,
       backgroundColor: colors.accentFill,
     },
     secondaryAction: {
-      minHeight: 44,
-      minWidth: 96,
-      paddingHorizontal: space.md,
+      minHeight: 40,
+      flex: 1,
+      paddingHorizontal: space.sm,
       alignItems: 'center',
       justifyContent: 'center',
-      borderRadius: radius.md,
+      borderRadius: radius.sm,
       backgroundColor: colors.surfaceRaised,
       borderWidth: StyleSheet.hairlineWidth,
       borderColor: colors.border,
-    },
-    notice: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 6,
-      marginTop: 2,
-      maxWidth: 160,
     },
     pressed: {
       opacity: 0.86,

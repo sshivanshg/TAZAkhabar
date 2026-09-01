@@ -1095,7 +1095,7 @@ function SectionHeader({
         lineHeight={expanded ? typography.headlineSm.lineHeight : 24}
         fontWeight="$semibold"
         letterSpacing={-0.2}
-        color={expanded ? colors.text : colors.accent}
+        color={colors.text}
         flex={1}
       >
         {title}
