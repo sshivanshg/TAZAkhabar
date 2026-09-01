@@ -23,6 +23,10 @@ public static class LocalPublisherSourceCatalog
             ? $"https://news.google.com/rss/search?q={Uri.EscapeDataString(cityName + " when:7d")}&hl=en-IN&gl=IN&ceid=IN:en"
             : $"https://news.google.com/rss/search?q={Uri.EscapeDataString(cityName + " when:7d")}&hl=hi&gl=IN&ceid=IN:hi";
 
+    /// <summary>Google News RSS scoped to one publisher domain plus a city/region query.</summary>
+    public static string GoogleNewsSiteRss(string host, string query) =>
+        $"https://news.google.com/rss/search?q={Uri.EscapeDataString($"site:{host} {query} when:7d")}&hl=en-IN&gl=IN&ceid=IN:en";
+
     public static readonly PublisherSourceSeed[] DeepenSources =
     [
         // Amar Ujala city RSS — Hindi heartland + NCR (skip cities that already have AU RSS in pilot seeds)
@@ -127,6 +131,10 @@ public static class LocalPublisherSourceCatalog
         GoogleEnRss(2308, 20, "Bhubaneswar"),
         GoogleEnRss(2309, 27, "Visakhapatnam"),
         GoogleEnRss(2310, 29, "Nagpur"),
+
+        // The Print — English national coverage with Jhansi place filter (pilot)
+        ThePrintIndiaRss(2311, 2),
+        ThePrintGoogleNews(2312, 2, "Jhansi"),
     ];
 
     private static PublisherSourceSeed AuRss(int id, int cityId, string slug) =>
@@ -165,6 +173,26 @@ public static class LocalPublisherSourceCatalog
             cityId,
             "Google News",
             GoogleNewsRss(cityName, "en"),
+            SourceType.Rss,
+            SourceKind.CityEdition,
+            "en");
+
+    private static PublisherSourceSeed ThePrintIndiaRss(int id, int cityId) =>
+        new(
+            id,
+            cityId,
+            "The Print",
+            "https://theprint.in/category/india/feed/",
+            SourceType.Rss,
+            SourceKind.Wider,
+            "en");
+
+    private static PublisherSourceSeed ThePrintGoogleNews(int id, int cityId, string cityName) =>
+        new(
+            id,
+            cityId,
+            "The Print",
+            GoogleNewsSiteRss("theprint.in", cityName),
             SourceType.Rss,
             SourceKind.CityEdition,
             "en");
