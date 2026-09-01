@@ -90,6 +90,16 @@ export type GetArticlesParams = {
   limit?: number
 }
 
+export type GetPersonalizedArticlesParams = {
+  city: string
+  /** Persistent anonymous id from getPersonalizationId — drives affinity + seen signals. */
+  sessionId: string
+  category?: string
+  lang?: string
+  offset?: number
+  limit?: number
+}
+
 export type GetArticleDatesParams = {
   city: string
   category?: string
@@ -129,6 +139,27 @@ export const apiClient = {
       search.set('limit', String(params.limit))
     }
     return request<PagedArticlesResponse>(`/api/articles?${search.toString()}`)
+  },
+
+  getPersonalizedArticles(
+    params: GetPersonalizedArticlesParams,
+  ): Promise<PagedArticlesResponse> {
+    const search = new URLSearchParams()
+    search.set('city', params.city)
+    search.set('sessionId', params.sessionId)
+    if (params.category) {
+      search.set('category', params.category)
+    }
+    if (params.lang) {
+      search.set('lang', params.lang)
+    }
+    if (params.offset != null) {
+      search.set('offset', String(params.offset))
+    }
+    if (params.limit != null) {
+      search.set('limit', String(params.limit))
+    }
+    return request<PagedArticlesResponse>(`/api/articles/personalized?${search.toString()}`)
   },
 
   getArticleDates(params: GetArticleDatesParams): Promise<ArticleDatesResponse> {

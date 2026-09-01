@@ -1,7 +1,7 @@
 # API
 
 > **Living doc** — update when endpoints, auth, rate limits, CORS, or DI composition change.  
-> **Last verified against:** 2026-08-29 (scheduled RSS endpoints publish fast baseline feed)
+> **Last verified against:** 2026-09-01 (anonymous personalized feed endpoint)
 
 ## Purpose
 
@@ -45,6 +45,7 @@ Pipeline (order): Serilog request logging → RequestId header/log context → E
 | GET | `/healthz` | — | ASP.NET + Npgsql; Render health check |
 | GET | `/api/cities` | `GetCities` | Alphabetical city catalog with latitude/longitude; `Cache-Control: public, max-age=60` |
 | GET | `/api/articles` | `GetArticles` | `city` required; published only; hides newspaper e-paper editions; cache 60s; **no `body`** |
+| GET | `/api/articles/personalized` | `GetPersonalizedArticles` | `city` required; optional `sessionId` re-ranks the recency-bounded pool per anonymous session (affinity + trending + seen demotion + source diversification); `private, no-store` when `sessionId` present, else cache 60s; **no `body`** |
 | GET | `/api/articles/dates` | `GetArticleDates` | City calendar (Asia/Kolkata) |
 | GET | `/api/articles/trending` | `GetTrendingArticles` | View-based; **no `body`** |
 | POST | `/api/articles/{id}/view` | `RecordArticleView` | Optional `sessionId` |
@@ -69,6 +70,29 @@ Pipeline (order): Serilog request logging → RequestId header/log context → E
 | POST/GET | `/api/admin/uploads` | JWT multipart |
 | GET | `/api/admin/uploads/{id}` | JWT |
 
+### Personalized feed ranking
+
+`FeedPersonalizationService` (`Services/FeedPersonalizationService.cs`) powers
+`GET /api/articles/personalized`. It re-ranks a recency-bounded candidate pool
+(newest `CandidatePoolSize` published stories for the city, default 200) with:
+
+```
+score = RecencyWeight  * 0.5^(ageHours / RecencyHalfLifeHours)   // freshness
+      + AffinityWeight * sessionCategoryAffinity                 // 0..1, from the session's ArticleView history (14d)
+      + TrendingWeight * cityTrendingShare                       // 0..1, city views in 24h
+      - SeenPenalty    * alreadyOpenedBySession                  // pushes read stories down
+```
+
+A greedy pass then breaks same-source streaks longer than `MaxSourceStreak`
+(default 2) by swapping in the best different-source story within
+`DiversificationLookahead` positions. Category affinity is deliberately **not**
+city-scoped, so taste travels when a reader switches cities. Cold start (no or
+unknown `sessionId`) zeroes affinity/seen and degrades to recency + trending,
+which stays edge-cacheable; session-ranked responses are `private, no-store`.
+All signals derive from the anonymous `ArticleView.SessionKey` — no user
+identity, consistent with [ADR-002](../adr/002-no-auth-mvp.md). Weights and
+windows bind from the `FeedPersonalization` config section.
+
 ### Auth model
 
 - Readers: none ([ADR-002](../adr/002-no-auth-mvp.md)).
@@ -90,6 +114,7 @@ Pipeline (order): Serilog request logging → RequestId header/log context → E
 | `ConnectionStrings__Database` | Neon / local Postgres |
 | `Cors__AllowedOrigins__*` | Reader + admin Pages origins |
 | `RateLimiting__PermitLimit` / `WindowSeconds` | Public IP fixed window |
+| `FeedPersonalization__*` | Personalized feed weights/windows (code defaults; no secrets) |
 | `RssIngest__Secret` | Ingest header for Render crons and GitHub Actions nightly trigger |
 | `Admin__Password` / `Admin__JwtSigningKey` | Admin login |
 | `ArticleIntelligence__*` | Claude |

@@ -1,7 +1,7 @@
 # Data model
 
 > **Living doc** — update when entities, statuses, or migration ownership change.  
-> **Last verified against:** 2026-08-27 (75-city India catalog with location coordinates and discovery sources)
+> **Last verified against:** 2026-09-01 (ArticleView session key also feeds personalized ranking)
 
 ## Purpose
 
@@ -42,7 +42,7 @@ erDiagram
 | `IngestionJob` | `ingestion_jobs` | Durable manual source-trigger job state linked one-to-one to an `IngestionRun` |
 | `DocumentUpload` | `document_uploads` | Path, `Status`, links to run/source/city hint |
 | `ArticleTranslation` | `article_translations` | Target lang + translated headline/summary |
-| `ArticleView` | `article_views` | Anonymous `SessionKey` for trending |
+| `ArticleView` | `article_views` | Anonymous `SessionKey` for trending **and** personalized ranking (category affinity + seen stories; see [02-api](./02-api.md#personalized-feed-ranking)) |
 | `ArticleAuditLog` | `article_audit_logs` | Append-only admin article action history |
 
 ### Enums (`apps/api/Data/`)
