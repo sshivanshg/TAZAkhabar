@@ -129,6 +129,48 @@ public sealed class FeedPersonalizationServiceTests
     }
 
     [Fact]
+    public async Task LoadSignals_ClassifiesViewedArticlesByContent()
+    {
+        var db = CreateDbContext();
+        // Stored as "Local" at ingest, but the text is clearly a health story.
+        var miscategorized = Article(
+            id: 1, category: "Local", hoursAgo: 3,
+            headline: "New vaccine drive at district hospital");
+        var plainLocal = Article(id: 2, category: "Local", hoursAgo: 4);
+        db.Articles.AddRange(miscategorized, plainLocal);
+        db.ArticleViews.AddRange(
+            new ArticleView { ArticleId = 1, SessionKey = "s1", ViewedAt = Now.AddHours(-1) },
+            new ArticleView { ArticleId = 2, SessionKey = "s1", ViewedAt = Now.AddHours(-2) });
+        await db.SaveChangesAsync();
+
+        var service = CreateService(db);
+        var signals = await service.LoadSignalsAsync(
+            cityId: 2, sessionKey: "s1", candidateIds: [1, 2], now: Now, CancellationToken.None);
+
+        // Affinity keys follow the content-analyzed category so they line up with
+        // feed section keys; the genuinely local story still keys as Local.
+        Assert.Equal(1.0, signals.CategoryAffinity["Health"]);
+        Assert.Equal(1.0, signals.CategoryAffinity["Local"]);
+        Assert.False(signals.CategoryAffinity.ContainsKey("Sports"));
+    }
+
+    [Fact]
+    public void Rank_AffinityAppliesToContentClassifiedCategory()
+    {
+        var service = CreateService();
+        // Stored "Local" but content-classified as Health; Health affinity boosts it.
+        var healthInLocalClothing = Article(
+            id: 1, category: "Local", hoursAgo: 12,
+            headline: "New vaccine drive at district hospital");
+        var freshUnpreferred = Article(id: 2, category: "Local", hoursAgo: 0);
+        var signals = Signals(affinity: new Dictionary<string, double> { ["Health"] = 1.0 });
+
+        var ranked = service.Rank([freshUnpreferred, healthInLocalClothing], signals, Now);
+
+        Assert.Equal([1, 2], ranked.Select(a => a.Id).ToArray());
+    }
+
+    [Fact]
     public async Task LoadSignals_NoSession_ReturnsOnlyTrending()
     {
         var db = CreateDbContext();
@@ -169,12 +211,17 @@ public sealed class FeedPersonalizationServiceTests
             trending ?? new Dictionary<int, double>(),
             seen ?? new HashSet<int>());
 
-    private static Article Article(int id, string category, double hoursAgo, string source = "SourceA") =>
+    private static Article Article(
+        int id,
+        string category,
+        double hoursAgo,
+        string source = "SourceA",
+        string? headline = null) =>
         new()
         {
             Id = id,
             CityId = 2,
-            Headline = $"Story {id}",
+            Headline = headline ?? $"Story {id}",
             Summary = "s",
             SourceName = source,
             SourceUrl = $"https://example.com/story-{id}",

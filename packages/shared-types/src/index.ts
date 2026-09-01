@@ -16,6 +16,8 @@ export type {
   CreateAdminArticleRequest,
   CreateAdminSourceRequest,
   DocumentUploadResponseDto,
+  FeedSection,
+  FeedSectionsResponse,
   HealthResponse,
   IngestRunResponse,
   PurgeOldArticlesResponse,

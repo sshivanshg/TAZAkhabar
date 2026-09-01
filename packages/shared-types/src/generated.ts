@@ -123,6 +123,18 @@ export interface DocumentUploadResponseDto {
     articlesCreated?: number;
 }
 
+export interface FeedSection {
+    key?: string | undefined;
+    title?: string | undefined;
+    category?: string | undefined;
+    items?: ArticleResponse[] | undefined;
+}
+
+export interface FeedSectionsResponse {
+    sections?: FeedSection[] | undefined;
+    total?: number;
+}
+
 export interface HealthResponse {
     status?: string | undefined;
     service?: string | undefined;
