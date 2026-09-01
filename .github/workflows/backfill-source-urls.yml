@@ -1,0 +1,50 @@
+name: Backfill Source URLs
+
+on:
+  workflow_dispatch:
+    inputs:
+      take:
+        description: Batch size per run (max 80)
+        required: false
+        default: "40"
+      after_id:
+        description: Resume after article id
+        required: false
+        default: "0"
+
+concurrency:
+  group: backfill-source-urls
+  cancel-in-progress: false
+
+jobs:
+  backfill:
+    name: Repair truncated publisher URLs
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: production
+    steps:
+      - name: Call backfill endpoint
+        env:
+          INGEST_URL: ${{ vars.EXPO_PUBLIC_API_BASE_URL }}
+          RSS_INGEST_SECRET: ${{ secrets.RssIngest__Secret }}
+          TAKE: ${{ inputs.take }}
+          AFTER_ID: ${{ inputs.after_id }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${INGEST_URL:-}" ]; then
+            echo "::error::Set repository or environment variable EXPO_PUBLIC_API_BASE_URL."
+            exit 1
+          fi
+
+          if [ -z "${RSS_INGEST_SECRET:-}" ]; then
+            echo "::error::Set repository or environment secret RssIngest__Secret."
+            exit 1
+          fi
+
+          curl --fail-with-body --silent --show-error \
+            --request POST \
+            --header "X-Ingest-Key: ${RSS_INGEST_SECRET}" \
+            --header "Accept: application/json" \
+            --max-time 900 \
+            "${INGEST_URL%/}/api/ingest/backfill-source-urls?take=${TAKE}&afterId=${AFTER_ID}"
