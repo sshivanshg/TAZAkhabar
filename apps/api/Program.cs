@@ -40,6 +40,8 @@ try
     builder.Services.Configure<RssIngestOptions>(builder.Configuration.GetSection(RssIngestOptions.SectionName));
     builder.Services.Configure<ArticleRetentionOptions>(
         builder.Configuration.GetSection(ArticleRetentionOptions.SectionName));
+    builder.Services.Configure<FeedPersonalizationOptions>(
+        builder.Configuration.GetSection(FeedPersonalizationOptions.SectionName));
     builder.Services.Configure<AdminOptions>(builder.Configuration.GetSection(AdminOptions.SectionName));
     builder.Services.Configure<ArticleIntelligenceOptions>(
         builder.Configuration.GetSection(ArticleIntelligenceOptions.SectionName));
@@ -110,6 +112,7 @@ try
     builder.Services.AddScoped<ScrapeIngestService>();
     builder.Services.AddScoped<ArticleImageEnrichmentService>();
     builder.Services.AddScoped<NewsFeed.Api.Services.IArticlePresentationService, NewsFeed.Api.Services.ArticlePresentationService>();
+    builder.Services.AddScoped<NewsFeed.Api.Services.IFeedPersonalizationService, NewsFeed.Api.Services.FeedPersonalizationService>();
     builder.Services.AddHostedService<PdfProcessingWorker>();
     builder.Services.AddHostedService<ImageEnrichmentWorker>();
     builder.Services.AddHostedService<IngestionJobWorker>();

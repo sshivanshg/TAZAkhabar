@@ -296,6 +296,100 @@ public static class ArticlesEndpoints
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status429TooManyRequests);
 
+        api.MapGet("/articles/personalized", async (
+                string? city,
+                string? sessionId,
+                string? category,
+                string? lang,
+                int? offset,
+                int? limit,
+                AppDbContext db,
+                IArticlePresentationService presentation,
+                IFeedPersonalizationService personalization,
+                IOptions<ArticleRetentionOptions> retentionOptions,
+                IOptions<FeedPersonalizationOptions> personalizationOptions,
+                HttpContext httpContext,
+                CancellationToken cancellationToken) =>
+            {
+                if (string.IsNullOrWhiteSpace(city))
+                {
+                    return Results.Problem(
+                        title: "Invalid city",
+                        detail: "Query parameter 'city' (slug) is required.",
+                        statusCode: StatusCodes.Status400BadRequest);
+                }
+
+                var slug = city.Trim().ToLowerInvariant();
+                var cityEntity = await db.Cities
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(c => c.Slug == slug, cancellationToken);
+
+                if (cityEntity is null)
+                {
+                    return Results.Problem(
+                        title: "Unknown city",
+                        detail: $"No city found with slug '{slug}'.",
+                        statusCode: StatusCodes.Status400BadRequest);
+                }
+
+                var pageOffset = Math.Max(offset ?? 0, 0);
+                var pageLimit = limit ?? DefaultLimit;
+                if (pageLimit < 1)
+                {
+                    pageLimit = DefaultLimit;
+                }
+
+                pageLimit = Math.Min(pageLimit, MaxLimit);
+
+                var cutoff = ArticleRetention.CutoffUtc(DateTimeOffset.UtcNow, retentionOptions.Value.Days);
+
+                var query = db.Articles
+                    .AsNoTracking()
+                    .Where(a => a.CityId == cityEntity.Id
+                        && a.Status == ArticleStatus.Published
+                        && !a.IsMock
+                        && a.PublishedAt >= cutoff)
+                    .ExcludeEpaperEditions();
+
+                if (!string.IsNullOrWhiteSpace(category))
+                {
+                    var categoryFilter = category.Trim();
+                    query = query.Where(a => a.Category.ToLower() == categoryFilter.ToLower());
+                }
+
+                var total = await query.CountAsync(cancellationToken);
+
+                // Personalization re-ranks a recency-bounded pool so stale stories
+                // never resurface just because they match the reader's taste.
+                var poolSize = Math.Max(1, personalizationOptions.Value.CandidatePoolSize);
+                var candidates = await query
+                    .OrderByDescending(a => a.PublishedAt)
+                    .ThenByDescending(a => a.Id)
+                    .Take(poolSize)
+                    .ToListAsync(cancellationToken);
+
+                var sessionKey = NormalizeSessionKey(sessionId);
+                var now = DateTimeOffset.UtcNow;
+                var candidateIds = candidates.Select(a => a.Id).ToList();
+                var signals = await personalization.LoadSignalsAsync(
+                    cityEntity.Id, sessionKey, candidateIds, now, cancellationToken);
+                var ranked = personalization.Rank(candidates, signals, now);
+                var page = ranked.Skip(pageOffset).Take(pageLimit).ToList();
+
+                var items = await presentation.PresentManyAsync(page, lang, cancellationToken);
+
+                // Ranked output is session-specific; only the anonymous cold-start
+                // variant is safe to share at the edge.
+                httpContext.Response.Headers.CacheControl =
+                    sessionKey is null ? PublicCacheControl : "private, no-store";
+                return Results.Ok(new PagedArticlesResponse(items, total, pageOffset, pageLimit));
+            })
+            .WithName("GetPersonalizedArticles")
+            .WithOpenApi()
+            .Produces<PagedArticlesResponse>(StatusCodes.Status200OK)
+            .ProducesProblem(StatusCodes.Status400BadRequest)
+            .ProducesProblem(StatusCodes.Status429TooManyRequests);
+
         api.MapPost("/articles/{id:int}/view", async (
                 int id,
                 RecordArticleViewRequest? body,
