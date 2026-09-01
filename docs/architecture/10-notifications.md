@@ -1,7 +1,7 @@
 # Notifications
 
 > **Living doc** — update in the same change when push subscription, delivery, or prompt behavior changes.  
-> **Last verified against:** 2026-09-01 (popup-only opt-in, resilient web subscription registration, and native channel setup)
+> **Last verified against:** 2026-09-01 (platform-owned permission prompts, resilient web subscription registration, and native channel setup)
 
 ## Purpose
 
@@ -35,7 +35,7 @@ flowchart LR
 | `NotificationsEndpoints` | Public status/upsert/delete endpoints for the reader |
 | `src/storage/notificationPreferences.ts` | Client-side client id + prompt backoff state |
 | `src/notifications/registerNotifications.ts` | Platform-specific permission and subscription registration |
-| `src/components/NotificationOptInBanner.tsx` | Feed surface opt-in prompt |
+| `src/components/NotificationOptInBanner.tsx` | Legacy prompt component; the feed uses platform-owned permission prompts |
 
 ## Data & control flows
 
@@ -85,7 +85,8 @@ sequenceDiagram
 ## Failure modes & invariants
 
 - Permission prompts are throttled locally; a dismissal should not cause repeated nagging on every open.
-- A browser or device-level denial stays visible as an actionable error in the popup and does not create a permanent inline prompt.
+- Permission requests use the browser or operating-system permission panel; the feed does not render a custom notification prompt.
+- A successful browser/device permission grant is stored only after subscription sync finishes, so failed registration can be retried.
 - Web Push requires HTTPS, a service worker, and a valid VAPID keypair.
 - Existing browser subscriptions are recreated when their application server key no longer matches the configured VAPID public key.
 - Push send failures must not block article ingest or editorial publish flows.

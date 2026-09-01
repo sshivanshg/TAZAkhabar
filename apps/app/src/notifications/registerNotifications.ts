@@ -51,6 +51,14 @@ function hasMatchingApplicationServerKey(
   return actualKey.every((byte, index) => byte === expectedKey[index])
 }
 
+async function persistGrantedPromptState() {
+  await setNotificationPromptState({
+    status: 'granted',
+    lastPromptAt: new Date().toISOString(),
+    lastDismissedAt: null,
+  })
+}
+
 async function registerNativeNotifications(citySlug: string, preferredLanguage?: string | null) {
   if (Platform.OS === 'android') {
     await Notifications.setNotificationChannelAsync('default', {
@@ -61,21 +69,21 @@ async function registerNativeNotifications(citySlug: string, preferredLanguage?:
     })
   }
 
-  const permission = await Notifications.requestPermissionsAsync()
-  if (!permission.granted) {
-    return {
-      status: 'denied' as const,
-      platform: 'native' as const,
-      reason: 'Notifications are blocked for this app. Allow them in device settings, then try again.',
-    }
-  }
-
   const projectId = getExpoProjectId()
   if (!projectId) {
     return {
       status: 'unsupported' as const,
       platform: 'native' as const,
       reason: 'Expo project id is missing.',
+    }
+  }
+
+  const permission = await Notifications.requestPermissionsAsync()
+  if (!permission.granted) {
+    return {
+      status: 'denied' as const,
+      platform: 'native' as const,
+      reason: 'Notifications are blocked for this app. Allow them in device settings, then try again.',
     }
   }
 
@@ -93,11 +101,7 @@ async function registerNativeNotifications(citySlug: string, preferredLanguage?:
     enabled: true,
   }
   const subscription = await apiClient.upsertNotificationSubscription(payload)
-  await setNotificationPromptState({
-    status: 'granted',
-    lastPromptAt: new Date().toISOString(),
-    lastDismissedAt: null,
-  })
+  await persistGrantedPromptState()
   return { status: 'granted' as const, platform: 'native' as const, subscription }
 }
 
@@ -163,10 +167,8 @@ async function registerWebNotifications(citySlug: string, preferredLanguage?: st
     existing = null
   }
 
-  const applicationServerKeyBuffer = applicationServerKey.buffer.slice(
-    applicationServerKey.byteOffset,
-    applicationServerKey.byteOffset + applicationServerKey.byteLength,
-  ) as ArrayBuffer
+  const applicationServerKeyBuffer = new ArrayBuffer(applicationServerKey.byteLength)
+  new Uint8Array(applicationServerKeyBuffer).set(applicationServerKey)
   const subscription =
     existing ??
     (await registration.pushManager.subscribe({
@@ -193,11 +195,7 @@ async function registerWebNotifications(citySlug: string, preferredLanguage?: st
     enabled: true,
   }
   await apiClient.upsertNotificationSubscription(payload)
-  await setNotificationPromptState({
-    status: 'granted',
-    lastPromptAt: new Date().toISOString(),
-    lastDismissedAt: null,
-  })
+  await persistGrantedPromptState()
   return { status: 'granted' as const, platform: 'web' as const, subscription }
 }
 

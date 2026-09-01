@@ -21,7 +21,6 @@ import {
 import { RelatedStoriesStrip } from '../../src/components/RelatedStoriesStrip'
 import { ConfirmModal } from '../../src/components/ConfirmModal'
 import { AddToHomeBanner } from '../../src/components/AddToHomeBanner'
-import { NotificationOptInBanner } from '../../src/components/NotificationOptInBanner'
 import { BriefingHeader } from '../../src/components/desktop/BriefingHeader'
 import { CategoryNavBar } from '../../src/components/desktop/CategoryNavBar'
 import { ExpandedTopBar } from '../../src/components/desktop/ExpandedTopBar'
@@ -47,6 +46,11 @@ import {
   addBookmark,
 } from '../../src/storage/bookmarks'
 import { getStoredCitySlug, setStoredCitySlug } from '../../src/storage/cityPreference'
+import {
+  getNotificationPromptState,
+  shouldRePromptForNotifications,
+} from '../../src/storage/notificationPreferences'
+import { registerNewsNotifications } from '../../src/notifications/registerNotifications'
 import { getPersonalizationId } from '../../src/storage/personalizationId'
 import {
   feedCacheKey,
@@ -189,6 +193,7 @@ function HomeFeedBody() {
   const offsetRef = useRef(0)
   const loadingMoreLock = useRef(false)
   const loadGenRef = useRef(0)
+  const notificationAttemptedRef = useRef(false)
 
   const refreshBookmarks = useCallback(async () => {
     const list = await getBookmarks()
@@ -428,6 +433,24 @@ function HomeFeedBody() {
       void loadPage('replace')
     }
   }, [citySlug, category, preferredLanguage, languageReady, loadPage])
+
+  useEffect(() => {
+    if (!citySlug || !languageReady || notificationAttemptedRef.current) {
+      return
+    }
+    notificationAttemptedRef.current = true
+    void (async () => {
+      const promptState = await getNotificationPromptState()
+      if (!shouldRePromptForNotifications(promptState, 7)) {
+        return
+      }
+      try {
+        await registerNewsNotifications(citySlug, preferredLanguage)
+      } catch {
+        // The platform owns the permission UI; a failed registration can be retried from Profile.
+      }
+    })()
+  }, [citySlug, languageReady, preferredLanguage])
 
   const cityTitle = cityMeta?.name ?? citySlug ?? 'Your city'
   const visibleArticles = useMemo(
@@ -725,7 +748,6 @@ function HomeFeedBody() {
           />
         )}
         {Platform.OS === 'web' ? <AddToHomeBanner /> : null}
-        <NotificationOptInBanner />
         {expanded ? (
           <CategoryNavBar
             selected={category}
