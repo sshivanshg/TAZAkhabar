@@ -1,7 +1,7 @@
 # Data model
 
 > **Living doc** — update when entities, statuses, or migration ownership change.  
-> **Last verified against:** 2026-08-27 (75-city India catalog with location coordinates and discovery sources)
+> **Last verified against:** 2026-09-01 (75-city India catalog, discovery sources, and notification subscriptions)
 
 ## Purpose
 
@@ -24,9 +24,11 @@ erDiagram
   Article ||--o{ ArticleTranslation : has
   Article ||--o{ ArticleView : has
   Article ||--o{ ArticleAuditLog : audits
+  City ||--o{ NotificationSubscription : targets
   DocumentUpload }o--|| IngestionRun : may_link
   DocumentUpload }o--o| Source : may_link
   DocumentUpload }o--o| City : city_hint
+  NotificationSubscription }o--|| City : targets
 ```
 
 ## Components / key types
@@ -44,6 +46,7 @@ erDiagram
 | `ArticleTranslation` | `article_translations` | Target lang + translated headline/summary |
 | `ArticleView` | `article_views` | Anonymous `SessionKey` for trending |
 | `ArticleAuditLog` | `article_audit_logs` | Append-only admin article action history |
+| `NotificationSubscription` | `notification_subscriptions` | Anonymous device/browser registration, prompt state, and delivery prefs |
 
 ### Enums (`apps/api/Data/`)
 
@@ -56,6 +59,8 @@ erDiagram
 | `IngestionJobStatus` | `Queued`, `Running`, `Completed`, `Failed` |
 | `DocumentUploadStatus` | `Queued`, `Processing`, `Ready`, `Failed` |
 | `TranslationStatus` | `Completed`, `Failed` |
+| `NotificationDeliveryMode` | `Breaking`, `DailyDigest` |
+| `NotificationPlatform` | `Native`, `Web` |
 
 ## Data & control flows
 
@@ -100,6 +105,7 @@ Public feed only exposes **Published** articles (see [02-api](./02-api.md)). Scr
 - Unique `SourceUrl` prevents duplicate ingest inserts.
 - API is the only DB client — no Neon creds in frontends.
 - Production API startup does not apply migrations; deploy code and schema deliberately.
+- Notification subscriptions are keyed by anonymous client id + platform, not by user account. A single client can keep one native and one web registration.
 
 ## Related docs
 

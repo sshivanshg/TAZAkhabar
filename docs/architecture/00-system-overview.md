@@ -1,7 +1,7 @@
 # System overview
 
 > **Living doc** — update in the same change when topology, hosting, or cross-app contracts move.  
-> **Last verified against:** 2026-08-27 (75-city catalog and device-only nearest-city detection)
+> **Last verified against:** 2026-09-01 (75-city catalog, device-only nearest-city detection, notification dispatch)
 
 ## Purpose
 
@@ -32,6 +32,7 @@ flowchart TB
     CronRSS[Cron every 45m<br/>POST /api/ingest/rss]
     CronScrape[Cron every 45m<br/>POST /api/ingest/scrape]
     GHA[GitHub Actions nightly<br/>POST /api/ingest/daily]
+    Push[Notification worker<br/>queued article dispatch]
   end
 
   subgraph data [Data]
@@ -43,6 +44,8 @@ flowchart TB
     HTML[Newspaper HTML]
     Claude[Anthropic Claude]
     OpenAI[OpenAI scrape rewrite]
+    Expo[Expo Push Service]
+    WebPush[Browser Push Service]
   end
 
   Site --> CDN
@@ -60,6 +63,9 @@ flowchart TB
   API --> HTML
   API --> Claude
   API --> OpenAI
+  API --> Push
+  Push --> Expo
+  Push --> WebPush
 ```
 
 ## Components / key types
@@ -70,6 +76,7 @@ flowchart TB
 | Reader | `apps/app` → Cloudflare Pages `newsfeed-web` | City feed, search, share, PWA |
 | Admin | `apps/admin` → Cloudflare Pages `newsfeed-admin` | Review queue, sources, uploads, live ingest |
 | API | `apps/api` → Render `tazakhabar-api` | Sole DB client; public + admin + ingest |
+| Notification worker | `apps/api` hosted service | Async article alert dispatch to Expo and browser push |
 | Shared types | `packages/shared-types` | OpenAPI → NSwag DTOs |
 | DB | Neon Postgres | Production data; local Docker Postgres |
 | Migrations | `infra/migrations` | EF Core; applied on API startup |
@@ -95,6 +102,9 @@ sequenceDiagram
   A->>N: published articles
   A-->>U: Cache-Control 60s
   U->>A: POST /api/articles/{id}/view
+  opt Reader enables alerts
+    U->>A: POST /api/notifications/subscriptions
+  end
 ```
 
 ### Ingest + editorial path

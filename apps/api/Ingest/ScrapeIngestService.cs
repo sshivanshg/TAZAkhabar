@@ -3,6 +3,7 @@ using Microsoft.Extensions.Options;
 using NewsFeed.Api.Data;
 using NewsFeed.Api.Data.Entities;
 using NewsFeed.Api.Options;
+using NewsFeed.Api.Services;
 using Serilog.Context;
 
 namespace NewsFeed.Api.Ingest;
@@ -17,6 +18,7 @@ public sealed class ScrapeIngestService
     private readonly IOptions<OpenAiRewriteOptions> _rewriteOptions;
     private readonly IIngestionEventBus _events;
     private readonly ImageEnrichmentQueue _imageEnrichmentQueue;
+    private readonly NotificationDispatchQueue _notificationQueue;
     private readonly ILogger<ScrapeIngestService> _logger;
     private readonly TimeSpan _delay;
 
@@ -27,8 +29,9 @@ public sealed class ScrapeIngestService
         IOptions<OpenAiRewriteOptions> rewriteOptions,
         IIngestionEventBus events,
         ImageEnrichmentQueue imageEnrichmentQueue,
+        NotificationDispatchQueue notificationQueue,
         ILogger<ScrapeIngestService> logger)
-        : this(db, http, rewriter, rewriteOptions, events, imageEnrichmentQueue, logger, TimeSpan.FromMilliseconds(300))
+        : this(db, http, rewriter, rewriteOptions, events, imageEnrichmentQueue, notificationQueue, logger, TimeSpan.FromMilliseconds(300))
     {
     }
 
@@ -39,6 +42,7 @@ public sealed class ScrapeIngestService
         IOptions<OpenAiRewriteOptions> rewriteOptions,
         IIngestionEventBus events,
         ImageEnrichmentQueue imageEnrichmentQueue,
+        NotificationDispatchQueue notificationQueue,
         ILogger<ScrapeIngestService> logger,
         TimeSpan delayBetweenRequests)
     {
@@ -48,6 +52,7 @@ public sealed class ScrapeIngestService
         _rewriteOptions = rewriteOptions;
         _events = events;
         _imageEnrichmentQueue = imageEnrichmentQueue;
+        _notificationQueue = notificationQueue;
         _logger = logger;
         _delay = delayBetweenRequests;
     }
@@ -513,6 +518,10 @@ public sealed class ScrapeIngestService
             if (ArticleImageEnrichmentService.IsEligible(article))
             {
                 await _imageEnrichmentQueue.EnqueueAsync(article.Id, cancellationToken);
+            }
+            if (article.Status == ArticleStatus.Published)
+            {
+                await _notificationQueue.EnqueueAsync(article.Id, cancellationToken);
             }
 
             return true;

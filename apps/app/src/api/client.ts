@@ -3,10 +3,14 @@ import type {
   ArticleResponse,
   CityResponse,
   HealthResponse,
+  NotificationSubscriptionResponse,
+  UpsertNotificationSubscriptionRequest,
   PagedArticlesResponse,
   ProblemDetails,
   TrendingArticlesResponse,
 } from '@tazakhabar/shared-types'
+
+export type NotificationPlatform = 'native' | 'web'
 
 const API_BASE_URL = (process.env.EXPO_PUBLIC_API_BASE_URL ?? '').replace(/\/$/, '')
 const REQUEST_TIMEOUT_MS = 15000
@@ -187,5 +191,33 @@ export const apiClient = {
     } catch {
       // Fire-and-forget: view tracking must never block reading.
     }
+  },
+
+  upsertNotificationSubscription(
+    payload: UpsertNotificationSubscriptionRequest,
+  ): Promise<NotificationSubscriptionResponse> {
+    return request<NotificationSubscriptionResponse>('/api/notifications/subscriptions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    })
+  },
+
+  deleteNotificationSubscription(clientId: string, platform: NotificationPlatform): Promise<void> {
+    if (!API_BASE_URL) {
+      throw new Error('EXPO_PUBLIC_API_BASE_URL is not configured')
+    }
+    return fetch(
+      `${API_BASE_URL}/api/notifications/subscriptions/${encodeURIComponent(clientId)}?platform=${encodeURIComponent(platform)}`,
+      {
+        method: 'DELETE',
+        signal: createTimeoutSignal(REQUEST_TIMEOUT_MS),
+        headers: {
+          Accept: 'application/json',
+        },
+      },
+    ).then(() => undefined)
   },
 }

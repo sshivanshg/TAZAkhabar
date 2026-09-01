@@ -21,6 +21,8 @@ export type {
   PurgeOldArticlesResponse,
   IngestionEventDto,
   IngestionRunResponseDto,
+  NotificationPermissionStatusResponse,
+  NotificationSubscriptionResponse,
   PagedAdminArticlesResponse,
   PagedArticlesResponse,
   PagedDocumentUploadsResponse,
@@ -30,4 +32,6 @@ export type {
   ProblemDetails,
   RecordArticleViewRequest,
   TrendingArticlesResponse,
+  UpsertNotificationSubscriptionRequest,
+  WebPushSubscriptionDto,
 } from './generated'

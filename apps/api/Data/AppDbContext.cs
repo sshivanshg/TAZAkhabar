@@ -15,6 +15,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     public DbSet<ArticleView> ArticleViews => Set<ArticleView>();
     public DbSet<IngestionJob> IngestionJobs => Set<IngestionJob>();
     public DbSet<ArticleAuditLog> ArticleAuditLogs => Set<ArticleAuditLog>();
+    public DbSet<NotificationSubscription> NotificationSubscriptions => Set<NotificationSubscription>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -253,6 +254,45 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
                 .WithMany(a => a.Views)
                 .HasForeignKey(v => v.ArticleId)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<NotificationSubscription>(entity =>
+        {
+            entity.ToTable("notification_subscriptions");
+            entity.HasKey(s => s.Id);
+            entity.Property(s => s.Id).HasColumnName("id");
+            entity.Property(s => s.ClientId).HasColumnName("client_id").HasMaxLength(80).IsRequired();
+            entity.Property(s => s.Platform)
+                .HasColumnName("platform")
+                .HasConversion<string>()
+                .HasMaxLength(16)
+                .IsRequired();
+            entity.Property(s => s.CityId).HasColumnName("city_id");
+            entity.Property(s => s.DeliveryMode)
+                .HasColumnName("delivery_mode")
+                .HasConversion<string>()
+                .HasMaxLength(32)
+                .IsRequired();
+            entity.Property(s => s.Categories).HasColumnName("categories").HasMaxLength(400).IsRequired();
+            entity.Property(s => s.PreferredLanguage).HasColumnName("preferred_language").HasMaxLength(8);
+            entity.Property(s => s.ExpoPushToken).HasColumnName("expo_push_token").HasMaxLength(512);
+            entity.Property(s => s.WebPushEndpoint).HasColumnName("web_push_endpoint").HasMaxLength(1000);
+            entity.Property(s => s.WebPushP256Dh).HasColumnName("web_push_p256dh").HasMaxLength(512);
+            entity.Property(s => s.WebPushAuth).HasColumnName("web_push_auth").HasMaxLength(256);
+            entity.Property(s => s.IsEnabled).HasColumnName("is_enabled").HasDefaultValue(true);
+            entity.Property(s => s.PermissionGrantedAt).HasColumnName("permission_granted_at");
+            entity.Property(s => s.PermissionDeniedAt).HasColumnName("permission_denied_at");
+            entity.Property(s => s.LastPromptAt).HasColumnName("last_prompt_at");
+            entity.Property(s => s.LastDeliveredAt).HasColumnName("last_delivered_at");
+            entity.Property(s => s.CreatedAt).HasColumnName("created_at");
+            entity.Property(s => s.UpdatedAt).HasColumnName("updated_at");
+            entity.HasOne(s => s.City)
+                .WithMany()
+                .HasForeignKey(s => s.CityId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasIndex(s => new { s.ClientId, s.Platform }).IsUnique();
+            entity.HasIndex(s => new { s.CityId, s.IsEnabled });
+            entity.HasIndex(s => s.UpdatedAt);
         });
     }
 }
