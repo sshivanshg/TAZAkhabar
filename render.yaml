@@ -56,6 +56,14 @@ services:
         value: "180"
       - key: IngestHealth__AlertWebhookUrl
         sync: false
+      - key: IngestSchedule__Enabled
+        value: "true"
+      - key: IngestSchedule__RssIntervalMinutes
+        value: "15"
+      - key: IngestSchedule__RssMaxSourcesPerRun
+        value: "30"
+      - key: IngestSchedule__ScrapeIntervalMinutes
+        value: "45"
 
   - type: cron
     name: tazakhabar-rss-ingest
@@ -63,7 +71,7 @@ services:
     plan: starter
     schedule: "*/45 * * * *"
     buildCommand: "pip install requests"
-    startCommand: "python -c \"import os,requests; r=requests.post(os.environ['INGEST_URL'].rstrip('/')+'/api/ingest/rss', headers={'X-Ingest-Key': os.environ['RssIngest__Secret']}, timeout=600); r.raise_for_status()\""
+    startCommand: "python -c \"import os,requests; r=requests.post(os.environ['INGEST_URL'].rstrip('/')+'/api/ingest/rss?maxSources=30', headers={'X-Ingest-Key': os.environ['RssIngest__Secret']}, timeout=600); r.raise_for_status()\""
     envVars:
       - key: INGEST_URL
         sync: false
@@ -76,7 +84,7 @@ services:
     plan: starter
     schedule: "*/45 * * * *"
     buildCommand: "pip install requests"
-    startCommand: "python -c \"import os,requests; r=requests.post(os.environ['INGEST_URL'].rstrip('/')+'/api/ingest/scrape', headers={'X-Ingest-Key': os.environ['RssIngest__Secret']}, timeout=300); r.raise_for_status()\""
+    startCommand: "python -c \"import os,requests; r=requests.post(os.environ['INGEST_URL'].rstrip('/')+'/api/ingest/scrape?useRewrite=false', headers={'X-Ingest-Key': os.environ['RssIngest__Secret']}, timeout=300); r.raise_for_status()\""
     envVars:
       - key: INGEST_URL
         sync: false

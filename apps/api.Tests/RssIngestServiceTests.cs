@@ -182,6 +182,39 @@ public sealed class RssIngestServiceTests
     }
 
     [Fact]
+    public async Task RunAsync_MaxSources_LimitsBatchSize()
+    {
+        await using var db = CreateDb();
+        await AddSourceAsync(db, "One", "https://feeds.example.com/one.xml", SourceKind.CityEdition);
+        await AddSourceAsync(db, "Two", "https://feeds.example.com/two.xml", SourceKind.CityEdition);
+        await AddSourceAsync(db, "Three", "https://feeds.example.com/three.xml", SourceKind.CityEdition);
+        var client = new FakeRssFeedClient
+        {
+            Responses =
+            {
+                ["https://feeds.example.com/one.xml"] = CityEditionXml(
+                    "https://example.com/one",
+                    "One story",
+                    "One summary"),
+                ["https://feeds.example.com/two.xml"] = CityEditionXml(
+                    "https://example.com/two",
+                    "Two story",
+                    "Two summary"),
+                ["https://feeds.example.com/three.xml"] = CityEditionXml(
+                    "https://example.com/three",
+                    "Three story",
+                    "Three summary"),
+            },
+        };
+        var service = CreateService(db, client);
+
+        var result = await service.RunAsync(CancellationToken.None, maxSources: 2);
+
+        Assert.Equal(2, result.FeedsAttempted);
+        Assert.Equal(2, await db.IngestionRuns.CountAsync());
+    }
+
+    [Fact]
     public async Task CancelledRun_DoesNotCountAsFeedsFailed()
     {
         await using var db = CreateDb();

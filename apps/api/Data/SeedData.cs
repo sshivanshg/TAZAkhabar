@@ -106,7 +106,7 @@ public static class SeedData
         {
             Id = 1000 + city.Id,
             Name = "Google News",
-            FeedUrl = $"https://news.google.com/rss/search?q={Uri.EscapeDataString(city.Name)}&hl=hi&gl=IN&ceid=IN:hi",
+            FeedUrl = LocalPublisherSourceCatalog.GoogleNewsRss(city.Name),
             CityId = city.Id,
             Type = SourceType.Rss,
             Kind = SourceKind.CityEdition,

@@ -13,6 +13,7 @@ public static class IngestEndpoints
                 HttpContext http,
                 RssIngestService ingest,
                 IOptions<RssIngestOptions> options,
+                int? maxSources,
                 CancellationToken cancellationToken) =>
             {
                 if (!IngestKeyAuth.Matches(http.Request.Headers["X-Ingest-Key"].ToString(), options.Value.Secret))
@@ -27,7 +28,8 @@ public static class IngestEndpoints
                     cancellationToken,
                     useIntelligence: false,
                     autoPublish: true,
-                    fetchArticleBodies: false);
+                    fetchArticleBodies: false,
+                    maxSources: maxSources);
                 return Results.Ok(new IngestRunResponse(
                     result.FeedsAttempted,
                     result.FeedsFailed,
@@ -44,6 +46,8 @@ public static class IngestEndpoints
                 HttpContext http,
                 ScrapeIngestService ingest,
                 IOptions<RssIngestOptions> options,
+                IOptions<OpenAiRewriteOptions> rewriteOptions,
+                bool? useRewrite,
                 CancellationToken cancellationToken) =>
             {
                 if (!IngestKeyAuth.Matches(http.Request.Headers["X-Ingest-Key"].ToString(), options.Value.Secret))
@@ -54,7 +58,10 @@ public static class IngestEndpoints
                         statusCode: StatusCodes.Status401Unauthorized);
                 }
 
-                var result = await ingest.RunAllActiveAsync(cancellationToken, useRewrite: true);
+                var rewrite = useRewrite
+                    ?? (rewriteOptions.Value.Enabled
+                        && !string.IsNullOrWhiteSpace(rewriteOptions.Value.ApiKey));
+                var result = await ingest.RunAllActiveAsync(cancellationToken, useRewrite: rewrite);
                 return Results.Ok(new IngestRunResponse(
                     result.FeedsAttempted,
                     result.FeedsFailed,

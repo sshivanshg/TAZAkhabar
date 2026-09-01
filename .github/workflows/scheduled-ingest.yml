@@ -1,0 +1,61 @@
+name: Scheduled Ingest
+
+on:
+  schedule:
+    # Every 45 minutes — complements in-process scheduler and Render crons.
+    - cron: "*/45 * * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: scheduled-ingest
+  cancel-in-progress: false
+
+jobs:
+  rss-batch:
+    name: RSS ingest batch
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Trigger RSS ingest
+        env:
+          INGEST_URL: ${{ vars.EXPO_PUBLIC_API_BASE_URL }}
+          RSS_INGEST_SECRET: ${{ secrets.RssIngest__Secret }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${INGEST_URL:-}" ]; then
+            echo "::error::Set repository or environment variable EXPO_PUBLIC_API_BASE_URL."
+            exit 1
+          fi
+
+          if [ -z "${RSS_INGEST_SECRET:-}" ]; then
+            echo "::error::Set repository or environment secret RssIngest__Secret."
+            exit 1
+          fi
+
+          curl --fail-with-body --silent --show-error \
+            --request POST \
+            --header "X-Ingest-Key: ${RSS_INGEST_SECRET}" \
+            --header "Accept: application/json" \
+            --max-time 600 \
+            "${INGEST_URL%/}/api/ingest/rss?maxSources=30"
+
+  scrape-batch:
+    name: Scrape ingest batch
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: rss-batch
+    steps:
+      - name: Trigger scrape ingest
+        env:
+          INGEST_URL: ${{ vars.EXPO_PUBLIC_API_BASE_URL }}
+          RSS_INGEST_SECRET: ${{ secrets.RssIngest__Secret }}
+        run: |
+          set -euo pipefail
+
+          curl --fail-with-body --silent --show-error \
+            --request POST \
+            --header "X-Ingest-Key: ${RSS_INGEST_SECRET}" \
+            --header "Accept: application/json" \
+            --max-time 300 \
+            "${INGEST_URL%/}/api/ingest/scrape?useRewrite=false"

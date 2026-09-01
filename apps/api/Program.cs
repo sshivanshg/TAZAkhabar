@@ -47,6 +47,7 @@ try
         builder.Configuration.GetSection(OpenAiRewriteOptions.SectionName));
     builder.Services.Configure<UploadOptions>(builder.Configuration.GetSection(UploadOptions.SectionName));
     builder.Services.Configure<IngestHealthOptions>(builder.Configuration.GetSection(IngestHealthOptions.SectionName));
+    builder.Services.Configure<IngestScheduleOptions>(builder.Configuration.GetSection(IngestScheduleOptions.SectionName));
     if (builder.Environment.IsDevelopment())
     {
         builder.Services.PostConfigure<UploadOptions>(upload =>
@@ -113,6 +114,7 @@ try
     builder.Services.AddHostedService<ImageEnrichmentWorker>();
     builder.Services.AddHostedService<IngestionJobWorker>();
     builder.Services.AddHostedService<IngestSilenceMonitor>();
+    builder.Services.AddHostedService<ScheduledIngestHostedService>();
 
     var corsOptions = builder.Configuration.GetSection(CorsOptions.SectionName).Get<CorsOptions>() ?? new CorsOptions();
     var rateLimitingOptions = builder.Configuration.GetSection(RateLimitingOptions.SectionName).Get<RateLimitingOptions>()

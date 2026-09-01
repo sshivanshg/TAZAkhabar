@@ -58,7 +58,8 @@ public sealed class TazaKhabarWebApplicationFactory : WebApplicationFactory<Prog
             foreach (var descriptor in services
                          .Where(d => d.ServiceType == typeof(IHostedService)
                                      && (d.ImplementationType == typeof(IngestionJobWorker)
-                                         || d.ImplementationType == typeof(IngestSilenceMonitor)))
+                                         || d.ImplementationType == typeof(IngestSilenceMonitor)
+                                         || d.ImplementationType == typeof(ScheduledIngestHostedService)))
                          .ToList())
             {
                 services.Remove(descriptor);
