@@ -2,8 +2,9 @@ name: Scheduled Ingest
 
 on:
   schedule:
-    # Every 45 minutes — complements in-process scheduler and Render crons.
-    - cron: "*/45 * * * *"
+    # Every 15 minutes — primary scheduler on Render free tier (no cron jobs).
+    # Also wakes the free web service so in-process ScheduledIngestHostedService can run.
+    - cron: "*/15 * * * *"
   workflow_dispatch:
 
 concurrency:
@@ -11,12 +12,12 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  rss-batch:
-    name: RSS ingest batch
+  rss-batches:
+    name: RSS ingest batches
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 20
     steps:
-      - name: Trigger RSS ingest
+      - name: Trigger RSS ingest (two batches)
         env:
           INGEST_URL: ${{ vars.EXPO_PUBLIC_API_BASE_URL }}
           RSS_INGEST_SECRET: ${{ secrets.RssIngest__Secret }}
@@ -33,18 +34,21 @@ jobs:
             exit 1
           fi
 
-          curl --fail-with-body --silent --show-error \
-            --request POST \
-            --header "X-Ingest-Key: ${RSS_INGEST_SECRET}" \
-            --header "Accept: application/json" \
-            --max-time 600 \
-            "${INGEST_URL%/}/api/ingest/rss?maxSources=30"
+          for batch in 1 2; do
+            echo "RSS batch ${batch}/2"
+            curl --fail-with-body --silent --show-error \
+              --request POST \
+              --header "X-Ingest-Key: ${RSS_INGEST_SECRET}" \
+              --header "Accept: application/json" \
+              --max-time 600 \
+              "${INGEST_URL%/}/api/ingest/rss?maxSources=30"
+          done
 
   scrape-batch:
     name: Scrape ingest batch
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    needs: rss-batch
+    needs: rss-batches
     steps:
       - name: Trigger scrape ingest
         env:

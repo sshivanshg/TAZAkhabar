@@ -1,0 +1,41 @@
+name: Purge Old Articles
+
+on:
+  schedule:
+    # Daily 03:00 UTC — replaces Render cron on free tier.
+    - cron: "0 3 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: purge-old-articles
+  cancel-in-progress: false
+
+jobs:
+  purge:
+    name: Purge articles older than retention window
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Call purge endpoint
+        env:
+          INGEST_URL: ${{ vars.EXPO_PUBLIC_API_BASE_URL }}
+          RSS_INGEST_SECRET: ${{ secrets.RssIngest__Secret }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${INGEST_URL:-}" ]; then
+            echo "::error::Set repository or environment variable EXPO_PUBLIC_API_BASE_URL."
+            exit 1
+          fi
+
+          if [ -z "${RSS_INGEST_SECRET:-}" ]; then
+            echo "::error::Set repository or environment secret RssIngest__Secret."
+            exit 1
+          fi
+
+          curl --fail-with-body --silent --show-error \
+            --request POST \
+            --header "X-Ingest-Key: ${RSS_INGEST_SECRET}" \
+            --header "Accept: application/json" \
+            --max-time 300 \
+            "${INGEST_URL%/}/api/maintenance/purge-old-articles"
