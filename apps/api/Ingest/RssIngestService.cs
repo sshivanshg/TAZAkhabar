@@ -144,7 +144,7 @@ public sealed class RssIngestService(
             foreach (var item in items)
             {
                 if (source.Kind == SourceKind.Wider
-                    && !PlaceNameMatcher.MatchesJhansiEdition(item.Title, item.Snippet))
+                    && !PlaceNameMatcher.MatchesCity(city.Slug, city.Name, item.Title, item.Snippet))
                 {
                     skipped++;
                     IngestionEvents.Emit(

@@ -1,7 +1,7 @@
 # Hosting and CI
 
 > **Living doc** — update when Render, Cloudflare, Neon, Docker, workflows, or env templates change.  
-> **Last verified against:** 2026-09-01 (Render free tier — GitHub Actions ingest/purge; no Render crons)
+> **Last verified against:** 2026-09-01 (RSS batch size 50; national publisher feeds for all cities)
 
 ## Purpose
 

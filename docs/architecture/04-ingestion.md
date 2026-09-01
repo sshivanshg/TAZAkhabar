@@ -1,7 +1,7 @@
 # Ingestion
 
 > **Living doc** — update when pipelines, article status on insert, cron, SSE, or intelligence providers change.  
-> **Last verified against:** 2026-09-01 (The Print Jhansi sources; GHA scheduler for Render free tier)
+> **Last verified against:** 2026-09-01 (25 national publishers × 75 cities)
 
 ## Purpose
 
@@ -21,8 +21,11 @@ and Delhi retain the deeper pilot source mix; each of the other 70 cities starts
 with an active Google News RSS city query so scheduled ingestion can populate a
 baseline feed while direct publisher sources are added. A second migration deepens
 coverage with Amar Ujala city RSS, Dainik Bhaskar local scrape, Times of India
-city scrape (metros), English Google News discovery feeds, and **The Print** India
-RSS (Jhansi pilot — wider feed filtered by place name). The overall mix includes:
+city scrape (metros), English Google News discovery feeds, and **national publisher**
+Google News site feeds (The Print, The Hindu, TOI, NDTV, Indian Express, Hindustan Times,
+Telegraph India, India Today, Economic Times, Livemint, Business Standard, BBC, Al Jazeera,
+Scroll.in, Firstpost, The News Minute, Deccan Herald, The Wire, Jagran, Navbharat Times,
+Outlook, News18, Moneycontrol, Republic TV, Dainik Bhaskar English) for every seeded city. The overall mix includes:
 
 - local publisher RSS where it exists,
 - TOI city pages for scrape fallback,
@@ -117,12 +120,12 @@ Render **cron jobs require a paid plan**. On the free tier, ingestion is driven 
 
 **In-process (Render API web service, `IngestSchedule__Enabled=true`):**
 
-- `ScheduledIngestHostedService` runs RSS every 15 minutes (`maxSources=30` per batch) and scrape every 45 minutes.
+- `ScheduledIngestHostedService` runs RSS every 15 minutes (`maxSources=50` per batch) and scrape every 45 minutes.
 - Requires non-empty `RssIngest__Secret`. On free tier the instance may sleep; GHA POSTs wake it and trigger ingest.
 
 **GitHub Actions (`scheduled-ingest.yml`, every 15 minutes):**
 
-- Two RSS batches → `POST {API}/api/ingest/rss?maxSources=30` (rotates ~60 feeds per cycle)
+- Four RSS batches → `POST {API}/api/ingest/rss?maxSources=50` (rotates ~200 feeds per cycle)
 - One scrape batch → `POST {API}/api/ingest/scrape?useRewrite=false`
 - Uses `vars.EXPO_PUBLIC_API_BASE_URL` and `secrets.RssIngest__Secret`
 

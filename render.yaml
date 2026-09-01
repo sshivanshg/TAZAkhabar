@@ -66,6 +66,6 @@ services:
       - key: IngestSchedule__RssIntervalMinutes
         value: "15"
       - key: IngestSchedule__RssMaxSourcesPerRun
-        value: "30"
+        value: "50"
       - key: IngestSchedule__ScrapeIntervalMinutes
         value: "45"

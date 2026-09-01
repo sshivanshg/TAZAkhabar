@@ -14,8 +14,8 @@ public sealed class IngestScheduleOptions
     /// <summary>Minutes between RSS batch runs (default 15 — rotates through all feeds within ~45 min).</summary>
     public int RssIntervalMinutes { get; set; } = 15;
 
-    /// <summary>Max RSS sources per batch (default 30). Oldest/never-fetched sources run first.</summary>
-    public int RssMaxSourcesPerRun { get; set; } = 30;
+    /// <summary>Max RSS sources per batch (default 50). Oldest/never-fetched sources run first.</summary>
+    public int RssMaxSourcesPerRun { get; set; } = 50;
 
     /// <summary>Minutes between scrape runs (default 45).</summary>
     public int ScrapeIntervalMinutes { get; set; } = 45;

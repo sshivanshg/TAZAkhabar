@@ -34,14 +34,14 @@ jobs:
             exit 1
           fi
 
-          for batch in 1 2; do
-            echo "RSS batch ${batch}/2"
+          for batch in 1 2 3 4; do
+            echo "RSS batch ${batch}/4"
             curl --fail-with-body --silent --show-error \
               --request POST \
               --header "X-Ingest-Key: ${RSS_INGEST_SECRET}" \
               --header "Accept: application/json" \
               --max-time 600 \
-              "${INGEST_URL%/}/api/ingest/rss?maxSources=30"
+              "${INGEST_URL%/}/api/ingest/rss?maxSources=50"
           done
 
   scrape-batch:
