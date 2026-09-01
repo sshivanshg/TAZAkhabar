@@ -59,7 +59,6 @@ export function NotificationOptInBanner() {
     setLoading(true)
     setError(null)
     try {
-      await markNotificationPromptShown()
       const result = await registerNewsNotifications(citySlug)
       if (result.status === 'granted') {
         setVisible(false)
@@ -75,6 +74,7 @@ export function NotificationOptInBanner() {
         return
       }
       setError(result.reason)
+      await markNotificationPromptShown()
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'Could not enable news alerts.')
     } finally {

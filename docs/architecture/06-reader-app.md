@@ -1,7 +1,7 @@
 # Reader app
 
 > **Living doc** — update when Expo routes, city/feed/share behavior, or desktop web layer change.  
-> **Last verified against:** 2026-09-01 (Google News–style expanded feed on tablet/desktop, personalized For-you feed, content-analyzed categories, and opt-in notifications)
+> **Last verified against:** 2026-09-01 (Google News–style expanded feed on tablet/desktop, personalized For-you feed, resilient web permissions, and opt-in notifications)
 
 ## Purpose
 
@@ -65,7 +65,7 @@ flowchart LR
 | `src/api/client.ts` | Typed API calls |
 | `src/api/useAsyncResource.ts` | Shared async lifecycle hook for ordinary server-state reads |
 | `src/storage/cityPreference.ts` | Persisted city (`AsyncStorage`; device-local, no account) |
-| `src/location/getCurrentCoordinates.ts` | Explicit foreground permission + bounded current-location read; typed denial/service/timeout failures |
+| `src/location/getCurrentCoordinates.ts` | Explicit foreground permission + bounded current-location read; browser geolocation on web and typed denial/service/timeout failures |
 | `src/location/nearestCity.ts` | Haversine match from device coordinates to public city-centre coordinates |
 | `src/storage/feedCache.ts` | First-page Home/Discover feed cache (`AsyncStorage`; 45m TTL; key = city+category+lang+q) |
 | `src/components/CityListItem.tsx` | Tappable city row + list skeleton |
@@ -157,7 +157,8 @@ visits; the id is a random device-local value (no account, per ADR-002) and
 resets when app/site data is cleared.
 
 Location is optional and requested only after a reader taps **Use my current
-location**. The reader performs the nearest-city calculation on-device against
+location**. Web uses the browser geolocation API directly from that user action;
+native uses Expo foreground permissions. The reader performs the nearest-city calculation on-device against
 the latitude/longitude returned by `GET /api/cities`; raw device coordinates are
 not logged, persisted, or sent to TazaKhabar. Permission denial, disabled
 services, timeout, and unavailable position all leave the searchable manual

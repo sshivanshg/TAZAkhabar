@@ -1,4 +1,5 @@
 import * as Location from 'expo-location'
+import { Platform } from 'react-native'
 
 export type LocationFailureReason =
   | 'permission-denied'
@@ -40,6 +41,10 @@ export async function getCurrentCoordinates(): Promise<{
   latitude: number
   longitude: number
 }> {
+  if (Platform.OS === 'web') {
+    return getWebCoordinates()
+  }
+
   if (!(await Location.hasServicesEnabledAsync())) {
     throw new LocationFailure('services-disabled')
   }
@@ -60,6 +65,45 @@ export async function getCurrentCoordinates(): Promise<{
   } catch (error) {
     if (error instanceof LocationFailure) {
       throw error
+    }
+    throw new LocationFailure('unavailable')
+  }
+}
+
+async function getWebCoordinates(): Promise<{
+  latitude: number
+  longitude: number
+}> {
+  if (typeof navigator === 'undefined' || !navigator.geolocation) {
+    throw new LocationFailure('unavailable')
+  }
+
+  try {
+    const position = await withTimeout(
+      new Promise<GeolocationPosition>((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          enableHighAccuracy: false,
+          maximumAge: 300_000,
+          timeout: LOCATION_TIMEOUT_MS,
+        })
+      }),
+    )
+    return {
+      latitude: position.coords.latitude,
+      longitude: position.coords.longitude,
+    }
+  } catch (error) {
+    if (error instanceof LocationFailure) {
+      throw error
+    }
+    if (typeof error === 'object' && error !== null && 'code' in error) {
+      const code = error.code
+      if (code === 1) {
+        throw new LocationFailure('permission-denied')
+      }
+      if (code === 3) {
+        throw new LocationFailure('timeout')
+      }
     }
     throw new LocationFailure('unavailable')
   }
