@@ -3,20 +3,23 @@ using NewsFeed.Api.Data.Entities;
 namespace NewsFeed.Api.Data;
 
 /// <summary>
-/// English national publishers surfaced in Google News "Local" for every seeded city.
-/// Uses site-scoped Google News RSS (7-day window) — same pattern as The Print for Jhansi.
-/// IDs 3000+ reserved (8 slots per city × 75 cities = 600 sources).
+/// National publishers surfaced in Google News "Local" for every seeded city.
+/// Uses site-scoped Google News RSS (7-day window).
+/// IDs 3000+ reserved (20 slots per city × 75 cities; publishers fill first N slots).
 /// </summary>
 public static class NationalPublisherSourceCatalog
 {
     public const int BaseId = 3000;
-    public const int SlotsPerCity = 8;
 
-    public sealed record PublisherDefinition(string Name, string Host);
+    /// <summary>Fixed stride per city so new publishers can be appended without renumbering.</summary>
+    public const int MaxSlotsPerCity = 20;
 
-    /// <summary>Core English publishers with strong India local coverage.</summary>
+    public sealed record PublisherDefinition(string Name, string Host, string Language = "en");
+
+    /// <summary>English and Hindi publishers commonly shown in Google News India local/discovery.</summary>
     public static readonly PublisherDefinition[] Publishers =
     [
+        // Core English national
         new("The Print", "theprint.in"),
         new("The Hindu", "thehindu.com"),
         new("Times of India", "timesofindia.indiatimes.com"),
@@ -25,6 +28,20 @@ public static class NationalPublisherSourceCatalog
         new("Hindustan Times", "hindustantimes.com"),
         new("Telegraph India", "telegraphindia.com"),
         new("India Today", "indiatoday.in"),
+        // Business and international
+        new("Economic Times", "economictimes.indiatimes.com"),
+        new("Livemint", "livemint.com"),
+        new("Business Standard", "business-standard.com"),
+        new("BBC", "bbc.com"),
+        new("Al Jazeera", "aljazeera.com"),
+        // Digital and regional English
+        new("Scroll.in", "scroll.in"),
+        new("Firstpost", "firstpost.com"),
+        new("The News Minute", "thenewsminute.com"),
+        new("Deccan Herald", "deccanherald.com"),
+        new("The Wire", "thewire.in"),
+        // Hindi national
+        new("Jagran", "jagran.com", "hi"),
     ];
 
     /// <summary>Google News search terms for cities with common alternate spellings.</summary>
@@ -53,7 +70,7 @@ public static class NationalPublisherSourceCatalog
         CitySearchQueries.TryGetValue(slug, out var query) ? query : cityName;
 
     public static int SourceId(int cityId, int publisherIndex) =>
-        BaseId + (cityId - 1) * SlotsPerCity + publisherIndex;
+        BaseId + (cityId - 1) * MaxSlotsPerCity + publisherIndex;
 
     public static LocalPublisherSourceCatalog.PublisherSourceSeed[] BuildSources() =>
         SeedData.Cities
@@ -67,7 +84,7 @@ public static class NationalPublisherSourceCatalog
                         CitySearchQuery(city.Slug, city.Name)),
                     SourceType.Rss,
                     SourceKind.CityEdition,
-                    "en")))
+                    publisher.Language)))
             .ToArray();
 
     public static readonly LocalPublisherSourceCatalog.PublisherSourceSeed[] Sources = BuildSources();
