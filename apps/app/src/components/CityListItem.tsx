@@ -103,23 +103,34 @@ export function CityListItem({
           </Text>
         ) : null}
         {statusLabel ? (
-          <Text
-            fontSize={13}
-            lineHeight={18}
-            fontWeight="$semibold"
-            color={colors.accent}
-            mt="$0.5"
-          >
-            {statusLabel}
-          </Text>
+          <View style={[styles.statusPill, selected ? styles.statusPillSelected : null]}>
+            <Text
+              fontSize={12}
+              lineHeight={16}
+              fontWeight="$semibold"
+              color={selected ? colors.textOnAccent : colors.textSecondary}
+            >
+              {statusLabel}
+            </Text>
+          </View>
         ) : null}
       </View>
       <View style={styles.indicator}>
         {saving ? (
-          <ActivityIndicator color={colors.accent} size="small" />
+          <View style={[styles.statusPill, styles.statusPillSelected]}>
+            <ActivityIndicator color={colors.textOnAccent} size="small" />
+            <Text
+              fontSize={12}
+              lineHeight={16}
+              fontWeight="$semibold"
+              color={colors.textOnAccent}
+            >
+              Saving
+            </Text>
+          </View>
         ) : selected ? (
           <MotiView
-            from={{ opacity: 0, scale: 0.86 }}
+            from={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ type: 'timing', duration: 180 }}
             style={styles.checkWrap}
@@ -158,13 +169,13 @@ export function CityListSkeleton() {
 function createStyles(c: AppColors) {
   return StyleSheet.create({
     row: {
-      minHeight: 72,
-      paddingHorizontal: space.md,
-      paddingVertical: 14,
+      minHeight: 76,
+      paddingHorizontal: space.lg,
+      paddingVertical: 16,
       flexDirection: 'row',
       alignItems: 'center',
-      gap: space.sm,
-      borderRadius: radius.md,
+      gap: space.md,
+      borderRadius: radius.lg,
       borderWidth: 1,
       borderColor: c.border,
       backgroundColor: c.surface,
@@ -192,29 +203,42 @@ function createStyles(c: AppColors) {
     copy: {
       flex: 1,
       minWidth: 0,
-      gap: 2,
+      gap: 6,
     },
     indicator: {
-      width: HIT_TARGET,
+      minWidth: 72,
       minHeight: HIT_TARGET,
       alignItems: 'center',
       justifyContent: 'center',
       pointerEvents: 'none',
     },
     checkWrap: {
-      width: 28,
-      height: 28,
-      borderRadius: 14,
+      width: 30,
+      height: 30,
+      borderRadius: 15,
       backgroundColor: c.accentFill,
       alignItems: 'center',
       justifyContent: 'center',
+    },
+    statusPill: {
+      minHeight: 28,
+      paddingHorizontal: space.sm,
+      borderRadius: radius.full,
+      backgroundColor: c.surfaceRaised,
+      alignSelf: 'flex-start',
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+    },
+    statusPillSelected: {
+      backgroundColor: c.accentFill,
     },
     skeletonBlock: {
       gap: 10,
     },
     searchSkeleton: {
-      height: 50,
-      borderRadius: radius.md,
+      height: 56,
+      borderRadius: radius.lg,
       backgroundColor: c.skeleton,
     },
     sectionSkeleton: {
@@ -226,12 +250,12 @@ function createStyles(c: AppColors) {
       marginBottom: 2,
     },
     rowSkeleton: {
-      minHeight: 72,
-      paddingHorizontal: space.md,
-      paddingVertical: 14,
+      minHeight: 76,
+      paddingHorizontal: space.lg,
+      paddingVertical: 16,
       flexDirection: 'row',
       alignItems: 'center',
-      borderRadius: radius.md,
+      borderRadius: radius.lg,
       borderWidth: 1,
       borderColor: c.border,
       backgroundColor: c.surface,

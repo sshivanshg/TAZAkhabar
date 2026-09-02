@@ -1,7 +1,7 @@
 # API
 
 > **Living doc** — update when endpoints, auth, rate limits, CORS, or DI composition change.  
-> **Last verified against:** 2026-09-02 (effective category filtering and ingestion classification)
+> **Last verified against:** 2026-09-02 (`city=global` nationwide feed scope + effective category filtering)
 
 ## Purpose
 
@@ -44,9 +44,9 @@ Pipeline (order): Serilog request logging → RequestId header/log context → E
 | GET | `/api/health` | `GetHealth` | App health |
 | GET | `/healthz` | — | ASP.NET + Npgsql; Render health check |
 | GET | `/api/cities` | `GetCities` | Alphabetical city catalog with latitude/longitude; `Cache-Control: public, max-age=60` |
-| GET | `/api/articles` | `GetArticles` | `city` required; published only; hides newspaper e-paper editions; cache 60s; **no `body`** |
-| GET | `/api/articles/personalized` | `GetPersonalizedArticles` | `city` required; optional `sessionId` re-ranks the recency-bounded pool per anonymous session (affinity + trending + seen demotion + source diversification); `private, no-store` when `sessionId` present, else cache 60s; **no `body`** |
-| GET | `/api/articles/sections` | `GetFeedSections` | `city` required; optional `sessionId` + `lang` + per-section `limit` (default 8, max 25); same ranked pool as `personalized`, partitioned into ordered sections (`top` 5 → affinity-ordered content-analyzed category sections → `more`); `private, no-store` when `sessionId` present, else cache 60s; **no `body`** |
+| GET | `/api/articles` | `GetArticles` | `city` required (`global` = nationwide); published only; hides newspaper e-paper editions; cache 60s; **no `body`** |
+| GET | `/api/articles/personalized` | `GetPersonalizedArticles` | `city` required (`global` = nationwide); optional `sessionId` re-ranks the recency-bounded pool per anonymous session (affinity + trending + seen demotion + source diversification); `private, no-store` when `sessionId` present, else cache 60s; **no `body`** |
+| GET | `/api/articles/sections` | `GetFeedSections` | `city` required (`global` = nationwide); optional `sessionId` + `lang` + per-section `limit` (default 8, max 25); same ranked pool as `personalized`, partitioned into ordered sections (`top` 5 → affinity-ordered content-analyzed category sections → `more`); `private, no-store` when `sessionId` present, else cache 60s; **no `body`** |
 | GET | `/api/articles/dates` | `GetArticleDates` | City calendar (Asia/Kolkata) |
 | GET | `/api/articles/trending` | `GetTrendingArticles` | View-based; **no `body`** |
 | POST | `/api/articles/{id}/view` | `RecordArticleView` | Optional `sessionId` |

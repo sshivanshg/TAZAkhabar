@@ -39,7 +39,7 @@ import {
   isBookmarked,
   removeBookmark,
 } from '../../src/storage/bookmarks'
-import { getStoredCitySlug } from '../../src/storage/cityPreference'
+import { getEffectiveCitySlug } from '../../src/storage/cityPreference'
 import { getPersonalizationId } from '../../src/storage/personalizationId'
 import { PAGE_SIZE } from '../../src/theme/tokens'
 import {
@@ -171,8 +171,8 @@ function ArticleFeedBody() {
         setCitySlug(routeCity)
         return
       }
-      const stored = await getStoredCitySlug()
-      if (!cancelled && stored) {
+      const stored = await getEffectiveCitySlug()
+      if (!cancelled) {
         setCitySlug(stored)
       }
     })()
