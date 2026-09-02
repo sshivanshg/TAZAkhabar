@@ -29,6 +29,7 @@ the hosted API.
 | `EXPO_PUBLIC_API_BASE_URL` | API origin (no trailing slash). For APK/device builds use the hosted API, not localhost |
 | `EXPO_PUBLIC_APP_ENV` | `local` / `staging` / `production` |
 | `EXPO_PUBLIC_SITE_URL` | Public marketing/legal website origin opened from the reader |
+| `EXPO_PUBLIC_WEB_PUSH_PUBLIC_KEY` | Browser push VAPID public key; must match the API configuration |
 
 When working on the API itself, temporarily set the local `.env` to
 `EXPO_PUBLIC_API_BASE_URL=http://localhost:8080` and
