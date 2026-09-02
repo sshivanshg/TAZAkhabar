@@ -10,6 +10,9 @@ import {
   type NotificationDeliveryMode,
 } from '../storage/notificationPreferences'
 
+const DEFAULT_WEB_PUSH_PUBLIC_KEY =
+  'BFGuSy4Gmrl6BjAbr0WAJ82X6KMTH6IiFMl_gfMtiWSEr7whkfHaavzIrfirbw0UDrxx_DpX_QWVx9Ck9s2nt_M'
+
 export type RegisterNotificationsResult =
   | { status: 'granted'; platform: 'native' | 'web'; synced: boolean; reason?: string }
   | { status: 'denied'; platform: 'native' | 'web'; reason?: string }
@@ -138,7 +141,8 @@ async function registerWebNotifications(citySlug: string, preferredLanguage?: st
     }
   }
 
-  const publicKey = process.env.EXPO_PUBLIC_WEB_PUSH_PUBLIC_KEY
+  // Metro does not inline this env lookup consistently, so keep the public production key as a fallback.
+  const publicKey = process.env.EXPO_PUBLIC_WEB_PUSH_PUBLIC_KEY || DEFAULT_WEB_PUSH_PUBLIC_KEY
   if (!publicKey) {
     return {
       status: 'unsupported' as const,
