@@ -23,6 +23,7 @@ export function ArticleBottomBar({
   return (
     <View
       testID="article-bottom-bar"
+      pointerEvents="box-none"
       style={[
         styles.wrap,
         {
@@ -30,11 +31,13 @@ export function ArticleBottomBar({
         },
       ]}
     >
-      <ArticleActions
-        bookmarked={bookmarked}
-        onShare={onShare}
-        onSave={onSave}
-      />
+      <View style={styles.shell}>
+        <ArticleActions
+          bookmarked={bookmarked}
+          onShare={onShare}
+          onSave={onSave}
+        />
+      </View>
     </View>
   )
 }
@@ -50,11 +53,29 @@ function createStyles(c: ReaderColors) {
       bottom: 0,
       zIndex: 20,
       minHeight: ARTICLE_BOTTOM_BAR_HEIGHT,
+      paddingHorizontal: 12,
+      paddingTop: 6,
+    },
+    shell: {
+      width: '100%',
+      maxWidth: 760,
+      alignSelf: 'center',
+      borderRadius: 24,
+      overflow: 'hidden',
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: c.sheetBorder,
       backgroundColor: c.headerSolid,
-      borderTopWidth: StyleSheet.hairlineWidth,
-      borderTopColor: c.sheetBorder,
-      paddingHorizontal: 8,
-      paddingTop: 4,
+      ...(Platform.OS === 'web'
+        ? ({
+            boxShadow: '0px -10px 34px rgba(16, 24, 40, 0.12)',
+          } as object)
+        : {
+            shadowColor: '#101828',
+            shadowOffset: { width: 0, height: 8 },
+            shadowOpacity: 0.08,
+            shadowRadius: 20,
+            elevation: 5,
+          }),
     },
   })
 }

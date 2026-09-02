@@ -44,43 +44,50 @@ export function ArticleTopBar({
     <View
       testID="article-top-bar"
       accessibilityRole="header"
+      pointerEvents="box-none"
       style={[
         styles.wrap,
         { paddingTop: safeTop },
-        readerHeaderChrome(elevated, reducedMotion, readerColors),
       ]}
     >
-      <View style={styles.row}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Go back"
-          onPress={onBack}
-          hitSlop={4}
-          style={(state) => {
-            const { pressed, focused } = pressableState(state)
-            return [
-              styles.back,
-              pressed ? styles.pressed : null,
-              webFocusRing(Boolean(focused), readerColors),
-            ]
+      <View
+        style={[
+          styles.shell,
+          readerHeaderChrome(elevated, reducedMotion, readerColors),
+        ]}
+      >
+        <View style={styles.row}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Go back"
+            onPress={onBack}
+            hitSlop={4}
+            style={(state) => {
+              const { pressed, focused } = pressableState(state)
+              return [
+                styles.back,
+                pressed ? styles.pressed : null,
+                webFocusRing(Boolean(focused), readerColors),
+              ]
+            }}
+          >
+            <ArrowLeft size={22} strokeWidth={iconStroke} color={readerColors.text} />
+            {showBackLabel ? <Text style={styles.backLabel}>Back</Text> : null}
+          </Pressable>
+
+          <LanguageSegment value={readingLanguage} onChange={onSelectLanguage} />
+        </View>
+        <View
+          style={styles.track}
+          accessibilityRole="progressbar"
+          accessibilityValue={{
+            min: 0,
+            max: 100,
+            now: Math.round(progress * 100),
           }}
         >
-          <ArrowLeft size={22} strokeWidth={iconStroke} color={readerColors.text} />
-          {showBackLabel ? <Text style={styles.backLabel}>Back</Text> : null}
-        </Pressable>
-
-        <LanguageSegment value={readingLanguage} onChange={onSelectLanguage} />
-      </View>
-      <View
-        style={styles.track}
-        accessibilityRole="progressbar"
-        accessibilityValue={{
-          min: 0,
-          max: 100,
-          now: Math.round(progress * 100),
-        }}
-      >
-        <View style={[styles.fill, { width: `${progress * 100}%` }]} />
+          <View style={[styles.fill, { width: `${progress * 100}%` }]} />
+        </View>
       </View>
     </View>
   )
@@ -94,10 +101,33 @@ function createStyles(c: ReaderColors) {
       left: 0,
       right: 0,
       zIndex: 20,
+      paddingHorizontal: 12,
+      paddingBottom: 10,
+    },
+    shell: {
+      width: '100%',
+      maxWidth: 760,
+      alignSelf: 'center',
+      overflow: 'hidden',
+      borderRadius: 24,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: c.sheetBorder,
+      backgroundColor: c.headerSolid,
+      ...(Platform.OS === 'web'
+        ? ({
+            boxShadow: '0px 14px 38px rgba(16, 24, 40, 0.12)',
+          } as object)
+        : {
+            shadowColor: '#101828',
+            shadowOffset: { width: 0, height: 8 },
+            shadowOpacity: 0.08,
+            shadowRadius: 20,
+            elevation: 4,
+          }),
     },
     row: {
       minHeight: HIT_TARGET,
-      paddingHorizontal: 16,
+      paddingHorizontal: 12,
       paddingBottom: 6,
       flexDirection: 'row',
       alignItems: 'center',
@@ -105,14 +135,17 @@ function createStyles(c: ReaderColors) {
       gap: 8,
     },
     back: {
-      minWidth: HIT_TARGET,
-      minHeight: HIT_TARGET,
-      paddingLeft: 4,
-      paddingRight: 8,
+      minWidth: 40,
+      minHeight: 40,
+      paddingLeft: 10,
+      paddingRight: 12,
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 4,
-      borderRadius: 10,
+      gap: 6,
+      borderRadius: 14,
+      backgroundColor: c.sheet,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: c.sheetBorder,
     },
     backLabel: {
       color: c.text,
@@ -129,7 +162,7 @@ function createStyles(c: ReaderColors) {
     fill: {
       height: 2,
       backgroundColor: c.progressFill,
-      opacity: 0.45,
+      opacity: 0.65,
     },
   })
 }

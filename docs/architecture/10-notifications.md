@@ -1,7 +1,7 @@
 # Notifications
 
 > **Living doc** — update in the same change when push subscription, delivery, or prompt behavior changes.  
-> **Last verified against:** 2026-09-01 (platform-owned permission prompts, resilient web subscription registration, and native channel setup)
+> **Last verified against:** 2026-09-02 (platform-owned permission prompts, resilient web subscription registration, and native channel setup)
 
 ## Purpose
 
@@ -85,8 +85,8 @@ sequenceDiagram
 ## Failure modes & invariants
 
 - Permission prompts are throttled locally; a dismissal should not cause repeated nagging on every open.
-- Permission requests use the browser or operating-system permission panel; the feed does not render a custom notification prompt.
-- A successful browser/device permission grant is stored only after subscription sync finishes, so failed registration can be retried.
+- Permission requests use the browser or operating-system permission panel; the home feed does not auto-prompt, and Profile is the explicit opt-in surface.
+- A successful browser/device permission grant is persisted even if subscription sync fails, so the app can show a retryable warning instead of a hard failure.
 - Web Push requires HTTPS, a service worker, and a valid VAPID keypair.
 - Existing browser subscriptions are recreated when their application server key no longer matches the configured VAPID public key.
 - Push send failures must not block article ingest or editorial publish flows.

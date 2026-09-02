@@ -8,11 +8,10 @@ import {
   getOrCreateNotificationClientId,
   setNotificationPromptState,
   type NotificationDeliveryMode,
-  type NotificationPromptState,
 } from '../storage/notificationPreferences'
 
 export type RegisterNotificationsResult =
-  | { status: 'granted'; platform: 'native' | 'web' }
+  | { status: 'granted'; platform: 'native' | 'web'; synced: boolean; reason?: string }
   | { status: 'denied'; platform: 'native' | 'web'; reason?: string }
   | { status: 'unsupported'; platform: 'native' | 'web'; reason: string }
 
@@ -100,9 +99,26 @@ async function registerNativeNotifications(citySlug: string, preferredLanguage?:
     webPushSubscription: undefined,
     enabled: true,
   }
-  const subscription = await apiClient.upsertNotificationSubscription(payload)
-  await persistGrantedPromptState()
-  return { status: 'granted' as const, platform: 'native' as const, subscription }
+  try {
+    await apiClient.upsertNotificationSubscription(payload)
+    await persistGrantedPromptState()
+    return {
+      status: 'granted' as const,
+      platform: 'native' as const,
+      synced: true,
+    }
+  } catch (error) {
+    await persistGrantedPromptState()
+    return {
+      status: 'granted' as const,
+      platform: 'native' as const,
+      synced: false,
+      reason:
+        error instanceof Error
+          ? 'Permission was granted, but we could not finish syncing alerts yet. Try again from Profile when your connection is better.'
+          : 'Permission was granted, but we could not finish syncing alerts yet. Try again from Profile when your connection is better.',
+    }
+  }
 }
 
 async function registerWebNotifications(citySlug: string, preferredLanguage?: string | null) {
@@ -194,9 +210,26 @@ async function registerWebNotifications(citySlug: string, preferredLanguage?: st
     },
     enabled: true,
   }
-  await apiClient.upsertNotificationSubscription(payload)
-  await persistGrantedPromptState()
-  return { status: 'granted' as const, platform: 'web' as const, subscription }
+  try {
+    await apiClient.upsertNotificationSubscription(payload)
+    await persistGrantedPromptState()
+    return {
+      status: 'granted' as const,
+      platform: 'web' as const,
+      synced: true,
+    }
+  } catch (error) {
+    await persistGrantedPromptState()
+    return {
+      status: 'granted' as const,
+      platform: 'web' as const,
+      synced: false,
+      reason:
+        error instanceof Error
+          ? 'Permission was granted, but we could not finish syncing alerts yet. Try again from Profile when your connection is better.'
+          : 'Permission was granted, but we could not finish syncing alerts yet. Try again from Profile when your connection is better.',
+    }
+  }
 }
 
 export async function registerNewsNotifications(

@@ -27,6 +27,7 @@ export function ArticlePage({
         testID="article-inner-scroll"
         style={styles.scroll}
         contentContainerStyle={{
+          paddingHorizontal: 12,
           paddingTop: padTop,
           paddingBottom: padBottom,
           flexGrow: 1,
@@ -40,7 +41,7 @@ export function ArticlePage({
           setScrollable(contentHeight > height + 8)
         }}
       >
-        {children}
+        <View style={styles.sheet}>{children}</View>
       </ScrollView>
     </View>
   )
@@ -61,6 +62,28 @@ function createStyles(c: ReaderColors) {
     },
     scroll: {
       flex: 1,
+    },
+    sheet: {
+      flex: 1,
+      width: '100%',
+      maxWidth: 760,
+      alignSelf: 'center',
+      backgroundColor: c.card,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: c.sheetBorder,
+      borderRadius: 28,
+      overflow: 'hidden',
+      ...(Platform.OS === 'web'
+        ? ({
+            boxShadow: '0px 18px 48px rgba(16, 24, 40, 0.12)',
+          } as object)
+        : {
+            shadowColor: '#101828',
+            shadowOffset: { width: 0, height: 10 },
+            shadowOpacity: 0.08,
+            shadowRadius: 24,
+            elevation: 4,
+          }),
     },
   })
 }

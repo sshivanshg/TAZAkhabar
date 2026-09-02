@@ -15,7 +15,6 @@ import { useTheme } from '../../preferences/ThemePreferenceContext'
 import { iconStroke } from '../../theme/categoryIcons'
 import {
   ARTICLE_COLUMN_MAX,
-  ARTICLE_HEADLINE_MAX,
   type ReaderColors,
 } from '../../theme/readerTokens'
 import { formatRelativeTime } from '../../utils/relativeTime'
@@ -264,9 +263,8 @@ function createStyles(c: ReaderColors) {
   return StyleSheet.create({
     root: {
       width: '100%',
-      maxWidth: ARTICLE_HEADLINE_MAX,
-      alignSelf: 'center',
-      backgroundColor: c.canvas,
+      flexGrow: 1,
+      backgroundColor: c.card,
     },
     hero: {
       width: '100%',
@@ -288,18 +286,18 @@ function createStyles(c: ReaderColors) {
       width: '100%',
       maxWidth: ARTICLE_COLUMN_MAX,
       alignSelf: 'center',
-      paddingHorizontal: 22,
-      paddingTop: 22,
-      paddingBottom: 12,
+      paddingHorizontal: 20,
+      paddingTop: 20,
+      paddingBottom: 18,
     },
     header: {
-      gap: 8,
+      gap: 10,
     },
     eyebrow: {
       color: c.accent,
-      fontSize: 12,
+      fontSize: 11,
       fontWeight: '700',
-      letterSpacing: 1.2,
+      letterSpacing: 1.3,
       textTransform: 'uppercase',
     },
     headline: {
@@ -309,17 +307,17 @@ function createStyles(c: ReaderColors) {
     },
     meta: {
       color: c.textMuted,
-      fontSize: 15,
+      fontSize: 14,
       lineHeight: 22,
-      marginTop: 4,
+      marginTop: 2,
     },
     originalCta: {
       alignSelf: 'flex-start',
-      marginTop: 24,
-      marginBottom: 4,
+      marginTop: 22,
+      marginBottom: 2,
       minHeight: 44,
-      paddingHorizontal: 16,
-      borderRadius: 12,
+      paddingHorizontal: 18,
+      borderRadius: 14,
       backgroundColor: c.accentSoft,
       alignItems: 'center',
       justifyContent: 'center',
@@ -330,15 +328,15 @@ function createStyles(c: ReaderColors) {
       fontWeight: '700',
     },
     body: {
-      marginTop: 20,
-      gap: 18,
+      marginTop: 18,
+      gap: 16,
     },
     ledeWrap: {
       gap: 14,
-      paddingBottom: 4,
+      paddingBottom: 8,
       borderBottomWidth: StyleSheet.hairlineWidth,
       borderBottomColor: c.sheetBorder,
-      marginBottom: 4,
+      marginBottom: 2,
     },
     lede: {
       color: c.textSecondary,
@@ -412,11 +410,13 @@ function createStyles(c: ReaderColors) {
       fontWeight: '600',
     },
     attribution: {
-      marginTop: 32,
+      marginTop: 28,
       marginBottom: 8,
       padding: 16,
-      borderRadius: 12,
-      backgroundColor: c.attribution,
+      borderRadius: 16,
+      backgroundColor: c.sheet,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: c.sheetBorder,
       gap: 6,
     },
     attributionKicker: {

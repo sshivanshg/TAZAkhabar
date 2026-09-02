@@ -34,6 +34,7 @@ Template for new pages: [`_template.md`](./_template.md).
 | Living atlas | `docs/architecture/` | Current how-it-works + Mermaid |
 | Decisions | `docs/adr/` | Why we chose X (immutable once accepted) |
 | Product intent | `docs/PRD.md` | What we build for users |
+| Current capability inventory | `docs/current-capabilities.md` | Shipped features, source rules, cadence, and agent update contract |
 | Feature design history | `docs/superpowers/` | Specs/plans for past work |
 | Agent hard rules | `.cursor/rules/` | Short must-follow constraints; depth is here |
 

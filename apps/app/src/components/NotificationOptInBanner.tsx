@@ -13,7 +13,6 @@ import {
   type NotificationPromptState,
 } from '../storage/notificationPreferences'
 import {
-  markNotificationPromptShown,
   registerNewsNotifications,
   suppressNotificationPrompt,
 } from '../notifications/registerNotifications'
@@ -65,16 +64,19 @@ export function NotificationOptInBanner() {
         return
       }
       if (result.status === 'denied') {
-        if (result.reason) {
-          setError(result.reason)
-          return
-        }
         await suppressNotificationPrompt('denied')
+        setError(
+          result.reason ?? 'Notifications are blocked for this app. Check device or browser settings.',
+        )
         setVisible(false)
         return
       }
-      setError(result.reason)
-      await markNotificationPromptShown()
+      if (result.status === 'unsupported') {
+        await suppressNotificationPrompt('dismissed')
+        setError(result.reason)
+        setVisible(false)
+        return
+      }
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'Could not enable news alerts.')
     } finally {

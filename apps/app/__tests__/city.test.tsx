@@ -216,7 +216,7 @@ describe('CityPickerScreen', () => {
 
     expect(
       await screen.findByText(
-        'Location access was not allowed. You can still choose your city below.',
+        'Location is blocked in your browser settings. Allow location for this site, then try again.',
       ),
     ).toBeTruthy()
     expect(screen.getByText('Jhansi')).toBeTruthy()

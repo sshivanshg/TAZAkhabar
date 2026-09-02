@@ -78,6 +78,22 @@ async function getWebCoordinates(): Promise<{
     throw new LocationFailure('unavailable')
   }
 
+  if ('permissions' in navigator && navigator.permissions?.query) {
+    try {
+      const permission = await navigator.permissions.query({
+        name: 'geolocation' as PermissionName,
+      })
+      if (permission.state === 'denied') {
+        throw new LocationFailure('permission-denied', false)
+      }
+    } catch (error) {
+      if (error instanceof LocationFailure) {
+        throw error
+      }
+      // Permission state queries are best-effort; fall back to the browser prompt.
+    }
+  }
+
   try {
     const position = await withTimeout(
       new Promise<GeolocationPosition>((resolve, reject) => {

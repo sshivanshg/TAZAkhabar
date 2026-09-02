@@ -75,8 +75,14 @@ describe('registerNewsNotifications', () => {
   })
 
   it('does not persist granted state when subscription sync fails', async () => {
-    await expect(registerNewsNotifications('jhansi')).rejects.toThrow('sync failed')
+    await expect(registerNewsNotifications('jhansi')).resolves.toEqual({
+      status: 'granted',
+      platform: 'web',
+      synced: false,
+      reason:
+        'Permission was granted, but we could not finish syncing alerts yet. Try again from Profile when your connection is better.',
+    })
 
-    expect(setNotificationPromptState).not.toHaveBeenCalled()
+    expect(setNotificationPromptState).toHaveBeenCalledTimes(1)
   })
 })

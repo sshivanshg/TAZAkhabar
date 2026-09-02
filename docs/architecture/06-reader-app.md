@@ -1,7 +1,7 @@
 # Reader app
 
 > **Living doc** — update when Expo routes, city/feed/share behavior, or desktop web layer change.  
-> **Last verified against:** 2026-09-01 (Google News–style expanded feed on tablet/desktop, personalized For-you feed, resilient web permissions, and platform-owned notification prompts)
+> **Last verified against:** 2026-09-02 (Google News–style expanded feed on tablet/desktop, personalized For-you feed, inset article-sheet presentation, resilient web permissions, and explicit Profile-driven notification prompts)
 
 ## Purpose
 
@@ -55,7 +55,7 @@ flowchart LR
 | `(tabs)/bookmarks.tsx` | Local bookmarks |
 | `(tabs)/profile.tsx` | Settings: city, appearance (Light/Dark/System), language, blocks |
 | `(tabs)/categories.tsx` | Hidden (`href: null`) |
-| `article/[id].tsx` | Continuous editorial article feed; hydrates `body` via `getArticle`; Back returns to Home |
+| `article/[id].tsx` | Continuous editorial article feed; hydrates `body` via `getArticle`; Back returns to Home; article pages render as inset card sheets with floating top/bottom chrome |
 | `feed.tsx` | Legacy redirect → tabs |
 
 ### Modules
@@ -86,7 +86,7 @@ flowchart LR
 | `src/pwa/registerWebServiceWorker.ts` | Registers `/sw.js` on web only (never Expo native) |
 | `src/utils/shouldOfferAddToHome.ts` | A2HS only on **mobile web browsers**; never Expo native; never installed PWA (`display-mode: standalone` / iOS `navigator.standalone`) |
 | `src/components/PublicLinks.tsx` | External links to the standalone public site |
-| `src/components/NotificationOptInBanner.tsx` | Legacy prompt component; Home invokes platform-owned notification permission UI |
+| `src/components/NotificationOptInBanner.tsx` | Legacy prompt component; Profile taps invoke platform-owned notification permission UI |
 | `src/notifications/registerNotifications.ts` | Native Expo token + Android channel + web push subscription registration |
 | `src/storage/notificationPreferences.ts` | Client id and prompt-state storage for permission backoff |
 
@@ -127,7 +127,7 @@ sequenceDiagram
   U->>App: Open article
   App->>API: getArticles (stack) + getArticle (body)
   App->>API: recordArticleView
-  opt User enables alerts
+  opt User taps Enable alerts in Profile
     App->>API: POST /api/notifications/subscriptions
   end
   U->>App: Share
@@ -221,11 +221,11 @@ Manual verification still required before claiming a comprehensive a11y sweep is
 - Privacy, support, terms, and corrections live on the standalone public website and open externally from the reader.
 - Feed cache: first page only; TTL 45 minutes; max 16 key entries (LRU). Fresh cache skips the network until pull-to-refresh or key change (city / category / language / Discover `q`). Stale cache paints then revalidates.
 - List payloads omit `body`; the reader shows full plain-text `body` when `GET /api/articles/{id}` returns it, otherwise the summary. For translated reads, the API suppresses original-language `body` so the story shows translated headline/summary rather than mixing languages.
-- The article screen uses Reels-style vertical paging: each story is one viewport-tall page so two stories never share the screen. A scroll gesture snaps to the next story with a slower eased transition on web (~700ms; instant when the reader prefers reduced motion). Native paging uses the normal deceleration rate rather than the snappy `fast` default. Short stories pad to fill the page; longer stories scroll inside that page. Story content starts below the opaque top bar so hero images (including e-paper mastheads) do not bleed through the chrome. Publisher download CTAs such as “Download in high quality” are stripped from body copy. Later stories append as the reader approaches the end. The FlatList is the only paging surface (`flex: 1` inside an overflow-clipped root); the sticky top bar and compact bottom action bar sit outside that list (viewport-fixed on web) so chrome does not move with story content. Share and Save live only in that bottom bar — not duplicated in the story body.
+- The article screen uses Reels-style vertical paging: each story is one viewport-tall page so two stories never share the screen. A scroll gesture snaps to the next story with a slower eased transition on web (~700ms; instant when the reader prefers reduced motion). Native paging uses the normal deceleration rate rather than the snappy `fast` default. Short stories pad to fill the page; longer stories scroll inside that page. Story content now sits inside an inset rounded card sheet on the TazaKhabar canvas so the detail view feels aligned with the feed cards. Publisher download CTAs such as “Download in high quality” are stripped from body copy. Later stories append as the reader approaches the end. The FlatList is the only paging surface (`flex: 1` inside an overflow-clipped root); the sticky top bar and compact bottom action bar sit outside that list (viewport-fixed on web) so chrome does not move with story content. Share and Save live only in that bottom bar — not duplicated in the story body.
 - Active story is detected with FlatList viewability (and an IntersectionObserver sentinel on web). `6 of 8` updates from that active item. On web the `/article/:id` path is `history.replaceState`’d while reading. The article Back control always `replace`s to Home (`/(tabs)`) so history never drops the reader on Discover.
 - Source URLs appear once as “Read original article” near the headline. Publisher name stays in metadata as plain text. Only valid `https` URLs become that link.
 - Share prefers the platform share sheet, then copy-link; WhatsApp remains an optional destination rather than the only action. Shared links point to `EXPO_PUBLIC_SITE_URL`, while Read original keeps publisher attribution separate.
-- Notification permission prompts are intentionally calm: the home feed banner and profile action can surface opt-in, but local prompt state throttles repeated asks after dismissal or denial, and a successful system/browser grant is persisted before backend subscription sync finishes.
+- Notification permission prompts are intentionally calm: Profile is the explicit opt-in surface, local prompt state throttles repeated asks after dismissal or denial, and a successful system/browser grant is persisted even if backend subscription sync needs a later retry.
 
 ## Related docs
 

@@ -134,14 +134,22 @@ export default function CityPickerScreen() {
         typeof error.reason === 'string'
           ? error.reason
           : 'unavailable'
+      const canAskAgain =
+        typeof error === 'object' && error !== null && 'canAskAgain' in error
+          ? (error as { canAskAgain?: boolean }).canAskAgain
+          : undefined
       const message =
         reason === 'permission-denied'
-          ? 'Location access was not allowed. You can still choose your city below.'
+          ? canAskAgain === false
+            ? 'Location is blocked in your browser settings. Allow location for this site, then try again.'
+            : 'Location access was not allowed. You can still choose your city below.'
           : reason === 'services-disabled'
             ? 'Location services are turned off. Turn them on or choose your city below.'
             : reason === 'timeout'
               ? 'Location took too long. Try again or choose your city below.'
-              : 'We could not get your location. Try again or choose your city below.'
+              : Platform.OS === 'web'
+                ? 'We could not get your location in this browser. Try again or choose your city below.'
+                : 'We could not get your location. Try again or choose your city below.'
       setLocationNotice({ tone: 'error', message })
     } finally {
       setDetectingLocation(false)

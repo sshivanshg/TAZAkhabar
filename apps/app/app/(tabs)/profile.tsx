@@ -64,6 +64,7 @@ function ProfileBody() {
   const [citySlug, setCitySlug] = useState<string | null>(null)
   const [notificationStatus, setNotificationStatus] = useState<'unknown' | 'granted' | 'denied' | 'dismissed'>('unknown')
   const [notificationBusy, setNotificationBusy] = useState(false)
+  const [notificationError, setNotificationError] = useState<string | null>(null)
 
   const loadCity = useCallback(async () => {
     const slug = await getStoredCitySlug()
@@ -83,6 +84,7 @@ function ProfileBody() {
   const loadNotificationState = useCallback(async () => {
     const state = await getNotificationPromptState()
     setNotificationStatus(state.status)
+    setNotificationError(null)
   }, [])
 
   useFocusEffect(
@@ -290,6 +292,25 @@ function ProfileBody() {
           >
             Status: {notificationStatus === 'granted' ? 'On' : notificationStatus === 'denied' ? 'Off' : 'Not set'}
           </Text>
+          {notificationError ? (
+            <Text
+              fontSize={typography.meta.fontSize}
+              lineHeight={typography.meta.lineHeight}
+              color={notificationStatus === 'granted' ? colors.textMuted : colors.destructive}
+              mb="$3"
+            >
+              {notificationError}
+            </Text>
+          ) : notificationStatus === 'denied' ? (
+            <Text
+              fontSize={typography.meta.fontSize}
+              lineHeight={typography.meta.lineHeight}
+              color={colors.textMuted}
+              mb="$3"
+            >
+              Notifications are off in device or browser settings.
+            </Text>
+          ) : null}
           <View style={styles.alertActions}>
             <PrimaryButton
               label={notificationStatus === 'granted' ? 'Refresh alerts' : 'Enable alerts'}
@@ -299,9 +320,33 @@ function ProfileBody() {
                     return
                   }
                   setNotificationBusy(true)
+                  setNotificationError(null)
                   try {
                     const result = await registerNewsNotifications(citySlug, preferredLanguage)
-                    setNotificationStatus(result.status === 'granted' ? 'granted' : result.status === 'denied' ? 'denied' : 'dismissed')
+                    setNotificationStatus(
+                      result.status === 'granted'
+                        ? 'granted'
+                        : result.status === 'denied'
+                          ? 'denied'
+                          : 'dismissed',
+                    )
+                    if (result.status === 'denied') {
+                      await suppressNotificationPrompt('denied')
+                      setNotificationError(
+                        result.reason ?? 'Notifications are blocked for this app. Check device or browser settings.',
+                      )
+                    } else if (result.status === 'unsupported') {
+                      await suppressNotificationPrompt('dismissed')
+                      setNotificationError(result.reason)
+                    } else if (result.reason) {
+                      setNotificationError(result.reason)
+                    } else {
+                      setNotificationError(null)
+                    }
+                  } catch (caught) {
+                    setNotificationError(
+                      caught instanceof Error ? caught.message : 'Could not enable news alerts.',
+                    )
                   } finally {
                     setNotificationBusy(false)
                   }
