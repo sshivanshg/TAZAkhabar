@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useRef, useState } from 'react'
-import { FlatList, Pressable, StyleSheet, View } from 'react-native'
+import { FlatList, Platform, Pressable, StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useFocusEffect, useRouter } from 'expo-router'
 import { Text, VStack } from '@gluestack-ui/themed'
@@ -143,16 +143,19 @@ function BookmarksBody() {
           </Text>
         </VStack>
       ) : bookmarks.length === 0 ? (
-        <EmptyState
-          title="No saved stories yet"
-          message="Long-press a story or open it and tap Save to bookmark it for later."
-          primaryLabel="Browse stories"
-          onPrimary={() => router.replace('/(tabs)')}
-          primaryAccessibilityLabel="Browse stories"
-          secondaryLabel="Change city"
-          onSecondary={() => router.push('/city')}
-          secondaryAccessibilityLabel="Change city"
-        />
+        <View style={styles.emptyWrap}>
+          <EmptyState
+            title="No saved stories yet"
+            message="Save stories as you read. They'll stay here on this device for later."
+            primaryLabel="Browse stories"
+            onPrimary={() => router.replace('/(tabs)')}
+            primaryAccessibilityLabel="Browse stories"
+            secondaryLabel="Change city"
+            onSecondary={() => router.push('/city')}
+            secondaryAccessibilityLabel="Change city"
+            icon={<Bookmark size={28} strokeWidth={1.8} color={colors.accent} />}
+          />
+        </View>
       ) : (
         <FlatList
           data={bookmarks}
@@ -233,10 +236,23 @@ function createStyles(c: AppColors) {
     header: {
       paddingHorizontal: space.screen,
       paddingBottom: space.sm,
+      maxWidth: 980,
+      width: '100%',
+      alignSelf: 'center',
+      ...(Platform.OS === 'web' ? { paddingTop: 8 } : {}),
     },
     list: {
       paddingHorizontal: space.screen,
       flexGrow: 1,
+      maxWidth: 980,
+      width: '100%',
+      alignSelf: 'center',
+    },
+    emptyWrap: {
+      flex: 1,
+      width: '100%',
+      maxWidth: 760,
+      alignSelf: 'center',
     },
     iconWrap: {
       width: 64,

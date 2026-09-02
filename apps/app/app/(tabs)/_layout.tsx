@@ -114,6 +114,7 @@ export default function TabsLayout() {
             name="bookmarks"
             options={{
               title: 'Bookmarks',
+              headerShown: false,
               tabBarLabel: 'Bookmarks',
               tabBarIcon: ({ focused }) => <TabIcon Icon={Bookmark} focused={focused} />,
               tabBarAccessibilityLabel: 'Bookmarks',
