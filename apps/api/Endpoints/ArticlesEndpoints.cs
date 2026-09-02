@@ -1,4 +1,5 @@
 using NewsFeed.Api.Data;
+using NewsFeed.Api.Data.Entities;
 using NewsFeed.Api.Dtos;
 using NewsFeed.Api.Options;
 using NewsFeed.Api.Services;
@@ -94,12 +95,6 @@ public static class ArticlesEndpoints
                         && a.PublishedAt >= cutoff)
                     .ExcludeEpaperEditions();
 
-                if (!string.IsNullOrWhiteSpace(category))
-                {
-                    var categoryFilter = category.Trim();
-                    query = query.Where(a => a.Category.ToLower() == categoryFilter.ToLower());
-                }
-
                 if (!string.IsNullOrWhiteSpace(q))
                 {
                     var needle = q.Trim().ToLowerInvariant();
@@ -112,13 +107,17 @@ public static class ArticlesEndpoints
                     query = query.Where(a => a.PublishedAt >= startUtc && a.PublishedAt < endUtc);
                 }
 
-                var total = await query.CountAsync(cancellationToken);
-
                 var entities = await query
                     .OrderByDescending(a => a.PublishedAt)
-                    .Skip(pageOffset)
-                    .Take(pageLimit)
                     .ToListAsync(cancellationToken);
+
+                if (!string.IsNullOrWhiteSpace(category))
+                {
+                    entities = entities.Where(a => IsEffectiveCategory(a, category)).ToList();
+                }
+
+                var total = entities.Count;
+                entities = entities.Skip(pageOffset).Take(pageLimit).ToList();
 
                 var items = await presentation.PresentManyAsync(entities, lang, cancellationToken);
 
@@ -184,17 +183,13 @@ public static class ArticlesEndpoints
                         && a.PublishedAt < windowEndUtc)
                     .ExcludeEpaperEditions();
 
+                var dateArticles = await query.ToListAsync(cancellationToken);
                 if (!string.IsNullOrWhiteSpace(category))
                 {
-                    var categoryFilter = category.Trim();
-                    query = query.Where(a => a.Category.ToLower() == categoryFilter.ToLower());
+                    dateArticles = dateArticles.Where(a => IsEffectiveCategory(a, category)).ToList();
                 }
 
-                var publishedAts = await query
-                    .Select(a => a.PublishedAt)
-                    .ToListAsync(cancellationToken);
-
-                var dates = publishedAts
+                var dates = dateArticles.Select(a => a.PublishedAt)
                     .Select(at => CityCalendar.ToLocalDate(at, cityEntity))
                     .Distinct()
                     .OrderByDescending(d => d)
@@ -353,22 +348,21 @@ public static class ArticlesEndpoints
                         && a.PublishedAt >= cutoff)
                     .ExcludeEpaperEditions();
 
-                if (!string.IsNullOrWhiteSpace(category))
-                {
-                    var categoryFilter = category.Trim();
-                    query = query.Where(a => a.Category.ToLower() == categoryFilter.ToLower());
-                }
-
-                var total = await query.CountAsync(cancellationToken);
-
                 // Personalization re-ranks a recency-bounded pool so stale stories
                 // never resurface just because they match the reader's taste.
                 var poolSize = Math.Max(1, personalizationOptions.Value.CandidatePoolSize);
                 var candidates = await query
                     .OrderByDescending(a => a.PublishedAt)
                     .ThenByDescending(a => a.Id)
-                    .Take(poolSize)
                     .ToListAsync(cancellationToken);
+
+                if (!string.IsNullOrWhiteSpace(category))
+                {
+                    candidates = candidates.Where(a => IsEffectiveCategory(a, category)).ToList();
+                }
+
+                var total = candidates.Count;
+                candidates = candidates.Take(poolSize).ToList();
 
                 var sessionKey = NormalizeSessionKey(sessionId);
                 var now = DateTimeOffset.UtcNow;
@@ -604,6 +598,12 @@ public static class ArticlesEndpoints
 
         return trimmed;
     }
+
+    private static bool IsEffectiveCategory(Article article, string requestedCategory) =>
+        string.Equals(
+            ContentCategoryClassifier.EffectiveCategory(article.Category, article.Headline, article.Summary),
+            requestedCategory.Trim(),
+            StringComparison.OrdinalIgnoreCase);
 }
 
 internal static class TrendingDefaults

@@ -500,7 +500,7 @@ public sealed class ScrapeIngestService
             SourceName = HtmlText.Truncate(source.Name, 120),
             SourceUrl = sourceUrl,
             PublishedAt = ToUtc(publishedAt ?? now),
-            Category = "Local",
+            Category = ContentCategoryClassifier.EffectiveCategory("Local", headline, summary),
             Status = ArticleStatus.Published,
             IsMock = false,
             IngestedAt = now,

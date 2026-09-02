@@ -118,6 +118,22 @@ public static class ContentCategoryClassifier
             // Hindi — weak
             K("चुनाव", 1), K("नेता", 1), K("पार्टी", 1),
         ]),
+        new("National",
+        [
+            // English — strong
+            K("parliament", 2), K("lok sabha", 2), K("rajya sabha", 2),
+            K("supreme court", 2), K("president", 2), K("prime minister", 2),
+            K("union government", 2), K("central government", 2), K("national", 2),
+            K("india-wide", 2), K("nationwide", 2),
+            // English — weak
+            K("india", 1), K("country", 1), K("nation", 1),
+            // Hindi — strong
+            K("संसद", 2), K("लोकसभा", 2), K("राज्यसभा", 2), K("सुप्रीम कोर्ट", 2),
+            K("राष्ट्रपति", 2), K("प्रधानमंत्री", 2), K("केंद्र सरकार", 2),
+            K("केंद्रीय सरकार", 2), K("राष्ट्रीय", 2),
+            // Hindi — weak
+            K("भारत", 1), K("देश", 1),
+        ]),
         new("Local",
         [
             // English — strong

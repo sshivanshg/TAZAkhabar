@@ -10,6 +10,7 @@ public sealed class ContentCategoryClassifierTests
     [InlineData("Cricket team wins thrilling match at stadium", "Sports")]
     [InlineData("Sensex rallies as banks post record profits", "Business")]
     [InlineData("Chief minister announces new scheme in assembly", "State")]
+    [InlineData("Prime minister addresses Parliament on national policy", "National")]
     [InlineData("Mayor inspects ward roads after waterlogging", "Local")]
     // Hindi (Devanagari) keyword hits per category
     [InlineData("अस्पताल में नए डॉक्टर नियुक्त", "Health")]

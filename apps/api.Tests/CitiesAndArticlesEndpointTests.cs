@@ -175,6 +175,24 @@ public sealed class ArticlesEndpointTests : IClassFixture<TazaKhabarWebApplicati
     }
 
     [Fact]
+    public async Task GetArticles_CategoryFilter_UsesEffectiveContentCategory()
+    {
+        var client = _factory.CreateSeededClient();
+        InsertJhansiArticles(
+            Published("New vaccine drive at district hospital", "https://example.com/miscategorized"),
+            Published("Ward meeting", "https://example.com/local"));
+
+        var response = await client.GetAsync("/api/articles?city=jhansi&category=Health");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var payload = await response.Content.ReadFromJsonAsync<PagedArticlesResponse>();
+        Assert.NotNull(payload);
+        var article = Assert.Single(payload.Items);
+        Assert.Equal("New vaccine drive at district hospital", article.Headline);
+        Assert.Equal("Health", article.Category);
+    }
+
+    [Fact]
     public async Task GetArticles_DateFilter_UsesCityLocalCalendarDay()
     {
         var client = _factory.CreateSeededClient();

@@ -348,7 +348,7 @@ public sealed class RssIngestService(
             SourceName = sourceName,
             SourceUrl = sourceUrl,
             PublishedAt = ToUtc(item.PublishedAt ?? now),
-            Category = "Local",
+            Category = ContentCategoryClassifier.EffectiveCategory("Local", item.Title, summary),
             ImageUrl = NormalizeImageUrl(item.ImageUrl),
             Status = autoPublish ? ArticleStatus.Published : ArticleStatus.PendingReview,
             IsMock = false,

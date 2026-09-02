@@ -1,7 +1,7 @@
 # Ingestion
 
 > **Living doc** — update when pipelines, article status on insert, cron, SSE, or intelligence providers change.  
-> **Last verified against:** 2026-09-01 (25 national publishers × 75 cities)
+> **Last verified against:** 2026-09-02 (RSS/scrape content categorization)
 
 ## Purpose
 
@@ -91,7 +91,10 @@ flowchart TB
 | Silence alert | `IngestSilenceMonitor` (`IngestHealth__MaxSilenceMinutes`, optional webhook) |
 | In-process scheduler | `ScheduledIngestHostedService` (`IngestSchedule__*`) — RSS batches + scrape when external crons are missing |
 
-Categories allowed for intelligence: Local, State, National, Business, Health, Sports.
+Categories allowed for intelligence and content classification: Local, State,
+National, Business, Health, Sports. RSS and scrape stories use the deterministic
+content classifier with `Local` as the fallback; PDF extraction uses the
+intelligence response category.
 
 ## Data & control flows
 

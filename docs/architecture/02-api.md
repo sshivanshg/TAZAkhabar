@@ -1,7 +1,7 @@
 # API
 
 > **Living doc** — update when endpoints, auth, rate limits, CORS, or DI composition change.  
-> **Last verified against:** 2026-09-01 (content-analyzed feed sections, scheduled RSS endpoints, notifications contract)
+> **Last verified against:** 2026-09-02 (effective category filtering and ingestion classification)
 
 ## Purpose
 
@@ -101,16 +101,14 @@ windows bind from the `FeedPersonalization` config section.
 
 ### Content classification & feed sections
 
-Stored `Article.Category` comes from source/feed defaults at ingest, so a
-sports story filed under a source's default "Local" used to land in the wrong
-section. `ContentCategoryClassifier`
-(`Services/ContentCategoryClassifier.cs`) re-derives the **effective category**
-from headline + summary text: deterministic weighted keyword rules in English
-and Hindi (Devanagari), headline hits weigh double, and a match requires a
-minimum score plus a clear margin over the runner-up — otherwise it returns
-null and callers keep the stored category. Classification is computed on the
-fly only; it is never persisted and never re-categorizes e-paper rows (those
-are filtered out upstream).
+RSS and scrape ingestion classify each article from its headline + summary,
+with `Local` as the fallback. `ContentCategoryClassifier`
+(`Services/ContentCategoryClassifier.cs`) also re-derives the **effective
+category** at API presentation and category filtering time, so older rows and
+source defaults are corrected immediately when evidence is strong enough.
+Rules are weighted for English and Hindi (Devanagari), with a higher weight for
+headline hits and a margin over the runner-up; ambiguous stories retain their
+stored category. E-paper rows are filtered out upstream.
 
 The effective category is used consistently for (a) affinity keys in
 `LoadSignalsAsync` (viewed articles are classified in memory) and the affinity

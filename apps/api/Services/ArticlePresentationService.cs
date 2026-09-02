@@ -283,7 +283,7 @@ public sealed class ArticlePresentationService(
             article.SourceName,
             article.SourceUrl,
             article.PublishedAt,
-            article.Category,
+            ContentCategoryClassifier.EffectiveCategory(article.Category, article.Headline, article.Summary),
             article.ImageUrl,
             lang,
             lang);
@@ -306,7 +306,7 @@ public sealed class ArticlePresentationService(
             article.SourceName,
             article.SourceUrl,
             article.PublishedAt,
-            article.Category,
+            ContentCategoryClassifier.EffectiveCategory(article.Category, article.Headline, article.Summary),
             article.ImageUrl,
             detected,
             display);
