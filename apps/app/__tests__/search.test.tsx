@@ -36,7 +36,9 @@ jest.mock('../src/api/client', () => ({
 }))
 
 jest.mock('../src/storage/cityPreference', () => ({
+  ...jest.requireActual('../src/storage/cityPreference'),
   getStoredCitySlug: jest.fn(async () => 'jhansi'),
+  getEffectiveCitySlug: jest.fn(async () => 'jhansi'),
   setStoredCitySlug: jest.fn(async () => undefined),
   clearStoredCitySlug: jest.fn(),
 }))

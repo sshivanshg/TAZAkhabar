@@ -29,7 +29,9 @@ jest.mock('../src/api/client', () => ({
 }))
 
 jest.mock('../src/storage/cityPreference', () => ({
+  ...jest.requireActual('../src/storage/cityPreference'),
   getStoredCitySlug: jest.fn(async () => 'jhansi'),
+  getEffectiveCitySlug: jest.fn(async () => 'jhansi'),
 }))
 
 jest.mock('@react-native-async-storage/async-storage', () => ({

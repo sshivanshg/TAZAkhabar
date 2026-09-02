@@ -22,7 +22,6 @@ import { RelatedStoriesStrip } from '../../src/components/RelatedStoriesStrip'
 import { ConfirmModal } from '../../src/components/ConfirmModal'
 import { AddToHomeBanner } from '../../src/components/AddToHomeBanner'
 import { BriefingHeader } from '../../src/components/desktop/BriefingHeader'
-import { CategoryNavBar } from '../../src/components/desktop/CategoryNavBar'
 import { ExpandedTopBar } from '../../src/components/desktop/ExpandedTopBar'
 import { LocalNewsRail } from '../../src/components/desktop/LocalNewsRail'
 import { TopStoriesCluster } from '../../src/components/desktop/TopStoriesCluster'
@@ -45,7 +44,14 @@ import {
   removeBookmark,
   addBookmark,
 } from '../../src/storage/bookmarks'
-import { getStoredCitySlug, setStoredCitySlug } from '../../src/storage/cityPreference'
+import {
+  createGlobalCity,
+  getCityDisplayLabel,
+  getStoredCitySlug,
+  GLOBAL_CITY_SLUG,
+  isGlobalCitySlug,
+  setStoredCitySlug,
+} from '../../src/storage/cityPreference'
 import { getPersonalizationId } from '../../src/storage/personalizationId'
 import {
   feedCacheKey,
@@ -69,6 +75,7 @@ import {
 } from '../../src/theme/tokens'
 import { useTabBarClearance } from '../../src/theme/useTabBarClearance'
 import { isDesktopLayout, isExpandedLayout, useBreakpoint } from '../../src/hooks/useBreakpoint'
+import { useCityPicker } from '../../src/hooks/useCityPicker'
 import { articleRouteParams } from '../../src/utils/articleRouteParams'
 import { buildMobileFeedRows } from '../../src/utils/feedLayout'
 import {
@@ -150,7 +157,7 @@ export default function HomeFeedScreen() {
 
 function HomeFeedBody() {
   const router = useRouter()
-  const params = useLocalSearchParams<{ city?: string; category?: string }>()
+  const params = useLocalSearchParams<{ city?: string; category?: string; pickCity?: string }>()
   const prefs = useFeedPreferences()
   const { preferredLanguage, setPreferredLanguage, ready: languageReady } =
     useLanguagePreference()
@@ -162,7 +169,7 @@ function HomeFeedBody() {
   const expanded = isExpandedLayout(bp)
   const mobile = bp === 'mobile'
   const { width: windowWidth } = useWindowDimensions()
-  const [citySlug, setCitySlug] = useState<string | null>(params.city ?? null)
+  const [citySlug, setCitySlug] = useState<string | null>(params.city ?? GLOBAL_CITY_SLUG)
   const [cityMeta, setCityMeta] = useState<CityResponse | null>(null)
   const [category, setCategory] = useState<FeedCategory>(() =>
     isFeedCategory(params.category) ? params.category : 'All',
@@ -182,6 +189,7 @@ function HomeFeedBody() {
   const [actionArticle, setActionArticle] = useState<ArticleResponse | null>(null)
   const [popoverAnchor, setPopoverAnchor] = useState<StoryOptionsAnchor | null>(null)
   const cardHosts = useRef(new Map<string, View | null>())
+  const cityButtonRef = useRef<View>(null)
   const [blockSourceName, setBlockSourceName] = useState<string | null>(null)
   const [blockCategoryName, setBlockCategoryName] = useState<string | null>(null)
   const [bookmarkedIds, setBookmarkedIds] = useState<Set<number>>(new Set())
@@ -220,12 +228,9 @@ function HomeFeedBody() {
         return
       }
       const stored = await getStoredCitySlug()
+      const effective = stored ?? GLOBAL_CITY_SLUG
       if (!cancelled) {
-        if (stored) {
-          setCitySlug(stored)
-        } else {
-          router.replace('/city')
-        }
+        setCitySlug(effective)
       }
     }
     void resolveCity()
@@ -238,7 +243,7 @@ function HomeFeedBody() {
     () => apiClient.getCities(),
     [citySlug],
     {
-      enabled: Boolean(citySlug),
+      enabled: Boolean(citySlug) && !isGlobalCitySlug(citySlug),
       initialData: EMPTY_CITIES,
       onSuccess: (cities) => {
         setCityMeta(cities.find((c) => c.slug === citySlug) ?? null)
@@ -246,7 +251,9 @@ function HomeFeedBody() {
       onError: () => setCityMeta(null),
     },
   )
-  const cityMetaFromQuery = cityList.data.find((c) => c.slug === citySlug) ?? null
+  const cityMetaFromQuery = isGlobalCitySlug(citySlug)
+    ? createGlobalCity()
+    : (cityList.data.find((c) => c.slug === citySlug) ?? null)
 
   useEffect(() => {
     setCityMeta(cityMetaFromQuery)
@@ -428,7 +435,25 @@ function HomeFeedBody() {
     }
   }, [citySlug, category, preferredLanguage, languageReady, loadPage])
 
-  const cityTitle = cityMeta?.name ?? citySlug ?? 'Your city'
+  const cityTitle = getCityDisplayLabel(citySlug, cityMeta?.name)
+
+  const { openCityPicker, picker: cityPicker } = useCityPicker({
+    citySlug,
+    mobile,
+    cityButtonRef,
+    onCitySelected: (city) => {
+      if (city.slug) {
+        setCitySlug(city.slug)
+        setCityMeta(city)
+      }
+    },
+  })
+
+  useEffect(() => {
+    if (params.pickCity === '1') {
+      openCityPicker()
+    }
+  }, [openCityPicker, params.pickCity])
   const visibleArticles = useMemo(
     () => prefs.filterArticles(articles),
     [articles, prefs],
@@ -710,43 +735,32 @@ function HomeFeedBody() {
         {expanded ? (
           <ExpandedTopBar
             cityTitle={cityTitle}
-            onCityPress={() => router.push('/city')}
+            cityButtonRef={cityButtonRef}
+            onCityPress={openCityPicker}
             readingLanguage={preferredLanguage}
             onSelectLanguage={setPreferredLanguage}
           />
         ) : (
           <HomeTopBar
             cityTitle={cityTitle}
-            onCityPress={() => router.push('/city')}
+            cityButtonRef={cityButtonRef}
+            onCityPress={openCityPicker}
             onSearchPress={goDiscover}
             readingLanguage={preferredLanguage}
             onSelectLanguage={setPreferredLanguage}
           />
         )}
         {Platform.OS === 'web' ? <AddToHomeBanner /> : null}
-        {expanded ? (
-          <CategoryNavBar
-            selected={category}
-            onSelect={setCategory}
-            categories={visibleCategories}
-            onLongPressCategory={(chip) => {
-              if (chip !== 'All') {
-                setBlockCategoryName(chip)
-              }
-            }}
-          />
-        ) : (
-          <CategoryChipRow
-            selected={category}
-            onSelect={setCategory}
-            categories={visibleCategories}
-            onLongPressCategory={(chip) => {
-              if (chip !== 'All') {
-                setBlockCategoryName(chip)
-              }
-            }}
-          />
-        )}
+        <CategoryChipRow
+          selected={category}
+          onSelect={setCategory}
+          categories={visibleCategories}
+          onLongPressCategory={(chip) => {
+            if (chip !== 'All') {
+              setBlockCategoryName(chip)
+            }
+          }}
+        />
         {expanded ? (
           <BriefingHeader
             title={feedSlices.showBriefing ? undefined : feedSlices.pageTitle}
@@ -907,13 +921,11 @@ function HomeFeedBody() {
                         onPrimary={
                           filteredAway
                             ? () => router.push('/(tabs)/profile')
-                            : () => router.push('/city')
+                            : openCityPicker
                         }
                         primaryAccessibilityLabel={primaryLabel}
                         secondaryLabel={secondaryLabel}
-                        onSecondary={
-                          filteredAway ? () => router.push('/city') : undefined
-                        }
+                        onSecondary={filteredAway ? openCityPicker : undefined}
                         secondaryAccessibilityLabel={secondaryLabel}
                       />
                     )
@@ -1013,6 +1025,8 @@ function HomeFeedBody() {
           </MotiView>
         ) : null}
       </Box>
+
+      {cityPicker}
 
       {expanded ? (
         <StoryOptionsPopover

@@ -1,38 +1,71 @@
 import { useCallback, useMemo, useState, type ReactNode } from 'react'
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native'
+import { Pressable, ScrollView, StyleSheet, View, type PressableStateCallbackType } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import Constants from 'expo-constants'
 import { useFocusEffect, useRouter } from 'expo-router'
-import { Text, VStack } from '@gluestack-ui/themed'
+import { Text } from '@gluestack-ui/themed'
 import { MotiView } from 'moti'
+import ArrowLeft from 'lucide-react-native/icons/arrow-left'
 import Ban from 'lucide-react-native/icons/ban'
+import BellRing from 'lucide-react-native/icons/bell-ring'
 import Info from 'lucide-react-native/icons/info'
 import Languages from 'lucide-react-native/icons/languages'
 import MapPin from 'lucide-react-native/icons/map-pin'
 import Moon from 'lucide-react-native/icons/moon'
-import BellRing from 'lucide-react-native/icons/bell-ring'
 import Tag from 'lucide-react-native/icons/tag'
 import type { CityResponse } from '@tazakhabar/shared-types'
 import { apiClient } from '../../src/api/client'
 import { ScreenErrorBoundary } from '../../src/components/ScreenErrorBoundary'
 import { TabScreenShell } from '../../src/components/TabScreenShell'
-import { Card } from '../../src/components/ui/Card'
 import { PrimaryButton, SecondaryButton } from '../../src/components/ui/PrimaryButton'
 import { PublicLinks } from '../../src/components/PublicLinks'
 import { useFeedPreferences } from '../../src/preferences/FeedPreferencesContext'
 import { useLanguagePreference } from '../../src/preferences/LanguagePreferenceContext'
 import { useTheme } from '../../src/preferences/ThemePreferenceContext'
-import { registerNewsNotifications, suppressNotificationPrompt } from '../../src/notifications/registerNotifications'
-import { getNotificationPromptState, getNotificationPlatform, getOrCreateNotificationClientId } from '../../src/storage/notificationPreferences'
-import { READING_LANGUAGES } from '../../src/storage/languagePreference'
 import {
-  type ThemePreference,
-} from '../../src/storage/themePreference'
-import { getStoredCitySlug } from '../../src/storage/cityPreference'
-import { HIT_TARGET, space, typography, type AppColors } from '../../src/theme/tokens'
+  registerNewsNotifications,
+  suppressNotificationPrompt,
+} from '../../src/notifications/registerNotifications'
+import {
+  getNotificationPromptState,
+  getNotificationPlatform,
+  getOrCreateNotificationClientId,
+} from '../../src/storage/notificationPreferences'
+import { READING_LANGUAGES, type ReadingLanguageCode } from '../../src/storage/languagePreference'
+import { type ThemePreference } from '../../src/storage/themePreference'
+import {
+  createGlobalCity,
+  getCityDisplayLabel,
+  getEffectiveCitySlug,
+  isGlobalCitySlug,
+} from '../../src/storage/cityPreference'
+import { HIT_TARGET, radius, space, type AppColors } from '../../src/theme/tokens'
 import { iconStroke } from '../../src/theme/categoryIcons'
 import { useTabBarClearance } from '../../src/theme/useTabBarClearance'
-import { isDesktopLayout, useBreakpoint } from '../../src/hooks/useBreakpoint'
+import { isExpandedLayout, useBreakpoint } from '../../src/hooks/useBreakpoint'
+import { useCityPicker } from '../../src/hooks/useCityPicker'
+
+type SectionId = 'city' | 'appearance' | 'language' | 'blocked' | 'alerts' | 'about'
+
+type SectionDef = {
+  id: SectionId
+  label: string
+  Icon: typeof MapPin
+}
+
+const SECTIONS: SectionDef[] = [
+  { id: 'city', label: 'City', Icon: MapPin },
+  { id: 'appearance', label: 'Appearance', Icon: Moon },
+  { id: 'language', label: 'Language', Icon: Languages },
+  { id: 'blocked', label: 'Blocked', Icon: Ban },
+  { id: 'alerts', label: 'Alerts', Icon: BellRing },
+  { id: 'about', label: 'About', Icon: Info },
+]
+
+type WebPressableState = PressableStateCallbackType & {
+  hovered?: boolean
+  focused?: boolean
+}
 
 export default function ProfileScreen() {
   return (
@@ -59,18 +92,22 @@ function ProfileBody() {
   } = useTheme()
   const styles = useMemo(() => createStyles(colors), [colors])
   const tabClearance = useTabBarClearance()
-  const desktop = isDesktopLayout(useBreakpoint())
+  const desktop = isExpandedLayout(useBreakpoint())
+  const mobile = useBreakpoint() === 'mobile'
+  const [activeSection, setActiveSection] = useState<SectionId>('city')
   const [cityMeta, setCityMeta] = useState<CityResponse | null>(null)
   const [citySlug, setCitySlug] = useState<string | null>(null)
-  const [notificationStatus, setNotificationStatus] = useState<'unknown' | 'granted' | 'denied' | 'dismissed'>('unknown')
+  const [notificationStatus, setNotificationStatus] = useState<
+    'unknown' | 'granted' | 'denied' | 'dismissed'
+  >('unknown')
   const [notificationBusy, setNotificationBusy] = useState(false)
   const [notificationError, setNotificationError] = useState<string | null>(null)
 
   const loadCity = useCallback(async () => {
-    const slug = await getStoredCitySlug()
+    const slug = await getEffectiveCitySlug()
     setCitySlug(slug)
-    if (!slug) {
-      setCityMeta(null)
+    if (isGlobalCitySlug(slug)) {
+      setCityMeta(createGlobalCity())
       return
     }
     try {
@@ -94,9 +131,59 @@ function ProfileBody() {
     }, [loadCity, loadNotificationState]),
   )
 
-  const cityTitle = cityMeta?.name ?? citySlug ?? 'Not set'
+  const cityTitle = getCityDisplayLabel(citySlug, cityMeta?.name)
   const version =
     Constants.expoConfig?.version ?? Constants.nativeAppVersion ?? '0.1.0'
+  const themeLabel =
+    themePreference === 'system'
+      ? `System (${colorScheme})`
+      : themePreference.charAt(0).toUpperCase() + themePreference.slice(1)
+  const languageLabel =
+    READING_LANGUAGES.find((lang) => lang.code === preferredLanguage)?.label ?? 'English'
+  const blockedCount = prefs.blockedSources.length + prefs.blockedCategories.length
+  const alertLabel =
+    notificationStatus === 'granted'
+      ? 'On'
+      : notificationStatus === 'denied'
+        ? 'Off'
+        : 'Not set'
+
+  const sectionHint = (id: SectionId): string => {
+    switch (id) {
+      case 'city':
+        return cityTitle
+      case 'appearance':
+        return themeLabel
+      case 'language':
+        return languageLabel
+      case 'blocked':
+        return blockedCount > 0 ? `${blockedCount} hidden` : 'None'
+      case 'alerts':
+        return alertLabel
+      case 'about':
+        return `v${version}`
+    }
+  }
+
+  const { openCityPicker, picker: cityPicker } = useCityPicker({
+    citySlug,
+    mobile,
+    forceSheet: true,
+    onCitySelected: (city) => {
+      if (city.slug) {
+        setCitySlug(city.slug)
+        setCityMeta(city)
+      }
+    },
+  })
+
+  const onBack = useCallback(() => {
+    if (router.canGoBack()) {
+      router.back()
+      return
+    }
+    router.replace('/(tabs)')
+  }, [router])
 
   return (
     <MotiView
@@ -109,9 +196,7 @@ function ProfileBody() {
         contentContainerStyle={[
           styles.content,
           {
-            paddingTop: desktop
-              ? space.md
-              : Math.max(insets.top, space.xs) + space.md,
+            paddingTop: desktop ? space.lg : Math.max(insets.top, space.xs) + space.sm,
             paddingBottom: desktop
               ? space.xl
               : tabClearance + Math.max(insets.bottom, 0),
@@ -119,323 +204,492 @@ function ProfileBody() {
         ]}
       >
         <View style={styles.pageHeader}>
-          <Text
-            fontSize={24}
-            lineHeight={30}
-            fontWeight="$bold"
-            color={colors.text}
+          <Pressable
+            onPress={onBack}
+            accessibilityRole="button"
+            accessibilityLabel="Go back"
+            hitSlop={4}
+            style={({ pressed }) => [styles.backBtn, pressed ? styles.backPressed : null]}
           >
-            Profile
-          </Text>
-          <Text
-            fontSize={14}
-            lineHeight={20}
-            color={colors.textSecondary}
-            mt="$1"
-          >
-            City, language, appearance, blocks, and about
-          </Text>
+            <ArrowLeft size={20} strokeWidth={iconStroke} color={colors.text} />
+          </Pressable>
+          <Text style={styles.pageTitle}>Settings</Text>
         </View>
 
-        <Section title="City" Icon={MapPin}>
-          <Text
-            fontSize={typography.summary.fontSize}
-            lineHeight={typography.summary.lineHeight}
-            color={colors.textSecondary}
-            mb="$3"
+        <View style={[styles.workspace, desktop ? styles.workspaceDesktop : styles.workspaceMobile]}>
+          <View
+            style={[styles.navColumn, desktop ? styles.navColumnDesktop : styles.navColumnMobile]}
+            accessibilityRole="tablist"
           >
-            News is filtered for your selected city. No account is required.
-          </Text>
-          <Text
-            fontSize={typography.headlineSm.fontSize}
-            lineHeight={typography.headlineSm.lineHeight}
-            fontWeight="$semibold"
-            color={colors.text}
-            mb="$3"
-          >
-            {cityTitle}
-          </Text>
-          <PrimaryButton
-            label="Change city"
-            onPress={() => router.push('/city')}
-            accessibilityLabel="Change city"
-            style={styles.changeCity}
-          />
-        </Section>
-
-        <Section title="Appearance" Icon={Moon}>
-          <Text
-            fontSize={typography.summary.fontSize}
-            lineHeight={typography.summary.lineHeight}
-            color={colors.textSecondary}
-            mb="$3"
-          >
-            Light is the default. Preference is saved on this device.
-          </Text>
-          <View style={styles.langRow}>
-            {(
-              [
-                { value: 'light' as const, label: 'Light' },
-                { value: 'dark' as const, label: 'Dark' },
-                { value: 'system' as const, label: 'System' },
-              ] satisfies { value: ThemePreference; label: string }[]
-            ).map((option) => {
-              const selected = themeReady && themePreference === option.value
-              return (
-                <Pressable
-                  key={option.value}
-                  onPress={() => setThemePreference(option.value)}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected }}
-                  accessibilityLabel={
-                    option.value === 'system'
-                      ? `Appearance system, currently ${colorScheme}`
-                      : `Appearance ${option.label}`
-                  }
-                  style={[styles.langChip, selected ? styles.langChipSelected : null]}
-                >
-                  <Text
-                    fontSize={typography.label.fontSize}
-                    lineHeight={typography.label.lineHeight}
-                    fontWeight="$semibold"
-                    color={selected ? colors.chipSelectedText : colors.chipInactiveText}
-                  >
-                    {option.label}
-                  </Text>
-                </Pressable>
-              )
-            })}
+            <Text style={styles.navGroupLabel}>GENERAL</Text>
+            {SECTIONS.map((section) => (
+              <NavItem
+                key={section.id}
+                label={section.label}
+                hint={sectionHint(section.id)}
+                Icon={section.Icon}
+                selected={activeSection === section.id}
+                onPress={() => setActiveSection(section.id)}
+              />
+            ))}
           </View>
-          {themeReady && themePreference === 'system' ? (
-            <Text
-              fontSize={typography.meta.fontSize}
-              lineHeight={typography.meta.lineHeight}
-              color={colors.textMuted}
-              mt="$2"
-            >
-              Following device ({colorScheme})
-            </Text>
-          ) : null}
-        </Section>
 
-        <Section title="Reading language" Icon={Languages}>
-          <Text
-            fontSize={typography.summary.fontSize}
-            lineHeight={typography.summary.lineHeight}
-            color={colors.textSecondary}
-            mb="$3"
-          >
-            Stories are translated on this device when the original language differs.
-            Preference is saved locally.
-          </Text>
-          <View style={styles.langRow}>
-            {READING_LANGUAGES.map((lang) => {
-              const selected = languageReady && preferredLanguage === lang.code
-              return (
-                <Pressable
-                  key={lang.code}
-                  onPress={() => setPreferredLanguage(lang.code)}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected }}
-                  accessibilityLabel={`Prefer ${lang.accessibilityLabel}`}
-                  style={[styles.langChip, selected ? styles.langChipSelected : null]}
-                >
-                  <Text
-                    fontSize={typography.label.fontSize}
-                    lineHeight={typography.label.lineHeight}
-                    fontWeight="$semibold"
-                    color={selected ? colors.chipSelectedText : colors.chipInactiveText}
-                  >
-                    {lang.label}
-                  </Text>
-                </Pressable>
-              )
-            })}
-          </View>
-        </Section>
+          <View style={styles.panelColumn}>
+            <PanelLead section={activeSection} />
 
-        <Section title="Blocked" Icon={Ban}>
-          <BlockedRow
-            Icon={Ban}
-            label="Sources"
-            count={prefs.blockedSources.length}
-            empty="No sources blocked"
-            items={prefs.blockedSources}
-            onRemove={(name) => prefs.unblockSource(name)}
-          />
-          <View style={styles.spacer} />
-          <BlockedRow
-            Icon={Tag}
-            label="Categories"
-            count={prefs.blockedCategories.length}
-            empty="No categories blocked"
-            items={prefs.blockedCategories}
-            onRemove={(name) => prefs.unblockCategory(name)}
-          />
-        </Section>
-
-        <Section title="Alerts" Icon={BellRing}>
-          <Text
-            fontSize={typography.summary.fontSize}
-            lineHeight={typography.summary.lineHeight}
-            color={colors.textSecondary}
-            mb="$3"
-          >
-            Turn on city-specific news alerts for breaking stories. We ask once, then back off if you say not now.
-          </Text>
-          <Text
-            fontSize={typography.bodySemibold.fontSize}
-            lineHeight={typography.bodySemibold.lineHeight}
-            fontWeight="$semibold"
-            color={colors.text}
-            mb="$2"
-          >
-            Status: {notificationStatus === 'granted' ? 'On' : notificationStatus === 'denied' ? 'Off' : 'Not set'}
-          </Text>
-          {notificationError ? (
-            <Text
-              fontSize={typography.meta.fontSize}
-              lineHeight={typography.meta.lineHeight}
-              color={notificationStatus === 'granted' ? colors.textMuted : colors.destructive}
-              mb="$3"
-            >
-              {notificationError}
-            </Text>
-          ) : notificationStatus === 'denied' ? (
-            <Text
-              fontSize={typography.meta.fontSize}
-              lineHeight={typography.meta.lineHeight}
-              color={colors.textMuted}
-              mb="$3"
-            >
-              Notifications are off in device or browser settings.
-            </Text>
-          ) : null}
-          <View style={styles.alertActions}>
-            <PrimaryButton
-              label={notificationStatus === 'granted' ? 'Refresh alerts' : 'Enable alerts'}
-              onPress={() => {
-                void (async () => {
-                  if (!citySlug) {
-                    return
-                  }
-                  setNotificationBusy(true)
-                  setNotificationError(null)
-                  try {
-                    const result = await registerNewsNotifications(citySlug, preferredLanguage)
-                    setNotificationStatus(
-                      result.status === 'granted'
-                        ? 'granted'
-                        : result.status === 'denied'
-                          ? 'denied'
-                          : 'dismissed',
-                    )
-                    if (result.status === 'denied') {
-                      await suppressNotificationPrompt('denied')
-                      setNotificationError(
-                        result.reason ?? 'Notifications are blocked for this app. Check device or browser settings.',
+            <View style={styles.settingGroup}>
+              {activeSection === 'city' ? (
+                <CityPanel cityTitle={cityTitle} onChangeCity={openCityPicker} />
+              ) : null}
+              {activeSection === 'appearance' ? (
+                <AppearancePanel
+                  themePreference={themePreference}
+                  themeReady={themeReady}
+                  colorScheme={colorScheme}
+                  onSelect={setThemePreference}
+                />
+              ) : null}
+              {activeSection === 'language' ? (
+                <LanguagePanel
+                  preferredLanguage={preferredLanguage}
+                  languageReady={languageReady}
+                  onSelect={setPreferredLanguage}
+                />
+              ) : null}
+              {activeSection === 'blocked' ? (
+                <BlockedPanel
+                  blockedSources={prefs.blockedSources}
+                  blockedCategories={prefs.blockedCategories}
+                  onUnblockSource={prefs.unblockSource}
+                  onUnblockCategory={prefs.unblockCategory}
+                />
+              ) : null}
+              {activeSection === 'alerts' ? (
+                <AlertsPanel
+                  citySlug={citySlug}
+                  preferredLanguage={preferredLanguage}
+                  notificationStatus={notificationStatus}
+                  notificationBusy={notificationBusy}
+                  notificationError={notificationError}
+                  alertLabel={alertLabel}
+                  onEnable={async () => {
+                    if (!citySlug || isGlobalCitySlug(citySlug)) return
+                    setNotificationBusy(true)
+                    setNotificationError(null)
+                    try {
+                      const result = await registerNewsNotifications(citySlug, preferredLanguage)
+                      setNotificationStatus(
+                        result.status === 'granted'
+                          ? 'granted'
+                          : result.status === 'denied'
+                            ? 'denied'
+                            : 'dismissed',
                       )
-                    } else if (result.status === 'unsupported') {
-                      await suppressNotificationPrompt('dismissed')
-                      setNotificationError(result.reason)
-                    } else if (result.reason) {
-                      setNotificationError(result.reason)
-                    } else {
-                      setNotificationError(null)
+                      if (result.status === 'denied') {
+                        await suppressNotificationPrompt('denied')
+                        setNotificationError(
+                          result.reason ??
+                            'Notifications are blocked for this app. Check device or browser settings.',
+                        )
+                      } else if (result.status === 'unsupported') {
+                        await suppressNotificationPrompt('dismissed')
+                        setNotificationError(result.reason)
+                      } else if (result.reason) {
+                        setNotificationError(result.reason)
+                      } else {
+                        setNotificationError(null)
+                      }
+                    } catch (caught) {
+                      setNotificationError(
+                        caught instanceof Error ? caught.message : 'Could not enable news alerts.',
+                      )
+                    } finally {
+                      setNotificationBusy(false)
                     }
-                  } catch (caught) {
-                    setNotificationError(
-                      caught instanceof Error ? caught.message : 'Could not enable news alerts.',
-                    )
-                  } finally {
-                    setNotificationBusy(false)
-                  }
-                })()
-              }}
-              accessibilityLabel="Enable alerts"
-              style={styles.alertPrimary}
-              disabled={notificationBusy}
-            />
-            <SecondaryButton
-              label="Turn off"
-              onPress={() => {
-                void (async () => {
-                  const clientId = await getOrCreateNotificationClientId()
-                  const platform = getNotificationPlatform()
-                  setNotificationBusy(true)
-                  try {
-                    await apiClient.deleteNotificationSubscription(clientId, platform)
-                    await suppressNotificationPrompt('dismissed')
-                    setNotificationStatus('dismissed')
-                  } finally {
-                    setNotificationBusy(false)
-                  }
-                })()
-              }}
-              accessibilityLabel="Turn off alerts"
-              style={styles.alertSecondary}
-              outline
-              disabled={notificationBusy || notificationStatus !== 'granted'}
-            />
+                  }}
+                  onDisable={async () => {
+                    const clientId = await getOrCreateNotificationClientId()
+                    const platform = getNotificationPlatform()
+                    setNotificationBusy(true)
+                    try {
+                      await apiClient.deleteNotificationSubscription(clientId, platform)
+                      await suppressNotificationPrompt('dismissed')
+                      setNotificationStatus('dismissed')
+                    } finally {
+                      setNotificationBusy(false)
+                    }
+                  }}
+                />
+              ) : null}
+              {activeSection === 'about' ? <AboutPanel version={version} /> : null}
+            </View>
           </View>
-        </Section>
-
-        <Section title="About this app" Icon={Info}>
-          <Text
-            fontSize={typography.summary.fontSize}
-            lineHeight={24}
-            color={colors.textSecondary}
-          >
-            TazaKhabar is a local news summary you can add to your home screen. No login — pick a
-            city, read short summaries, save stories on this device, and share to WhatsApp in one
-            tap.
-          </Text>
-          <Text
-            fontSize={typography.label.fontSize}
-            lineHeight={typography.label.lineHeight}
-            fontWeight="$medium"
-            color={colors.textMuted}
-            mt="$4"
-          >
-            Version {version}
-          </Text>
-          <PublicLinks />
-        </Section>
+        </View>
       </ScrollView>
+      {cityPicker}
     </MotiView>
   )
 }
 
-function Section({
-  title,
+function NavItem({
+  label,
+  hint,
   Icon,
-  children,
+  selected,
+  onPress,
 }: {
-  title: string
+  label: string
+  hint: string
   Icon: typeof MapPin
-  children: ReactNode
+  selected: boolean
+  onPress: () => void
 }) {
   const { colors } = useTheme()
   const styles = useMemo(() => createStyles(colors), [colors])
+
   return (
-    <View style={styles.section}>
-      <Card>
-        <View style={styles.cardBody}>
-          <View style={styles.cardTitleRow}>
-            <Icon size={18} strokeWidth={iconStroke} color={colors.accent} />
-            <Text
-              fontSize={typography.headlineSm.fontSize}
-              lineHeight={typography.headlineSm.lineHeight}
-              fontWeight="$semibold"
-              color={colors.text}
-            >
-              {title}
-            </Text>
-          </View>
-          {children}
-        </View>
-      </Card>
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="tab"
+      accessibilityState={{ selected }}
+      accessibilityLabel={`${label}, ${hint}`}
+      style={({ pressed, hovered }: WebPressableState) => [
+        styles.navItem,
+        selected ? styles.navItemSelected : null,
+        pressed ? styles.navItemPressed : null,
+        hovered && !selected ? styles.navItemHovered : null,
+      ]}
+    >
+      <Icon
+        size={15}
+        strokeWidth={iconStroke}
+        color={selected ? colors.text : colors.textMuted}
+        style={styles.navIcon}
+      />
+      <View style={styles.navTextBlock}>
+        <Text style={[styles.navLabel, selected ? styles.navLabelSelected : null]}>{label}</Text>
+        <Text style={styles.navHint} numberOfLines={1}>
+          {hint}
+        </Text>
+      </View>
+    </Pressable>
+  )
+}
+
+function PanelLead({ section }: { section: SectionId }) {
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
+
+  const copy: Record<SectionId, string> = {
+    city: 'Choose where your feed is focused. All India mixes news from every city.',
+    appearance: 'Saved on this device only.',
+    language: 'Translated on this device when available.',
+    blocked: 'Hidden from your feed on this device.',
+    alerts: 'Local breaking-news alerts for your city.',
+    about: 'No account required.',
+  }
+
+  return <Text style={styles.panelLead}>{copy[section]}</Text>
+}
+
+function SettingRow({
+  label,
+  value,
+  actionLabel,
+  onPress,
+  showDivider = true,
+}: {
+  label: string
+  value?: string
+  actionLabel?: string
+  onPress?: () => void
+  showDivider?: boolean
+}) {
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
+
+  return (
+    <View style={[styles.settingRow, showDivider ? styles.settingRowDivider : null]}>
+      <Text style={styles.settingLabel}>{label}</Text>
+      <View style={styles.settingTrailing}>
+        {value ? (
+          <Text style={styles.settingValue} numberOfLines={1}>
+            {value}
+          </Text>
+        ) : null}
+        {actionLabel && onPress ? (
+          <Pressable
+            onPress={onPress}
+            accessibilityRole="button"
+            accessibilityLabel={actionLabel}
+            hitSlop={6}
+            style={({ pressed }) => [pressed ? styles.settingActionPressed : null]}
+          >
+            <Text style={styles.settingAction}>{actionLabel}</Text>
+          </Pressable>
+        ) : actionLabel ? (
+          <Text style={styles.settingActionMuted}>{actionLabel}</Text>
+        ) : null}
+      </View>
     </View>
+  )
+}
+
+function SettingInset({ children, showDivider = true }: { children: ReactNode; showDivider?: boolean }) {
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
+  return (
+    <View style={[styles.settingInset, showDivider ? styles.settingRowDivider : null]}>{children}</View>
+  )
+}
+
+function CityPanel({
+  cityTitle,
+  onChangeCity,
+}: {
+  cityTitle: string
+  onChangeCity: () => void
+}) {
+  return (
+    <SettingRow
+      label="City"
+      value={cityTitle}
+      actionLabel="Change"
+      onPress={onChangeCity}
+      showDivider={false}
+    />
+  )
+}
+
+function AppearancePanel({
+  themePreference,
+  themeReady,
+  colorScheme,
+  onSelect,
+}: {
+  themePreference: ThemePreference
+  themeReady: boolean
+  colorScheme: 'light' | 'dark'
+  onSelect: (value: ThemePreference) => void
+}) {
+  const options = [
+    { value: 'light' as const, label: 'Light' },
+    { value: 'dark' as const, label: 'Dark' },
+    { value: 'system' as const, label: 'System' },
+  ]
+
+  return (
+    <SegmentBar
+      options={options.map((option) => ({
+        value: option.value,
+        label:
+          option.value === 'system' && themeReady
+            ? `System (${colorScheme})`
+            : option.label,
+      }))}
+      selected={themePreference}
+      ready={themeReady}
+      onSelect={onSelect}
+      accessibilityPrefix="Appearance"
+    />
+  )
+}
+
+function LanguagePanel({
+  preferredLanguage,
+  languageReady,
+  onSelect,
+}: {
+  preferredLanguage: ReadingLanguageCode
+  languageReady: boolean
+  onSelect: (code: ReadingLanguageCode) => void
+}) {
+  return (
+    <SegmentBar
+      options={READING_LANGUAGES.map((lang) => ({
+        value: lang.code,
+        label: lang.label,
+      }))}
+      selected={preferredLanguage}
+      ready={languageReady}
+      onSelect={(code) => onSelect(code as ReadingLanguageCode)}
+      accessibilityPrefix="Reading language"
+      wrap
+    />
+  )
+}
+
+function BlockedPanel({
+  blockedSources,
+  blockedCategories,
+  onUnblockSource,
+  onUnblockCategory,
+}: {
+  blockedSources: string[]
+  blockedCategories: string[]
+  onUnblockSource: (name: string) => void
+  onUnblockCategory: (name: string) => void
+}) {
+  return (
+    <View>
+      <BlockedRow
+        Icon={Ban}
+        label="Sources"
+        count={blockedSources.length}
+        empty="No sources blocked"
+        items={blockedSources}
+        onRemove={onUnblockSource}
+        showDivider
+      />
+      <BlockedRow
+        Icon={Tag}
+        label="Categories"
+        count={blockedCategories.length}
+        empty="No categories blocked"
+        items={blockedCategories}
+        onRemove={onUnblockCategory}
+        showDivider={false}
+      />
+    </View>
+  )
+}
+
+function AlertsPanel({
+  citySlug,
+  preferredLanguage,
+  notificationStatus,
+  notificationBusy,
+  notificationError,
+  alertLabel,
+  onEnable,
+  onDisable,
+}: {
+  citySlug: string | null
+  preferredLanguage: ReadingLanguageCode
+  notificationStatus: 'unknown' | 'granted' | 'denied' | 'dismissed'
+  notificationBusy: boolean
+  notificationError: string | null
+  alertLabel: string
+  onEnable: () => void
+  onDisable: () => void
+}) {
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
+  const alertsNeedCity = !citySlug || isGlobalCitySlug(citySlug)
+
+  return (
+    <SettingInset showDivider={false}>
+      <View style={styles.alertRow}>
+        <View style={styles.alertCopy}>
+          <Text style={styles.settingValue}>{alertLabel}</Text>
+          <Text style={styles.fieldHelp}>
+            {alertsNeedCity
+              ? 'Pick a city to enable local alerts.'
+              : notificationStatus === 'granted'
+                ? 'Enabled on this device.'
+                : notificationStatus === 'denied'
+                  ? 'Blocked in device settings.'
+                  : 'Not set up yet.'}
+          </Text>
+          {notificationError ? (
+            <Text
+              style={[
+                styles.fieldHelp,
+                {
+                  color:
+                    notificationStatus === 'granted' ? colors.textMuted : colors.destructive,
+                },
+              ]}
+            >
+              {notificationError}
+            </Text>
+          ) : null}
+        </View>
+        <View style={styles.alertActions}>
+          <PrimaryButton
+            label={notificationStatus === 'granted' ? 'Refresh' : 'Enable'}
+            onPress={() => void onEnable()}
+            accessibilityLabel="Enable alerts"
+            style={styles.alertActionBtn}
+            disabled={notificationBusy || alertsNeedCity}
+          />
+          <SecondaryButton
+            label="Off"
+            onPress={() => void onDisable()}
+            accessibilityLabel="Turn off alerts"
+            style={styles.alertActionBtn}
+            outline
+            disabled={notificationBusy || notificationStatus !== 'granted'}
+          />
+        </View>
+      </View>
+    </SettingInset>
+  )
+}
+
+function AboutPanel({ version }: { version: string }) {
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
+
+  return (
+    <SettingInset showDivider={false}>
+      <Text style={styles.fieldHelp}>
+        Read summaries, save stories on this device, and share in one tap.
+      </Text>
+      <Text style={styles.fieldMeta}>Version {version}</Text>
+      <PublicLinks />
+    </SettingInset>
+  )
+}
+
+function SegmentBar<T extends string>({
+  options,
+  selected,
+  ready,
+  onSelect,
+  accessibilityPrefix,
+  wrap = false,
+}: {
+  options: { value: T; label: string }[]
+  selected: T
+  ready: boolean
+  onSelect: (value: T) => void
+  accessibilityPrefix: string
+  wrap?: boolean
+}) {
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
+
+  return (
+    <SettingInset showDivider={false}>
+      <View style={[styles.segmentBar, wrap ? styles.segmentBarWrap : null]}>
+        {options.map((option) => {
+          const isSelected = ready && selected === option.value
+          return (
+            <Pressable
+              key={option.value}
+              onPress={() => onSelect(option.value)}
+              accessibilityRole="button"
+              accessibilityLabel={`${accessibilityPrefix} ${option.label}`}
+              accessibilityState={{ selected: isSelected }}
+              style={({ pressed }) => [
+                styles.segmentOption,
+                wrap ? styles.segmentOptionWrap : null,
+                isSelected ? styles.segmentOptionSelected : null,
+                pressed && !isSelected ? styles.segmentOptionPressed : null,
+              ]}
+            >
+              <Text
+                style={[styles.segmentLabel, isSelected ? styles.segmentLabelSelected : null]}
+                numberOfLines={1}
+              >
+                {option.label}
+              </Text>
+            </Pressable>
+          )
+        })}
+      </View>
+    </SettingInset>
   )
 }
 
@@ -446,6 +700,7 @@ function BlockedRow({
   empty,
   items,
   onRemove,
+  showDivider = true,
 }: {
   Icon: typeof Ban
   label: string
@@ -453,70 +708,44 @@ function BlockedRow({
   empty: string
   items: string[]
   onRemove: (value: string) => void
+  showDivider?: boolean
 }) {
   const { colors } = useTheme()
   const styles = useMemo(() => createStyles(colors), [colors])
+
   return (
-    <VStack>
+    <View style={[styles.blockedSection, showDivider ? styles.settingRowDivider : null]}>
       <View style={styles.blockedSummary}>
-        <Icon size={16} strokeWidth={iconStroke} color={colors.textSecondary} />
-        <Text
-          fontSize={typography.bodySemibold.fontSize}
-          lineHeight={typography.bodySemibold.lineHeight}
-          fontWeight="$semibold"
-          color={colors.text}
-          style={styles.blockedLabel}
-        >
-          {label}
-        </Text>
-        <Text
-          fontSize={typography.label.fontSize}
-          lineHeight={typography.label.lineHeight}
-          color={colors.textMuted}
-        >
-          {count > 0 ? String(count) : ''}
-        </Text>
+        <Icon size={13} strokeWidth={iconStroke} color={colors.textMuted} />
+        <Text style={styles.blockedLabel}>{label}</Text>
+        <View style={styles.countPill}>
+          <Text style={styles.countPillText}>{count > 0 ? String(count) : '0'}</Text>
+        </View>
       </View>
       {items.length === 0 ? (
-        <Text
-          fontSize={typography.summary.fontSize}
-          lineHeight={typography.summary.lineHeight}
-          color={colors.textMuted}
-          ml="$6"
-        >
-          {empty}
-        </Text>
+        <Text style={styles.blockedEmpty}>{empty}</Text>
       ) : (
         items.map((item) => (
           <View key={item} style={styles.prefRow}>
-            <Text
-              fontSize={typography.summary.fontSize}
-              lineHeight={typography.summary.lineHeight}
-              color={colors.textSecondary}
-              style={{ flex: 1 }}
-            >
+            <Text style={styles.prefRowText} numberOfLines={1}>
               {item}
             </Text>
             <Pressable
               onPress={() => onRemove(item)}
               accessibilityRole="button"
               accessibilityLabel={`Unblock ${item}`}
-              hitSlop={8}
-              style={styles.unblockHit}
+              hitSlop={6}
+              style={({ pressed }) => [
+                styles.unblockHit,
+                pressed ? styles.unblockPressed : null,
+              ]}
             >
-              <Text
-                fontSize={typography.meta.fontSize}
-                lineHeight={typography.meta.lineHeight}
-                fontWeight="$semibold"
-                color={colors.text}
-              >
-                Unblock
-              </Text>
+              <Text style={styles.unblockText}>Unblock</Text>
             </Pressable>
           </View>
         ))
       )}
-    </VStack>
+    </View>
   )
 }
 
@@ -528,81 +757,323 @@ function createStyles(c: AppColors) {
     },
     content: {
       paddingHorizontal: space.screen,
+      maxWidth: 1080,
+      width: '100%',
+      alignSelf: 'center',
     },
     pageHeader: {
-      paddingBottom: space.sm,
-    },
-    section: {
-      marginBottom: space.xl,
-    },
-    cardBody: {
-      padding: space.md,
-    },
-    cardTitleRow: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: space.xs,
-      marginBottom: space.sm,
+      marginBottom: space.md,
     },
-    changeCity: {
-      alignSelf: 'flex-start',
-      paddingHorizontal: space.md,
+    backBtn: {
+      width: HIT_TARGET,
+      height: HIT_TARGET,
+      marginLeft: -space.xs,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: radius.full,
     },
-    langRow: {
+    backPressed: {
+      backgroundColor: c.surfaceRaised,
+    },
+    pageTitle: {
+      fontSize: 18,
+      lineHeight: 24,
+      fontWeight: '600',
+      color: c.text,
+    },
+    workspace: {
+      width: '100%',
+    },
+    workspaceDesktop: {
+      flexDirection: 'row',
+      gap: space.xl,
+      alignItems: 'flex-start',
+    },
+    workspaceMobile: {
+      flexDirection: 'row',
+      gap: space.sm,
+      alignItems: 'flex-start',
+    },
+    navColumn: {
+      flexShrink: 0,
+    },
+    navColumnDesktop: {
+      width: 176,
+    },
+    navColumnMobile: {
+      width: 128,
+    },
+    navGroupLabel: {
+      color: c.textMuted,
+      fontSize: 11,
+      fontWeight: '600',
+      letterSpacing: 0.6,
+      marginBottom: space.xs,
+      paddingHorizontal: space.xs,
+    },
+    navItem: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: space.xs,
+      paddingHorizontal: space.xs,
+      paddingVertical: 8,
+      borderRadius: radius.xs,
+      marginBottom: 2,
+      minHeight: HIT_TARGET - 4,
+    },
+    navItemSelected: {
+      backgroundColor: c.surfaceRaised,
+    },
+    navItemPressed: {
+      opacity: 0.7,
+    },
+    navItemHovered: {
+      backgroundColor: c.surface,
+    },
+    navIcon: {
+      marginTop: 2,
+    },
+    navTextBlock: {
+      flex: 1,
+      minWidth: 0,
+    },
+    navLabel: {
+      fontSize: 14,
+      lineHeight: 18,
+      fontWeight: '500',
+      color: c.textSecondary,
+    },
+    navLabelSelected: {
+      fontWeight: '600',
+      color: c.text,
+    },
+    navHint: {
+      fontSize: 12,
+      lineHeight: 16,
+      color: c.textMuted,
+      marginTop: 1,
+    },
+    panelColumn: {
+      flex: 1,
+      minWidth: 0,
+      maxWidth: 420,
+    },
+    panelLead: {
+      fontSize: 13,
+      lineHeight: 18,
+      color: c.textMuted,
+      marginBottom: space.xs,
+    },
+    settingGroup: {
+      backgroundColor: c.surface,
+      borderRadius: radius.sm,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: c.border,
+      overflow: 'hidden',
+    },
+    settingRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: space.sm,
+      minHeight: 44,
+      paddingHorizontal: space.sm,
+      paddingVertical: 10,
+    },
+    settingRowDivider: {
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: c.border,
+    },
+    settingInset: {
+      paddingHorizontal: space.sm,
+      paddingVertical: space.sm,
+    },
+    settingLabel: {
+      fontSize: 14,
+      lineHeight: 18,
+      fontWeight: '500',
+      color: c.text,
+      flexShrink: 0,
+    },
+    settingTrailing: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'flex-end',
+      gap: space.xs,
+      minWidth: 0,
+    },
+    settingValue: {
+      fontSize: 14,
+      lineHeight: 18,
+      color: c.textSecondary,
+      textAlign: 'right',
+      flexShrink: 1,
+    },
+    settingAction: {
+      fontSize: 14,
+      lineHeight: 18,
+      fontWeight: '600',
+      color: c.accent,
+    },
+    settingActionMuted: {
+      fontSize: 14,
+      lineHeight: 18,
+      fontWeight: '600',
+      color: c.textMuted,
+    },
+    settingActionPressed: {
+      opacity: 0.7,
+    },
+    segmentBar: {
+      flexDirection: 'row',
+      alignItems: 'stretch',
+      gap: 4,
+      backgroundColor: c.surfaceRaised,
+      borderRadius: radius.xs,
+      padding: 3,
+    },
+    segmentBarWrap: {
+      flexWrap: 'wrap',
+    },
+    segmentOption: {
+      flex: 1,
+      minHeight: 36,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: space.xs,
+      borderRadius: radius.xs - 2,
+    },
+    segmentOptionWrap: {
+      flexGrow: 1,
+      flexBasis: '30%',
+      minWidth: 88,
+    },
+    segmentOptionSelected: {
+      backgroundColor: c.surface,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.06,
+      shadowRadius: 2,
+      elevation: 1,
+    },
+    segmentOptionPressed: {
+      opacity: 0.85,
+    },
+    segmentLabel: {
+      fontSize: 13,
+      lineHeight: 16,
+      fontWeight: '500',
+      color: c.textMuted,
+    },
+    segmentLabelSelected: {
+      fontWeight: '600',
+      color: c.text,
+    },
+    fieldHelp: {
+      fontSize: 13,
+      lineHeight: 18,
+      color: c.textMuted,
+      marginTop: 2,
+    },
+    fieldMeta: {
+      fontSize: 12,
+      lineHeight: 16,
+      fontWeight: '500',
+      color: c.textMuted,
+      marginTop: space.xs,
+    },
+    alertRow: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      alignItems: 'flex-start',
+      justifyContent: 'space-between',
+      gap: space.sm,
+    },
+    alertCopy: {
+      flex: 1,
+      minWidth: 140,
+    },
+    alertActions: {
       flexDirection: 'row',
       flexWrap: 'wrap',
       gap: space.xs,
     },
-    langChip: {
-      minHeight: HIT_TARGET - 8,
-      paddingHorizontal: space.md,
+    alertActionBtn: {
+      minHeight: 34,
+      paddingHorizontal: space.sm,
+    },
+    blockedSection: {
+      paddingHorizontal: space.sm,
       paddingVertical: space.xs,
-      borderRadius: 999,
-      borderWidth: StyleSheet.hairlineWidth,
-      borderColor: c.chipInactiveBorder,
-      backgroundColor: c.surface,
-      justifyContent: 'center',
-    },
-    langChipSelected: {
-      backgroundColor: c.accentFill,
-      borderColor: c.accentFill,
-    },
-    alertActions: {
-      gap: space.xs,
-      alignItems: 'flex-start',
-    },
-    alertPrimary: {
-      alignSelf: 'flex-start',
-    },
-    alertSecondary: {
-      alignSelf: 'flex-start',
-    },
-    spacer: {
-      height: space.md,
     },
     blockedSummary: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: space.xs,
-      minHeight: HIT_TARGET - 8,
-      marginBottom: space.xxs,
+      minHeight: 32,
+      marginBottom: 2,
     },
     blockedLabel: {
       flex: 1,
+      fontSize: 13,
+      lineHeight: 16,
+      fontWeight: '600',
+      color: c.text,
+    },
+    countPill: {
+      minHeight: 20,
+      paddingHorizontal: 6,
+      borderRadius: radius.full,
+      backgroundColor: c.surfaceRaised,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    countPillText: {
+      fontSize: 12,
+      lineHeight: 16,
+      fontWeight: '600',
+      color: c.textMuted,
+    },
+    blockedEmpty: {
+      fontSize: 13,
+      lineHeight: 18,
+      color: c.textMuted,
+      paddingLeft: 20,
+      paddingBottom: 4,
     },
     prefRow: {
       flexDirection: 'row',
       alignItems: 'center',
-      minHeight: HIT_TARGET,
-      gap: space.sm,
-      paddingLeft: space.xl,
+      minHeight: 34,
+      gap: space.xs,
+      paddingLeft: 20,
+    },
+    prefRowText: {
+      flex: 1,
+      fontSize: 13,
+      lineHeight: 18,
+      color: c.textSecondary,
     },
     unblockHit: {
-      minHeight: HIT_TARGET,
-      minWidth: HIT_TARGET,
+      minHeight: 32,
+      minWidth: 32,
       justifyContent: 'center',
       alignItems: 'center',
-      paddingHorizontal: space.xs,
+      paddingHorizontal: space.xxs,
+      borderRadius: radius.full,
+    },
+    unblockPressed: {
+      backgroundColor: c.surfaceRaised,
+    },
+    unblockText: {
+      fontSize: 13,
+      lineHeight: 18,
+      fontWeight: '600',
+      color: c.text,
     },
   })
 }

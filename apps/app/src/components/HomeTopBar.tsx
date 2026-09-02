@@ -1,20 +1,21 @@
-import { useMemo } from 'react'
+import { useMemo, type RefObject } from 'react'
 import { Pressable, StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Text } from '@gluestack-ui/themed'
 import MapPin from 'lucide-react-native/icons/map-pin'
+import ChevronDown from 'lucide-react-native/icons/chevron-down'
 import Search from 'lucide-react-native/icons/search'
 import { useTheme } from '../preferences/ThemePreferenceContext'
 import { HIT_TARGET, radius, space, typography, type AppColors } from '../theme/tokens'
 import { iconStroke } from '../theme/categoryIcons'
-import {
-  READING_LANGUAGES,
-  type ReadingLanguageCode,
-} from '../storage/languagePreference'
+import { BrandHomeButton } from './BrandHomeButton'
+import { ReadingLanguageToggle } from './ReadingLanguageToggle'
+import type { ReadingLanguageCode } from '../storage/languagePreference'
 
 type Props = {
   cityTitle?: string
   onCityPress: () => void
+  cityButtonRef?: RefObject<View | null>
   onSearchPress: () => void
   includeSafeArea?: boolean
   readingLanguage?: ReadingLanguageCode
@@ -25,6 +26,7 @@ type Props = {
 export function HomeTopBar({
   cityTitle,
   onCityPress,
+  cityButtonRef,
   onSearchPress,
   includeSafeArea = true,
   readingLanguage,
@@ -48,67 +50,41 @@ export function HomeTopBar({
           <Search size={22} strokeWidth={iconStroke} color={colors.text} />
         </Pressable>
 
-        <View style={styles.center} accessibilityRole="header">
-          <Text
-            fontSize={typography.headlineSm.fontSize}
-            lineHeight={typography.headlineSm.lineHeight}
-            fontWeight="$bold"
-            color={colors.text}
-            numberOfLines={1}
-          >
-            TazaKhabar
-          </Text>
+        <View style={styles.center}>
+          <BrandHomeButton size={30} />
         </View>
 
-        {cityTitle ? (
-          <Pressable
-            onPress={onCityPress}
-            accessibilityRole="button"
-            accessibilityLabel={`Change city, currently ${cityTitle}`}
-            hitSlop={4}
-            style={({ pressed }) => [styles.cityHit, pressed ? styles.pressed : null]}
-          >
-            <MapPin size={14} strokeWidth={iconStroke} color={colors.accent} />
-            <Text
-              fontSize={typography.label.fontSize}
-              lineHeight={typography.label.lineHeight}
-              fontWeight="$semibold"
-              color={colors.accent}
-              numberOfLines={1}
-            >
-              {cityTitle}
-            </Text>
-          </Pressable>
-        ) : (
-          <View style={styles.iconHit} />
-        )}
-      </View>
-
-      {onSelectLanguage ? (
-        <View style={styles.langRow}>
-          {READING_LANGUAGES.map((lang) => {
-            const selected = readingLanguage === lang.code
-            return (
+        <View style={styles.trailing}>
+          {onSelectLanguage && readingLanguage ? (
+            <ReadingLanguageToggle value={readingLanguage} onChange={onSelectLanguage} />
+          ) : null}
+          {cityTitle ? (
+            <View ref={cityButtonRef} collapsable={false}>
               <Pressable
-                key={lang.code}
-                onPress={() => onSelectLanguage(lang.code)}
+                onPress={onCityPress}
                 accessibilityRole="button"
-                accessibilityState={{ selected }}
-                accessibilityLabel={`Prefer ${lang.accessibilityLabel}`}
-                style={[styles.langChip, selected ? styles.langChipSelected : null]}
+                accessibilityLabel={`Change city, currently ${cityTitle}`}
+                hitSlop={4}
+                style={({ pressed }) => [styles.cityHit, pressed ? styles.pressed : null]}
               >
+                <MapPin size={14} strokeWidth={iconStroke} color={colors.accent} />
                 <Text
                   fontSize={typography.label.fontSize}
+                  lineHeight={typography.label.lineHeight}
                   fontWeight="$semibold"
-                  color={selected ? colors.chipSelectedText : colors.chipInactiveText}
+                  color={colors.accent}
+                  numberOfLines={1}
                 >
-                  {lang.code === 'en' ? 'EN' : 'हि'}
+                  {cityTitle}
                 </Text>
+                <ChevronDown size={14} strokeWidth={iconStroke} color={colors.accent} />
               </Pressable>
-            )
-          })}
+            </View>
+          ) : (
+            <View style={styles.iconHit} />
+          )}
         </View>
-      ) : null}
+      </View>
     </View>
   )
 }
@@ -117,9 +93,8 @@ function createStyles(c: AppColors) {
   return StyleSheet.create({
     bar: {
       minHeight: HIT_TARGET,
-      paddingBottom: space.xs,
+      paddingBottom: space.xxs,
       paddingHorizontal: space.screen,
-      gap: space.xs,
       backgroundColor: c.background,
       flexGrow: 0,
       flexShrink: 0,
@@ -134,7 +109,15 @@ function createStyles(c: AppColors) {
       flex: 1,
       alignItems: 'center',
       justifyContent: 'center',
-      paddingHorizontal: space.sm,
+      paddingHorizontal: space.xs,
+      minWidth: 0,
+    },
+    trailing: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      flexShrink: 0,
+      maxWidth: '52%',
     },
     iconHit: {
       width: 40,
@@ -146,26 +129,13 @@ function createStyles(c: AppColors) {
       flexDirection: 'row',
       alignItems: 'center',
       gap: 4,
+      flexShrink: 1,
+      minWidth: 0,
       maxWidth: 120,
       minHeight: 40,
-      paddingHorizontal: 4,
-    },
-    langRow: {
-      flexDirection: 'row',
-      justifyContent: 'center',
-      gap: 6,
-    },
-    langChip: {
-      minWidth: 38,
-      minHeight: 30,
-      paddingHorizontal: 10,
+      paddingHorizontal: 8,
       borderRadius: radius.full,
-      backgroundColor: c.surfaceRaised,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    langChipSelected: {
-      backgroundColor: c.accentFill,
+      backgroundColor: c.accentSoft,
     },
     pressed: {
       opacity: 0.75,

@@ -33,12 +33,10 @@ public static class ArticlesEndpoints
                 HttpContext httpContext,
                 CancellationToken cancellationToken) =>
             {
-                if (string.IsNullOrWhiteSpace(city))
+                var (resolved, cityError) = await FeedCityScope.TryResolveAsync(db, city, cancellationToken);
+                if (cityError is not null)
                 {
-                    return Results.Problem(
-                        title: "Invalid city",
-                        detail: "Query parameter 'city' (slug) is required.",
-                        statusCode: StatusCodes.Status400BadRequest);
+                    return cityError;
                 }
 
                 if (q is { Length: > MaxQueryLength })
@@ -63,19 +61,6 @@ public static class ArticlesEndpoints
                     localDate = parsed;
                 }
 
-                var slug = city.Trim().ToLowerInvariant();
-                var cityEntity = await db.Cities
-                    .AsNoTracking()
-                    .FirstOrDefaultAsync(c => c.Slug == slug, cancellationToken);
-
-                if (cityEntity is null)
-                {
-                    return Results.Problem(
-                        title: "Unknown city",
-                        detail: $"No city found with slug '{slug}'.",
-                        statusCode: StatusCodes.Status400BadRequest);
-                }
-
                 var pageOffset = Math.Max(offset ?? 0, 0);
                 var pageLimit = limit ?? DefaultLimit;
                 if (pageLimit < 1)
@@ -86,14 +71,9 @@ public static class ArticlesEndpoints
                 pageLimit = Math.Min(pageLimit, MaxLimit);
 
                 var cutoff = ArticleRetention.CutoffUtc(DateTimeOffset.UtcNow, retentionOptions.Value.Days);
+                var scope = resolved!.Value;
 
-                var query = db.Articles
-                    .AsNoTracking()
-                    .Where(a => a.CityId == cityEntity.Id
-                        && a.Status == ArticleStatus.Published
-                        && !a.IsMock
-                        && a.PublishedAt >= cutoff)
-                    .ExcludeEpaperEditions();
+                var query = FeedCityScope.PublishedArticles(db, cutoff, scope.CityId);
 
                 if (!string.IsNullOrWhiteSpace(q))
                 {
@@ -103,7 +83,7 @@ public static class ArticlesEndpoints
 
                 if (localDate is { } day)
                 {
-                    var (startUtc, endUtc) = CityCalendar.UtcBoundsForLocalDate(day, cityEntity);
+                    var (startUtc, endUtc) = CityCalendar.UtcBoundsForLocalDate(day, scope.CityEntity);
                     query = query.Where(a => a.PublishedAt >= startUtc && a.PublishedAt < endUtc);
                 }
 
@@ -139,12 +119,10 @@ public static class ArticlesEndpoints
                 HttpContext httpContext,
                 CancellationToken cancellationToken) =>
             {
-                if (string.IsNullOrWhiteSpace(city))
+                var (resolved, cityError) = await FeedCityScope.TryResolveAsync(db, city, cancellationToken);
+                if (cityError is not null)
                 {
-                    return Results.Problem(
-                        title: "Invalid city",
-                        detail: "Query parameter 'city' (slug) is required.",
-                        statusCode: StatusCodes.Status400BadRequest);
+                    return cityError;
                 }
 
                 var retentionDays = Math.Max(1, retentionOptions.Value.Days);
@@ -156,32 +134,14 @@ public static class ArticlesEndpoints
 
                 windowDays = Math.Min(windowDays, Math.Min(CityCalendar.DefaultDatesWindowDays, retentionDays));
 
-                var slug = city.Trim().ToLowerInvariant();
-                var cityEntity = await db.Cities
-                    .AsNoTracking()
-                    .FirstOrDefaultAsync(c => c.Slug == slug, cancellationToken);
-
-                if (cityEntity is null)
-                {
-                    return Results.Problem(
-                        title: "Unknown city",
-                        detail: $"No city found with slug '{slug}'.",
-                        statusCode: StatusCodes.Status400BadRequest);
-                }
-
-                var todayLocal = CityCalendar.TodayLocal(cityEntity);
+                var scope = resolved!.Value;
+                var todayLocal = CityCalendar.TodayLocal(scope.CityEntity);
                 var windowStartLocal = todayLocal.AddDays(-(windowDays - 1));
-                var (windowStartUtc, _) = CityCalendar.UtcBoundsForLocalDate(windowStartLocal, cityEntity);
-                var (_, windowEndUtc) = CityCalendar.UtcBoundsForLocalDate(todayLocal, cityEntity);
+                var (windowStartUtc, _) = CityCalendar.UtcBoundsForLocalDate(windowStartLocal, scope.CityEntity);
+                var (_, windowEndUtc) = CityCalendar.UtcBoundsForLocalDate(todayLocal, scope.CityEntity);
 
-                var query = db.Articles
-                    .AsNoTracking()
-                    .Where(a => a.CityId == cityEntity.Id
-                        && a.Status == ArticleStatus.Published
-                        && !a.IsMock
-                        && a.PublishedAt >= windowStartUtc
-                        && a.PublishedAt < windowEndUtc)
-                    .ExcludeEpaperEditions();
+                var query = FeedCityScope.PublishedArticles(db, windowStartUtc, scope.CityId)
+                    .Where(a => a.PublishedAt < windowEndUtc);
 
                 var dateArticles = await query.ToListAsync(cancellationToken);
                 if (!string.IsNullOrWhiteSpace(category))
@@ -190,7 +150,7 @@ public static class ArticlesEndpoints
                 }
 
                 var dates = dateArticles.Select(a => a.PublishedAt)
-                    .Select(at => CityCalendar.ToLocalDate(at, cityEntity))
+                    .Select(at => CityCalendar.ToLocalDate(at, scope.CityEntity))
                     .Distinct()
                     .OrderByDescending(d => d)
                     .Select(d => d.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture))
@@ -215,12 +175,10 @@ public static class ArticlesEndpoints
                 HttpContext httpContext,
                 CancellationToken cancellationToken) =>
             {
-                if (string.IsNullOrWhiteSpace(city))
+                var (resolved, cityError) = await FeedCityScope.TryResolveAsync(db, city, cancellationToken);
+                if (cityError is not null)
                 {
-                    return Results.Problem(
-                        title: "Invalid city",
-                        detail: "Query parameter 'city' (slug) is required.",
-                        statusCode: StatusCodes.Status400BadRequest);
+                    return cityError;
                 }
 
                 var pageLimit = limit ?? TrendingDefaults.DefaultLimit;
@@ -231,31 +189,25 @@ public static class ArticlesEndpoints
 
                 pageLimit = Math.Min(pageLimit, TrendingDefaults.MaxLimit);
 
-                var slug = city.Trim().ToLowerInvariant();
-                var cityEntity = await db.Cities
-                    .AsNoTracking()
-                    .FirstOrDefaultAsync(c => c.Slug == slug, cancellationToken);
-
-                if (cityEntity is null)
-                {
-                    return Results.Problem(
-                        title: "Unknown city",
-                        detail: $"No city found with slug '{slug}'.",
-                        statusCode: StatusCodes.Status400BadRequest);
-                }
-
+                var scope = resolved!.Value;
                 var now = DateTimeOffset.UtcNow;
                 var viewSince = now - TrendingDefaults.ViewWindow;
                 var retentionDays = Math.Max(1, retentionOptions.Value.Days);
                 var publishedSince = now - TimeSpan.FromDays(retentionDays);
 
-                var rankedIds = await db.ArticleViews
+                var viewsQuery = db.ArticleViews
                     .AsNoTracking()
                     .Where(v => v.ViewedAt >= viewSince)
-                    .Where(v => v.Article.CityId == cityEntity.Id
-                        && v.Article.Status == ArticleStatus.Published
+                    .Where(v => v.Article.Status == ArticleStatus.Published
                         && !v.Article.IsMock
-                        && v.Article.PublishedAt >= publishedSince)
+                        && v.Article.PublishedAt >= publishedSince);
+
+                if (scope.CityId.HasValue)
+                {
+                    viewsQuery = viewsQuery.Where(v => v.Article.CityId == scope.CityId.Value);
+                }
+
+                var rankedIds = await viewsQuery
                     .ExcludeEpaperEditions()
                     .GroupBy(v => v.ArticleId)
                     .Select(g => new { ArticleId = g.Key, Views = g.Count() })
@@ -308,27 +260,13 @@ public static class ArticlesEndpoints
                 HttpContext httpContext,
                 CancellationToken cancellationToken) =>
             {
-                if (string.IsNullOrWhiteSpace(city))
+                var (resolved, cityError) = await FeedCityScope.TryResolveAsync(db, city, cancellationToken);
+                if (cityError is not null)
                 {
-                    return Results.Problem(
-                        title: "Invalid city",
-                        detail: "Query parameter 'city' (slug) is required.",
-                        statusCode: StatusCodes.Status400BadRequest);
+                    return cityError;
                 }
 
-                var slug = city.Trim().ToLowerInvariant();
-                var cityEntity = await db.Cities
-                    .AsNoTracking()
-                    .FirstOrDefaultAsync(c => c.Slug == slug, cancellationToken);
-
-                if (cityEntity is null)
-                {
-                    return Results.Problem(
-                        title: "Unknown city",
-                        detail: $"No city found with slug '{slug}'.",
-                        statusCode: StatusCodes.Status400BadRequest);
-                }
-
+                var scope = resolved!.Value;
                 var pageOffset = Math.Max(offset ?? 0, 0);
                 var pageLimit = limit ?? DefaultLimit;
                 if (pageLimit < 1)
@@ -340,13 +278,7 @@ public static class ArticlesEndpoints
 
                 var cutoff = ArticleRetention.CutoffUtc(DateTimeOffset.UtcNow, retentionOptions.Value.Days);
 
-                var query = db.Articles
-                    .AsNoTracking()
-                    .Where(a => a.CityId == cityEntity.Id
-                        && a.Status == ArticleStatus.Published
-                        && !a.IsMock
-                        && a.PublishedAt >= cutoff)
-                    .ExcludeEpaperEditions();
+                var query = FeedCityScope.PublishedArticles(db, cutoff, scope.CityId);
 
                 // Personalization re-ranks a recency-bounded pool so stale stories
                 // never resurface just because they match the reader's taste.
@@ -368,7 +300,7 @@ public static class ArticlesEndpoints
                 var now = DateTimeOffset.UtcNow;
                 var candidateIds = candidates.Select(a => a.Id).ToList();
                 var signals = await personalization.LoadSignalsAsync(
-                    cityEntity.Id, sessionKey, candidateIds, now, cancellationToken);
+                    scope.CityId, sessionKey, candidateIds, now, cancellationToken);
                 var ranked = personalization.Rank(candidates, signals, now);
                 var page = ranked.Skip(pageOffset).Take(pageLimit).ToList();
 
@@ -399,27 +331,13 @@ public static class ArticlesEndpoints
                 HttpContext httpContext,
                 CancellationToken cancellationToken) =>
             {
-                if (string.IsNullOrWhiteSpace(city))
+                var (resolved, cityError) = await FeedCityScope.TryResolveAsync(db, city, cancellationToken);
+                if (cityError is not null)
                 {
-                    return Results.Problem(
-                        title: "Invalid city",
-                        detail: "Query parameter 'city' (slug) is required.",
-                        statusCode: StatusCodes.Status400BadRequest);
+                    return cityError;
                 }
 
-                var slug = city.Trim().ToLowerInvariant();
-                var cityEntity = await db.Cities
-                    .AsNoTracking()
-                    .FirstOrDefaultAsync(c => c.Slug == slug, cancellationToken);
-
-                if (cityEntity is null)
-                {
-                    return Results.Problem(
-                        title: "Unknown city",
-                        detail: $"No city found with slug '{slug}'.",
-                        statusCode: StatusCodes.Status400BadRequest);
-                }
-
+                var scope = resolved!.Value;
                 var perSectionLimit = limit ?? DefaultSectionLimit;
                 if (perSectionLimit < 1)
                 {
@@ -430,13 +348,7 @@ public static class ArticlesEndpoints
 
                 var cutoff = ArticleRetention.CutoffUtc(DateTimeOffset.UtcNow, retentionOptions.Value.Days);
 
-                var query = db.Articles
-                    .AsNoTracking()
-                    .Where(a => a.CityId == cityEntity.Id
-                        && a.Status == ArticleStatus.Published
-                        && !a.IsMock
-                        && a.PublishedAt >= cutoff)
-                    .ExcludeEpaperEditions();
+                var query = FeedCityScope.PublishedArticles(db, cutoff, scope.CityId);
 
                 // Same recency-bounded pool and ranking as the flat personalized
                 // feed; sections partition that pool instead of paging it.
@@ -451,7 +363,7 @@ public static class ArticlesEndpoints
                 var now = DateTimeOffset.UtcNow;
                 var candidateIds = candidates.Select(a => a.Id).ToList();
                 var signals = await personalization.LoadSignalsAsync(
-                    cityEntity.Id, sessionKey, candidateIds, now, cancellationToken);
+                    scope.CityId, sessionKey, candidateIds, now, cancellationToken);
                 var ranked = personalization.Rank(candidates, signals, now);
 
                 var sections = FeedSectionBuilder.Build(ranked, signals, perSectionLimit);
