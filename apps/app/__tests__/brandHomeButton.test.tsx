@@ -4,7 +4,7 @@ import { BrandHomeButton } from '../src/components/BrandHomeButton'
 import { ThemePreferenceProvider } from '../src/preferences/ThemePreferenceContext'
 
 const mockReplace = jest.fn()
-const mockSetStoredCitySlug = jest.fn(async () => undefined)
+const mockSetStoredCitySlug = jest.fn(async (_slug: string) => undefined)
 
 jest.mock('@react-native-async-storage/async-storage', () => ({
   getItem: jest.fn(async () => null),
@@ -19,7 +19,7 @@ jest.mock('expo-router', () => ({
 
 jest.mock('../src/storage/cityPreference', () => ({
   GLOBAL_CITY_SLUG: 'global',
-  setStoredCitySlug: jest.fn(async () => undefined),
+  setStoredCitySlug: (slug: string) => mockSetStoredCitySlug(slug),
 }))
 
 jest.mock('react-native-svg', () => {

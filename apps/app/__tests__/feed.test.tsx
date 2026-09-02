@@ -59,6 +59,12 @@ jest.mock('@react-native-async-storage/async-storage', () => ({
   setItem: jest.fn(async () => undefined),
 }))
 
+jest.mock('expo-location', () => ({
+  requestForegroundPermissionsAsync: jest.fn(async () => ({ status: 'denied' })),
+  getCurrentPositionAsync: jest.fn(),
+  Accuracy: { Balanced: 3 },
+}))
+
 jest.mock('moti', () => {
   const React = require('react')
   const { View } = require('react-native')
@@ -143,6 +149,7 @@ jest.mock('react-native-svg', () => {
     Rect: Mock,
     Stop: Mock,
     Path: Mock,
+    Circle: Mock,
   }
 })
 

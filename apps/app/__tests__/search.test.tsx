@@ -115,6 +115,19 @@ jest.mock('@gluestack-ui/themed', () => {
 jest.mock('../src/hooks/useBreakpoint', () => ({
   useBreakpoint: jest.fn(() => 'mobile'),
   isDesktopLayout: (bp: string) => bp === 'desktop' || bp === 'wide',
+  isExpandedLayout: (bp: string) => bp !== 'mobile',
+}))
+
+jest.mock('../src/storage/feedCache', () => ({
+  ...jest.requireActual('../src/storage/feedCache'),
+  readFeedCache: jest.fn(async () => null),
+  writeFeedCache: jest.fn(async () => undefined),
+}))
+
+jest.mock('../src/storage/feedCache', () => ({
+  ...jest.requireActual('../src/storage/feedCache'),
+  readFeedCache: jest.fn(async () => null),
+  writeFeedCache: jest.fn(async () => undefined),
 }))
 
 jest.mock('react-native-svg', () => {
