@@ -509,142 +509,6 @@
         }
       }
     },
-    "/api/notifications/status": {
-      "get": {
-        "tags": [
-          "TazaKhabar.Api"
-        ],
-        "operationId": "GetNotificationStatus",
-        "parameters": [
-          {
-            "name": "clientId",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "platform",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "city",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/NotificationPermissionStatusResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad Request",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/notifications/subscriptions": {
-      "post": {
-        "tags": [
-          "TazaKhabar.Api"
-        ],
-        "operationId": "UpsertNotificationSubscription",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpsertNotificationSubscriptionRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/NotificationSubscriptionResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad Request",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/notifications/subscriptions/{clientId}": {
-      "delete": {
-        "tags": [
-          "TazaKhabar.Api"
-        ],
-        "operationId": "DeleteNotificationSubscription",
-        "parameters": [
-          {
-            "name": "clientId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "platform",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "No Content"
-          },
-          "400": {
-            "description": "Bad Request",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/articles/{id}": {
       "get": {
         "tags": [
@@ -692,6 +556,139 @@
           },
           "429": {
             "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/notifications/status": {
+      "get": {
+        "tags": [
+          "TazaKhabar.Api"
+        ],
+        "operationId": "GetNotificationStatus",
+        "parameters": [
+          {
+            "name": "clientId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "platform",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "city",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationPermissionStatusResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/notifications/subscriptions": {
+      "post": {
+        "tags": [
+          "TazaKhabar.Api"
+        ],
+        "operationId": "UpsertNotificationSubscription",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpsertNotificationSubscriptionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationSubscriptionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/notifications/subscriptions/{clientId}": {
+      "delete": {
+        "tags": [
+          "TazaKhabar.Api"
+        ],
+        "operationId": "DeleteNotificationSubscription",
+        "parameters": [
+          {
+            "name": "clientId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "platform",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "description": "Bad Request",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -2510,6 +2507,97 @@
         },
         "additionalProperties": false
       },
+      "NotificationPermissionStatusResponse": {
+        "type": "object",
+        "properties": {
+          "supported": {
+            "type": "boolean"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "canPrompt": {
+            "type": "boolean"
+          },
+          "permissionState": {
+            "type": "string",
+            "nullable": true
+          },
+          "lastPromptAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "clientId": {
+            "type": "string",
+            "nullable": true
+          },
+          "subscription": {
+            "$ref": "#/components/schemas/NotificationSubscriptionResponse"
+          }
+        },
+        "additionalProperties": false
+      },
+      "NotificationSubscriptionResponse": {
+        "type": "object",
+        "properties": {
+          "clientId": {
+            "type": "string",
+            "nullable": true
+          },
+          "platform": {
+            "type": "string",
+            "nullable": true
+          },
+          "city": {
+            "type": "string",
+            "nullable": true
+          },
+          "deliveryMode": {
+            "type": "string",
+            "nullable": true
+          },
+          "categories": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "preferredLanguage": {
+            "type": "string",
+            "nullable": true
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "permissionGrantedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "permissionDeniedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "lastPromptAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "lastDeliveredAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
       "PagedAdminArticlesResponse": {
         "type": "object",
         "properties": {
@@ -2707,94 +2795,25 @@
         },
         "additionalProperties": false
       },
-      "NotificationPermissionStatusResponse": {
+      "RecordArticleViewRequest": {
         "type": "object",
         "properties": {
-          "supported": {
-            "type": "boolean"
-          },
-          "enabled": {
-            "type": "boolean"
-          },
-          "canPrompt": {
-            "type": "boolean"
-          },
-          "permissionState": {
+          "sessionId": {
             "type": "string",
-            "nullable": true
-          },
-          "lastPromptAt": {
-            "type": "string",
-            "format": "date-time",
-            "nullable": true
-          },
-          "clientId": {
-            "type": "string",
-            "nullable": true
-          },
-          "subscription": {
-            "$ref": "#/components/schemas/NotificationSubscriptionResponse",
             "nullable": true
           }
         },
         "additionalProperties": false
       },
-      "NotificationSubscriptionResponse": {
+      "TrendingArticlesResponse": {
         "type": "object",
         "properties": {
-          "clientId": {
-            "type": "string",
-            "nullable": true
-          },
-          "platform": {
-            "type": "string",
-            "nullable": true
-          },
-          "city": {
-            "type": "string",
-            "nullable": true
-          },
-          "deliveryMode": {
-            "type": "string",
-            "nullable": true
-          },
-          "categories": {
+          "items": {
             "type": "array",
             "items": {
-              "type": "string",
-              "nullable": true
-            }
-          },
-          "preferredLanguage": {
-            "type": "string",
+              "$ref": "#/components/schemas/ArticleResponse"
+            },
             "nullable": true
-          },
-          "enabled": {
-            "type": "boolean"
-          },
-          "permissionGrantedAt": {
-            "type": "string",
-            "format": "date-time",
-            "nullable": true
-          },
-          "permissionDeniedAt": {
-            "type": "string",
-            "format": "date-time",
-            "nullable": true
-          },
-          "lastPromptAt": {
-            "type": "string",
-            "format": "date-time",
-            "nullable": true
-          },
-          "lastDeliveredAt": {
-            "type": "string",
-            "format": "date-time",
-            "nullable": true
-          },
-          "updatedAt": {
-            "type": "string",
-            "format": "date-time"
           }
         },
         "additionalProperties": false
@@ -2821,8 +2840,7 @@
           "categories": {
             "type": "array",
             "items": {
-              "type": "string",
-              "nullable": true
+              "type": "string"
             },
             "nullable": true
           },
@@ -2835,8 +2853,7 @@
             "nullable": true
           },
           "webPushSubscription": {
-            "$ref": "#/components/schemas/WebPushSubscriptionDto",
-            "nullable": true
+            "$ref": "#/components/schemas/WebPushSubscriptionDto"
           },
           "enabled": {
             "type": "boolean"
@@ -2862,29 +2879,6 @@
           "expirationTime": {
             "type": "integer",
             "format": "int64",
-            "nullable": true
-          }
-        },
-        "additionalProperties": false
-      },
-      "RecordArticleViewRequest": {
-        "type": "object",
-        "properties": {
-          "sessionId": {
-            "type": "string",
-            "nullable": true
-          }
-        },
-        "additionalProperties": false
-      },
-      "TrendingArticlesResponse": {
-        "type": "object",
-        "properties": {
-          "items": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ArticleResponse"
-            },
             "nullable": true
           }
         },
