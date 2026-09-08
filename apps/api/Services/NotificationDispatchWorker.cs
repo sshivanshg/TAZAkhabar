@@ -2,7 +2,7 @@ namespace NewsFeed.Api.Services;
 
 public sealed class NotificationDispatchWorker(
     NotificationDispatchQueue queue,
-    NotificationDispatchService dispatcher,
+    IServiceScopeFactory scopeFactory,
     ILogger<NotificationDispatchWorker> logger) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -11,6 +11,8 @@ public sealed class NotificationDispatchWorker(
         {
             try
             {
+                await using var scope = scopeFactory.CreateAsyncScope();
+                var dispatcher = scope.ServiceProvider.GetRequiredService<NotificationDispatchService>();
                 await dispatcher.DispatchArticleAsync(item.ArticleId, stoppingToken);
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
