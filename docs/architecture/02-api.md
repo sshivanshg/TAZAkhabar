@@ -1,7 +1,7 @@
 # API
 
 > **Living doc** — update when endpoints, auth, rate limits, CORS, or DI composition change.  
-> **Last verified against:** 2026-09-02 (effective category filtering and ingestion classification)
+> **Last verified against:** 2026-09-08 (read-side article query service and response mapper extraction)
 
 ## Purpose
 
@@ -30,7 +30,7 @@ flowchart LR
 | Entry | `apps/api/Program.cs` |
 | Endpoints | `apps/api/Endpoints/` |
 | Options | `apps/api/Options/` (`Cors`, `RateLimiting`, `RssIngest`, `Admin`, `ArticleIntelligence`, `OpenAiRewrite`, `Notifications`, `Upload`) |
-| Presentation | `Services/ArticlePresentationService.cs`, `Services/CityCalendar.cs` |
+| Public article read path | `Services/ArticleFeedQueryService.cs`, `Services/ArticlePresentationService.cs`, `Services/ArticleResponseMapper.cs`, `Services/ArticleTranslationStore.cs` |
 | Logging | Serilog console + request/ingestion correlation properties |
 
 Pipeline (order): Serilog request logging → RequestId header/log context → ExceptionHandler → StatusCodePages → ForwardedHeaders → CORS → AuthN → AuthZ → RateLimiter.
@@ -133,6 +133,8 @@ flat `/api/articles/personalized` endpoint remains the paged variant.
 
 - `apps/api/Program.cs`
 - `apps/api/Endpoints/*`
+- `apps/api/Services/ArticleFeedQueryService.cs`
+- `apps/api/Services/ArticleResponseMapper.cs`
 - `apps/api/TazaKhabar.Api.csproj`
 
 ## Public contracts

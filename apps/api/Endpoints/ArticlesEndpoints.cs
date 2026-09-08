@@ -27,9 +27,8 @@ public static class ArticlesEndpoints
                 string? date,
                 int? offset,
                 int? limit,
-                AppDbContext db,
+                IArticleFeedQueryService feedQueries,
                 IArticlePresentationService presentation,
-                IOptions<ArticleRetentionOptions> retentionOptions,
                 HttpContext httpContext,
                 CancellationToken cancellationToken) =>
             {
@@ -64,9 +63,7 @@ public static class ArticlesEndpoints
                 }
 
                 var slug = city.Trim().ToLowerInvariant();
-                var cityEntity = await db.Cities
-                    .AsNoTracking()
-                    .FirstOrDefaultAsync(c => c.Slug == slug, cancellationToken);
+                var cityEntity = await feedQueries.FindCityAsync(slug, cancellationToken);
 
                 if (cityEntity is null)
                 {
@@ -85,36 +82,12 @@ public static class ArticlesEndpoints
 
                 pageLimit = Math.Min(pageLimit, MaxLimit);
 
-                var cutoff = ArticleRetention.CutoffUtc(DateTimeOffset.UtcNow, retentionOptions.Value.Days);
-
-                var query = db.Articles
-                    .AsNoTracking()
-                    .Where(a => a.CityId == cityEntity.Id
-                        && a.Status == ArticleStatus.Published
-                        && !a.IsMock
-                        && a.PublishedAt >= cutoff)
-                    .ExcludeEpaperEditions();
-
-                if (!string.IsNullOrWhiteSpace(q))
-                {
-                    var needle = q.Trim().ToLowerInvariant();
-                    query = query.Where(a => a.Headline.ToLower().Contains(needle));
-                }
-
-                if (localDate is { } day)
-                {
-                    var (startUtc, endUtc) = CityCalendar.UtcBoundsForLocalDate(day, cityEntity);
-                    query = query.Where(a => a.PublishedAt >= startUtc && a.PublishedAt < endUtc);
-                }
-
-                var entities = await query
-                    .OrderByDescending(a => a.PublishedAt)
-                    .ToListAsync(cancellationToken);
-
-                if (!string.IsNullOrWhiteSpace(category))
-                {
-                    entities = entities.Where(a => IsEffectiveCategory(a, category)).ToList();
-                }
+                var entities = (await feedQueries.GetChronologicalAsync(
+                    cityEntity,
+                    q,
+                    category,
+                    localDate,
+                    cancellationToken)).ToList();
 
                 var total = entities.Count;
                 entities = entities.Skip(pageOffset).Take(pageLimit).ToList();
@@ -134,7 +107,7 @@ public static class ArticlesEndpoints
                 string? city,
                 string? category,
                 int? days,
-                AppDbContext db,
+                IArticleFeedQueryService feedQueries,
                 IOptions<ArticleRetentionOptions> retentionOptions,
                 HttpContext httpContext,
                 CancellationToken cancellationToken) =>
@@ -157,9 +130,7 @@ public static class ArticlesEndpoints
                 windowDays = Math.Min(windowDays, Math.Min(CityCalendar.DefaultDatesWindowDays, retentionDays));
 
                 var slug = city.Trim().ToLowerInvariant();
-                var cityEntity = await db.Cities
-                    .AsNoTracking()
-                    .FirstOrDefaultAsync(c => c.Slug == slug, cancellationToken);
+                var cityEntity = await feedQueries.FindCityAsync(slug, cancellationToken);
 
                 if (cityEntity is null)
                 {
@@ -170,24 +141,11 @@ public static class ArticlesEndpoints
                 }
 
                 var todayLocal = CityCalendar.TodayLocal(cityEntity);
-                var windowStartLocal = todayLocal.AddDays(-(windowDays - 1));
-                var (windowStartUtc, _) = CityCalendar.UtcBoundsForLocalDate(windowStartLocal, cityEntity);
-                var (_, windowEndUtc) = CityCalendar.UtcBoundsForLocalDate(todayLocal, cityEntity);
-
-                var query = db.Articles
-                    .AsNoTracking()
-                    .Where(a => a.CityId == cityEntity.Id
-                        && a.Status == ArticleStatus.Published
-                        && !a.IsMock
-                        && a.PublishedAt >= windowStartUtc
-                        && a.PublishedAt < windowEndUtc)
-                    .ExcludeEpaperEditions();
-
-                var dateArticles = await query.ToListAsync(cancellationToken);
-                if (!string.IsNullOrWhiteSpace(category))
-                {
-                    dateArticles = dateArticles.Where(a => IsEffectiveCategory(a, category)).ToList();
-                }
+                var dateArticles = (await feedQueries.GetArticlesForDatesAsync(
+                    cityEntity,
+                    windowDays,
+                    category,
+                    cancellationToken)).ToList();
 
                 var dates = dateArticles.Select(a => a.PublishedAt)
                     .Select(at => CityCalendar.ToLocalDate(at, cityEntity))
@@ -209,9 +167,8 @@ public static class ArticlesEndpoints
                 string? city,
                 string? lang,
                 int? limit,
-                AppDbContext db,
+                IArticleFeedQueryService feedQueries,
                 IArticlePresentationService presentation,
-                IOptions<ArticleRetentionOptions> retentionOptions,
                 HttpContext httpContext,
                 CancellationToken cancellationToken) =>
             {
@@ -232,9 +189,7 @@ public static class ArticlesEndpoints
                 pageLimit = Math.Min(pageLimit, TrendingDefaults.MaxLimit);
 
                 var slug = city.Trim().ToLowerInvariant();
-                var cityEntity = await db.Cities
-                    .AsNoTracking()
-                    .FirstOrDefaultAsync(c => c.Slug == slug, cancellationToken);
+                var cityEntity = await feedQueries.FindCityAsync(slug, cancellationToken);
 
                 if (cityEntity is null)
                 {
@@ -244,45 +199,19 @@ public static class ArticlesEndpoints
                         statusCode: StatusCodes.Status400BadRequest);
                 }
 
-                var now = DateTimeOffset.UtcNow;
-                var viewSince = now - TrendingDefaults.ViewWindow;
-                var retentionDays = Math.Max(1, retentionOptions.Value.Days);
-                var publishedSince = now - TimeSpan.FromDays(retentionDays);
+                var entities = await feedQueries.GetTrendingAsync(
+                    cityEntity,
+                    pageLimit,
+                    DateTimeOffset.UtcNow,
+                    cancellationToken);
 
-                var rankedIds = await db.ArticleViews
-                    .AsNoTracking()
-                    .Where(v => v.ViewedAt >= viewSince)
-                    .Where(v => v.Article.CityId == cityEntity.Id
-                        && v.Article.Status == ArticleStatus.Published
-                        && !v.Article.IsMock
-                        && v.Article.PublishedAt >= publishedSince)
-                    .ExcludeEpaperEditions()
-                    .GroupBy(v => v.ArticleId)
-                    .Select(g => new { ArticleId = g.Key, Views = g.Count() })
-                    .OrderByDescending(x => x.Views)
-                    .ThenByDescending(x => x.ArticleId)
-                    .Take(pageLimit)
-                    .ToListAsync(cancellationToken);
-
-                if (rankedIds.Count == 0)
+                if (entities.Count == 0)
                 {
                     httpContext.Response.Headers.CacheControl = PublicCacheControl;
                     return Results.Ok(new TrendingArticlesResponse([]));
                 }
 
-                var idOrder = rankedIds.Select(x => x.ArticleId).ToList();
-                var entities = await db.Articles
-                    .AsNoTracking()
-                    .Where(a => idOrder.Contains(a.Id))
-                    .ToListAsync(cancellationToken);
-
-                var byId = entities.ToDictionary(a => a.Id);
-                var ordered = idOrder
-                    .Where(id => byId.ContainsKey(id))
-                    .Select(id => byId[id])
-                    .ToList();
-
-                var items = await presentation.PresentManyAsync(ordered, lang, cancellationToken);
+                var items = await presentation.PresentManyAsync(entities, lang, cancellationToken);
 
                 httpContext.Response.Headers.CacheControl = PublicCacheControl;
                 return Results.Ok(new TrendingArticlesResponse(items));
@@ -300,10 +229,9 @@ public static class ArticlesEndpoints
                 string? lang,
                 int? offset,
                 int? limit,
-                AppDbContext db,
+                IArticleFeedQueryService feedQueries,
                 IArticlePresentationService presentation,
                 IFeedPersonalizationService personalization,
-                IOptions<ArticleRetentionOptions> retentionOptions,
                 IOptions<FeedPersonalizationOptions> personalizationOptions,
                 HttpContext httpContext,
                 CancellationToken cancellationToken) =>
@@ -317,9 +245,7 @@ public static class ArticlesEndpoints
                 }
 
                 var slug = city.Trim().ToLowerInvariant();
-                var cityEntity = await db.Cities
-                    .AsNoTracking()
-                    .FirstOrDefaultAsync(c => c.Slug == slug, cancellationToken);
+                var cityEntity = await feedQueries.FindCityAsync(slug, cancellationToken);
 
                 if (cityEntity is null)
                 {
@@ -338,31 +264,17 @@ public static class ArticlesEndpoints
 
                 pageLimit = Math.Min(pageLimit, MaxLimit);
 
-                var cutoff = ArticleRetention.CutoffUtc(DateTimeOffset.UtcNow, retentionOptions.Value.Days);
-
-                var query = db.Articles
-                    .AsNoTracking()
-                    .Where(a => a.CityId == cityEntity.Id
-                        && a.Status == ArticleStatus.Published
-                        && !a.IsMock
-                        && a.PublishedAt >= cutoff)
-                    .ExcludeEpaperEditions();
-
                 // Personalization re-ranks a recency-bounded pool so stale stories
                 // never resurface just because they match the reader's taste.
                 var poolSize = Math.Max(1, personalizationOptions.Value.CandidatePoolSize);
-                var candidates = await query
-                    .OrderByDescending(a => a.PublishedAt)
-                    .ThenByDescending(a => a.Id)
-                    .ToListAsync(cancellationToken);
+                var candidateSet = await feedQueries.GetPersonalizationCandidatesAsync(
+                    cityEntity,
+                    category,
+                    poolSize,
+                    cancellationToken);
 
-                if (!string.IsNullOrWhiteSpace(category))
-                {
-                    candidates = candidates.Where(a => IsEffectiveCategory(a, category)).ToList();
-                }
-
-                var total = candidates.Count;
-                candidates = candidates.Take(poolSize).ToList();
+                var candidates = candidateSet.Candidates;
+                var total = candidateSet.Total;
 
                 var sessionKey = NormalizeSessionKey(sessionId);
                 var now = DateTimeOffset.UtcNow;
@@ -391,10 +303,9 @@ public static class ArticlesEndpoints
                 string? sessionId,
                 string? lang,
                 int? limit,
-                AppDbContext db,
+                IArticleFeedQueryService feedQueries,
                 IArticlePresentationService presentation,
                 IFeedPersonalizationService personalization,
-                IOptions<ArticleRetentionOptions> retentionOptions,
                 IOptions<FeedPersonalizationOptions> personalizationOptions,
                 HttpContext httpContext,
                 CancellationToken cancellationToken) =>
@@ -408,9 +319,7 @@ public static class ArticlesEndpoints
                 }
 
                 var slug = city.Trim().ToLowerInvariant();
-                var cityEntity = await db.Cities
-                    .AsNoTracking()
-                    .FirstOrDefaultAsync(c => c.Slug == slug, cancellationToken);
+                var cityEntity = await feedQueries.FindCityAsync(slug, cancellationToken);
 
                 if (cityEntity is null)
                 {
@@ -428,24 +337,15 @@ public static class ArticlesEndpoints
 
                 perSectionLimit = Math.Min(perSectionLimit, MaxSectionLimit);
 
-                var cutoff = ArticleRetention.CutoffUtc(DateTimeOffset.UtcNow, retentionOptions.Value.Days);
-
-                var query = db.Articles
-                    .AsNoTracking()
-                    .Where(a => a.CityId == cityEntity.Id
-                        && a.Status == ArticleStatus.Published
-                        && !a.IsMock
-                        && a.PublishedAt >= cutoff)
-                    .ExcludeEpaperEditions();
-
                 // Same recency-bounded pool and ranking as the flat personalized
                 // feed; sections partition that pool instead of paging it.
                 var poolSize = Math.Max(1, personalizationOptions.Value.CandidatePoolSize);
-                var candidates = await query
-                    .OrderByDescending(a => a.PublishedAt)
-                    .ThenByDescending(a => a.Id)
-                    .Take(poolSize)
-                    .ToListAsync(cancellationToken);
+                var candidateSet = await feedQueries.GetPersonalizationCandidatesAsync(
+                    cityEntity,
+                    null,
+                    poolSize,
+                    cancellationToken);
+                var candidates = candidateSet.Candidates;
 
                 var sessionKey = NormalizeSessionKey(sessionId);
                 var now = DateTimeOffset.UtcNow;
@@ -485,20 +385,11 @@ public static class ArticlesEndpoints
         api.MapPost("/articles/{id:int}/view", async (
                 int id,
                 RecordArticleViewRequest? body,
+                IArticleFeedQueryService feedQueries,
                 AppDbContext db,
-                IOptions<ArticleRetentionOptions> retentionOptions,
                 CancellationToken cancellationToken) =>
             {
-                var cutoff = ArticleRetention.CutoffUtc(DateTimeOffset.UtcNow, retentionOptions.Value.Days);
-                var exists = await db.Articles
-                    .AsNoTracking()
-                    .ExcludeEpaperEditions()
-                    .AnyAsync(
-                        a => a.Id == id
-                            && a.Status == ArticleStatus.Published
-                            && !a.IsMock
-                            && a.PublishedAt >= cutoff,
-                        cancellationToken);
+                var exists = await feedQueries.IsPublishedAsync(id, cancellationToken);
 
                 if (!exists)
                 {
@@ -544,22 +435,12 @@ public static class ArticlesEndpoints
         api.MapGet("/articles/{id:int}", async (
                 int id,
                 string? lang,
-                AppDbContext db,
+                IArticleFeedQueryService feedQueries,
                 IArticlePresentationService presentation,
-                IOptions<ArticleRetentionOptions> retentionOptions,
                 HttpContext httpContext,
                 CancellationToken cancellationToken) =>
             {
-                var cutoff = ArticleRetention.CutoffUtc(DateTimeOffset.UtcNow, retentionOptions.Value.Days);
-                var entity = await db.Articles
-                    .AsNoTracking()
-                    .ExcludeEpaperEditions()
-                    .FirstOrDefaultAsync(
-                        a => a.Id == id
-                            && a.Status == ArticleStatus.Published
-                            && !a.IsMock
-                            && a.PublishedAt >= cutoff,
-                        cancellationToken);
+                var entity = await feedQueries.GetPublishedByIdAsync(id, cancellationToken);
 
                 if (entity is null)
                 {
@@ -599,11 +480,6 @@ public static class ArticlesEndpoints
         return trimmed;
     }
 
-    private static bool IsEffectiveCategory(Article article, string requestedCategory) =>
-        string.Equals(
-            ContentCategoryClassifier.EffectiveCategory(article.Category, article.Headline, article.Summary),
-            requestedCategory.Trim(),
-            StringComparison.OrdinalIgnoreCase);
 }
 
 internal static class TrendingDefaults
