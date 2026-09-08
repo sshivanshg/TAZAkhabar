@@ -1,6 +1,6 @@
 # Design principles and quality model
 
-> **Living doc** - update when service boundaries, dependency direction, or architectural guardrails change.  
+> **Living doc** - update when service boundaries, dependency direction, or architectural guardrails change.
 > **Last verified against:** 2026-09-08 (local working tree)
 
 ## Purpose
