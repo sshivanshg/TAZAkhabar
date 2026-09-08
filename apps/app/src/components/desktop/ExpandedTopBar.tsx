@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { useCallback, useMemo, useRef, useState, type RefObject } from 'react'
 import {
   Platform,
   Pressable,
@@ -10,6 +10,7 @@ import {
 import { Text } from '@gluestack-ui/themed'
 import { useRouter } from 'expo-router'
 import Bookmark from 'lucide-react-native/icons/bookmark'
+import ChevronDown from 'lucide-react-native/icons/chevron-down'
 import MapPin from 'lucide-react-native/icons/map-pin'
 import Search from 'lucide-react-native/icons/search'
 import User from 'lucide-react-native/icons/user'
@@ -17,14 +18,14 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useTheme } from '../../preferences/ThemePreferenceContext'
 import { iconStroke } from '../../theme/categoryIcons'
 import { HIT_TARGET, radius, space, typography, type AppColors } from '../../theme/tokens'
-import {
-  READING_LANGUAGES,
-  type ReadingLanguageCode,
-} from '../../storage/languagePreference'
+import { BrandHomeButton } from '../BrandHomeButton'
+import { ReadingLanguageToggle } from '../ReadingLanguageToggle'
+import type { ReadingLanguageCode } from '../../storage/languagePreference'
 
 type Props = {
   cityTitle?: string
   onCityPress: () => void
+  cityButtonRef?: RefObject<View | null>
   readingLanguage?: ReadingLanguageCode
   onSelectLanguage?: (code: ReadingLanguageCode) => void
 }
@@ -38,6 +39,7 @@ type WebPressableState = PressableStateCallbackType & {
 export function ExpandedTopBar({
   cityTitle,
   onCityPress,
+  cityButtonRef,
   readingLanguage,
   onSelectLanguage,
 }: Props) {
@@ -63,17 +65,7 @@ export function ExpandedTopBar({
       ]}
     >
       <View style={styles.row}>
-        <Text
-          fontSize={typography.section.fontSize}
-          lineHeight={typography.section.lineHeight}
-          fontWeight="$bold"
-          color={colors.text}
-          accessibilityRole="header"
-          numberOfLines={1}
-          style={styles.logo}
-        >
-          TazaKhabar
-        </Text>
+        <BrandHomeButton size={32} />
 
         <View style={styles.searchWrap}>
           <Search size={18} strokeWidth={iconStroke} color={colors.textMuted} />
@@ -94,55 +86,36 @@ export function ExpandedTopBar({
 
         <View style={styles.actions}>
           {cityTitle ? (
-            <Pressable
-              onPress={onCityPress}
-              accessibilityRole="button"
-              accessibilityLabel={`Change city, currently ${cityTitle}`}
-              style={(state) => {
-                const { pressed, hovered } = state as WebPressableState
-                return [
-                  styles.cityPill,
-                  hovered ? styles.hover : null,
-                  pressed ? styles.pressed : null,
-                ]
-              }}
-            >
-              <MapPin size={12} strokeWidth={iconStroke} color={colors.accent} />
-              <Text
-                fontSize={typography.label.fontSize}
-                fontWeight="$medium"
-                color={colors.accent}
-                numberOfLines={1}
+            <View ref={cityButtonRef} collapsable={false}>
+              <Pressable
+                onPress={onCityPress}
+                accessibilityRole="button"
+                accessibilityLabel={`Change city, currently ${cityTitle}`}
+                style={(state) => {
+                  const { pressed, hovered } = state as WebPressableState
+                  return [
+                    styles.cityPill,
+                    hovered ? styles.hover : null,
+                    pressed ? styles.pressed : null,
+                  ]
+                }}
               >
-                {cityTitle}
-              </Text>
-            </Pressable>
+                <MapPin size={12} strokeWidth={iconStroke} color={colors.accent} />
+                <Text
+                  fontSize={typography.label.fontSize}
+                  fontWeight="$medium"
+                  color={colors.accent}
+                  numberOfLines={1}
+                >
+                  {cityTitle}
+                </Text>
+                <ChevronDown size={14} strokeWidth={iconStroke} color={colors.accent} />
+              </Pressable>
+            </View>
           ) : null}
 
-          {onSelectLanguage ? (
-            <View style={styles.langRow}>
-              {READING_LANGUAGES.map((lang) => {
-                const selected = readingLanguage === lang.code
-                return (
-                  <Pressable
-                    key={lang.code}
-                    onPress={() => onSelectLanguage(lang.code)}
-                    accessibilityRole="button"
-                    accessibilityState={{ selected }}
-                    accessibilityLabel={`Prefer ${lang.accessibilityLabel}`}
-                    style={[styles.langChip, selected ? styles.langChipSelected : null]}
-                  >
-                    <Text
-                      fontSize={typography.label.fontSize}
-                      fontWeight="$semibold"
-                      color={selected ? colors.chipSelectedText : colors.chipInactiveText}
-                    >
-                      {lang.code === 'en' ? 'EN' : 'हि'}
-                    </Text>
-                  </Pressable>
-                )
-              })}
-            </View>
+          {onSelectLanguage && readingLanguage ? (
+            <ReadingLanguageToggle value={readingLanguage} onChange={onSelectLanguage} />
           ) : null}
 
           <Pressable
@@ -189,10 +162,6 @@ function createStyles(c: AppColors) {
       gap: space.md,
       minHeight: HIT_TARGET,
     },
-    logo: {
-      flexShrink: 0,
-      letterSpacing: -0.3,
-    },
     searchWrap: {
       flex: 1,
       flexDirection: 'row',
@@ -233,26 +202,9 @@ function createStyles(c: AppColors) {
       minHeight: 32,
       borderRadius: radius.md,
       backgroundColor: c.accentSoft,
-      maxWidth: 140,
-    },
-    langRow: {
-      flexDirection: 'row',
-      gap: 6,
-    },
-    langChip: {
-      minWidth: 36,
-      minHeight: 32,
-      paddingHorizontal: 8,
-      borderRadius: radius.md,
       borderWidth: StyleSheet.hairlineWidth,
-      borderColor: c.border,
-      backgroundColor: c.surface,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    langChipSelected: {
-      backgroundColor: c.accentFill,
-      borderColor: c.accentFill,
+      borderColor: c.badgeSoftBorder,
+      maxWidth: 160,
     },
     iconBtn: {
       width: HIT_TARGET,

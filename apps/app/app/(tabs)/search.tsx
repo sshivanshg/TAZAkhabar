@@ -48,7 +48,12 @@ import {
   getBookmarks,
   removeBookmark,
 } from '../../src/storage/bookmarks'
-import { getStoredCitySlug } from '../../src/storage/cityPreference'
+import {
+  createGlobalCity,
+  getCityDisplayLabel,
+  getEffectiveCitySlug,
+  isGlobalCitySlug,
+} from '../../src/storage/cityPreference'
 import {
   feedCacheKey,
   isFeedCacheFresh,
@@ -139,17 +144,17 @@ function DiscoverBody() {
   }, [params.q])
 
   useEffect(() => {
-    void getStoredCitySlug().then((slug) => {
-      if (!slug) {
-        router.replace('/city')
-        return
-      }
+    void getEffectiveCitySlug().then((slug) => {
       setCitySlug(slug)
     })
-  }, [router])
+  }, [])
 
   useEffect(() => {
     if (!citySlug) {
+      return
+    }
+    if (isGlobalCitySlug(citySlug)) {
+      setCityMeta(createGlobalCity())
       return
     }
     let cancelled = false
@@ -258,7 +263,7 @@ function DiscoverBody() {
   )
 
   const visible = useMemo(() => prefs.filterArticles(articles), [articles, prefs])
-  const cityTitle = cityMeta?.name ?? citySlug ?? 'your city'
+  const cityTitle = getCityDisplayLabel(citySlug, cityMeta?.name)
   const showSkeleton = (loading && !refreshing) || !prefs.ready
 
   const openArticle = useCallback(
@@ -348,7 +353,7 @@ function DiscoverBody() {
       {
         key: 'city',
         label: 'Change city',
-        onPress: () => router.push('/city'),
+        onPress: () => router.push({ pathname: '/(tabs)', params: { pickCity: '1' } }),
       },
       ...visibleCategories
         .filter((c) => c !== 'All')
@@ -530,7 +535,9 @@ function DiscoverBody() {
                 primaryAccessibilityLabel={debounced ? 'Clear search' : 'Browse Home'}
                 secondaryLabel={debounced ? 'Back to home' : 'Change city'}
                 onSecondary={
-                  debounced ? () => router.replace('/(tabs)') : () => router.push('/city')
+                  debounced
+                    ? () => router.replace('/(tabs)')
+                    : () => router.push({ pathname: '/(tabs)', params: { pickCity: '1' } })
                 }
                 secondaryAccessibilityLabel={debounced ? 'Back to home' : 'Change city'}
               />

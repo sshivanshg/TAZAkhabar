@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Redirect } from 'expo-router'
 import { Box, Spinner, Text, VStack } from '@gluestack-ui/themed'
 import { useTheme } from '../src/preferences/ThemePreferenceContext'
-import { getStoredCitySlug } from '../src/storage/cityPreference'
+import { getEffectiveCitySlug } from '../src/storage/cityPreference'
 
 export default function IndexScreen() {
   const { colors } = useTheme()
@@ -11,7 +11,7 @@ export default function IndexScreen() {
 
   useEffect(() => {
     let cancelled = false
-    getStoredCitySlug().then((value) => {
+    getEffectiveCitySlug().then((value) => {
       if (!cancelled) {
         setSlug(value)
         setReady(true)
@@ -39,5 +39,5 @@ export default function IndexScreen() {
     return <Redirect href={{ pathname: '/(tabs)', params: { city: slug } }} />
   }
 
-  return <Redirect href="/city" />
+  return <Redirect href="/(tabs)" />
 }

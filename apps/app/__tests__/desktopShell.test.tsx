@@ -4,6 +4,31 @@ import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { AppShell } from '../src/components/desktop/AppShell'
 import { DesktopSidebar } from '../src/components/desktop/DesktopSidebar'
 
+jest.mock('../src/components/BrandHomeButton', () => {
+  const React = require('react')
+  const { Text } = require('react-native')
+  return {
+    BrandHomeButton: () => React.createElement(Text, null, 'TazaKhabar'),
+  }
+})
+
+jest.mock('@react-native-async-storage/async-storage', () => ({
+  getItem: jest.fn(async () => null),
+  setItem: jest.fn(async () => undefined),
+}))
+
+jest.mock('react-native-svg', () => {
+  const React = require('react')
+  const { View } = require('react-native')
+  return {
+    __esModule: true,
+    default: View,
+    Circle: View,
+    Path: View,
+    Rect: View,
+  }
+})
+
 jest.mock('../src/hooks/useBreakpoint', () => ({
   useBreakpoint: jest.fn(),
   isDesktopLayout: (bp: string) => bp === 'desktop' || bp === 'wide',
@@ -16,6 +41,7 @@ const mockUsePathname = jest.fn(() => '/')
 jest.mock('expo-router', () => ({
   usePathname: () => mockUsePathname(),
   useRouter: () => ({ push: jest.fn() }),
+  router: { replace: jest.fn() },
 }))
 
 const { useBreakpoint } = require('../src/hooks/useBreakpoint')

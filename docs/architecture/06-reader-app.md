@@ -1,7 +1,7 @@
 # Reader app
 
 > **Living doc** — update when Expo routes, city/feed/share behavior, or desktop web layer change.  
-> **Last verified against:** 2026-09-02 (Google News–style expanded feed on tablet/desktop, personalized For-you feed, inset article-sheet presentation, resilient web permissions, and explicit Profile-driven notification prompts)
+> **Last verified against:** 2026-09-02 (default **All India** `global` feed scope, Home city dropdown picker, Google News–style expanded feed on tablet/desktop, personalized For-you feed, inset article-sheet presentation, resilient web permissions, and Profile settings with left-rail section nav)
 
 ## Purpose
 
@@ -48,12 +48,12 @@ flowchart LR
 
 | File | Role |
 |------|------|
-| `index.tsx` | Boot: stored city → tabs else `/city` |
-| `city.tsx` | City picker (optional location detection, search, selected row, onboarding vs change-city copy) |
+| `index.tsx` | Boot: stored city or default `global` → tabs |
+| `city.tsx` | Legacy redirect → home city dropdown (`pickCity=1`) |
 | `(tabs)/index.tsx` | Home feed |
 | `(tabs)/search.tsx` | Search / Discover (hidden from tab bar; opened from home search) |
 | `(tabs)/bookmarks.tsx` | Local bookmarks |
-| `(tabs)/profile.tsx` | Settings: city, appearance (Light/Dark/System), language, blocks |
+| `(tabs)/profile.tsx` | Settings workspace: left-rail section nav (city, appearance, language, blocked, alerts, about) + compact detail panel |
 | `(tabs)/categories.tsx` | Hidden (`href: null`) |
 | `article/[id].tsx` | Continuous editorial article feed; hydrates `body` via `getArticle`; Back returns to Home; article pages render as inset card sheets with floating top/bottom chrome |
 | `feed.tsx` | Legacy redirect → tabs |
@@ -64,12 +64,14 @@ flowchart LR
 |--------|------|
 | `src/api/client.ts` | Typed API calls |
 | `src/api/useAsyncResource.ts` | Shared async lifecycle hook for ordinary server-state reads |
-| `src/storage/cityPreference.ts` | Persisted city (`AsyncStorage`; device-local, no account) |
+| `src/storage/cityPreference.ts` | Persisted city slug (`AsyncStorage`); virtual `global` = All India nationwide feed; device-local, no account |
 | `src/location/getCurrentCoordinates.ts` | Explicit foreground permission + bounded current-location read; browser geolocation on web and typed denial/service/timeout failures |
 | `src/location/nearestCity.ts` | Haversine match from device coordinates to public city-centre coordinates |
 | `src/storage/feedCache.ts` | First-page Home/Discover feed cache (`AsyncStorage`; 45m TTL; key = city+category+lang+q) |
 | `src/components/CityListItem.tsx` | Tappable city row + list skeleton |
 | `src/components/CitySearch.tsx` | Live city/state filter field |
+| `src/components/CityPickerDropdown.tsx` | Minimal home city menu — search, location, compact list (popover or sheet) |
+| `src/hooks/useCityPicker.tsx` | Shared city picker state + selection for Home and Profile |
 | `src/utils/shareToWhatsApp.ts` | Share deep link / intent to the public TazaKhabar website |
 | `src/components/desktop/*` | Expanded shell, top bar, category nav, top-stories cluster, local rail |
 | `src/storage/personalizationId.ts` | Persistent anonymous id (AsyncStorage/localStorage) for view recording + personalized feed |
@@ -112,15 +114,21 @@ sequenceDiagram
   participant App as Expo app
   participant API as API
   U->>App: Open / QR land
-  alt no city
-    App->>U: City picker
+  alt no stored city
+    App->>API: getFeedSections / getArticles with city=global
+    Note over App: Same personalization pipeline; cross-city trending
+  else stored city slug
+    App->>API: getCities (metadata) + getFeedSections / getArticles
+  end
+  opt User opens city picker
+    App->>U: City picker (All India + cities)
     opt User taps Use my current location
       App->>U: Ask foreground location permission
       App->>App: Match nearest supported city locally
     end
     App->>App: AsyncStorage save
   end
-  App->>API: getCities / getFeedSections (For you) or getArticles / getArticleDates
+  App->>API: getFeedSections (For you) or getArticles / getArticleDates
   Note over App: First-page feed skipped when feed cache is fresh (45m)
   U->>App: Pull to refresh
   App->>API: getFeedSections / getArticles (force) + write feed cache

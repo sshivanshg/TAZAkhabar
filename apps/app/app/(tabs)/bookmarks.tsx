@@ -151,7 +151,9 @@ function BookmarksBody() {
             onPrimary={() => router.replace('/(tabs)')}
             primaryAccessibilityLabel="Browse stories"
             secondaryLabel="Change city"
-            onSecondary={() => router.push('/city')}
+            onSecondary={() =>
+              router.push({ pathname: '/(tabs)', params: { pickCity: '1' } })
+            }
             secondaryAccessibilityLabel="Change city"
             icon={<Bookmark size={28} strokeWidth={1.8} color={colors.accent} />}
           />

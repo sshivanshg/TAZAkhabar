@@ -6,7 +6,7 @@ import BellRing from 'lucide-react-native/icons/bell-ring'
 import ShieldAlert from 'lucide-react-native/icons/shield-alert'
 import { useTheme } from '../preferences/ThemePreferenceContext'
 import { PrimaryButton, SecondaryButton } from './ui/PrimaryButton'
-import { getStoredCitySlug } from '../storage/cityPreference'
+import { getEffectiveCitySlug, isGlobalCitySlug } from '../storage/cityPreference'
 import {
   getNotificationPromptState,
   shouldRePromptForNotifications,
@@ -34,7 +34,7 @@ export function NotificationOptInBanner() {
     let cancelled = false
     void (async () => {
       const [storedCity, storedPrompt] = await Promise.all([
-        getStoredCitySlug(),
+        getEffectiveCitySlug(),
         getNotificationPromptState(),
       ])
       if (cancelled) {
@@ -42,7 +42,10 @@ export function NotificationOptInBanner() {
       }
       setCitySlug(storedCity)
       setPromptState(storedPrompt)
-      setVisible(Boolean(storedCity) && shouldRePromptForNotifications(storedPrompt, PROMPT_COOLDOWN_DAYS))
+      setVisible(
+        !isGlobalCitySlug(storedCity) &&
+          shouldRePromptForNotifications(storedPrompt, PROMPT_COOLDOWN_DAYS),
+      )
       setReady(true)
     })()
     return () => {
@@ -50,7 +53,7 @@ export function NotificationOptInBanner() {
     }
   }, [])
 
-  if (!ready || !visible || !citySlug || !promptState) {
+  if (!ready || !visible || !citySlug || !promptState || isGlobalCitySlug(citySlug)) {
     return null
   }
 

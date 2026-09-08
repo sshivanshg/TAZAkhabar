@@ -27,17 +27,16 @@ public static class ArticlesEndpoints
                 string? date,
                 int? offset,
                 int? limit,
+                AppDbContext db,
                 IArticleFeedQueryService feedQueries,
                 IArticlePresentationService presentation,
                 HttpContext httpContext,
                 CancellationToken cancellationToken) =>
             {
-                if (string.IsNullOrWhiteSpace(city))
+                var (resolved, cityError) = await FeedCityScope.TryResolveAsync(db, city, cancellationToken);
+                if (cityError is not null)
                 {
-                    return Results.Problem(
-                        title: "Invalid city",
-                        detail: "Query parameter 'city' (slug) is required.",
-                        statusCode: StatusCodes.Status400BadRequest);
+                    return cityError;
                 }
 
                 if (q is { Length: > MaxQueryLength })
@@ -62,17 +61,6 @@ public static class ArticlesEndpoints
                     localDate = parsed;
                 }
 
-                var slug = city.Trim().ToLowerInvariant();
-                var cityEntity = await feedQueries.FindCityAsync(slug, cancellationToken);
-
-                if (cityEntity is null)
-                {
-                    return Results.Problem(
-                        title: "Unknown city",
-                        detail: $"No city found with slug '{slug}'.",
-                        statusCode: StatusCodes.Status400BadRequest);
-                }
-
                 var pageOffset = Math.Max(offset ?? 0, 0);
                 var pageLimit = limit ?? DefaultLimit;
                 if (pageLimit < 1)
@@ -83,7 +71,7 @@ public static class ArticlesEndpoints
                 pageLimit = Math.Min(pageLimit, MaxLimit);
 
                 var entities = (await feedQueries.GetChronologicalAsync(
-                    cityEntity,
+                    resolved!.Value,
                     q,
                     category,
                     localDate,
@@ -107,17 +95,16 @@ public static class ArticlesEndpoints
                 string? city,
                 string? category,
                 int? days,
+                AppDbContext db,
                 IArticleFeedQueryService feedQueries,
                 IOptions<ArticleRetentionOptions> retentionOptions,
                 HttpContext httpContext,
                 CancellationToken cancellationToken) =>
             {
-                if (string.IsNullOrWhiteSpace(city))
+                var (resolved, cityError) = await FeedCityScope.TryResolveAsync(db, city, cancellationToken);
+                if (cityError is not null)
                 {
-                    return Results.Problem(
-                        title: "Invalid city",
-                        detail: "Query parameter 'city' (slug) is required.",
-                        statusCode: StatusCodes.Status400BadRequest);
+                    return cityError;
                 }
 
                 var retentionDays = Math.Max(1, retentionOptions.Value.Days);
@@ -129,26 +116,14 @@ public static class ArticlesEndpoints
 
                 windowDays = Math.Min(windowDays, Math.Min(CityCalendar.DefaultDatesWindowDays, retentionDays));
 
-                var slug = city.Trim().ToLowerInvariant();
-                var cityEntity = await feedQueries.FindCityAsync(slug, cancellationToken);
-
-                if (cityEntity is null)
-                {
-                    return Results.Problem(
-                        title: "Unknown city",
-                        detail: $"No city found with slug '{slug}'.",
-                        statusCode: StatusCodes.Status400BadRequest);
-                }
-
-                var todayLocal = CityCalendar.TodayLocal(cityEntity);
                 var dateArticles = (await feedQueries.GetArticlesForDatesAsync(
-                    cityEntity,
+                    resolved!.Value,
                     windowDays,
                     category,
                     cancellationToken)).ToList();
 
                 var dates = dateArticles.Select(a => a.PublishedAt)
-                    .Select(at => CityCalendar.ToLocalDate(at, cityEntity))
+                    .Select(at => CityCalendar.ToLocalDate(at, resolved.Value.CityEntity))
                     .Distinct()
                     .OrderByDescending(d => d)
                     .Select(d => d.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture))
@@ -167,17 +142,16 @@ public static class ArticlesEndpoints
                 string? city,
                 string? lang,
                 int? limit,
+                AppDbContext db,
                 IArticleFeedQueryService feedQueries,
                 IArticlePresentationService presentation,
                 HttpContext httpContext,
                 CancellationToken cancellationToken) =>
             {
-                if (string.IsNullOrWhiteSpace(city))
+                var (resolved, cityError) = await FeedCityScope.TryResolveAsync(db, city, cancellationToken);
+                if (cityError is not null)
                 {
-                    return Results.Problem(
-                        title: "Invalid city",
-                        detail: "Query parameter 'city' (slug) is required.",
-                        statusCode: StatusCodes.Status400BadRequest);
+                    return cityError;
                 }
 
                 var pageLimit = limit ?? TrendingDefaults.DefaultLimit;
@@ -188,19 +162,8 @@ public static class ArticlesEndpoints
 
                 pageLimit = Math.Min(pageLimit, TrendingDefaults.MaxLimit);
 
-                var slug = city.Trim().ToLowerInvariant();
-                var cityEntity = await feedQueries.FindCityAsync(slug, cancellationToken);
-
-                if (cityEntity is null)
-                {
-                    return Results.Problem(
-                        title: "Unknown city",
-                        detail: $"No city found with slug '{slug}'.",
-                        statusCode: StatusCodes.Status400BadRequest);
-                }
-
                 var entities = await feedQueries.GetTrendingAsync(
-                    cityEntity,
+                    resolved!.Value,
                     pageLimit,
                     DateTimeOffset.UtcNow,
                     cancellationToken);
@@ -229,30 +192,19 @@ public static class ArticlesEndpoints
                 string? lang,
                 int? offset,
                 int? limit,
+                AppDbContext db,
                 IArticleFeedQueryService feedQueries,
                 IArticlePresentationService presentation,
                 IFeedPersonalizationService personalization,
+                IOptions<ArticleRetentionOptions> retentionOptions,
                 IOptions<FeedPersonalizationOptions> personalizationOptions,
                 HttpContext httpContext,
                 CancellationToken cancellationToken) =>
             {
-                if (string.IsNullOrWhiteSpace(city))
+                var (resolved, cityError) = await FeedCityScope.TryResolveAsync(db, city, cancellationToken);
+                if (cityError is not null)
                 {
-                    return Results.Problem(
-                        title: "Invalid city",
-                        detail: "Query parameter 'city' (slug) is required.",
-                        statusCode: StatusCodes.Status400BadRequest);
-                }
-
-                var slug = city.Trim().ToLowerInvariant();
-                var cityEntity = await feedQueries.FindCityAsync(slug, cancellationToken);
-
-                if (cityEntity is null)
-                {
-                    return Results.Problem(
-                        title: "Unknown city",
-                        detail: $"No city found with slug '{slug}'.",
-                        statusCode: StatusCodes.Status400BadRequest);
+                    return cityError;
                 }
 
                 var pageOffset = Math.Max(offset ?? 0, 0);
@@ -268,7 +220,7 @@ public static class ArticlesEndpoints
                 // never resurface just because they match the reader's taste.
                 var poolSize = Math.Max(1, personalizationOptions.Value.CandidatePoolSize);
                 var candidateSet = await feedQueries.GetPersonalizationCandidatesAsync(
-                    cityEntity,
+                    resolved!.Value,
                     category,
                     poolSize,
                     cancellationToken);
@@ -280,7 +232,7 @@ public static class ArticlesEndpoints
                 var now = DateTimeOffset.UtcNow;
                 var candidateIds = candidates.Select(a => a.Id).ToList();
                 var signals = await personalization.LoadSignalsAsync(
-                    cityEntity.Id, sessionKey, candidateIds, now, cancellationToken);
+                    resolved.Value.CityId, sessionKey, candidateIds, now, cancellationToken);
                 var ranked = personalization.Rank(candidates, signals, now);
                 var page = ranked.Skip(pageOffset).Take(pageLimit).ToList();
 
@@ -303,6 +255,7 @@ public static class ArticlesEndpoints
                 string? sessionId,
                 string? lang,
                 int? limit,
+                AppDbContext db,
                 IArticleFeedQueryService feedQueries,
                 IArticlePresentationService presentation,
                 IFeedPersonalizationService personalization,
@@ -310,23 +263,10 @@ public static class ArticlesEndpoints
                 HttpContext httpContext,
                 CancellationToken cancellationToken) =>
             {
-                if (string.IsNullOrWhiteSpace(city))
+                var (resolved, cityError) = await FeedCityScope.TryResolveAsync(db, city, cancellationToken);
+                if (cityError is not null)
                 {
-                    return Results.Problem(
-                        title: "Invalid city",
-                        detail: "Query parameter 'city' (slug) is required.",
-                        statusCode: StatusCodes.Status400BadRequest);
-                }
-
-                var slug = city.Trim().ToLowerInvariant();
-                var cityEntity = await feedQueries.FindCityAsync(slug, cancellationToken);
-
-                if (cityEntity is null)
-                {
-                    return Results.Problem(
-                        title: "Unknown city",
-                        detail: $"No city found with slug '{slug}'.",
-                        statusCode: StatusCodes.Status400BadRequest);
+                    return cityError;
                 }
 
                 var perSectionLimit = limit ?? DefaultSectionLimit;
@@ -341,7 +281,7 @@ public static class ArticlesEndpoints
                 // feed; sections partition that pool instead of paging it.
                 var poolSize = Math.Max(1, personalizationOptions.Value.CandidatePoolSize);
                 var candidateSet = await feedQueries.GetPersonalizationCandidatesAsync(
-                    cityEntity,
+                    resolved!.Value,
                     null,
                     poolSize,
                     cancellationToken);
@@ -351,7 +291,7 @@ public static class ArticlesEndpoints
                 var now = DateTimeOffset.UtcNow;
                 var candidateIds = candidates.Select(a => a.Id).ToList();
                 var signals = await personalization.LoadSignalsAsync(
-                    cityEntity.Id, sessionKey, candidateIds, now, cancellationToken);
+                    resolved.Value.CityId, sessionKey, candidateIds, now, cancellationToken);
                 var ranked = personalization.Rank(candidates, signals, now);
 
                 var sections = FeedSectionBuilder.Build(ranked, signals, perSectionLimit);

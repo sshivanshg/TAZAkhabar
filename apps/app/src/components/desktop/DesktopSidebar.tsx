@@ -8,6 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useTheme } from '../../preferences/ThemePreferenceContext'
 import { iconStroke, type AppIcon } from '../../theme/categoryIcons'
 import { HIT_TARGET, radius, space, typography, type AppColors } from '../../theme/tokens'
+import { BrandHomeButton } from '../BrandHomeButton'
 import { getPublicSiteUrl } from '../../utils/publicSiteUrl'
 
 type NavItem = {
@@ -69,9 +70,7 @@ export function DesktopSidebar() {
       ]}
     >
       <View style={styles.brandBlock}>
-        <Text style={styles.brand} accessibilityRole="header">
-          TazaKhabar
-        </Text>
+        <BrandHomeButton size={32} showWordmark />
         <View style={styles.brandRule} />
       </View>
 

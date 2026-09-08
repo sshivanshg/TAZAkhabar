@@ -13,29 +13,27 @@ namespace NewsFeed.Api.Services;
 /// </summary>
 public interface IArticleFeedQueryService
 {
-    Task<City?> FindCityAsync(string citySlug, CancellationToken cancellationToken);
-
     Task<IReadOnlyList<Article>> GetChronologicalAsync(
-        City city,
+        FeedCityScope.Resolved scope,
         string? query,
         string? category,
         DateOnly? localDate,
         CancellationToken cancellationToken);
 
     Task<IReadOnlyList<Article>> GetArticlesForDatesAsync(
-        City city,
+        FeedCityScope.Resolved scope,
         int windowDays,
         string? category,
         CancellationToken cancellationToken);
 
     Task<IReadOnlyList<Article>> GetTrendingAsync(
-        City city,
+        FeedCityScope.Resolved scope,
         int limit,
         DateTimeOffset now,
         CancellationToken cancellationToken);
 
     Task<ArticleCandidateSet> GetPersonalizationCandidatesAsync(
-        City city,
+        FeedCityScope.Resolved scope,
         string? category,
         int poolSize,
         CancellationToken cancellationToken);
@@ -57,19 +55,14 @@ public sealed class ArticleFeedQueryService(
     AppDbContext db,
     IOptions<ArticleRetentionOptions> retentionOptions) : IArticleFeedQueryService
 {
-    public Task<City?> FindCityAsync(string citySlug, CancellationToken cancellationToken) =>
-        db.Cities
-            .AsNoTracking()
-            .FirstOrDefaultAsync(c => c.Slug == citySlug.Trim().ToLowerInvariant(), cancellationToken);
-
     public async Task<IReadOnlyList<Article>> GetChronologicalAsync(
-        City city,
+        FeedCityScope.Resolved scope,
         string? query,
         string? category,
         DateOnly? localDate,
         CancellationToken cancellationToken)
     {
-        var articleQuery = VisibleArticles(city.Id, ArticleRetention.CutoffUtc(
+        var articleQuery = VisibleArticles(scope.CityId, ArticleRetention.CutoffUtc(
             DateTimeOffset.UtcNow,
             retentionOptions.Value.Days));
 
@@ -81,7 +74,7 @@ public sealed class ArticleFeedQueryService(
 
         if (localDate is { } day)
         {
-            var (startUtc, endUtc) = CityCalendar.UtcBoundsForLocalDate(day, city);
+            var (startUtc, endUtc) = CityCalendar.UtcBoundsForLocalDate(day, scope.CityEntity);
             articleQuery = articleQuery.Where(a => a.PublishedAt >= startUtc && a.PublishedAt < endUtc);
         }
 
@@ -100,17 +93,17 @@ public sealed class ArticleFeedQueryService(
     }
 
     public async Task<IReadOnlyList<Article>> GetArticlesForDatesAsync(
-        City city,
+        FeedCityScope.Resolved scope,
         int windowDays,
         string? category,
         CancellationToken cancellationToken)
     {
-        var todayLocal = CityCalendar.TodayLocal(city);
+        var todayLocal = CityCalendar.TodayLocal(scope.CityEntity);
         var windowStartLocal = todayLocal.AddDays(-(windowDays - 1));
-        var (windowStartUtc, _) = CityCalendar.UtcBoundsForLocalDate(windowStartLocal, city);
-        var (_, windowEndUtc) = CityCalendar.UtcBoundsForLocalDate(todayLocal, city);
+        var (windowStartUtc, _) = CityCalendar.UtcBoundsForLocalDate(windowStartLocal, scope.CityEntity);
+        var (_, windowEndUtc) = CityCalendar.UtcBoundsForLocalDate(todayLocal, scope.CityEntity);
 
-        var articles = await VisibleArticles(city.Id, windowStartUtc)
+        var articles = await VisibleArticles(scope.CityId, windowStartUtc)
             .Where(a => a.PublishedAt < windowEndUtc)
             .ToListAsync(cancellationToken);
 
@@ -120,7 +113,7 @@ public sealed class ArticleFeedQueryService(
     }
 
     public async Task<IReadOnlyList<Article>> GetTrendingAsync(
-        City city,
+        FeedCityScope.Resolved scope,
         int limit,
         DateTimeOffset now,
         CancellationToken cancellationToken)
@@ -131,7 +124,7 @@ public sealed class ArticleFeedQueryService(
         var rankedIds = await db.ArticleViews
             .AsNoTracking()
             .Where(v => v.ViewedAt >= viewSince)
-            .Where(v => v.Article.CityId == city.Id
+            .Where(v => (!scope.CityId.HasValue || v.Article.CityId == scope.CityId.Value)
                 && v.Article.Status == ArticleStatus.Published
                 && !v.Article.IsMock
                 && v.Article.PublishedAt >= publishedSince)
@@ -162,12 +155,12 @@ public sealed class ArticleFeedQueryService(
     }
 
     public async Task<ArticleCandidateSet> GetPersonalizationCandidatesAsync(
-        City city,
+        FeedCityScope.Resolved scope,
         string? category,
         int poolSize,
         CancellationToken cancellationToken)
     {
-        var candidates = await VisibleArticles(city.Id, ArticleRetention.CutoffUtc(
+        var candidates = await VisibleArticles(scope.CityId, ArticleRetention.CutoffUtc(
                 DateTimeOffset.UtcNow,
                 retentionOptions.Value.Days))
             .OrderByDescending(a => a.PublishedAt)
@@ -202,14 +195,22 @@ public sealed class ArticleFeedQueryService(
                 retentionOptions.Value.Days))
             .AnyAsync(cancellationToken);
 
-    private IQueryable<Article> VisibleArticles(int cityId, DateTimeOffset cutoff) =>
-        db.Articles
+    private IQueryable<Article> VisibleArticles(int? cityId, DateTimeOffset cutoff)
+    {
+        var query = db.Articles
             .AsNoTracking()
-            .Where(a => a.CityId == cityId
-                && a.Status == ArticleStatus.Published
+            .Where(a => a.Status == ArticleStatus.Published
                 && !a.IsMock
                 && a.PublishedAt >= cutoff)
             .ExcludeEpaperEditions();
+
+        if (cityId.HasValue)
+        {
+            query = query.Where(a => a.CityId == cityId.Value);
+        }
+
+        return query;
+    }
 
     private IQueryable<Article> VisibleArticle(int articleId, DateTimeOffset cutoff) =>
         db.Articles

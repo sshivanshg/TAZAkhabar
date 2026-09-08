@@ -18,10 +18,8 @@ import { MotiView } from 'moti'
 import { useTheme } from '../../preferences/ThemePreferenceContext'
 import { iconStroke } from '../../theme/categoryIcons'
 import { HIT_TARGET, radius, space, typography, type AppColors } from '../../theme/tokens'
-import {
-  READING_LANGUAGES,
-  type ReadingLanguageCode,
-} from '../../storage/languagePreference'
+import { ReadingLanguageToggle } from '../ReadingLanguageToggle'
+import type { ReadingLanguageCode } from '../../storage/languagePreference'
 
 type Props = {
   cityTitle?: string
@@ -180,30 +178,8 @@ export function DesktopTopBar({
       </View>
 
       <View style={styles.rightCluster}>
-        {onSelectLanguage ? (
-          <View style={styles.langRow}>
-            {READING_LANGUAGES.map((lang) => {
-              const selected = readingLanguage === lang.code
-              return (
-                <Pressable
-                  key={lang.code}
-                  onPress={() => onSelectLanguage(lang.code)}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected }}
-                  accessibilityLabel={`Prefer ${lang.accessibilityLabel}`}
-                  style={[styles.langChip, selected ? styles.langChipSelected : null]}
-                >
-                  <Text
-                    fontSize={typography.label.fontSize}
-                    fontWeight="$semibold"
-                    color={selected ? colors.chipSelectedText : colors.chipInactiveText}
-                  >
-                    {lang.code === 'en' ? 'EN' : 'हि'}
-                  </Text>
-                </Pressable>
-              )
-            })}
-          </View>
+        {onSelectLanguage && readingLanguage ? (
+          <ReadingLanguageToggle value={readingLanguage} onChange={onSelectLanguage} />
         ) : null}
         {/*
           One chrome surface: Moti grows width from circle → pill.
@@ -296,25 +272,6 @@ function createStyles(c: AppColors) {
       alignItems: 'center',
       flexShrink: 0,
       gap: space.xs,
-    },
-    langRow: {
-      flexDirection: 'row',
-      gap: 6,
-    },
-    langChip: {
-      minWidth: 38,
-      minHeight: 32,
-      paddingHorizontal: 10,
-      borderRadius: radius.md,
-      borderWidth: StyleSheet.hairlineWidth,
-      borderColor: c.border,
-      backgroundColor: c.surface,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    langChipSelected: {
-      backgroundColor: c.accentFill,
-      borderColor: c.accentFill,
     },
     cityPill: {
       flexDirection: 'row',
