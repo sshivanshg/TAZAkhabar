@@ -1,6 +1,5 @@
-using Microsoft.EntityFrameworkCore;
-using NewsFeed.Api.Data;
 using NewsFeed.Api.Data.Entities;
+using NewsFeed.Api.Data;
 using NewsFeed.Api.Dtos;
 using NewsFeed.Api.Ingest;
 
@@ -22,8 +21,9 @@ public interface IArticlePresentationService
 }
 
 public sealed class ArticlePresentationService(
-    AppDbContext db,
     IArticleIntelligence intelligence,
+    IArticleResponseMapper responseMapper,
+    IArticleTranslationStore translationStore,
     ILogger<ArticlePresentationService> logger) : IArticlePresentationService
 {
     private const int MaxParallelTranslations = 4;
@@ -57,7 +57,7 @@ public sealed class ArticlePresentationService(
         {
             for (var i = 0; i < articles.Count; i++)
             {
-                results[i] = ToOriginal(articles[i], includeBody: includeBody);
+                results[i] = responseMapper.ToOriginal(articles[i], includeBody);
             }
 
             return results;
@@ -70,7 +70,7 @@ public sealed class ArticlePresentationService(
             var detected = DetectedOf(article);
             if (string.Equals(detected, target, StringComparison.Ordinal))
             {
-                results[i] = ToOriginal(article, detected, includeBody);
+                results[i] = responseMapper.ToOriginal(article, includeBody);
             }
             else
             {
@@ -84,10 +84,7 @@ public sealed class ArticlePresentationService(
         }
 
         var ids = needsWork.Select(x => x.Article.Id).Distinct().ToList();
-        var cached = await db.ArticleTranslations
-            .AsNoTracking()
-            .Where(t => ids.Contains(t.ArticleId) && t.TargetLanguage == target)
-            .ToListAsync(cancellationToken);
+        var cached = await translationStore.GetAsync(ids, target, cancellationToken);
         var cacheByArticleId = cached.ToDictionary(t => t.ArticleId);
 
         var toTranslate = new List<(int Index, Article Article)>();
@@ -97,13 +94,12 @@ public sealed class ArticlePresentationService(
                 && hit.Status == TranslationStatus.Completed
                 && !string.IsNullOrWhiteSpace(hit.TranslatedHeadline))
             {
-                results[index] = ToTranslated(
+                results[index] = responseMapper.ToTranslated(
                     article,
                     DetectedOf(article),
                     target,
                     hit.TranslatedHeadline,
-                    hit.TranslatedSummary,
-                    includeBody);
+                    hit.TranslatedSummary);
             }
             else
             {
@@ -120,7 +116,7 @@ public sealed class ArticlePresentationService(
         var cappedToTranslate = toTranslate.Take(MaxTranslationCallsPerRequest).ToList();
         foreach (var deferred in toTranslate.Skip(MaxTranslationCallsPerRequest))
         {
-            results[deferred.Index] = ToOriginal(deferred.Article, DetectedOf(deferred.Article), includeBody);
+            results[deferred.Index] = responseMapper.ToOriginal(deferred.Article, includeBody);
         }
 
         // Provider calls in parallel; DB writes sequentially (DbContext is not thread-safe).
@@ -176,93 +172,34 @@ public sealed class ArticlePresentationService(
             var detected = DetectedOf(outcome.Article);
             if (outcome.Ok && outcome.Headline is not null && outcome.Summary is not null)
             {
-                await UpsertTranslationAsync(
+                await translationStore.UpsertAsync(
                     outcome.Article.Id,
                     target,
                     outcome.Headline,
                     outcome.Summary,
                     TranslationStatus.Completed,
                     cancellationToken);
-                results[outcome.Index] = ToTranslated(
+                results[outcome.Index] = responseMapper.ToTranslated(
                     outcome.Article,
                     detected,
                     target,
                     outcome.Headline,
-                    outcome.Summary,
-                    includeBody);
+                    outcome.Summary);
             }
             else
             {
-                await UpsertTranslationAsync(
+                await translationStore.UpsertAsync(
                     outcome.Article.Id,
                     target,
                     outcome.Article.Headline,
                     outcome.Article.Summary,
                     TranslationStatus.Failed,
                     cancellationToken);
-                results[outcome.Index] = ToOriginal(outcome.Article, detected, includeBody);
+                results[outcome.Index] = responseMapper.ToOriginal(outcome.Article, includeBody);
             }
         }
 
         return results;
-    }
-
-    private async Task UpsertTranslationAsync(
-        int articleId,
-        string targetLanguage,
-        string headline,
-        string summary,
-        TranslationStatus status,
-        CancellationToken cancellationToken)
-    {
-        var existing = await db.ArticleTranslations
-            .FirstOrDefaultAsync(
-                t => t.ArticleId == articleId && t.TargetLanguage == targetLanguage,
-                cancellationToken);
-
-        var now = DateTimeOffset.UtcNow;
-        if (existing is null)
-        {
-            db.ArticleTranslations.Add(new ArticleTranslation
-            {
-                ArticleId = articleId,
-                TargetLanguage = targetLanguage,
-                TranslatedHeadline = headline,
-                TranslatedSummary = summary,
-                TranslatedAt = now,
-                Status = status,
-            });
-        }
-        else
-        {
-            existing.TranslatedHeadline = headline;
-            existing.TranslatedSummary = summary;
-            existing.TranslatedAt = now;
-            existing.Status = status;
-        }
-
-        try
-        {
-            await db.SaveChangesAsync(cancellationToken);
-        }
-        catch (DbUpdateException)
-        {
-            db.ChangeTracker.Clear();
-            var winner = await db.ArticleTranslations
-                .FirstOrDefaultAsync(
-                    t => t.ArticleId == articleId && t.TargetLanguage == targetLanguage,
-                    cancellationToken);
-            if (winner is null)
-            {
-                throw;
-            }
-
-            winner.TranslatedHeadline = headline;
-            winner.TranslatedSummary = summary;
-            winner.TranslatedAt = now;
-            winner.Status = status;
-            await db.SaveChangesAsync(cancellationToken);
-        }
     }
 
     private static string DetectedOf(Article article) =>
@@ -270,44 +207,4 @@ public sealed class ArticlePresentationService(
             article.Headline,
             article.Summary,
             fallback: article.DetectedLanguage);
-
-    private static ArticleResponse ToOriginal(Article article, string? detected = null, bool includeBody = false)
-    {
-        var lang = detected ?? DetectedOf(article);
-        return new ArticleResponse(
-            article.Id,
-            article.CityId,
-            article.Headline,
-            article.Summary,
-            includeBody ? article.Body : null,
-            article.SourceName,
-            article.SourceUrl,
-            article.PublishedAt,
-            ContentCategoryClassifier.EffectiveCategory(article.Category, article.Headline, article.Summary),
-            article.ImageUrl,
-            lang,
-            lang);
-    }
-
-    private static ArticleResponse ToTranslated(
-        Article article,
-        string detected,
-        string display,
-        string headline,
-        string summary,
-        bool includeBody) =>
-        new(
-            article.Id,
-            article.CityId,
-            headline,
-            summary,
-            // Body is stored only in the original language; translated reads use translated summary.
-            null,
-            article.SourceName,
-            article.SourceUrl,
-            article.PublishedAt,
-            ContentCategoryClassifier.EffectiveCategory(article.Category, article.Headline, article.Summary),
-            article.ImageUrl,
-            detected,
-            display);
 }

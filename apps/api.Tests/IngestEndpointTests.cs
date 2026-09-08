@@ -202,6 +202,10 @@ public sealed class IngestEndpointTests : IClassFixture<TazaKhabarWebApplication
             Assert.Equal("Original digest summary for Jhansi water supply restored.", article.Summary);
             Assert.Contains("Original digest body for Jhansi water supply restored.", article.Body, StringComparison.Ordinal);
             Assert.Equal(SourceType.Scrape, (await db.Sources.SingleAsync(s => s.Id == article.SourceId)).Type);
+
+            // Keep this integration test stable as the seven-day retention window moves.
+            article.PublishedAt = DateTimeOffset.UtcNow;
+            await db.SaveChangesAsync();
         }
 
         var rewriter = (FakeArticleRewriter)factory.Services.GetRequiredService<IArticleRewriter>();

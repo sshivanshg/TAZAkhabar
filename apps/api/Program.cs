@@ -122,6 +122,9 @@ try
     builder.Services.AddScoped<ArticleImageEnrichmentService>();
     builder.Services.AddScoped<NotificationDispatchService>();
     builder.Services.AddScoped<NewsFeed.Api.Services.IArticlePresentationService, NewsFeed.Api.Services.ArticlePresentationService>();
+    builder.Services.AddScoped<NewsFeed.Api.Services.IArticleResponseMapper, NewsFeed.Api.Services.ArticleResponseMapper>();
+    builder.Services.AddScoped<NewsFeed.Api.Services.IArticleTranslationStore, NewsFeed.Api.Services.ArticleTranslationStore>();
+    builder.Services.AddScoped<NewsFeed.Api.Services.IArticleFeedQueryService, NewsFeed.Api.Services.ArticleFeedQueryService>();
     builder.Services.AddScoped<NewsFeed.Api.Services.IFeedPersonalizationService, NewsFeed.Api.Services.FeedPersonalizationService>();
     builder.Services.AddHostedService<PdfProcessingWorker>();
     builder.Services.AddHostedService<ImageEnrichmentWorker>();

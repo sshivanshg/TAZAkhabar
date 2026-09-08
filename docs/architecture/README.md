@@ -24,6 +24,7 @@
 | [08-hosting-and-ci](./08-hosting-and-ci.md) | Render, Cloudflare, Neon, Docker, CI |
 | [09-marketing-site](./09-marketing-site.md) | Public landing site, legal pages, and reader handoff |
 | [10-notifications](./10-notifications.md) | Opt-in push subscriptions, dispatch, and web/native delivery |
+| [11-design-principles](./11-design-principles.md) | Dependency direction, SOLID assessment, runtime flows, and refactoring guardrails |
 
 Template for new pages: [`_template.md`](./_template.md).
 

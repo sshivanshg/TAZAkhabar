@@ -20,6 +20,7 @@ Read the matching page(s) under `docs/architecture/` (hub: `docs/architecture/RE
 - `packages/shared-types/**`, OpenAPI → `07-shared-types.md`
 - `render.yaml`, docker, Cloudflare, env examples, CI deploy → `08-hosting-and-ci.md`
 - Workspace layout / root scripts → `01-monorepo.md`
+- Dependency direction, SOLID guardrails, or cross-cutting design quality → `11-design-principles.md`
 
 ## Rules
 
