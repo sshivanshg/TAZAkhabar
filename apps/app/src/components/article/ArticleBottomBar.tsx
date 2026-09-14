@@ -62,8 +62,6 @@ function createStyles(c: ReaderColors) {
       alignSelf: 'center',
       borderRadius: 24,
       overflow: 'hidden',
-      borderWidth: StyleSheet.hairlineWidth,
-      borderColor: c.sheetBorder,
       backgroundColor: c.headerSolid,
       ...(Platform.OS === 'web'
         ? ({

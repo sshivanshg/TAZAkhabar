@@ -109,7 +109,7 @@ function ArticleFeedBody() {
   const routeCity = paramString(raw.city)
   const feedCategory = paramString(raw.feedCategory)
   const routeDate = paramString(raw.date)
-  const { preferredLanguage, setPreferredLanguage } = useLanguagePreference()
+  const { preferredLanguage } = useLanguagePreference()
   const { readerColors } = useTheme()
   const styles = useMemo(() => createStyles(readerColors), [readerColors])
   const lang = preferredLanguage
@@ -694,8 +694,6 @@ function ArticleFeedBody() {
       <ArticleTopBar
         elevated={headerElevated}
         scrollProgress={scrollProgress}
-        readingLanguage={preferredLanguage}
-        onSelectLanguage={setPreferredLanguage}
         onBack={onBack}
       />
 

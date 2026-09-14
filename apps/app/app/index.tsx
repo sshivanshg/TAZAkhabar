@@ -2,10 +2,12 @@ import { useEffect, useState } from 'react'
 import { Redirect } from 'expo-router'
 import { Box, Spinner, Text, VStack } from '@gluestack-ui/themed'
 import { useTheme } from '../src/preferences/ThemePreferenceContext'
+import { useLanguagePreference } from '../src/preferences/LanguagePreferenceContext'
 import { getStoredCitySlug } from '../src/storage/cityPreference'
 
 export default function IndexScreen() {
   const { colors } = useTheme()
+  const { ready: languageReady, hasSelectedLanguage } = useLanguagePreference()
   const [ready, setReady] = useState(false)
   const [slug, setSlug] = useState<string | null>(null)
 
@@ -22,7 +24,7 @@ export default function IndexScreen() {
     }
   }, [])
 
-  if (!ready) {
+  if (!ready || !languageReady) {
     return (
       <Box flex={1} bg={colors.background} justifyContent="center" alignItems="center" px="$6">
         <VStack space="md" alignItems="center">
@@ -33,6 +35,10 @@ export default function IndexScreen() {
         </VStack>
       </Box>
     )
+  }
+
+  if (!hasSelectedLanguage) {
+    return <Redirect href="/language" />
   }
 
   if (slug) {

@@ -73,7 +73,9 @@ export const ARTICLE_BOTTOM_BAR_HEIGHT = 58
 export const ARTICLE_TOP_BAR_BODY = HIT_TARGET + 6 + 2
 
 export function articleChromeTop(insetTop: number): number {
-  return Math.max(insetTop, 8) + ARTICLE_TOP_BAR_BODY
+  // Leave a deliberate breathing gap below the floating top strip so the hero
+  // image never sits underneath the navigation chrome.
+  return Math.max(insetTop, 8) + HIT_TARGET + 28
 }
 
 export function articleChromeBottom(insetBottom: number): number {

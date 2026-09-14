@@ -12,6 +12,7 @@ import MapPin from 'lucide-react-native/icons/map-pin'
 import Moon from 'lucide-react-native/icons/moon'
 import BellRing from 'lucide-react-native/icons/bell-ring'
 import Tag from 'lucide-react-native/icons/tag'
+import ChevronRight from 'lucide-react-native/icons/chevron-right'
 import type { CityResponse } from '@tazakhabar/shared-types'
 import { apiClient } from '../../src/api/client'
 import { ScreenErrorBoundary } from '../../src/components/ScreenErrorBoundary'
@@ -119,13 +120,14 @@ function ProfileBody() {
         ]}
       >
         <View style={styles.pageHeader}>
+          <Text style={styles.kicker}>YOUR ACCOUNT</Text>
           <Text
             fontSize={24}
             lineHeight={30}
             fontWeight="$bold"
             color={colors.text}
           >
-            Profile
+            Settings
           </Text>
           <Text
             fontSize={14}
@@ -133,35 +135,23 @@ function ProfileBody() {
             color={colors.textSecondary}
             mt="$1"
           >
-            City, language, appearance, blocks, and about
+            Make TazaKhabar work better for you.
           </Text>
         </View>
 
-        <Section title="City" Icon={MapPin}>
-          <Text
-            fontSize={typography.summary.fontSize}
-            lineHeight={typography.summary.lineHeight}
-            color={colors.textSecondary}
-            mb="$3"
-          >
-            News is filtered for your selected city. No account is required.
-          </Text>
-          <Text
-            fontSize={typography.headlineSm.fontSize}
-            lineHeight={typography.headlineSm.lineHeight}
-            fontWeight="$semibold"
-            color={colors.text}
-            mb="$3"
-          >
-            {cityTitle}
-          </Text>
-          <PrimaryButton
-            label="Change city"
-            onPress={() => router.push('/city')}
-            accessibilityLabel="Change city"
-            style={styles.changeCity}
-          />
-        </Section>
+        <Pressable
+          style={({ pressed }) => [styles.welcomeCard, pressed && styles.welcomePressed]}
+          onPress={() => router.push('/city')}
+          accessibilityRole="button"
+          accessibilityLabel={`Change city from ${cityTitle}`}
+        >
+          <View style={styles.welcomeIcon}><MapPin size={22} color={colors.textOnAccent} strokeWidth={2.2} /></View>
+          <View style={styles.welcomeCopy}>
+            <Text style={styles.welcomeTitle}>{cityTitle}</Text>
+            <Text style={styles.welcomeSubtitle}>Your local news edition</Text>
+          </View>
+          <ChevronRight size={22} color={colors.textOnAccent} />
+        </Pressable>
 
         <Section title="Appearance" Icon={Moon}>
           <Text
@@ -170,7 +160,7 @@ function ProfileBody() {
             color={colors.textSecondary}
             mb="$3"
           >
-            Light is the default. Preference is saved on this device.
+            Choose the look that feels most comfortable. Saved on this device.
           </Text>
           <View style={styles.langRow}>
             {(
@@ -225,8 +215,7 @@ function ProfileBody() {
             color={colors.textSecondary}
             mb="$3"
           >
-            Stories are translated on this device when the original language differs.
-            Preference is saved locally.
+            Choose the language you prefer for reading news.
           </Text>
           <View style={styles.langRow}>
             {READING_LANGUAGES.map((lang) => {
@@ -530,19 +519,65 @@ function createStyles(c: AppColors) {
       paddingHorizontal: space.screen,
     },
     pageHeader: {
-      paddingBottom: space.sm,
+      paddingBottom: space.md,
+    },
+    kicker: {
+      color: c.accent,
+      fontSize: 12,
+      lineHeight: 18,
+      fontWeight: '800',
+      letterSpacing: 1.4,
+      marginBottom: space.xs,
+    },
+    welcomeCard: {
+      minHeight: 86,
+      borderRadius: 20,
+      backgroundColor: c.accentFill,
+      paddingHorizontal: space.md,
+      paddingVertical: space.sm,
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: space.xl,
+    },
+    welcomePressed: {
+      opacity: 0.86,
+      transform: [{ scale: 0.99 }],
+    },
+    welcomeIcon: {
+      width: 48,
+      height: 48,
+      borderRadius: 16,
+      backgroundColor: 'rgba(255,255,255,0.18)',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    welcomeCopy: {
+      flex: 1,
+      marginLeft: space.sm,
+    },
+    welcomeTitle: {
+      color: c.textOnAccent,
+      fontSize: 20,
+      lineHeight: 26,
+      fontWeight: '800',
+    },
+    welcomeSubtitle: {
+      color: 'rgba(255,255,255,0.82)',
+      fontSize: 14,
+      lineHeight: 20,
+      marginTop: 2,
     },
     section: {
       marginBottom: space.xl,
     },
     cardBody: {
-      padding: space.md,
+      padding: space.lg,
     },
     cardTitleRow: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: space.xs,
-      marginBottom: space.sm,
+      marginBottom: space.md,
     },
     changeCity: {
       alignSelf: 'flex-start',

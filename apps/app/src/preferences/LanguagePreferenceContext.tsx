@@ -16,6 +16,7 @@ import {
 
 type LanguagePreferenceContextValue = {
   ready: boolean
+  hasSelectedLanguage: boolean
   preferredLanguage: ReadingLanguageCode
   setPreferredLanguage: (code: ReadingLanguageCode) => void
 }
@@ -25,6 +26,7 @@ const LanguagePreferenceContext = createContext<LanguagePreferenceContextValue |
 export function LanguagePreferenceProvider({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false)
   const [preferredLanguage, setPreferredLanguageState] = useState<ReadingLanguageCode>('en')
+  const [hasSelectedLanguage, setHasSelectedLanguage] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -34,6 +36,7 @@ export function LanguagePreferenceProvider({ children }: { children: ReactNode }
         return
       }
       setPreferredLanguageState(stored ?? detectDeviceReadingLanguage())
+      setHasSelectedLanguage(Boolean(stored))
       setReady(true)
     })()
     return () => {
@@ -43,12 +46,13 @@ export function LanguagePreferenceProvider({ children }: { children: ReactNode }
 
   const setPreferredLanguage = useCallback((code: ReadingLanguageCode) => {
     setPreferredLanguageState(code)
+    setHasSelectedLanguage(true)
     void setStoredReadingLanguage(code)
   }, [])
 
   const value = useMemo(
-    () => ({ ready, preferredLanguage, setPreferredLanguage }),
-    [ready, preferredLanguage, setPreferredLanguage],
+    () => ({ ready, hasSelectedLanguage, preferredLanguage, setPreferredLanguage }),
+    [ready, hasSelectedLanguage, preferredLanguage, setPreferredLanguage],
   )
 
   return (

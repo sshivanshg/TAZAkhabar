@@ -47,6 +47,7 @@ function RootNavigation() {
           }}
         >
           <Stack.Screen name="index" options={{ headerShown: false }} />
+          <Stack.Screen name="language" options={{ headerShown: false, animation: 'fade' }} />
           <Stack.Screen name="(tabs)" options={{ headerShown: false, animation: 'fade' }} />
           <Stack.Screen name="feed" options={{ headerShown: false }} />
           <Stack.Screen

@@ -1,7 +1,7 @@
 # Reader app
 
 > **Living doc** — update when Expo routes, city/feed/share behavior, or desktop web layer change.  
-> **Last verified against:** 2026-09-02 (Google News–style expanded feed on tablet/desktop, personalized For-you feed, inset article-sheet presentation, resilient web permissions, and explicit Profile-driven notification prompts)
+> **Last verified against:** 2026-09-14 (first-run language selection, simplified article chrome, redesigned fixed article actions, and profile settings refresh)
 
 ## Purpose
 
@@ -49,13 +49,14 @@ flowchart LR
 | File | Role |
 |------|------|
 | `index.tsx` | Boot: stored city → tabs else `/city` |
+| `language.tsx` | First-run reading-language selection before city onboarding |
 | `city.tsx` | City picker (optional location detection, search, selected row, onboarding vs change-city copy) |
 | `(tabs)/index.tsx` | Home feed |
 | `(tabs)/search.tsx` | Search / Discover (hidden from tab bar; opened from home search) |
 | `(tabs)/bookmarks.tsx` | Local bookmarks |
 | `(tabs)/profile.tsx` | Settings: city, appearance (Light/Dark/System), language, blocks |
 | `(tabs)/categories.tsx` | Hidden (`href: null`) |
-| `article/[id].tsx` | Continuous editorial article feed; hydrates `body` via `getArticle`; Back returns to Home; article pages render as inset card sheets with floating top/bottom chrome |
+| `article/[id].tsx` | Continuous editorial article feed; hydrates `body` via `getArticle`; Back returns to Home; article pages render as inset card sheets with simplified floating top/bottom chrome |
 | `feed.tsx` | Legacy redirect → tabs |
 
 ### Modules

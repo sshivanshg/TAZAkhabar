@@ -69,8 +69,6 @@ function createStyles(c: ReaderColors) {
       maxWidth: 760,
       alignSelf: 'center',
       backgroundColor: c.card,
-      borderWidth: StyleSheet.hairlineWidth,
-      borderColor: c.sheetBorder,
       borderRadius: 28,
       overflow: 'hidden',
       ...(Platform.OS === 'web'

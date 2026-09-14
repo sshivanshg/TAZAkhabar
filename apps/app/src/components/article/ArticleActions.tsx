@@ -1,5 +1,5 @@
 import { memo, useMemo, type ReactNode } from 'react'
-import { Pressable, StyleSheet, Text, View } from 'react-native'
+import { Platform, Pressable, StyleSheet, Text, View } from 'react-native'
 import Bookmark from 'lucide-react-native/icons/bookmark'
 import BookmarkCheck from 'lucide-react-native/icons/bookmark-check'
 import Share2 from 'lucide-react-native/icons/share-2'
@@ -86,20 +86,21 @@ function createStyles(c: ReaderColors) {
       alignItems: 'stretch',
       justifyContent: 'space-between',
       gap: 10,
-      padding: 8,
-      backgroundColor: c.header,
+      padding: 6,
+      backgroundColor: c.headerSolid,
     },
     btn: {
       flex: 1,
-      minHeight: HIT_TARGET,
+      minHeight: HIT_TARGET + 4,
       alignItems: 'center',
       justifyContent: 'center',
       gap: 4,
       paddingVertical: 8,
-      borderRadius: 18,
+      borderRadius: 16,
       backgroundColor: c.sheet,
-      borderWidth: StyleSheet.hairlineWidth,
-      borderColor: c.sheetBorder,
+      ...(Platform.OS === 'web'
+        ? ({ boxShadow: '0px 3px 10px rgba(16, 24, 40, 0.06)' } as object)
+        : {}),
     },
     label: {
       fontSize: 13,

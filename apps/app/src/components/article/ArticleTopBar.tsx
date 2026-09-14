@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { Platform, Pressable, StyleSheet, Text, View } from 'react-native'
+import { Platform, Pressable, StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import ArrowLeft from 'lucide-react-native/icons/arrow-left'
 import { useTheme } from '../../preferences/ThemePreferenceContext'
@@ -10,33 +10,24 @@ import {
   type ReaderColors,
 } from '../../theme/readerTokens'
 import { usePrefersReducedMotion } from '../../hooks/usePrefersReducedMotion'
-import { useBreakpoint } from '../../hooks/useBreakpoint'
-import { LanguageSegment } from './LanguageSegment'
 import { pressableState, webFocusRing } from './focusStyle'
-import type { ReadingLanguageCode } from '../../storage/languagePreference'
 
 type Props = {
   elevated: boolean
   /** 0–1 progress through stories loaded so far (no total count shown). */
   scrollProgress: number
-  readingLanguage: ReadingLanguageCode
-  onSelectLanguage: (code: ReadingLanguageCode) => void
   onBack: () => void
 }
 
 export function ArticleTopBar({
   elevated,
   scrollProgress,
-  readingLanguage,
-  onSelectLanguage,
   onBack,
 }: Props) {
   const insets = useSafeAreaInsets()
   const reducedMotion = usePrefersReducedMotion()
-  const breakpoint = useBreakpoint()
   const { readerColors } = useTheme()
   const styles = useMemo(() => createStyles(readerColors), [readerColors])
-  const showBackLabel = breakpoint === 'desktop' || breakpoint === 'wide'
   const safeTop = Math.max(insets.top, 8)
   const progress = Math.min(1, Math.max(0, scrollProgress))
 
@@ -72,10 +63,8 @@ export function ArticleTopBar({
             }}
           >
             <ArrowLeft size={22} strokeWidth={iconStroke} color={readerColors.text} />
-            {showBackLabel ? <Text style={styles.backLabel}>Back</Text> : null}
           </Pressable>
 
-          <LanguageSegment value={readingLanguage} onChange={onSelectLanguage} />
         </View>
         <View
           style={styles.track}
@@ -110,54 +99,54 @@ function createStyles(c: ReaderColors) {
       alignSelf: 'center',
       overflow: 'hidden',
       borderRadius: 24,
-      borderWidth: StyleSheet.hairlineWidth,
-      borderColor: c.sheetBorder,
       backgroundColor: c.headerSolid,
       ...(Platform.OS === 'web'
         ? ({
-            boxShadow: '0px 14px 38px rgba(16, 24, 40, 0.12)',
+            boxShadow: '0px 10px 30px rgba(16, 24, 40, 0.10)',
           } as object)
         : {
             shadowColor: '#101828',
-            shadowOffset: { width: 0, height: 8 },
+            shadowOffset: { width: 0, height: 6 },
             shadowOpacity: 0.08,
-            shadowRadius: 20,
+            shadowRadius: 16,
             elevation: 4,
           }),
     },
     row: {
       minHeight: HIT_TARGET,
-      paddingHorizontal: 12,
-      paddingBottom: 6,
+      paddingHorizontal: 2,
+      paddingVertical: 4,
       flexDirection: 'row',
       alignItems: 'center',
-      justifyContent: 'space-between',
+      justifyContent: 'flex-start',
       gap: 8,
     },
     back: {
-      minWidth: 40,
-      minHeight: 40,
-      paddingLeft: 10,
-      paddingRight: 12,
+      width: 52,
+      height: 52,
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 6,
-      borderRadius: 14,
-      backgroundColor: c.sheet,
-      borderWidth: StyleSheet.hairlineWidth,
-      borderColor: c.sheetBorder,
-    },
-    backLabel: {
-      color: c.text,
-      fontSize: 15,
-      fontWeight: '600',
+      justifyContent: 'center',
+      borderRadius: 18,
+      backgroundColor: c.headerSolid,
+      borderWidth: 0,
+      ...(Platform.OS === 'web'
+        ? ({ boxShadow: '0px 6px 18px rgba(16, 24, 40, 0.12)' } as object)
+        : {
+            shadowColor: '#101828',
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.12,
+            shadowRadius: 10,
+            elevation: 4,
+          }),
     },
     pressed: {
       opacity: 0.72,
     },
     track: {
       height: 2,
-      backgroundColor: c.progressTrack,
+      width: '100%',
+      backgroundColor: 'transparent',
     },
     fill: {
       height: 2,

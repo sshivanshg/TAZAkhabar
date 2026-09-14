@@ -11,7 +11,7 @@ export type AppColors = {
   surfaceRaised: string
   /** Accent for text, icons, borders (may brighten in dark for AA) */
   accent: string
-  /** Solid accent fill for primary buttons / selected chips — brand #155EEF */
+  /** Solid accent fill for primary buttons / selected chips */
   accentFill: string
   /** Accent pressed */
   accentPressed: string
@@ -59,10 +59,10 @@ export const colorsLight: AppColors = {
   background: '#F4F6FA',
   surface: '#FFFFFF',
   surfaceRaised: '#EEF2F6',
-  accent: '#155EEF',
-  accentFill: '#155EEF',
-  accentPressed: '#0F45B8',
-  accentSoft: '#E8F0FF',
+  accent: '#2563EB',
+  accentFill: '#2563EB',
+  accentPressed: '#1D4ED8',
+  accentSoft: '#EFF6FF',
   text: '#101828',
   textSecondary: '#667085',
   textMuted: '#475467',
@@ -71,7 +71,7 @@ export const colorsLight: AppColors = {
   textOnImageMuted: 'rgba(255, 255, 255, 0.85)',
   border: '#E4E8EF',
   borderSolid: '#D8DFE8',
-  chipSelectedBg: '#155EEF',
+  chipSelectedBg: '#2563EB',
   chipSelectedText: '#FFFFFF',
   chipInactiveBorder: '#DCE2EA',
   chipInactiveText: '#667085',
@@ -92,7 +92,7 @@ export const colorsDark: AppColors = {
   surfaceRaised: '#3C4043',
   /** Brighter than brand fill so accent-as-text passes AA on dark soft washes */
   accent: '#8AB4F8',
-  accentFill: '#155EEF',
+  accentFill: '#2563EB',
   accentPressed: '#AECBFA',
   accentSoft: '#17181A',
   text: '#E8EAED',
@@ -103,7 +103,7 @@ export const colorsDark: AppColors = {
   textOnImageMuted: 'rgba(255, 255, 255, 0.85)',
   border: '#3C4043',
   borderSolid: '#5F6368',
-  chipSelectedBg: '#155EEF',
+  chipSelectedBg: '#2563EB',
   chipSelectedText: '#FFFFFF',
   chipInactiveBorder: '#5F6368',
   chipInactiveText: '#9AA0A6',
