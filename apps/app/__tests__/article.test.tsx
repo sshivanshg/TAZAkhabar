@@ -126,9 +126,12 @@ describe('ArticleScreen', () => {
     expect(screen.getByTestId('article-bottom-bar')).toBeTruthy()
     expect(screen.getByLabelText('Share')).toBeTruthy()
     expect(screen.getByLabelText('Save')).toBeTruthy()
-    expect(screen.getAllByLabelText('Prefer English').length).toBeGreaterThan(0)
-    expect(mockGetArticles).toHaveBeenCalled()
-    expect(mockGetArticle).toHaveBeenCalled()
+    expect(mockGetArticles).toHaveBeenCalledWith(
+      expect.objectContaining({
+        lang: 'en',
+      }),
+    )
+    expect(mockGetArticle).toHaveBeenCalledWith('7', 'en')
   })
 
   it('shows a single read-original action per story', async () => {
