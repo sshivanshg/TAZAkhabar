@@ -1,7 +1,7 @@
 # Hosting and CI
 
 > **Living doc** — update when Render, Cloudflare, Neon, Docker, workflows, or env templates change.  
-> **Last verified against:** 2026-09-14 (Khabro.in Pages custom-domain attachment and admin subdomain wiring)
+> **Last verified against:** 2026-09-14 (qa-first branch flow; Pages build command + ingest hardening)
 
 ## Purpose
 
@@ -25,13 +25,15 @@ flowchart TB
     PromoteQA[promote-qa.yml]
   end
 
+  QA --> CI
   QA --> DeployQA
   QA --> PromoteQA
-  PromoteQA -->|approved fast-forward| Main
+  PromoteQA -->|fast-forward| Main
   Main --> CI
   Main -->|auto| Render[Render tazakhabar-api<br/>Docker Dockerfile.api]
   Main --> Deploy
-  Deploy --> PagesWeb[Cloudflare Pages<br/>newsfeed-web]
+  Main -->|Pages Git build| PagesWeb[Cloudflare Pages<br/>newsfeed-web]
+  Deploy --> PagesWeb
   DeployQA --> PagesWebQA[Cloudflare Pages<br/>newsfeed-web / qa branch]
   Deploy --> PagesSite[Cloudflare Pages<br/>newsfeed-web / site branch]
   Deploy --> PagesAdmin[Cloudflare Pages<br/>newsfeed-admin]
@@ -55,11 +57,11 @@ flowchart TB
 | Android APK builder | `infra/docker/Dockerfile.android`, invoked by `scripts/docker-build-apk.sh` |
 | Blueprint | `render.yaml` — web `tazakhabar-api` only (free tier; no Render crons; health payload service id is `khabro-api`) |
 | Local stack | `docker-compose.yml` Postgres 16 + API + Expo reader; optional `tools` profile for admin/site |
-| CI | `.github/workflows/ci.yml` — API format/build/test + Postgres, migration SQL artifact, OpenAPI drift check; app lint/test/export; marketing site build; admin build |
-| Deploy | `.github/workflows/deploy.yml` — production Pages for reader + marketing site + admin; API via Render auto-deploy |
-| QA deploy | `.github/workflows/deploy-qa.yml` — deploys the `qa` branch to the `qa` branch of the existing `newsfeed-web` Pages project |
-| QA promotion | `.github/workflows/promote-qa.yml` — manually approved workflow fast-forwards `qa` into `main`; production deployment then runs from `main` |
-| Scheduled ingest | `.github/workflows/scheduled-ingest.yml` — RSS + scrape every 15 min (free-tier scheduler) |
+| CI | `.github/workflows/ci.yml` — runs on `qa` and `main`; API format/build/test + Postgres, migration SQL artifact, OpenAPI drift check; app lint/test/export; marketing site build; admin build |
+| Deploy | `.github/workflows/deploy.yml` — production Pages for reader + marketing site + admin when `CLOUDFLARE_API_TOKEN` is set; API via Render auto-deploy. Cloudflare Pages Git builds are the fallback publisher for `newsfeed-web`. |
+| QA deploy | `.github/workflows/deploy-qa.yml` — deploys the `qa` branch to the `qa` branch of `newsfeed-web` when the CF token is set; Pages Git also builds `qa` previews |
+| QA promotion | `.github/workflows/promote-qa.yml` — manually run to fast-forward `qa` into `main`; production then deploys from `main` |
+| Scheduled ingest | `.github/workflows/scheduled-ingest.yml` — RSS + scrape every 15 min (wake + retry; free-tier scheduler) |
 | Article purge | `.github/workflows/purge-old-articles.yml` — daily retention purge |
 | Nightly ingest | `.github/workflows/nightly-ingest.yml` — midnight IST full batch |
 | DB migration workflow | `.github/workflows/migrate-production.yml` — manual production EF migration apply |
@@ -103,15 +105,16 @@ generated debug keystore for sideload testing, not Play Store signing.
   reader custom domains (live).
 - `admin.khabro.in` is attached to `newsfeed-admin` as the branded admin custom
   domain (live).
-- `qa` is the pre-production branch. It uses the same repository configuration as production; it is promoted manually into `main` after review.
-- QA is deployed to the `qa` branch of the existing `newsfeed-web` Pages project, typically available at `https://qa.newsfeed-web.pages.dev`.
-- Production promotion is explicit: run the `Promote QA to production` workflow after QA review. The workflow only allows a fast-forward from `qa` to `main`, so production receives exactly what was tested in QA.
+- Day-to-day work lands on **`qa`** (no routine feature branches). Promote to
+  `main` with the `Promote QA to production` workflow after QA looks good
+  (fast-forward only).
+- QA reader preview: `https://qa.newsfeed-web.pages.dev` (`newsfeed-web` branch `qa`).
+- Cloudflare Pages Git build command for `newsfeed-web` must stay
+  `pnpm build:web` (root script). Preview branches are limited to `qa` and `site`.
 - Manual Wrangler reader deploys that should go live must target
   `newsfeed-web` with `--branch main` and directory `apps/app/dist`.
-- Feature-branch Pages deployment URLs are temporary previews. After production
-  is verified, prune stale preview and old immutable deployment URLs from
-  `newsfeed-web` so agents and operators do not confuse them with the main
-  frontend.
+- After production is verified, prune stale preview / old immutable deployment
+  URLs from `newsfeed-web` so operators do not confuse them with production.
 - Do not delete the marketing `site` branch alias or `newsfeed-admin` when consolidating reader
   frontend deployments; those are distinct hosted surfaces.
 
@@ -151,7 +154,7 @@ generated debug keystore for sideload testing, not Play Store signing.
 | `EXPO_PUBLIC_WEB_PUSH_PUBLIC_KEY` | GitHub Actions **and** `apps/app/.env.production` for browser push registration |
 | `VITE_API_BASE_URL` | GitHub Actions **and** `apps/admin/.env.production` |
 | `VITE_READER_URL`, `VITE_SITE_URL`, `VITE_SUPPORT_EMAIL` | GitHub Actions production variables for the marketing site |
-| `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` | GitHub **production** environment secrets (required for the production Pages deploy) |
+| `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` | GitHub **production** environment secrets (Actions Pages publish when set; otherwise Pages Git builds / local wrangler publish) |
 | `CLOUDFLARE_PAGES_PROJECT_NAME` | default `newsfeed-web` (existing Cloudflare Pages project) |
 | `CLOUDFLARE_PAGES_SITE_PROJECT_NAME` | default `newsfeed-web` with branch `site` (interim marketing alias; intended future project `khabro-site`) |
 | `CLOUDFLARE_PAGES_ADMIN_PROJECT_NAME` | default `newsfeed-admin` (existing Cloudflare Pages project) |
@@ -160,7 +163,10 @@ generated debug keystore for sideload testing, not Play Store signing.
 ## Failure modes & invariants
 
 - API deploys are owned by Render, not the Pages deploy job.
-- **Do not let Cloudflare dashboard Git builds replace Actions without env.** Connecting the repo in Pages Settings starts a second pipeline that does **not** see GitHub `vars.EXPO_PUBLIC_API_BASE_URL`. Expo then ships `EXPO_PUBLIC_API_BASE_URL is not configured`. Prefer: pause Pages automatic deployments and keep `.github/workflows/deploy.yml`. The workflow calls the stable root scripts (`pnpm build:web` / `pnpm build:admin`) so package renames do not leave stale filters behind. If Git builds stay on, set production env `EXPO_PUBLIC_API_BASE_URL`, build command `corepack enable && pnpm install --frozen-lockfile && pnpm build:web`, output `apps/app/dist`.
+- Cloudflare Pages Git builds for `newsfeed-web` use `pnpm build:web` and
+  production env vars on the project. Actions `deploy.yml` also publishes when
+  `CLOUDFLARE_API_TOKEN` is present; without it, Actions skips publish with a
+  warning and relies on Pages Git / wrangler.
 - Edge caching implies up to ~60s feed staleness — tune deliberately.
 - `.github/workflows/nightly-ingest.yml` runs at `30 18 * * *` UTC (00:00 IST) and calls `/api/ingest/daily`, which avoids Claude summarization and OpenAI scrape rewrite.
 - Staging Render/Neon deferred; when added, separate service + Neon branch/project.

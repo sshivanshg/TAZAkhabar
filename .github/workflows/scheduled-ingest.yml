@@ -15,9 +15,9 @@ jobs:
   rss-batches:
     name: RSS ingest batches
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     steps:
-      - name: Trigger RSS ingest (two batches)
+      - name: Trigger RSS ingest
         env:
           INGEST_URL: ${{ vars.EXPO_PUBLIC_API_BASE_URL }}
           RSS_INGEST_SECRET: ${{ secrets.RssIngest__Secret }}
@@ -34,15 +34,37 @@ jobs:
             exit 1
           fi
 
-          for batch in 1 2 3 4; do
-            echo "RSS batch ${batch}/4"
-            curl --fail-with-body --silent --show-error \
-              --request POST \
-              --header "X-Ingest-Key: ${RSS_INGEST_SECRET}" \
-              --header "Accept: application/json" \
-              --max-time 600 \
-              "${INGEST_URL%/}/api/ingest/rss?maxSources=50"
+          echo "Waking API..."
+          curl --fail-with-body --silent --show-error --max-time 120 \
+            "${INGEST_URL%/}/healthz" >/dev/null
+
+          failures=0
+          for batch in 1 2; do
+            echo "RSS batch ${batch}/2"
+            ok=0
+            for attempt in 1 2; do
+              if curl --fail-with-body --silent --show-error \
+                --request POST \
+                --header "X-Ingest-Key: ${RSS_INGEST_SECRET}" \
+                --header "Accept: application/json" \
+                --max-time 480 \
+                "${INGEST_URL%/}/api/ingest/rss?maxSources=25"; then
+                ok=1
+                break
+              fi
+              echo "::warning::RSS batch ${batch} attempt ${attempt} failed; retrying..."
+              sleep 15
+            done
+            if [ "$ok" -ne 1 ]; then
+              echo "::warning::RSS batch ${batch} failed after retries"
+              failures=$((failures + 1))
+            fi
           done
+
+          if [ "$failures" -eq 2 ]; then
+            echo "::error::All RSS ingest batches failed."
+            exit 1
+          fi
 
   scrape-batch:
     name: Scrape ingest batch
@@ -56,6 +78,9 @@ jobs:
           RSS_INGEST_SECRET: ${{ secrets.RssIngest__Secret }}
         run: |
           set -euo pipefail
+
+          curl --fail-with-body --silent --show-error --max-time 120 \
+            "${INGEST_URL%/}/healthz" >/dev/null || true
 
           curl --fail-with-body --silent --show-error \
             --request POST \

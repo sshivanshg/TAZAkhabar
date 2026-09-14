@@ -143,20 +143,19 @@ For `apps/app/**/*.{ts,tsx}`:
 
 - Use Conventional Commits: `feat:`, `fix:`, `chore:`, `docs:`, `refactor:`,
   `test:`, `ci:`.
-- No direct commits to `main`. Use feature branches and PR review.
-- Squash merge to keep `main` history linear and readable.
-- Do not leave completed work stranded on a feature branch. At the end of each
-  finished task, run the relevant checks, commit all intentional changes, push
-  the branch, and move the work toward `main` through the approved PR/squash
-  merge path unless the user explicitly asks for local-only work.
-- Every PR must include what changed, why it changed, how it was tested, and
-  which `docs/architecture/` pages changed or N/A with a one-line reason.
+- Work directly on `qa`. Do not create feature branches for routine work.
+- No direct commits to `main`. Promote `qa` → `main` with the
+  `Promote QA to production` workflow (fast-forward only) after QA looks good.
+- At the end of each finished task, run the relevant checks, commit, and push
+  `qa` unless the user asks for local-only work.
+- Every promotion must include what changed, why it changed, how it was tested,
+  and which `docs/architecture/` pages changed or N/A with a one-line reason.
 - Contract/OpenAPI changes must update `packages/shared-types` and web
-  consumers in the same PR.
+  consumers in the same change.
 
-For architecture-relevant PRs, ensure atlas pages are updated or explicitly N/A,
-Mermaid remains accurate, "Last verified" is bumped on edited pages, and the hub
-index is updated when a page is added.
+For architecture-relevant changes, ensure atlas pages are updated or explicitly
+N/A, Mermaid remains accurate, "Last verified" is bumped on edited pages, and
+the hub index is updated when a page is added.
 
 ## Deployment Hygiene
 

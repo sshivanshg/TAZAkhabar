@@ -36,7 +36,21 @@ jobs:
           EXPO_PUBLIC_WEB_PUSH_PUBLIC_KEY: ${{ vars.EXPO_PUBLIC_WEB_PUSH_PUBLIC_KEY }}
         run: pnpm build:web
 
+      - name: Check Cloudflare credentials
+        id: cf
+        env:
+          TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if [ -n "$TOKEN" ] && [ -n "$ACCOUNT" ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::CLOUDFLARE_API_TOKEN missing — skipping Actions QA publish. Cloudflare Pages Git builds still deploy the qa preview branch when configured."
+          fi
+
       - name: Publish QA branch to Cloudflare Pages
+        if: steps.cf.outputs.ready == 'true'
         uses: cloudflare/pages-action@v1
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}

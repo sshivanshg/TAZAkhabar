@@ -46,8 +46,7 @@ jobs:
             echo "ready=true" >> "$GITHUB_OUTPUT"
           else
             echo "ready=false" >> "$GITHUB_OUTPUT"
-            echo "::error::CLOUDFLARE_API_TOKEN and/or CLOUDFLARE_ACCOUNT_ID missing on the production environment. Add both as environment secrets so Pages publish can run."
-            exit 1
+            echo "::warning::CLOUDFLARE_API_TOKEN missing — skipping Actions publish. Cloudflare Pages Git builds still deploy newsfeed-web when configured."
           fi
 
       - name: Publish to Cloudflare Pages
@@ -96,8 +95,7 @@ jobs:
             echo "ready=true" >> "$GITHUB_OUTPUT"
           else
             echo "ready=false" >> "$GITHUB_OUTPUT"
-            echo "::error::CLOUDFLARE_API_TOKEN and/or CLOUDFLARE_ACCOUNT_ID missing on the production environment. Add both as environment secrets so Pages publish can run."
-            exit 1
+            echo "::warning::CLOUDFLARE_API_TOKEN missing — skipping marketing site Actions publish."
           fi
 
       - name: Publish marketing site to Cloudflare Pages
@@ -148,8 +146,7 @@ jobs:
             echo "ready=true" >> "$GITHUB_OUTPUT"
           else
             echo "ready=false" >> "$GITHUB_OUTPUT"
-            echo "::error::CLOUDFLARE_API_TOKEN and/or CLOUDFLARE_ACCOUNT_ID missing on the production environment. Add both as environment secrets so Pages publish can run."
-            exit 1
+            echo "::warning::CLOUDFLARE_API_TOKEN missing — skipping admin Actions publish. Deploy admin with wrangler until the token is set."
           fi
 
       - name: Publish admin to Cloudflare Pages
