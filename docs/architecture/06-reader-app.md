@@ -1,7 +1,7 @@
 # Reader app
 
 > **Living doc** — update when Expo routes, city/feed/share behavior, or desktop web layer change.  
-> **Last verified against:** 2026-09-14 (animated news-themed language start screen, simplified article chrome, redesigned fixed article actions, and profile settings refresh)
+> **Last verified against:** 2026-09-14 (city optional — All India default; Home no longer re-asks via sticky `pickCity`)
 
 ## Purpose
 
@@ -48,9 +48,9 @@ flowchart LR
 
 | File | Role |
 |------|------|
-| `index.tsx` | Boot: stored city → tabs else `/city` |
-| `language.tsx` | First-run reading-language selection before city onboarding; Moti entrance + `NewsStartBackdrop` ticker atmosphere |
-| `city.tsx` | City picker (optional location detection, search, selected row, onboarding vs change-city copy) |
+| `index.tsx` | Boot: language gate, then tabs with stored city or All India default (never forces city onboarding) |
+| `language.tsx` | First-run reading-language selection; Moti entrance + `NewsStartBackdrop` ticker atmosphere; continues to Home |
+| `city.tsx` | Legacy route → Home with one-shot `pickCity` (header dropdown is the real picker) |
 | `(tabs)/index.tsx` | Home feed |
 | `(tabs)/search.tsx` | Search / Discover (hidden from tab bar; opened from home search) |
 | `(tabs)/bookmarks.tsx` | Local bookmarks |
@@ -65,7 +65,7 @@ flowchart LR
 |--------|------|
 | `src/api/client.ts` | Typed API calls |
 | `src/api/useAsyncResource.ts` | Shared async lifecycle hook for ordinary server-state reads |
-| `src/storage/cityPreference.ts` | Persisted city (`AsyncStorage`; device-local, no account) |
+| `src/storage/cityPreference.ts` | Persisted city (`AsyncStorage`; device-local, no account). Missing preference resolves to All India (`global`) and is persisted once so Home never re-asks. |
 | `src/location/getCurrentCoordinates.ts` | Explicit foreground permission + bounded current-location read; browser geolocation on web and typed denial/service/timeout failures |
 | `src/location/nearestCity.ts` | Haversine match from device coordinates to public city-centre coordinates |
 | `src/storage/feedCache.ts` | First-page Home/Discover feed cache (`AsyncStorage`; 45m TTL; key = city+category+lang+q) |

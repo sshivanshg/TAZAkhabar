@@ -37,7 +37,8 @@ export default function LanguageScreen() {
 
   const choose = (code: ReadingLanguageCode) => {
     setPreferredLanguage(code)
-    router.replace('/city')
+    // Language is the only required first-run step; city defaults to All India.
+    router.replace('/(tabs)')
   }
 
   return (

@@ -26,6 +26,7 @@ jest.mock('expo-router', () => {
     useRouter: () => ({
       push: mockPush,
       replace: mockReplace,
+      setParams: jest.fn(),
     }),
     useLocalSearchParams: () => ({ city: 'jhansi' }),
     useFocusEffect: (effect: () => void | (() => void)) => {

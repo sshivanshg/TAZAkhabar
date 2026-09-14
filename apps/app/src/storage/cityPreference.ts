@@ -42,6 +42,19 @@ export async function getEffectiveCitySlug(): Promise<string> {
   return stored ?? GLOBAL_CITY_SLUG
 }
 
+/**
+ * City for boot / feed scope: use the stored preference, or persist All India
+ * once so cold starts never re-enter a mandatory city gate.
+ */
+export async function resolveCitySlug(): Promise<string> {
+  const stored = await getStoredCitySlug()
+  if (stored) {
+    return stored
+  }
+  await setStoredCitySlug(GLOBAL_CITY_SLUG)
+  return GLOBAL_CITY_SLUG
+}
+
 export async function setStoredCitySlug(slug: string): Promise<void> {
   await AsyncStorage.setItem(CITY_STORAGE_KEY, slug)
 }

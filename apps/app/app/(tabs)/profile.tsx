@@ -3,7 +3,7 @@ import { Pressable, ScrollView, StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import Constants from 'expo-constants'
 import { useFocusEffect, useRouter } from 'expo-router'
-import { Text, VStack } from '@gluestack-ui/themed'
+import { Box, Text, VStack } from '@gluestack-ui/themed'
 import { MotiView } from 'moti'
 import Ban from 'lucide-react-native/icons/ban'
 import Info from 'lucide-react-native/icons/info'
@@ -29,7 +29,11 @@ import { READING_LANGUAGES } from '../../src/storage/languagePreference'
 import {
   type ThemePreference,
 } from '../../src/storage/themePreference'
-import { getStoredCitySlug } from '../../src/storage/cityPreference'
+import {
+  getCityDisplayLabel,
+  getStoredCitySlug,
+  GLOBAL_CITY_SLUG,
+} from '../../src/storage/cityPreference'
 import { HIT_TARGET, space, typography, type AppColors } from '../../src/theme/tokens'
 import { iconStroke } from '../../src/theme/categoryIcons'
 import { useTabBarClearance } from '../../src/theme/useTabBarClearance'
@@ -95,7 +99,7 @@ function ProfileBody() {
     }, [loadCity, loadNotificationState]),
   )
 
-  const cityTitle = cityMeta?.name ?? citySlug ?? 'Not set'
+  const cityTitle = getCityDisplayLabel(citySlug ?? GLOBAL_CITY_SLUG, cityMeta?.name)
   const version =
     Constants.expoConfig?.version ?? Constants.nativeAppVersion ?? '0.1.0'
 

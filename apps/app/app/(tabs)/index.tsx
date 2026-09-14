@@ -170,6 +170,7 @@ function HomeFeedBody() {
   const mobile = bp === 'mobile'
   const { width: windowWidth } = useWindowDimensions()
   const [citySlug, setCitySlug] = useState<string | null>(params.city ?? GLOBAL_CITY_SLUG)
+  const pickCityHandledRef = useRef(false)
   const [cityMeta, setCityMeta] = useState<CityResponse | null>(null)
   const [category, setCategory] = useState<FeedCategory>(() =>
     isFeedCategory(params.category) ? params.category : 'All',
@@ -231,13 +232,16 @@ function HomeFeedBody() {
       const effective = stored ?? GLOBAL_CITY_SLUG
       if (!cancelled) {
         setCitySlug(effective)
+        if (!stored) {
+          await setStoredCitySlug(GLOBAL_CITY_SLUG)
+        }
       }
     }
     void resolveCity()
     return () => {
       cancelled = true
     }
-  }, [citySlug, params.city, router])
+  }, [citySlug, params.city])
 
   const cityList = useAsyncResource(
     () => apiClient.getCities(),
@@ -450,10 +454,19 @@ function HomeFeedBody() {
   })
 
   useEffect(() => {
-    if (params.pickCity === '1') {
-      openCityPicker()
+    // One-shot: Profile / legacy /city deep links open the picker once.
+    // Clearing pickCity prevents Home tab remounts from re-asking every visit.
+    if (params.pickCity !== '1') {
+      pickCityHandledRef.current = false
+      return
     }
-  }, [openCityPicker, params.pickCity])
+    if (pickCityHandledRef.current) {
+      return
+    }
+    pickCityHandledRef.current = true
+    openCityPicker()
+    router.setParams({ pickCity: undefined })
+  }, [openCityPicker, params.pickCity, router])
   const visibleArticles = useMemo(
     () => prefs.filterArticles(articles),
     [articles, prefs],
