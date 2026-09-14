@@ -1,7 +1,7 @@
 # Hosting and CI
 
 > **Living doc** — update when Render, Cloudflare, Neon, Docker, workflows, or env templates change.  
-> **Last verified against:** 2026-09-14 (QA branch deployment and promotion flow into production)
+> **Last verified against:** 2026-09-14 (Khabaro.in Pages custom-domain attachment started)
 
 ## Purpose
 
@@ -99,6 +99,10 @@ generated debug keystore for sideload testing, not Play Store signing.
 
 - `newsfeed-web.pages.dev` is the only canonical reader frontend deployment.
   Keep it on the Cloudflare Pages project `newsfeed-web`.
+- `khabaro.in` and `www.khabaro.in` are attached to `newsfeed-web` as branded
+  reader custom domains. They remain pending until the `khabaro.in` DNS zone is
+  added to the same Cloudflare account and registrar nameservers point at
+  Cloudflare.
 - `qa` is the pre-production branch. It uses the same repository configuration as production; it is promoted manually into `main` after review.
 - QA is deployed to the `qa` branch of the existing `newsfeed-web` Pages project, typically available at `https://qa.newsfeed-web.pages.dev`.
 - Production promotion is explicit: run the `Promote QA to production` workflow after QA review. The workflow only allows a fast-forward from `qa` to `main`, so production receives exactly what was tested in QA.
