@@ -34,13 +34,18 @@ public static class CorsOrigin
         }
 
         var host = uri.Host;
-        return IsPagesProjectHost(host, "newsfeed-web.pages.dev")
+        return IsExactHost(host, "khabaro.in")
+            || IsExactHost(host, "www.khabaro.in")
+            || IsPagesProjectHost(host, "newsfeed-web.pages.dev")
             || IsPagesProjectHost(host, "newsfeed-admin.pages.dev")
             // Retain the branded project names so the eventual Pages rename can
             // happen without a coordinated API outage.
             || IsPagesProjectHost(host, "tazakhabar-web.pages.dev")
             || IsPagesProjectHost(host, "tazakhabar-admin.pages.dev");
     }
+
+    private static bool IsExactHost(string host, string allowed) =>
+        host.Equals(allowed, StringComparison.OrdinalIgnoreCase);
 
     private static bool IsPagesProjectHost(string host, string apex) =>
         host.Equals(apex, StringComparison.OrdinalIgnoreCase)
