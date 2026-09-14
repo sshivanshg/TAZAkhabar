@@ -1,7 +1,7 @@
 # Hosting and CI
 
 > **Living doc** — update when Render, Cloudflare, Neon, Docker, workflows, or env templates change.  
-> **Last verified against:** 2026-09-14 (QA branch deployment and approved QA-to-main promotion flow)
+> **Last verified against:** 2026-09-14 (QA branch promotion flow into production)
 
 ## Purpose
 
@@ -21,18 +21,15 @@ flowchart TB
     Main[main branch]
     CI[ci.yml]
     Deploy[deploy.yml]
-    DeployQA[deploy-qa.yml]
     PromoteQA[promote-qa.yml]
   end
 
-  QA --> DeployQA
   QA --> PromoteQA
   PromoteQA -->|approved fast-forward| Main
   Main --> CI
   Main -->|auto| Render[Render tazakhabar-api<br/>Docker Dockerfile.api]
   Main --> Deploy
   Deploy --> PagesWeb[Cloudflare Pages<br/>newsfeed-web]
-  DeployQA --> PagesQA[Cloudflare Pages<br/>newsfeed-web-qa]
   Deploy --> PagesSite[Cloudflare Pages<br/>tazakhabar-site]
   Deploy --> PagesAdmin[Cloudflare Pages<br/>newsfeed-admin]
   Render --> Neon[(Neon Postgres)]
@@ -57,8 +54,7 @@ flowchart TB
 | Local stack | `docker-compose.yml` Postgres 16 + API + Expo reader; optional `tools` profile for admin/site |
 | CI | `.github/workflows/ci.yml` — API format/build/test + Postgres, migration SQL artifact, OpenAPI drift check; app lint/test/export; marketing site build; admin build |
 | Deploy | `.github/workflows/deploy.yml` — production Pages for reader + marketing site + admin; API via Render auto-deploy |
-| QA deploy | `.github/workflows/deploy-qa.yml` — deploys `qa` reader builds to the separate `newsfeed-web-qa` Pages project |
-| QA promotion | `.github/workflows/promote-qa.yml` — required-reviewer approval fast-forwards `qa` into `main`; production deployment then runs from `main` |
+| QA promotion | `.github/workflows/promote-qa.yml` — manually approved workflow fast-forwards `qa` into `main`; production deployment then runs from `main` |
 | Scheduled ingest | `.github/workflows/scheduled-ingest.yml` — RSS + scrape every 15 min (free-tier scheduler) |
 | Article purge | `.github/workflows/purge-old-articles.yml` — daily retention purge |
 | Nightly ingest | `.github/workflows/nightly-ingest.yml` — midnight IST full batch |
@@ -99,8 +95,8 @@ generated debug keystore for sideload testing, not Play Store signing.
 
 - `newsfeed-web.pages.dev` is the only canonical reader frontend deployment.
   Keep it on the Cloudflare Pages project `newsfeed-web`.
-- `qa` is the pre-production reader branch. Its Pages project is `newsfeed-web-qa` and must use a QA API environment, never production credentials.
-- Production promotion is explicit: approve the `qa-approval` GitHub environment in the `Promote QA to production` workflow. The workflow only allows a fast-forward from `qa` to `main`, so production receives exactly what was tested in QA.
+- `qa` is the pre-production branch. It uses the same repository configuration as production; it is promoted manually into `main` after review.
+- Production promotion is explicit: run the `Promote QA to production` workflow after QA review. The workflow only allows a fast-forward from `qa` to `main`, so production receives exactly what was tested in QA.
 - Manual Wrangler reader deploys that should go live must target
   `newsfeed-web` with `--branch main` and directory `apps/app/dist`.
 - Feature-branch Pages deployment URLs are temporary previews. After production
@@ -146,8 +142,7 @@ generated debug keystore for sideload testing, not Play Store signing.
 | `EXPO_PUBLIC_WEB_PUSH_PUBLIC_KEY` | GitHub Actions **and** `apps/app/.env.production` for browser push registration |
 | `VITE_API_BASE_URL` | GitHub Actions **and** `apps/admin/.env.production` |
 | `VITE_READER_URL`, `VITE_SITE_URL`, `VITE_SUPPORT_EMAIL` | GitHub Actions production variables for the marketing site |
-| `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` | GitHub **production** and **qa** environment secrets (required for their respective Pages deploys) |
-| `CLOUDFLARE_PAGES_QA_PROJECT_NAME` | GitHub **qa** environment variable; default `newsfeed-web-qa` |
+| `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` | GitHub **production** environment secrets (required for the production Pages deploy) |
 | `CLOUDFLARE_PAGES_PROJECT_NAME` | default `newsfeed-web` (existing Cloudflare Pages project) |
 | `CLOUDFLARE_PAGES_SITE_PROJECT_NAME` | default `tazakhabar-site` (marketing Pages project) |
 | `CLOUDFLARE_PAGES_ADMIN_PROJECT_NAME` | default `newsfeed-admin` (existing Cloudflare Pages project) |

@@ -14,7 +14,6 @@ jobs:
   promote:
     name: Approve and sync QA to main
     runs-on: ubuntu-latest
-    environment: qa-approval
     steps:
       - name: Checkout main
         uses: actions/checkout@v4
