@@ -1,7 +1,7 @@
 # Reader app
 
 > **Living doc** — update when Expo routes, city/feed/share behavior, or desktop web layer change.  
-> **Last verified against:** 2026-09-14 (first-run language selection, simplified article chrome, redesigned fixed article actions, and profile settings refresh)
+> **Last verified against:** 2026-09-14 (animated news-themed language start screen, simplified article chrome, redesigned fixed article actions, and profile settings refresh)
 
 ## Purpose
 
@@ -49,7 +49,7 @@ flowchart LR
 | File | Role |
 |------|------|
 | `index.tsx` | Boot: stored city → tabs else `/city` |
-| `language.tsx` | First-run reading-language selection before city onboarding |
+| `language.tsx` | First-run reading-language selection before city onboarding; Moti entrance + `NewsStartBackdrop` ticker atmosphere |
 | `city.tsx` | City picker (optional location detection, search, selected row, onboarding vs change-city copy) |
 | `(tabs)/index.tsx` | Home feed |
 | `(tabs)/search.tsx` | Search / Discover (hidden from tab bar; opened from home search) |
