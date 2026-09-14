@@ -1,7 +1,7 @@
 # Notifications
 
 > **Living doc** — update in the same change when push subscription, delivery, or prompt behavior changes.  
-> **Last verified against:** 2026-09-02 (platform-owned permission prompts, resilient web subscription registration, and native channel setup)
+> **Last verified against:** 2026-09-08 (scoped notification dispatch resolution in hosted worker)
 
 ## Purpose
 

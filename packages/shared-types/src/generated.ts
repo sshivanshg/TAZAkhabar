@@ -179,6 +179,31 @@ export interface IngestionRunResponseDto {
     errorSummary?: string | undefined;
 }
 
+export interface NotificationPermissionStatusResponse {
+    supported?: boolean;
+    enabled?: boolean;
+    canPrompt?: boolean;
+    permissionState?: string | undefined;
+    lastPromptAt?: string | undefined;
+    clientId?: string | undefined;
+    subscription?: NotificationSubscriptionResponse;
+}
+
+export interface NotificationSubscriptionResponse {
+    clientId?: string | undefined;
+    platform?: string | undefined;
+    city?: string | undefined;
+    deliveryMode?: string | undefined;
+    categories?: string[] | undefined;
+    preferredLanguage?: string | undefined;
+    enabled?: boolean;
+    permissionGrantedAt?: string | undefined;
+    permissionDeniedAt?: string | undefined;
+    lastPromptAt?: string | undefined;
+    lastDeliveredAt?: string | undefined;
+    updatedAt?: string;
+}
+
 export interface PagedAdminArticlesResponse {
     items?: AdminArticleResponse[] | undefined;
     total?: number;
@@ -239,29 +264,12 @@ export interface PurgeOldArticlesResponse {
     deleted?: number;
 }
 
-export interface NotificationPermissionStatusResponse {
-    supported?: boolean;
-    enabled?: boolean;
-    canPrompt?: boolean;
-    permissionState?: string | undefined;
-    lastPromptAt?: string | undefined;
-    clientId?: string | undefined;
-    subscription?: NotificationSubscriptionResponse | undefined;
+export interface RecordArticleViewRequest {
+    sessionId?: string | undefined;
 }
 
-export interface NotificationSubscriptionResponse {
-    clientId?: string | undefined;
-    platform?: string | undefined;
-    city?: string | undefined;
-    deliveryMode?: string | undefined;
-    categories?: (string | undefined)[];
-    preferredLanguage?: string | undefined;
-    enabled?: boolean;
-    permissionGrantedAt?: string | undefined;
-    permissionDeniedAt?: string | undefined;
-    lastPromptAt?: string | undefined;
-    lastDeliveredAt?: string | undefined;
-    updatedAt?: string;
+export interface TrendingArticlesResponse {
+    items?: ArticleResponse[] | undefined;
 }
 
 export interface UpsertNotificationSubscriptionRequest {
@@ -269,10 +277,10 @@ export interface UpsertNotificationSubscriptionRequest {
     platform?: string | undefined;
     city?: string | undefined;
     deliveryMode?: string | undefined;
-    categories?: (string | undefined)[] | undefined;
+    categories?: string[] | undefined;
     preferredLanguage?: string | undefined;
     expoPushToken?: string | undefined;
-    webPushSubscription?: WebPushSubscriptionDto | undefined;
+    webPushSubscription?: WebPushSubscriptionDto;
     enabled?: boolean;
 }
 
@@ -281,14 +289,6 @@ export interface WebPushSubscriptionDto {
     p256Dh?: string | undefined;
     auth?: string | undefined;
     expirationTime?: number | undefined;
-}
-
-export interface RecordArticleViewRequest {
-    sessionId?: string | undefined;
-}
-
-export interface TrendingArticlesResponse {
-    items?: ArticleResponse[] | undefined;
 }
 
 export interface FileParameter {

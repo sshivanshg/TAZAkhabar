@@ -42,6 +42,7 @@ describe('HomeTopBar', () => {
   it('announces the active language and changes preference from the chip', () => {
     const { onSelectLanguage } = renderTopBar()
 
+    expect(screen.getByLabelText('All India home feed')).toBeTruthy()
     expect(screen.getByLabelText('Prefer English').props.accessibilityState).toEqual({
       selected: true,
     })

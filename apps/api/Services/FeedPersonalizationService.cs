@@ -28,7 +28,7 @@ public interface IFeedPersonalizationService
 {
     /// <summary>Loads session affinity/seen history and city trending counts for the candidate pool.</summary>
     Task<PersonalizationSignals> LoadSignalsAsync(
-        int cityId,
+        int? cityId,
         string? sessionKey,
         IReadOnlyCollection<int> candidateIds,
         DateTimeOffset now,
@@ -46,7 +46,7 @@ public sealed class FeedPersonalizationService(
     IOptions<FeedPersonalizationOptions> options) : IFeedPersonalizationService
 {
     public async Task<PersonalizationSignals> LoadSignalsAsync(
-        int cityId,
+        int? cityId,
         string? sessionKey,
         IReadOnlyCollection<int> candidateIds,
         DateTimeOffset now,
@@ -100,8 +100,8 @@ public sealed class FeedPersonalizationService(
             var viewCounts = await db.ArticleViews
                 .AsNoTracking()
                 .Where(v => v.ViewedAt >= trendingSince
-                    && v.Article.CityId == cityId
-                    && candidateIds.Contains(v.ArticleId))
+                    && candidateIds.Contains(v.ArticleId)
+                    && (!cityId.HasValue || v.Article.CityId == cityId.Value))
                 .GroupBy(v => v.ArticleId)
                 .Select(g => new { ArticleId = g.Key, Views = g.Count() })
                 .ToListAsync(cancellationToken);

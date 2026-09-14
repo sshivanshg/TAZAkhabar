@@ -48,6 +48,7 @@ jest.mock('../src/api/client', () => ({
 }))
 
 jest.mock('../src/storage/cityPreference', () => ({
+  ...jest.requireActual('../src/storage/cityPreference'),
   getStoredCitySlug: jest.fn(async () => 'jhansi'),
   setStoredCitySlug: jest.fn(async () => undefined),
   clearStoredCitySlug: jest.fn(),
@@ -56,6 +57,12 @@ jest.mock('../src/storage/cityPreference', () => ({
 jest.mock('@react-native-async-storage/async-storage', () => ({
   getItem: jest.fn(async () => null),
   setItem: jest.fn(async () => undefined),
+}))
+
+jest.mock('expo-location', () => ({
+  requestForegroundPermissionsAsync: jest.fn(async () => ({ status: 'denied' })),
+  getCurrentPositionAsync: jest.fn(),
+  Accuracy: { Balanced: 3 },
 }))
 
 jest.mock('moti', () => {
@@ -142,6 +149,7 @@ jest.mock('react-native-svg', () => {
     Rect: Mock,
     Stop: Mock,
     Path: Mock,
+    Circle: Mock,
   }
 })
 
@@ -384,7 +392,7 @@ describe('FeedScreen', () => {
     await screen.findByText('[MOCK] Local municipal budget approved for FY26')
     fireEvent.press(screen.getByLabelText(/Change city/))
 
-    expect(mockPush).toHaveBeenCalledWith('/city')
+    expect(await screen.findByLabelText('Search cities')).toBeTruthy()
   })
 
   it('opens Discover for the publisher from See more', async () => {

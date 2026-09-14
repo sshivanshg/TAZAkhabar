@@ -326,6 +326,52 @@ public sealed class ArticlesEndpointTests : IClassFixture<TazaKhabarWebApplicati
     }
 
     [Fact]
+    public async Task GetArticles_GlobalScope_AggregatesAcrossCities()
+    {
+        var client = _factory.CreateSeededClient();
+        int lucknowId;
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            lucknowId = db.Cities.Single(c => c.Slug == "lucknow").Id;
+        }
+
+        InsertJhansiArticles(
+            Published("Jhansi global scope", "https://example.com/jhansi-global"),
+            new Article
+            {
+                CityId = lucknowId,
+                Headline = "Lucknow global scope",
+                Summary = "s",
+                SourceName = "A",
+                SourceUrl = "https://example.com/lucknow-global",
+                PublishedAt = DateTimeOffset.UtcNow,
+                Category = "Local",
+                Status = ArticleStatus.Published,
+                IsMock = false,
+                DetectedLanguage = "en",
+            });
+
+        var jhansi = await client.GetFromJsonAsync<PagedArticlesResponse>("/api/articles?city=jhansi");
+        var global = await client.GetFromJsonAsync<PagedArticlesResponse>("/api/articles?city=global");
+
+        Assert.NotNull(jhansi);
+        Assert.NotNull(global);
+        Assert.Equal(1, jhansi.Total);
+        Assert.Equal(2, global.Total);
+        Assert.Contains(global.Items, a => a.Headline == "Jhansi global scope");
+        Assert.Contains(global.Items, a => a.Headline == "Lucknow global scope");
+    }
+
+    [Fact]
+    public async Task GetArticles_Global_IsValidSlug()
+    {
+        var client = _factory.CreateSeededClient();
+        var response = await client.GetAsync("/api/articles?city=global");
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    [Fact]
     public async Task GetArticles_HidesMockSeedRows()
     {
         var client = _factory.CreateSeededClient();
