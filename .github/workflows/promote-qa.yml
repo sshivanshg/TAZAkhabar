@@ -1,0 +1,30 @@
+name: Promote QA to production
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: promote-qa
+  cancel-in-progress: false
+
+jobs:
+  promote:
+    name: Approve and sync QA to main
+    runs-on: ubuntu-latest
+    environment: qa-approval
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Fast-forward main from QA
+        run: |
+          git fetch origin qa main
+          git checkout main
+          git merge --ff-only origin/qa
+          git push origin main
