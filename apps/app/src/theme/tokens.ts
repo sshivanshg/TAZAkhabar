@@ -227,7 +227,7 @@ export const typography = {
   button: { fontSize: 16, lineHeight: 22, fontWeight: '600' as const },
 } as const
 
-export const CITY_STORAGE_KEY = 'tazakhabar.selectedCitySlug'
+export const CITY_STORAGE_KEY = 'khabro.selectedCitySlug'
 
 export const FEED_CATEGORIES = [
   'All',

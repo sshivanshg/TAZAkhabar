@@ -24,7 +24,7 @@ describe('personalizationId', () => {
 
     const first = await mod.getPersonalizationId()
     expect(first.length).toBeGreaterThan(0)
-    expect(storage.setItem).toHaveBeenCalledWith('tazakhabar.personalizationId', first)
+    expect(storage.setItem).toHaveBeenCalledWith('khabro.personalizationId', first)
 
     const second = await mod.getPersonalizationId()
     expect(second).toBe(first)

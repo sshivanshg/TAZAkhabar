@@ -1,11 +1,11 @@
 # @tazakhabar/app
 
-Expo universal client for **TazaKhabar** — web is the primary MVP surface.
+Expo universal client for **Khabro** — web is the primary MVP surface.
 iOS/Android builds use the same codebase later.
 
 ## UI
 
-Light shell with TazaKhabar blue as the primary accent. No auth: pick a city, read the feed, share stories.
+Light shell with Khabro blue as the primary accent. No auth: pick a city, read the feed, share stories.
 
 ## Setup
 

@@ -14,7 +14,7 @@ import { getStoredCitySlug } from '../storage/cityPreference'
 import { shouldOfferAddToHome } from '../utils/shouldOfferAddToHome'
 
 /** Bump when install UX changes so prior soft-hint dismissals resurface. */
-const A2HS_DISMISSED_KEY = 'tazakhabar.a2hs.dismissed.v2'
+const A2HS_DISMISSED_KEY = 'khabro.a2hs.dismissed.v2'
 
 function isAndroidBrowser(): boolean {
   if (typeof navigator === 'undefined') {
@@ -25,17 +25,17 @@ function isAndroidBrowser(): boolean {
 
 function installHintCopy(canNativeInstall: boolean): string {
   if (canNativeInstall) {
-    return 'Install TazaKhabar for quick access from your home screen'
+    return 'Install Khabro for quick access from your home screen'
   }
   if (Platform.OS !== 'web' || typeof navigator === 'undefined') {
-    return 'Add TazaKhabar to your home screen for quick access'
+    return 'Add Khabro to your home screen for quick access'
   }
   const ua = navigator.userAgent || ''
   const isIOS = /iPad|iPhone|iPod/.test(ua)
   if (isIOS) {
     return 'On iPhone: tap Share, then Add to Home Screen'
   }
-  return 'Install TazaKhabar from your browser menu for quick access'
+  return 'Install Khabro from your browser menu for quick access'
 }
 
 /**
@@ -127,7 +127,7 @@ export function AddToHomeBanner() {
         <Pressable
           onPress={onInstall}
           accessibilityRole="button"
-          accessibilityLabel="Install TazaKhabar"
+          accessibilityLabel="Install Khabro"
           hitSlop={8}
           style={({ pressed }) => [styles.installBtn, pressed ? styles.pressed : null]}
         >

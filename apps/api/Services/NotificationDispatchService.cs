@@ -116,7 +116,7 @@ public sealed class NotificationDispatchService(
         var payload = new
         {
             to = subscription.ExpoPushToken,
-            title = "TazaKhabar",
+            title = "Khabro",
             body = article.Headline,
             sound = "default",
             data = new
@@ -160,7 +160,7 @@ public sealed class NotificationDispatchService(
 
         var payload = JsonSerializer.Serialize(new
         {
-            title = "TazaKhabar",
+            title = "Khabro",
             body = article.Headline,
             articleId = article.Id,
             city = article.City.Slug,

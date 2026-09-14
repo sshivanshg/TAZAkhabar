@@ -1,12 +1,12 @@
 {
   "expo": {
-    "name": "TazaKhabar",
-    "slug": "tazakhabar",
+    "name": "Khabro",
+    "slug": "khabro",
     "version": "0.1.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "scheme": "tazakhabar",
+    "scheme": "khabro",
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
@@ -14,7 +14,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "app.tazakhabar.mobile"
+      "bundleIdentifier": "app.khabro.mobile"
     },
     "android": {
       "adaptiveIcon": {
@@ -22,7 +22,7 @@
         "foregroundImage": "./assets/android-icon-foreground.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "package": "app.tazakhabar.mobile",
+      "package": "app.khabro.mobile",
       "versionCode": 1,
       "predictiveBackGestureEnabled": false,
       "usesCleartextTraffic": true
@@ -31,12 +31,12 @@
       "bundler": "metro",
       "output": "single",
       "favicon": "./assets/favicon.png",
-      "name": "TazaKhabar",
-      "shortName": "TazaKhabar",
+      "name": "Khabro",
+      "shortName": "Khabro",
       "lang": "en",
       "themeColor": "#155EEF",
       "backgroundColor": "#F4F6FA",
-      "description": "Fresh, clear local news for your city from TazaKhabar."
+      "description": "Fresh, clear local news for your city from Khabro."
     },
     "plugins": [
       "expo-font",
@@ -45,7 +45,7 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Allow TazaKhabar to use your location once to find the nearest city news feed."
+          "locationWhenInUsePermission": "Allow Khabro to use your location once to find the nearest city news feed."
         }
       ]
     ]

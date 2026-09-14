@@ -128,8 +128,8 @@ export function DesktopSidebar() {
             <Text style={styles.footerLinkText}>Support</Text>
           </Pressable>
         </View>
-        <Text style={styles.footerText} accessibilityLabel="TazaKhabar version 0.1">
-          TazaKhabar v0.1
+        <Text style={styles.footerText} accessibilityLabel="Khabro version 0.1">
+          Khabro v0.1
         </Text>
       </View>
     </View>

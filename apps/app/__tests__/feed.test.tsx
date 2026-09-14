@@ -289,7 +289,7 @@ describe('FeedScreen', () => {
   it('applies feed preference filters inside sections', async () => {
     const asyncStorage = require('@react-native-async-storage/async-storage')
     asyncStorage.getItem.mockImplementation(async (key: string) =>
-      key === 'tazakhabar.feedPreferences.v1'
+      key === 'khabro.feedPreferences.v1'
         ? JSON.stringify({ hiddenStoryIds: [6] })
         : null,
     )

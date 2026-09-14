@@ -30,7 +30,7 @@ export default function IndexScreen() {
         <VStack space="md" alignItems="center">
           <Spinner color={colors.textSecondary} size="large" />
           <Text fontSize={16} lineHeight={24} color={colors.textMuted}>
-            Loading TazaKhabar…
+            Loading Khabro…
           </Text>
         </VStack>
       </Box>

@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage'
 import { Appearance, Platform } from 'react-native'
 import type { ColorScheme } from '../theme/tokens'
 
-export const THEME_STORAGE_KEY = 'tazakhabar.themePreference.v1'
+export const THEME_STORAGE_KEY = 'khabro.themePreference.v1'
 
 export const THEME_PREFERENCES = ['light', 'dark', 'system'] as const
 

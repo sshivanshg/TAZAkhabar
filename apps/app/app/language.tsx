@@ -20,7 +20,7 @@ export default function LanguageScreen() {
   return (
     <View style={styles.screen}>
       <View style={styles.content}>
-        <Text style={styles.brand}>TazaKhabar</Text>
+        <Text style={styles.brand}>Khabro</Text>
         <Text style={styles.eyebrow}>WELCOME</Text>
         <Text style={styles.title}>Choose your reading language</Text>
         <Text style={styles.subtitle}>You can change this anytime from your profile.</Text>

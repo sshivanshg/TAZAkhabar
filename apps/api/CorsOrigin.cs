@@ -34,14 +34,11 @@ public static class CorsOrigin
         }
 
         var host = uri.Host;
-        return IsExactHost(host, "khabaro.in")
-            || IsExactHost(host, "www.khabaro.in")
+        return IsExactHost(host, "khabro.in")
+            || IsExactHost(host, "www.khabro.in")
+            || IsExactHost(host, "admin.khabro.in")
             || IsPagesProjectHost(host, "newsfeed-web.pages.dev")
-            || IsPagesProjectHost(host, "newsfeed-admin.pages.dev")
-            // Retain the branded project names so the eventual Pages rename can
-            // happen without a coordinated API outage.
-            || IsPagesProjectHost(host, "tazakhabar-web.pages.dev")
-            || IsPagesProjectHost(host, "tazakhabar-admin.pages.dev");
+            || IsPagesProjectHost(host, "newsfeed-admin.pages.dev");
     }
 
     private static bool IsExactHost(string host, string allowed) =>

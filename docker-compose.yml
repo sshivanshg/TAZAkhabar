@@ -1,15 +1,15 @@
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: tazakhabar-postgres
+    container_name: khabro-postgres
     environment:
       POSTGRES_DB: tazakhabar
       POSTGRES_USER: tazakhabar
-      POSTGRES_PASSWORD: tazakhabar_dev_password
+      POSTGRES_PASSWORD: khabro_dev_password
     ports:
       - "5432:5432"
     volumes:
-      - tazakhabar_pgdata:/var/lib/postgresql/data
+      - khabro_pgdata:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U tazakhabar -d tazakhabar"]
       interval: 5s
@@ -20,13 +20,13 @@ services:
     build:
       context: .
       dockerfile: infra/docker/Dockerfile.api
-    container_name: tazakhabar-api
+    container_name: khabro-api
     env_file:
       - .env.example
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://+:8080
-      ConnectionStrings__Database: Host=postgres;Port=5432;Database=tazakhabar;Username=tazakhabar;Password=tazakhabar_dev_password
+      ConnectionStrings__Database: Host=postgres;Port=5432;Database=tazakhabar;Username=tazakhabar;Password=khabro_dev_password
       Cors__AllowedOrigins__0: http://localhost:8081
       Cors__AllowedOrigins__1: http://127.0.0.1:8081
       Cors__AllowedOrigins__2: http://localhost:19006
@@ -41,7 +41,7 @@ services:
     build:
       context: .
       dockerfile: infra/docker/Dockerfile.frontend-dev
-    container_name: tazakhabar-reader
+    container_name: khabro-reader
     working_dir: /workspace
     command: >-
       sh -lc "pnpm install --frozen-lockfile &&
@@ -71,7 +71,7 @@ services:
     build:
       context: .
       dockerfile: infra/docker/Dockerfile.frontend-dev
-    container_name: tazakhabar-admin
+    container_name: khabro-admin
     working_dir: /workspace
     command: >-
       sh -lc "pnpm install --frozen-lockfile &&
@@ -95,7 +95,7 @@ services:
     build:
       context: .
       dockerfile: infra/docker/Dockerfile.frontend-dev
-    container_name: tazakhabar-site
+    container_name: khabro-site
     working_dir: /workspace
     command: >-
       sh -lc "pnpm install --frozen-lockfile &&
@@ -103,7 +103,7 @@ services:
     environment:
       VITE_READER_URL: http://localhost:19006
       VITE_SITE_URL: http://localhost:5174
-      VITE_SUPPORT_EMAIL: support@tazakhabar.app
+      VITE_SUPPORT_EMAIL: support@khabro.in
       CHOKIDAR_USEPOLLING: "true"
     ports:
       - "5174:5174"
@@ -125,16 +125,16 @@ services:
       args:
         EXPO_PUBLIC_API_BASE_URL: ${EXPO_PUBLIC_API_BASE_URL:-https://buildy-140j.onrender.com}
         EXPO_PUBLIC_APP_ENV: ${EXPO_PUBLIC_APP_ENV:-production}
-        EXPO_PUBLIC_SITE_URL: ${EXPO_PUBLIC_SITE_URL:-https://tazakhabar-site.pages.dev}
+        EXPO_PUBLIC_SITE_URL: ${EXPO_PUBLIC_SITE_URL:-https://khabro.in}
     command: >-
       sh -lc "cp
       /workspace/apps/app/android/app/build/outputs/apk/release/app-release.apk
-      /output/tazakhabar-release.apk"
+      /output/khabro-release.apk"
     volumes:
       - ./artifacts/android:/output
 
 volumes:
-  tazakhabar_pgdata:
+  khabro_pgdata:
   reader_node_modules:
   reader_app_node_modules:
   reader_shared_node_modules:

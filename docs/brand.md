@@ -1,9 +1,9 @@
-# TazaKhabar brand guide
+# Khabro brand guide
 
 ## Core identity
 
-**TazaKhabar** is a clear, timely, hyperlocal news digest for Indian readers.
-Write the name exactly as `TazaKhabar` in reader-facing copy. The Hindi descriptor is optional: **ताज़ा खबर, आपके शहर की**.
+**Khabro** is a clear, timely, hyperlocal news digest for Indian readers.
+Write the name exactly as `Khabro` in reader-facing copy. The Hindi descriptor is optional: **ताज़ा खबर, आपके शहर की**.
 
 ## Visual language
 
@@ -16,8 +16,8 @@ Write the name exactly as `TazaKhabar` in reader-facing copy. The Hindi descript
 
 ## Assets
 
-- `apps/app/assets/tazakhabar-app-icon.svg` — canonical editable icon source.
-- `apps/app/assets/tazakhabar-brand-mark.png` — generated brand lockup for campaign/editorial use.
+- `apps/app/assets/khabro-app-icon.svg` — canonical editable icon source.
+- `apps/app/assets/khabro-brand-mark.png` — generated brand lockup for campaign/editorial use.
 - `apps/app/assets/icon.png` and `apps/app/public/icon.png` — app/PWA icon exports.
 
 Do not redraw the icon or introduce alternate product names. When adding a new asset, use the canonical blue and saffron values and keep the background transparent or white unless the format requires an opaque app-icon field.

@@ -43,7 +43,7 @@ export function BrandHomeButton({ size = 28, showWordmark = false }: Props) {
             color={colors.text}
             numberOfLines={1}
           >
-            TazaKhabar
+            Khabro
           </Text>
         </View>
       ) : null}

@@ -7,7 +7,7 @@
 
 ## Context
 
-TazaKhabar needs a public landing experience with product presentation, privacy, terms, support, and corrections pages. Putting that material inside the Expo reader made the main app feel like a website shell and blurred the boundary between the actual product and launch formalities.
+Khabro needs a public landing experience with product presentation, privacy, terms, support, and corrections pages. Putting that material inside the Expo reader made the main app feel like a website shell and blurred the boundary between the actual product and launch formalities.
 
 ADR-003 still requires a single reader client codebase for web and native. That constraint applies to the public news-reading product, not to a separate marketing surface.
 

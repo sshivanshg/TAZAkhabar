@@ -27,7 +27,7 @@ export function LoginPage() {
   return (
     <div className="login-screen">
       <form className="login-card" onSubmit={onSubmit}>
-        <h1>TazaKhabar Admin</h1>
+        <h1>Khabro Admin</h1>
         <p className="sub">Sign in to review stories and watch ingest runs.</p>
         <label className="field">
           Password

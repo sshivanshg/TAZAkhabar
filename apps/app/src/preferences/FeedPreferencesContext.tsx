@@ -10,7 +10,7 @@ import {
 } from 'react'
 import type { ArticleResponse } from '@tazakhabar/shared-types'
 
-const STORAGE_KEY = 'tazakhabar.feedPreferences.v1'
+const STORAGE_KEY = 'khabro.feedPreferences.v1'
 
 export type FeedPreferencesState = {
   /** Story IDs hidden via "Hide this story" */

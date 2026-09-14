@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import type { ArticleResponse, FeedSection } from '@tazakhabar/shared-types'
 
-export const FEED_CACHE_STORAGE_KEY = 'tazakhabar.feedCache.v1'
+export const FEED_CACHE_STORAGE_KEY = 'khabro.feedCache.v1'
 
 /** Keep first-page feed on device this long before an automatic network refresh. */
 export const FEED_CACHE_TTL_MS = 45 * 60 * 1000

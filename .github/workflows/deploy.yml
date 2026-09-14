@@ -32,7 +32,7 @@ jobs:
         env:
           EXPO_PUBLIC_API_BASE_URL: ${{ vars.EXPO_PUBLIC_API_BASE_URL }}
           EXPO_PUBLIC_APP_ENV: production
-          EXPO_PUBLIC_SITE_URL: ${{ vars.EXPO_PUBLIC_SITE_URL || 'https://tazakhabar-site.pages.dev' }}
+          EXPO_PUBLIC_SITE_URL: ${{ vars.EXPO_PUBLIC_SITE_URL || 'https://site.newsfeed-web.pages.dev' }}
           EXPO_PUBLIC_WEB_PUSH_PUBLIC_KEY: ${{ vars.EXPO_PUBLIC_WEB_PUSH_PUBLIC_KEY }}
         run: pnpm build:web
 
@@ -81,8 +81,8 @@ jobs:
 
       - name: Build marketing site
         env:
-          VITE_READER_URL: ${{ vars.VITE_READER_URL || 'https://newsfeed-web.pages.dev/' }}
-          VITE_SITE_URL: ${{ vars.VITE_SITE_URL || 'https://tazakhabar-site.pages.dev' }}
+          VITE_READER_URL: ${{ vars.VITE_READER_URL || 'https://khabro.in/' }}
+          VITE_SITE_URL: ${{ vars.VITE_SITE_URL || 'https://site.newsfeed-web.pages.dev' }}
           VITE_SUPPORT_EMAIL: ${{ vars.VITE_SUPPORT_EMAIL }}
         run: pnpm build:site
 
@@ -106,7 +106,11 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          projectName: ${{ vars.CLOUDFLARE_PAGES_SITE_PROJECT_NAME || 'tazakhabar-site' }}
+          # Interim: dedicated `khabro-site` project creation currently fails via API.
+          # Deploy marketing to the `site` preview branch of `newsfeed-web`
+          # → https://site.newsfeed-web.pages.dev
+          projectName: ${{ vars.CLOUDFLARE_PAGES_SITE_PROJECT_NAME || 'newsfeed-web' }}
+          branch: ${{ vars.CLOUDFLARE_PAGES_SITE_BRANCH || 'site' }}
           directory: apps/site/dist
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
           wranglerVersion: "3"

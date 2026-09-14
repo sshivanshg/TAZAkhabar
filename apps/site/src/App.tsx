@@ -17,8 +17,8 @@ type LegalPage = {
   sections: PageSection[]
 }
 
-const readerUrl = import.meta.env.VITE_READER_URL || 'https://newsfeed-web.pages.dev/'
-const siteUrl = import.meta.env.VITE_SITE_URL || 'https://tazakhabar-site.pages.dev'
+const readerUrl = import.meta.env.VITE_READER_URL || 'https://khabro.in/'
+const siteUrl = import.meta.env.VITE_SITE_URL || 'https://site.newsfeed-web.pages.dev'
 const supportEmail = (import.meta.env.VITE_SUPPORT_EMAIL || '').trim()
 
 const legalPages: Record<Exclude<PageId, 'home'>, LegalPage> = {
@@ -27,19 +27,19 @@ const legalPages: Record<Exclude<PageId, 'home'>, LegalPage> = {
     eyebrow: 'About',
     title: 'Local news, presented with less noise and more clarity',
     intro:
-      'TazaKhabar is building a calm front door to city news for readers who want the important update quickly, clearly, and without account friction.',
+      'Khabro is building a calm front door to city news for readers who want the important update quickly, clearly, and without account friction.',
     sections: [
       {
         title: 'Why this exists',
         body: [
-          'Many local news websites are hard to read on a phone, heavy with pop-ups, or too cluttered for a quick daily check-in. TazaKhabar turns that experience into a simpler city briefing.',
+          'Many local news websites are hard to read on a phone, heavy with pop-ups, or too cluttered for a quick daily check-in. Khabro turns that experience into a simpler city briefing.',
           'Readers choose a city once, open the feed, and get short summaries with source credit and a direct path to the original publisher when they want more context.',
         ],
       },
       {
         title: 'How stories are prepared',
         body: [
-          'TazaKhabar collects public publisher feeds, city pages, and editorial inputs. Summaries and translations may be assisted by language tooling before they are displayed in the reader.',
+          'Khabro collects public publisher feeds, city pages, and editorial inputs. Summaries and translations may be assisted by language tooling before they are displayed in the reader.',
           'The original publisher report remains the reference point. If a summary changes the meaning of a story, readers and publishers can report it through the corrections process.',
         ],
       },
@@ -56,7 +56,7 @@ const legalPages: Record<Exclude<PageId, 'home'>, LegalPage> = {
       {
         title: 'Coverage',
         body: [
-          'TazaKhabar supports 75 major Indian cities. Story volume and source depth can differ between locations while direct publisher coverage expands.',
+          'Khabro supports 75 major Indian cities. Story volume and source depth can differ between locations while direct publisher coverage expands.',
         ],
       },
     ],
@@ -66,13 +66,13 @@ const legalPages: Record<Exclude<PageId, 'home'>, LegalPage> = {
     eyebrow: 'Privacy',
     title: 'Privacy policy',
     intro:
-      'This policy explains what TazaKhabar handles when you use the website or mobile reader.',
+      'This policy explains what Khabro handles when you use the website or mobile reader.',
     updated: '27 August 2026',
     sections: [
       {
         title: 'Information saved on your device',
         body: [
-          'TazaKhabar does not require a reader account. Your city choice, appearance, reading language, bookmarks, blocked topics or sources, and a short-lived feed cache are stored on your device.',
+          'Khabro does not require a reader account. Your city choice, appearance, reading language, bookmarks, blocked topics or sources, and a short-lived feed cache are stored on your device.',
           'You can remove that local information by clearing app or browser storage, or by uninstalling the application.',
         ],
       },
@@ -86,7 +86,7 @@ const legalPages: Record<Exclude<PageId, 'home'>, LegalPage> = {
       {
         title: 'Optional location access',
         body: [
-          'If you tap “Use my current location,” the reader asks for foreground location permission and uses the result once on your device to choose the nearest supported city. Your precise coordinates are not sent to or stored by TazaKhabar.',
+          'If you tap “Use my current location,” the reader asks for foreground location permission and uses the result once on your device to choose the nearest supported city. Your precise coordinates are not sent to or stored by Khabro.',
           'Location access is optional. If you decline, turn off location services, or the lookup fails, you can always search for and choose a city manually.',
         ],
       },
@@ -102,8 +102,8 @@ const legalPages: Record<Exclude<PageId, 'home'>, LegalPage> = {
       {
         title: 'External services and publisher links',
         body: [
-          'TazaKhabar uses infrastructure providers to deliver the API, website, and database. They process limited technical information on our behalf under their own security and retention practices.',
-          'Opening an original article sends you to the publisher website. That destination has its own privacy policy and is outside TazaKhabar control.',
+          'Khabro uses infrastructure providers to deliver the API, website, and database. They process limited technical information on our behalf under their own security and retention practices.',
+          'Opening an original article sends you to the publisher website. That destination has its own privacy policy and is outside Khabro control.',
         ],
       },
       {
@@ -125,13 +125,13 @@ const legalPages: Record<Exclude<PageId, 'home'>, LegalPage> = {
     eyebrow: 'Terms',
     title: 'Terms of use',
     intro:
-      'These terms apply when you access or use TazaKhabar. Continuing to use the service means you agree to them.',
+      'These terms apply when you access or use Khabro. Continuing to use the service means you agree to them.',
     updated: '27 August 2026',
     sections: [
       {
         title: 'The service',
         body: [
-          'TazaKhabar provides local news discovery, short summaries, reading tools, bookmarks, and links to original publisher reports. The service may change as city coverage expands.',
+          'Khabro provides local news discovery, short summaries, reading tools, bookmarks, and links to original publisher reports. The service may change as city coverage expands.',
         ],
       },
       {
@@ -145,21 +145,21 @@ const legalPages: Record<Exclude<PageId, 'home'>, LegalPage> = {
         bullets: [
           'Do not overload, disrupt, or attempt to bypass service protections.',
           'Do not use the product in a way that violates law or another person rights.',
-          'Do not present TazaKhabar summaries as your own reporting.',
+          'Do not present Khabro summaries as your own reporting.',
           'Ordinary personal sharing through the app is welcome.',
         ],
       },
       {
         title: 'Publishers and intellectual property',
         body: [
-          'Publisher names, article links, and third-party marks belong to their respective owners. TazaKhabar branding, software, and original product design belong to TazaKhabar or its licensors.',
+          'Publisher names, article links, and third-party marks belong to their respective owners. Khabro branding, software, and original product design belong to Khabro or its licensors.',
           'Rights holders can use the corrections and takedown process to identify content and request review.',
         ],
       },
       {
         title: 'Availability and liability',
         body: [
-          'We work to keep the service reliable, but cannot guarantee uninterrupted availability or equal coverage in every city. To the extent permitted by law, TazaKhabar is provided on an as-available basis.',
+          'We work to keep the service reliable, but cannot guarantee uninterrupted availability or equal coverage in every city. To the extent permitted by law, Khabro is provided on an as-available basis.',
         ],
       },
     ],
@@ -210,7 +210,7 @@ const legalPages: Record<Exclude<PageId, 'home'>, LegalPage> = {
       {
         title: 'What to send',
         bullets: [
-          'The TazaKhabar headline and article link or article ID.',
+          'The Khabro headline and article link or article ID.',
           'The original publisher URL when available.',
           'A concise explanation of the issue or removal request.',
           'Supporting evidence or corrected information.',
@@ -236,16 +236,16 @@ const legalPages: Record<Exclude<PageId, 'home'>, LegalPage> = {
 
 const pageMeta: Record<PageId, { title: string; description: string }> = {
   home: {
-    title: 'TazaKhabar — Your city. Clearly told.',
+    title: 'Khabro — Your city. Clearly told.',
     description:
       'A calm local-news reader with city-specific updates, clear sourcing, and launch-ready public information.',
   },
-  about: { title: 'About TazaKhabar', description: legalPages.about.intro },
-  privacy: { title: 'Privacy policy — TazaKhabar', description: legalPages.privacy.intro },
-  terms: { title: 'Terms of use — TazaKhabar', description: legalPages.terms.intro },
-  support: { title: 'Support — TazaKhabar', description: legalPages.support.intro },
+  about: { title: 'About Khabro', description: legalPages.about.intro },
+  privacy: { title: 'Privacy policy — Khabro', description: legalPages.privacy.intro },
+  terms: { title: 'Terms of use — Khabro', description: legalPages.terms.intro },
+  support: { title: 'Support — Khabro', description: legalPages.support.intro },
   corrections: {
-    title: 'Corrections and takedown — TazaKhabar',
+    title: 'Corrections and takedown — Khabro',
     description: legalPages.corrections.intro,
   },
 }
@@ -314,7 +314,7 @@ function HomeView({ setPage }: { setPage: (page: PageId) => void }) {
           <p className="eyebrow"><span /> Local news, made readable</p>
           <h1>Your city. Clearly told.</h1>
           <p className="lede">
-            TazaKhabar turns crowded local reporting into a cleaner daily read, with city-specific updates,
+            Khabro turns crowded local reporting into a cleaner daily read, with city-specific updates,
             visible sourcing, and zero account friction for readers.
           </p>
           <div className="hero-actions">
@@ -331,7 +331,7 @@ function HomeView({ setPage }: { setPage: (page: PageId) => void }) {
           </div>
           <div className="phone-card">
             <div className="phone-top">
-              <span>TazaKhabar</span>
+              <span>Khabro</span>
               <b>Delhi</b>
             </div>
             <div className="phone-alert"><span /> Fresh this morning</div>
@@ -435,10 +435,10 @@ function HomeView({ setPage }: { setPage: (page: PageId) => void }) {
       <section className="closing shell reveal">
         <div>
           <p className="eyebrow"><span /> Launch</p>
-          <h2>A proper TazaKhabar website, separate from the reader app.</h2>
+          <h2>A proper Khabro website, separate from the reader app.</h2>
         </div>
         <div className="closing-panel">
-          <p>The reader stays at <code>newsfeed-web.pages.dev</code>. This site becomes the public brand and policy surface on its own subdomain.</p>
+          <p>The reader stays at <code>khabro.in</code>. This site becomes the public brand and policy surface on its own subdomain.</p>
           <div className="hero-actions">
             <a className="button button-primary" href={readerUrl}>Open reader</a>
             <button className="button button-secondary" onClick={() => navigate('support', setPage)}>Support and contact</button>
@@ -522,9 +522,9 @@ export function App() {
       <div className="bg-orb bg-orb-one" />
       <div className="bg-orb bg-orb-two" />
       <header className="topbar shell">
-        <button className="brand" onClick={() => navigate('home', setPage)} aria-label="TazaKhabar home">
-          <img src="/tazakhabar-mark.svg" alt="" />
-          <span>TazaKhabar</span>
+        <button className="brand" onClick={() => navigate('home', setPage)} aria-label="Khabro home">
+          <img src="/khabro-mark.svg" alt="" />
+          <span>Khabro</span>
         </button>
         <nav className="topnav" aria-label="Primary">
           <button onClick={() => navigate('about', setPage)}>About</button>
@@ -538,7 +538,7 @@ export function App() {
 
       <footer className="site-footer shell">
         <div>
-          <p className="footer-kicker">TazaKhabar</p>
+          <p className="footer-kicker">Khabro</p>
           <p className="footer-copy">A clearer way to check what changed in your city today.</p>
         </div>
         <div className="footer-links" aria-label="Footer">
