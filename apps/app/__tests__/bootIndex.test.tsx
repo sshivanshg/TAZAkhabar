@@ -34,7 +34,7 @@ jest.mock('../src/preferences/LanguagePreferenceContext', () => ({
 }))
 
 jest.mock('../src/storage/cityPreference', () => ({
-  resolveCitySlug: (...args: unknown[]) => mockResolveCitySlug(...args),
+  resolveCitySlug: () => mockResolveCitySlug(),
 }))
 
 import IndexScreen from '../app/index'
