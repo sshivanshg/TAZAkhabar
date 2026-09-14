@@ -6,7 +6,7 @@ public sealed class NotificationsOptions
 
     public string ExpoAccessToken { get; set; } = string.Empty;
     public string ExpoPushApiUrl { get; set; } = "https://exp.host/--/api/v2/push/send";
-    public string WebPushSubject { get; set; } = "mailto:support@tazakhabar.com";
+    public string WebPushSubject { get; set; } = "mailto:support@khabro.in";
     public string WebPushPublicKey { get; set; } = string.Empty;
     public string WebPushPrivateKey { get; set; } = string.Empty;
     public int PromptCooldownDays { get; set; } = 7;

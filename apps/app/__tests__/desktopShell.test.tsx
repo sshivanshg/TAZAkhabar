@@ -8,7 +8,7 @@ jest.mock('../src/components/BrandHomeButton', () => {
   const React = require('react')
   const { Text } = require('react-native')
   return {
-    BrandHomeButton: () => React.createElement(Text, null, 'TazaKhabar'),
+    BrandHomeButton: () => React.createElement(Text, null, 'Khabro'),
   }
 })
 
@@ -118,5 +118,5 @@ it('shows a static version footer so the sidebar does not trail into empty space
   mockUsePathname.mockReturnValue('/')
   renderSidebar()
   expect(screen.getByTestId('sidebar-footer')).toBeTruthy()
-  expect(screen.getByText('TazaKhabar v0.1')).toBeTruthy()
+  expect(screen.getByText('Khabro v0.1')).toBeTruthy()
 })

@@ -135,7 +135,7 @@ function ProfileBody() {
             color={colors.textSecondary}
             mt="$1"
           >
-            Make TazaKhabar work better for you.
+            Make Khabro work better for you.
           </Text>
         </View>
 
@@ -375,7 +375,7 @@ function ProfileBody() {
             lineHeight={24}
             color={colors.textSecondary}
           >
-            TazaKhabar is a local news summary you can add to your home screen. No login — pick a
+            Khabro is a local news summary you can add to your home screen. No login — pick a
             city, read short summaries, save stories on this device, and share to WhatsApp in one
             tap.
           </Text>

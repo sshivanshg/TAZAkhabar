@@ -5,7 +5,7 @@
 
 ## Purpose
 
-This page defines how TazaKhabar should evolve while remaining a small, understandable modular monolith. It makes the system's dependency direction explicit, records the current SOLID assessment, and gives contributors practical rules for deciding when code belongs in an endpoint, application service, domain policy, or infrastructure adapter.
+This page defines how Khabro should evolve while remaining a small, understandable modular monolith. It makes the system's dependency direction explicit, records the current SOLID assessment, and gives contributors practical rules for deciding when code belongs in an endpoint, application service, domain policy, or infrastructure adapter.
 
 This is a design guide, not a mandate to introduce layers for their own sake. The existing API stays as one deployable process and EF Core remains the data-access technology owned by the API.
 
@@ -22,7 +22,7 @@ flowchart TB
     Schedulers[GitHub Actions / hosted scheduler]
   end
 
-  subgraph api [TazaKhabar API - one deployable modular monolith]
+  subgraph api [Khabro API - one deployable modular monolith]
     Transport[HTTP endpoints<br/>auth, validation, ProblemDetails]
     Application[Feature orchestration<br/>feed, editorial, ingest, notifications]
     Policies[Domain policies<br/>visibility, ranking, categories, calendar]

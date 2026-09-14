@@ -37,7 +37,7 @@ function item(
 }
 
 /**
- * Overflow actions matching Google News copy, wired to TazaKhabar prefs.
+ * Overflow actions matching Google News copy, wired to Khabro prefs.
  */
 export function buildStorySections({
   article,

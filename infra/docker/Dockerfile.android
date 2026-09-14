@@ -9,7 +9,7 @@ ARG ANDROID_COMMAND_LINE_TOOLS_VERSION=15859902
 ARG ANDROID_COMMAND_LINE_TOOLS_SHA256=4e4c464f145a7512b57d088ac6c278c03c9eea610886b35a5e0804e74eedf583
 ARG EXPO_PUBLIC_API_BASE_URL=https://buildy-140j.onrender.com
 ARG EXPO_PUBLIC_APP_ENV=production
-ARG EXPO_PUBLIC_SITE_URL=https://tazakhabar-site.pages.dev
+ARG EXPO_PUBLIC_SITE_URL=https://site.newsfeed-web.pages.dev
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV ANDROID_HOME=/opt/android-sdk
@@ -73,4 +73,4 @@ RUN pnpm --filter @tazakhabar/app exec expo prebuild --platform android \
     && ./gradlew --no-daemon assembleRelease
 
 FROM scratch AS artifact
-COPY --from=build /workspace/apps/app/android/app/build/outputs/apk/release/app-release.apk /tazakhabar-release.apk
+COPY --from=build /workspace/apps/app/android/app/build/outputs/apk/release/app-release.apk /khabro-release.apk

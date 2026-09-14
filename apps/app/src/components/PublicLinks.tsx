@@ -22,7 +22,7 @@ export function PublicLinks({ compact = false }: { compact?: boolean }) {
   return (
     <View
       accessibilityRole={'navigation' as AccessibilityRole}
-      accessibilityLabel="TazaKhabar information"
+      accessibilityLabel="Khabro information"
       style={[styles.root, compact ? styles.compact : null]}
     >
       {PUBLIC_PAGE_LINKS.map((link) => (

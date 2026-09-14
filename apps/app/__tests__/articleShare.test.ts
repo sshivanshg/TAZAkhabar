@@ -5,13 +5,13 @@ import { openArticleSource } from '../src/utils/openArticleSource'
 import { normalizeArticleSourceUrl } from '../src/utils/normalizeArticleSourceUrl'
 
 describe('articleShareUrl', () => {
-  it('uses the TazaKhabar website URL instead of the source URL', () => {
+  it('uses the Khabro website URL instead of the source URL', () => {
     expect(
       articleShareUrl({
         headline: 'A',
         sourceUrl: 'https://example.com/story',
       }),
-    ).toBe('https://tazakhabar-site.pages.dev')
+    ).toBe('https://site.newsfeed-web.pages.dev')
   })
 
   it('still shares the website URL when the source URL is not share-safe', () => {
@@ -20,7 +20,7 @@ describe('articleShareUrl', () => {
         headline: 'A',
         sourceUrl: 'http://example.com/story',
       }),
-    ).toBe('https://tazakhabar-site.pages.dev')
+    ).toBe('https://site.newsfeed-web.pages.dev')
   })
 })
 

@@ -1,11 +1,11 @@
 # Hosting and CI
 
 > **Living doc** — update when Render, Cloudflare, Neon, Docker, workflows, or env templates change.  
-> **Last verified against:** 2026-09-14 (Khabaro.in Pages custom-domain attachment started)
+> **Last verified against:** 2026-09-14 (Khabro.in Pages custom-domain attachment and admin subdomain wiring)
 
 ## Purpose
 
-How TazaKhabar is built, deployed, and wired in production: Render API (free tier), Cloudflare Pages (reader + marketing site + admin), Neon Postgres, GitHub Actions schedulers, local Docker.
+How Khabro is built, deployed, and wired in production: Render API (free tier), Cloudflare Pages (reader + marketing site + admin), Neon Postgres, GitHub Actions schedulers, local Docker.
 
 ## Boundaries
 
@@ -33,7 +33,7 @@ flowchart TB
   Main --> Deploy
   Deploy --> PagesWeb[Cloudflare Pages<br/>newsfeed-web]
   DeployQA --> PagesWebQA[Cloudflare Pages<br/>newsfeed-web / qa branch]
-  Deploy --> PagesSite[Cloudflare Pages<br/>tazakhabar-site]
+  Deploy --> PagesSite[Cloudflare Pages<br/>newsfeed-web / site branch]
   Deploy --> PagesAdmin[Cloudflare Pages<br/>newsfeed-admin]
   Render --> Neon[(Neon Postgres)]
   GHAIngest[GitHub Actions scheduled ingest] --> Render
@@ -53,7 +53,7 @@ flowchart TB
 | API image | `infra/docker/Dockerfile.api` |
 | Frontend containers | `infra/docker/Dockerfile.frontend-dev` (hot reload), `Dockerfile.web` (static preview) |
 | Android APK builder | `infra/docker/Dockerfile.android`, invoked by `scripts/docker-build-apk.sh` |
-| Blueprint | `render.yaml` — web `tazakhabar-api` only (free tier; no Render crons) |
+| Blueprint | `render.yaml` — web `tazakhabar-api` only (free tier; no Render crons; health payload service id is `khabro-api`) |
 | Local stack | `docker-compose.yml` Postgres 16 + API + Expo reader; optional `tools` profile for admin/site |
 | CI | `.github/workflows/ci.yml` — API format/build/test + Postgres, migration SQL artifact, OpenAPI drift check; app lint/test/export; marketing site build; admin build |
 | Deploy | `.github/workflows/deploy.yml` — production Pages for reader + marketing site + admin; API via Render auto-deploy |
@@ -85,7 +85,7 @@ The `apk` Compose build profile (also wrapped by
 `scripts/docker-build-apk.sh`) is separate from the running stack. It builds a
 Linux/amd64 image containing JDK 17 and Android API 36, runs Expo prebuild plus
 Gradle `assembleRelease`, and exports only
-`artifacts/android/tazakhabar-release.apk` to the host. The output uses the
+`artifacts/android/khabro-release.apk` to the host. The output uses the
 generated debug keystore for sideload testing, not Play Store signing.
 
 ### Production traffic
@@ -97,12 +97,12 @@ generated debug keystore for sideload testing, not Play Store signing.
 
 ### Pages deployment hygiene
 
-- `newsfeed-web.pages.dev` is the only canonical reader frontend deployment.
+- `khabro.in` is the only canonical reader frontend deployment.
   Keep it on the Cloudflare Pages project `newsfeed-web`.
-- `khabaro.in` and `www.khabaro.in` are attached to `newsfeed-web` as branded
-  reader custom domains. They remain pending until the `khabaro.in` DNS zone is
-  added to the same Cloudflare account and registrar nameservers point at
-  Cloudflare.
+- `khabro.in` and `www.khabro.in` are attached to `newsfeed-web` as branded
+  reader custom domains (live).
+- `admin.khabro.in` is attached to `newsfeed-admin` as the branded admin custom
+  domain (live).
 - `qa` is the pre-production branch. It uses the same repository configuration as production; it is promoted manually into `main` after review.
 - QA is deployed to the `qa` branch of the existing `newsfeed-web` Pages project, typically available at `https://qa.newsfeed-web.pages.dev`.
 - Production promotion is explicit: run the `Promote QA to production` workflow after QA review. The workflow only allows a fast-forward from `qa` to `main`, so production receives exactly what was tested in QA.
@@ -112,7 +112,7 @@ generated debug keystore for sideload testing, not Play Store signing.
   is verified, prune stale preview and old immutable deployment URLs from
   `newsfeed-web` so agents and operators do not confuse them with the main
   frontend.
-- Do not delete `tazakhabar-site` or `newsfeed-admin` when consolidating reader
+- Do not delete the marketing `site` branch alias or `newsfeed-admin` when consolidating reader
   frontend deployments; those are distinct hosted surfaces.
 
 ### Render web service
@@ -153,7 +153,7 @@ generated debug keystore for sideload testing, not Play Store signing.
 | `VITE_READER_URL`, `VITE_SITE_URL`, `VITE_SUPPORT_EMAIL` | GitHub Actions production variables for the marketing site |
 | `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` | GitHub **production** environment secrets (required for the production Pages deploy) |
 | `CLOUDFLARE_PAGES_PROJECT_NAME` | default `newsfeed-web` (existing Cloudflare Pages project) |
-| `CLOUDFLARE_PAGES_SITE_PROJECT_NAME` | default `tazakhabar-site` (marketing Pages project) |
+| `CLOUDFLARE_PAGES_SITE_PROJECT_NAME` | default `newsfeed-web` with branch `site` (interim marketing alias; intended future project `khabro-site`) |
 | `CLOUDFLARE_PAGES_ADMIN_PROJECT_NAME` | default `newsfeed-admin` (existing Cloudflare Pages project) |
 | `PRODUCTION_DATABASE_CONNECTION_STRING` | GitHub production environment secret for manual migration workflow |
 

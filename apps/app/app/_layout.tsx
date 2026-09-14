@@ -17,6 +17,7 @@ import { tazakhabarConfig } from '../src/theme/gluestack-config'
 import { applyWebColorScheme } from '../src/theme/applyWebColorScheme'
 import { registerWebServiceWorker } from '../src/pwa/registerWebServiceWorker'
 import { getDeferredInstallPrompt } from '../src/pwa/installPrompt'
+import { migrateBrandStorage } from '../src/storage/migrateBrandStorage'
 
 function RootNavigation() {
   const { colorScheme, colors } = useTheme()
@@ -26,6 +27,7 @@ function RootNavigation() {
   }, [colorScheme, colors])
 
   useEffect(() => {
+    void migrateBrandStorage()
     registerWebServiceWorker()
     // Start listening for beforeinstallprompt as early as possible.
     getDeferredInstallPrompt()

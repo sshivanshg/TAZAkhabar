@@ -18,7 +18,7 @@ Internal Vite + React SPA for editors: review queue, sources, uploads, ingestion
 flowchart LR
   Editor[Editor browser] --> Pages[Cloudflare Pages<br/>newsfeed-admin]
   Pages --> SPA[Vite React SPA]
-  SPA -->|VITE_API_BASE_URL<br/>Bearer JWT| API[TazaKhabar.Api]
+  SPA -->|VITE_API_BASE_URL<br/>Bearer JWT| API[Khabro.Api]
   SPA -->|SSE ingest events| API
 ```
 
@@ -54,7 +54,7 @@ sequenceDiagram
   API-->>A: SSE ingest events
 ```
 
-Session keys: `tazakhabar_admin_token`, `tazakhabar_admin_expires`, `tazakhabar_admin_identity`.
+Session keys: `khabro_admin_token`, `khabro_admin_expires`, `khabro_admin_identity`.
 
 May copy **token values** (colors/spacing) from reader theme; own table/form components — do not embed reader cards.
 

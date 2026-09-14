@@ -1,4 +1,4 @@
-# TazaKhabar Docker Instructions
+# Khabro Docker Instructions
 
 This guide is for development on a restricted laptop where Node.js, pnpm,
 .NET, Java, Gradle, or Android Studio cannot be installed. Only Git and Docker
@@ -123,10 +123,10 @@ Later builds reuse Docker's build cache.
 The finished file is written to:
 
 ```text
-artifacts/android/tazakhabar-release.apk
+artifacts/android/khabro-release.apk
 ```
 
-The default APK connects to the hosted TazaKhabar API. This is intentional:
+The default APK connects to the hosted Khabro API. This is intentional:
 `localhost` inside an APK installed on a phone refers to the phone, not the
 development laptop.
 
@@ -150,7 +150,7 @@ keys, passwords, database connections, or other secrets in them.
 
 ### Install the APK on a phone
 
-1. Transfer `artifacts/android/tazakhabar-release.apk` to the Android phone.
+1. Transfer `artifacts/android/khabro-release.apk` to the Android phone.
 2. Allow the Files/browser application to install unknown apps when Android
    prompts for permission.
 3. Open the APK and select **Install**.

@@ -4,18 +4,14 @@ public sealed class CorsOriginTests
 {
     private static readonly string[] Configured =
     [
-        "https://tazakhabar-web.pages.dev",
-        "https://tazakhabar-admin.pages.dev",
+        "https://khabro.in",
+        "https://admin.khabro.in",
     ];
 
     [Theory]
-    [InlineData("https://tazakhabar-web.pages.dev")]
-    [InlineData("https://tazakhabar-admin.pages.dev")]
-    [InlineData("https://main.tazakhabar-web.pages.dev")]
-    [InlineData("https://abc123.tazakhabar-web.pages.dev")]
-    [InlineData("https://feat-foo.tazakhabar-admin.pages.dev")]
-    [InlineData("https://khabaro.in")]
-    [InlineData("https://www.khabaro.in")]
+    [InlineData("https://khabro.in")]
+    [InlineData("https://admin.khabro.in")]
+    [InlineData("https://www.khabro.in")]
     [InlineData("https://newsfeed-web.pages.dev")]
     [InlineData("https://website-launch.newsfeed-web.pages.dev")]
     [InlineData("https://newsfeed-admin.pages.dev")]
@@ -24,15 +20,15 @@ public sealed class CorsOriginTests
         Assert.True(CorsOrigin.IsAllowed(origin, Configured));
 
     [Theory]
-    [InlineData("http://tazakhabar-web.pages.dev")]
+    [InlineData("http://khabro.in")]
     [InlineData("https://evil.pages.dev")]
-    [InlineData("https://tazakhabar-web.pages.dev.evil.com")]
-    [InlineData("https://not-tazakhabar-web.pages.dev")]
+    [InlineData("https://khabro.in.evil.com")]
+    [InlineData("https://main.khabro.in")]
+    [InlineData("https://foo.admin.khabro.in")]
     [InlineData("https://not-newsfeed-web.pages.dev")]
     [InlineData("https://newsfeed-web.pages.dev.evil.com")]
-    [InlineData("https://api.khabaro.in")]
-    [InlineData("https://khabaro.in.evil.com")]
-    [InlineData("https://main.tazakhabar-web.pages.dev/extra")]
+    [InlineData("https://api.khabro.in")]
+    [InlineData("https://khabro.in/extra")]
     [InlineData("")]
     [InlineData(null)]
     public void Rejects_Unknown_Or_Insecure_Origins(string? origin) =>

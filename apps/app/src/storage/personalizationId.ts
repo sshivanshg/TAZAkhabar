@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
 
-const STORAGE_KEY = 'tazakhabar.personalizationId'
+const STORAGE_KEY = 'khabro.personalizationId'
 
 function randomId(): string {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {

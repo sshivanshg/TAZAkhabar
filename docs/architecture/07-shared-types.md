@@ -16,7 +16,7 @@ Keep TypeScript DTOs for reader and admin in lockstep with the API OpenAPI docum
 
 ```mermaid
 flowchart LR
-  API[TazaKhabar.Api] -->|/openapi/v1.json| Fetch[scripts/fetch-openapi.mjs]
+  API[Khabro.Api] -->|/openapi/v1.json| Fetch[scripts/fetch-openapi.mjs]
   Fetch --> Snap[openapi/openapi.json]
   Snap --> NSwag[nswag run nswag.json]
   NSwag --> Gen[src/generated.ts]

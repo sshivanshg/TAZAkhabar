@@ -1,12 +1,12 @@
 # Current Capabilities
 
-> Canonical product capability inventory for TazaKhabar.  
+> Canonical product capability inventory for Khabro.  
 > Update this file in the same change whenever a user-facing feature, source rule, update cadence, or shipped surface changes.  
 > If a change touches architecture, also update the matching page in `docs/architecture/` and bump its `Last verified against` date.
 
 ## App message
 
-TazaKhabar is ready for pilot use. Readers can pick a city, browse fresh local news, open stories in the swipe reader, share to WhatsApp, and opt into breaking-news alerts. News is sourced from official RSS feeds, city pages when RSS is missing, Google News discovery feeds, and manual editorial uploads. Stories are kept short, attributed, and linked back to the original source.
+Khabro is ready for pilot use. Readers can pick a city, browse fresh local news, open stories in the swipe reader, share to WhatsApp, and opt into breaking-news alerts. News is sourced from official RSS feeds, city pages when RSS is missing, Google News discovery feeds, and manual editorial uploads. Stories are kept short, attributed, and linked back to the original source.
 
 ## What is built
 
@@ -91,4 +91,4 @@ When anything changes, update the doc that owns that behavior:
 
 If you need a one-line status update for the app:
 
-> TazaKhabar is pilot-ready: city selection, fresh local news, swipe reading, WhatsApp sharing, optional alerts, and editor-controlled ingestion are already built.
+> Khabro is pilot-ready: city selection, fresh local news, swipe reading, WhatsApp sharing, optional alerts, and editor-controlled ingestion are already built.

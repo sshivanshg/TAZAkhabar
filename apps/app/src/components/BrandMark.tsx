@@ -4,7 +4,7 @@ type Props = {
   size?: number
 }
 
-/** Compact TazaKhabar app mark (blue tile + saffron sun + paper glyph). */
+/** Compact Khabro app mark (blue tile + saffron sun + paper glyph). */
 export function BrandMark({ size = 28 }: Props) {
   return (
     <Svg width={size} height={size} viewBox="0 0 1024 1024" accessibilityElementsHidden>

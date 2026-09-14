@@ -1,8 +1,8 @@
-# TazaKhabar
+# Khabro
 
 Localized news summarization monorepo. MVP: **Expo (React Native + Web)** + .NET 8 API + Postgres. No auth.
 
-> **Name:** TazaKhabar — fresh, clear local news for your city.
+> **Name:** Khabro — fresh, clear local news for your city.
 
 ## Layout
 
@@ -112,7 +112,7 @@ docker compose run --build --rm apk
 The first build downloads the Linux Android toolchain and can take several
 minutes. The result is:
 
-`artifacts/android/tazakhabar-release.apk`
+`artifacts/android/khabro-release.apk`
 
 The Compose command works from Docker Desktop terminals on macOS, Windows, and
 Linux. macOS/Linux users can alternatively run the convenience wrapper

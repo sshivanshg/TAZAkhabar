@@ -24,7 +24,7 @@ public sealed class HealthEndpointTests : IClassFixture<TazaKhabarWebApplication
         var payload = await response.Content.ReadFromJsonAsync<HealthResponse>();
         Assert.NotNull(payload);
         Assert.Equal("healthy", payload.Status);
-        Assert.Equal("tazakhabar-api", payload.Service);
+        Assert.Equal("khabro-api", payload.Service);
         Assert.Equal("up", payload.Database);
     }
 }

@@ -1,4 +1,4 @@
-# TazaKhabar Codex Rules
+# Khabro Codex Rules
 
 This repository mirrors the Cursor agent rules in `.codex/rules/`. Treat these
 rules as always available project instructions for Codex.
@@ -52,9 +52,9 @@ Hard boundaries:
 - One reader client codebase: Expo in `apps/app` serves web for MVP hosting and
   native later. Do not add a separate Vite/CRA reader. Admin Vite SPA at
   `apps/admin` is the narrow exception.
-- Product name is TazaKhabar. Follow `.codex/rules/branding.mdc` and
+- Product name is Khabro. Follow `.codex/rules/branding.mdc` and
   `docs/brand.md`; do not invent alternate brand names.
-- MVP UI is light with TazaKhabar blue as its primary accent and saffron only
+- MVP UI is light with Khabro blue as its primary accent and saffron only
   as a restrained freshness/breaking-news signal.
 
 Before structural changes, read the matching `docs/architecture/` page,
@@ -134,7 +134,7 @@ For `apps/app/**/*.{ts,tsx}`:
 - MVP theme: light UI, near-white canvas (`#F4F6FA`), white cards with soft
   shadow, near-black headlines (`#101828`), mid-gray meta (`#667085`), primary
   blue (`#155EEF`), and restrained saffron (`#FFB000`) freshness signals.
-- Product name is TazaKhabar; follow `.codex/rules/branding.mdc`.
+- Product name is Khabro; follow `.codex/rules/branding.mdc`.
 - Develop primarily with `pnpm --filter @tazakhabar/app web` for MVP pilots.
 - Keep screens native-safe. Do not reintroduce a separate Vite app for the
   reader.
@@ -161,16 +161,16 @@ index is updated when a page is added.
 ## Deployment Hygiene
 
 - The canonical reader frontend is the Cloudflare Pages project
-  `newsfeed-web`, served at `https://newsfeed-web.pages.dev`.
+  `newsfeed-web`, served at `https://khabro.in`.
 - Do not create or keep parallel reader frontend projects. The marketing site
-  `tazakhabar-site` and admin app `newsfeed-admin` are separate surfaces, not
+  `khabro-site` and admin app `newsfeed-admin` are separate surfaces, not
   duplicate reader frontends.
 - If deploying the reader manually with Wrangler, deploy `apps/app/dist` to
   `newsfeed-web` with `--branch main` when the change should be live on the
   canonical frontend. Feature-branch preview deployments are temporary and
   should be pruned once production is verified.
 - If asked to consolidate deployments, keep the latest intended production
-  deployment behind `newsfeed-web.pages.dev` and delete stale preview/old
+  deployment behind `khabro.in` and delete stale preview/old
   deployment URLs from the `newsfeed-web` project.
 
 ## Security

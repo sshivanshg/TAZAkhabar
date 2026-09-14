@@ -16,7 +16,7 @@ Describe package layout, tooling, and boundaries so API / types / clients stay c
 
 ```mermaid
 flowchart TB
-  root[TazaKhabar monorepo]
+  root[Khabro monorepo]
   root --> app[apps/app<br/>Expo reader]
   root --> site[apps/site<br/>Vite marketing site]
   root --> admin[apps/admin<br/>Vite admin]
@@ -38,7 +38,7 @@ flowchart TB
 | `apps/app` | `@tazakhabar/app` | Expo universal reader |
 | `apps/site` | `@tazakhabar/site` | Public marketing + legal site |
 | `apps/admin` | `@tazakhabar/admin` | Editorial Vite SPA |
-| `apps/api` | `TazaKhabar.Api` | Minimal API |
+| `apps/api` | `Khabro.Api` | Minimal API |
 | `apps/api.Tests` | `TazaKhabar.Api.Tests` | xUnit + WebApplicationFactory |
 | `packages/shared-types` | `@tazakhabar/shared-types` | Generated TS DTOs |
 | `infra/docker` | — | `Dockerfile.api`, optional `Dockerfile.web` |
@@ -56,7 +56,7 @@ Root scripts (see root `package.json`):
 | `pnpm dev:web` | Expo web reader |
 | `pnpm build:web` | `expo export -p web` → `apps/app/dist` |
 | `pnpm build:apk` | Expo prebuild + Gradle `assembleRelease` → sideload APK under `apps/app/android/` |
-| `docker compose run --build --rm apk` | Linux/amd64 Docker build of the sideload APK → `artifacts/android/tazakhabar-release.apk` |
+| `docker compose run --build --rm apk` | Linux/amd64 Docker build of the sideload APK → `artifacts/android/khabro-release.apk` |
 | `pnpm lint:app` | Expo app `tsc --noEmit` |
 | `pnpm dev:site` | Marketing site |
 | `pnpm build:site` | Vite build → `apps/site/dist` |

@@ -16,7 +16,7 @@ Opt-in push notifications across the Expo reader, web/PWA, and API-backed dispat
 
 ```mermaid
 flowchart LR
-  Reader[Expo reader<br/>web + native] --> API[TazaKhabar.Api]
+  Reader[Expo reader<br/>web + native] --> API[Khabro.Api]
   API --> DB[(Neon Postgres)]
   API --> Expo[Expo Push Service]
   API --> WebPush[Browser Push Service]

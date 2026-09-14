@@ -1,7 +1,7 @@
 {
-  "name": "TazaKhabar",
-  "short_name": "TazaKhabar",
-  "description": "Fresh, clear local news for your city from TazaKhabar.",
+  "name": "Khabro",
+  "short_name": "Khabro",
+  "description": "Fresh, clear local news for your city from Khabro.",
   "id": "/",
   "start_url": "/",
   "scope": "/",

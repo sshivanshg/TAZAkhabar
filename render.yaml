@@ -1,4 +1,4 @@
-# Render Blueprint — TazaKhabar API (ADR-004)
+# Render Blueprint — Khabro API (ADR-004)
 # Secrets (ConnectionStrings__Database, Cors origins, Admin, ingest) are set in the Render dashboard (sync: false).
 #
 # Free-tier note: Render cron jobs require a paid plan. Scheduled ingest and article

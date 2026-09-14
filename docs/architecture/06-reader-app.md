@@ -1,7 +1,7 @@
 # Reader app
 
 > **Living doc** — update when Expo routes, city/feed/share behavior, or desktop web layer change.  
-> **Last verified against:** 2026-09-14 (first-run language selection, simplified article chrome, redesigned fixed article actions, and profile settings refresh)
+> **Last verified against:** 2026-09-14 (animated news-themed language start screen, simplified article chrome, redesigned fixed article actions, and profile settings refresh)
 
 ## Purpose
 
@@ -13,7 +13,7 @@ On mobile, the top bar and category rail sit outside the only vertical scroll
 surface, the virtualized feed. The bottom tab bar remains in the navigator shell
 (Home, Bookmarks, Profile — Discover is hidden from the tab bar for now),
 so browser/body scrolling never moves either navigation region. Feed cards follow
-a Google News pattern on a TazaKhabar canvas (light or dark): photo stories at a regular
+a Google News pattern on a Khabro canvas (light or dark): photo stories at a regular
 cadence become featured (large rounded image, circular source mark); the next
 cluster is a horizontal related strip; remaining stories are compact rows with a
 source avatar, right-aligned thumb when present, and a See more pill. Save /
@@ -38,7 +38,7 @@ reader beyond the intended responsive scale.
 flowchart LR
   User[Reader] --> Pages[Cloudflare Pages<br/>newsfeed-web]
   Pages --> Expo[Expo RN Web export]
-  Expo -->|EXPO_PUBLIC_API_BASE_URL<br/>no auth| API[TazaKhabar.Api]
+  Expo -->|EXPO_PUBLIC_API_BASE_URL<br/>no auth| API[Khabro.Api]
   Expo --> Storage[AsyncStorage city + theme + prefs + feed cache]
 ```
 
@@ -49,7 +49,7 @@ flowchart LR
 | File | Role |
 |------|------|
 | `index.tsx` | Boot: stored city → tabs else `/city` |
-| `language.tsx` | First-run reading-language selection before city onboarding |
+| `language.tsx` | First-run reading-language selection before city onboarding; Moti entrance + `NewsStartBackdrop` ticker atmosphere |
 | `city.tsx` | City picker (optional location detection, search, selected row, onboarding vs change-city copy) |
 | `(tabs)/index.tsx` | Home feed |
 | `(tabs)/search.tsx` | Search / Discover (hidden from tab bar; opened from home search) |
@@ -71,7 +71,7 @@ flowchart LR
 | `src/storage/feedCache.ts` | First-page Home/Discover feed cache (`AsyncStorage`; 45m TTL; key = city+category+lang+q) |
 | `src/components/CityListItem.tsx` | Tappable city row + list skeleton |
 | `src/components/CitySearch.tsx` | Live city/state filter field |
-| `src/utils/shareToWhatsApp.ts` | Share deep link / intent to the public TazaKhabar website |
+| `src/utils/shareToWhatsApp.ts` | Share deep link / intent to the public Khabro website |
 | `src/components/desktop/*` | Expanded shell, top bar, category nav, top-stories cluster, local rail |
 | `src/storage/personalizationId.ts` | Persistent anonymous id (AsyncStorage/localStorage) for view recording + personalized feed |
 | `src/preferences/ThemePreferenceContext.tsx` | Light/dark/system preference → `useTheme()` (`colors`, `readerColors`, `shadows`) |
@@ -161,7 +161,7 @@ Location is optional and requested only after a reader taps **Use my current
 location**. Web uses the browser geolocation API directly from that user action;
 native uses Expo foreground permissions. The reader performs the nearest-city calculation on-device against
 the latitude/longitude returned by `GET /api/cities`; raw device coordinates are
-not logged, persisted, or sent to TazaKhabar. Permission denial, disabled
+not logged, persisted, or sent to Khabro. Permission denial, disabled
 services, timeout, and unavailable position all leave the searchable manual
 picker usable. A successful match persists only the city slug.
 
@@ -181,7 +181,7 @@ picker usable. A successful match persists only the city slug.
 | Deploy artifact | `pnpm build:web` → `apps/app/dist` |
 | Bundle report | `pnpm --filter @tazakhabar/app bundle:report` |
 | Android APK (local) | `pnpm build:apk` → `expo prebuild` + `gradlew assembleRelease` → `apps/app/android/app/build/outputs/apk/release/app-release.apk` |
-| Android APK (Docker) | `docker compose run --build --rm apk` → Linux/amd64 Android SDK builder → `artifacts/android/tazakhabar-release.apk` |
+| Android APK (Docker) | `docker compose run --build --rm apk` → Linux/amd64 Android SDK builder → `artifacts/android/khabro-release.apk` |
 | Native project | `apps/app/android/` generated, gitignored; regenerate with `pnpm --filter @tazakhabar/app prebuild:android` |
 | Pages project | `newsfeed-web` |
 | Auth | None for MVP |
@@ -222,7 +222,7 @@ Manual verification still required before claiming a comprehensive a11y sweep is
 - Privacy, support, terms, and corrections live on the standalone public website and open externally from the reader.
 - Feed cache: first page only; TTL 45 minutes; max 16 key entries (LRU). Fresh cache skips the network until pull-to-refresh or key change (city / category / language / Discover `q`). Stale cache paints then revalidates.
 - List payloads omit `body`; the reader shows full plain-text `body` when `GET /api/articles/{id}` returns it, otherwise the summary. For translated reads, the API suppresses original-language `body` so the story shows translated headline/summary rather than mixing languages.
-- The article screen uses Reels-style vertical paging: each story is one viewport-tall page so two stories never share the screen. A scroll gesture snaps to the next story with a slower eased transition on web (~700ms; instant when the reader prefers reduced motion). Native paging uses the normal deceleration rate rather than the snappy `fast` default. Short stories pad to fill the page; longer stories scroll inside that page. Story content now sits inside an inset rounded card sheet on the TazaKhabar canvas so the detail view feels aligned with the feed cards. Publisher download CTAs such as “Download in high quality” are stripped from body copy. Later stories append as the reader approaches the end. The FlatList is the only paging surface (`flex: 1` inside an overflow-clipped root); the sticky top bar and compact bottom action bar sit outside that list (viewport-fixed on web) so chrome does not move with story content. Share and Save live only in that bottom bar — not duplicated in the story body.
+- The article screen uses Reels-style vertical paging: each story is one viewport-tall page so two stories never share the screen. A scroll gesture snaps to the next story with a slower eased transition on web (~700ms; instant when the reader prefers reduced motion). Native paging uses the normal deceleration rate rather than the snappy `fast` default. Short stories pad to fill the page; longer stories scroll inside that page. Story content now sits inside an inset rounded card sheet on the Khabro canvas so the detail view feels aligned with the feed cards. Publisher download CTAs such as “Download in high quality” are stripped from body copy. Later stories append as the reader approaches the end. The FlatList is the only paging surface (`flex: 1` inside an overflow-clipped root); the sticky top bar and compact bottom action bar sit outside that list (viewport-fixed on web) so chrome does not move with story content. Share and Save live only in that bottom bar — not duplicated in the story body.
 - Active story is detected with FlatList viewability (and an IntersectionObserver sentinel on web). `6 of 8` updates from that active item. On web the `/article/:id` path is `history.replaceState`’d while reading. The article Back control always `replace`s to Home (`/(tabs)`) so history never drops the reader on Discover.
 - Source URLs appear once as “Read original article” near the headline. Publisher name stays in metadata as plain text. Only valid `https` URLs become that link.
 - Share prefers the platform share sheet, then copy-link; WhatsApp remains an optional destination rather than the only action. Shared links point to `EXPO_PUBLIC_SITE_URL`, while Read original keeps publisher attribution separate.

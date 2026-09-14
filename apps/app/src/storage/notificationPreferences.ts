@@ -1,8 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { Platform } from 'react-native'
 
-export const NOTIFICATION_CLIENT_ID_KEY = 'tazakhabar.notificationClientId.v1'
-export const NOTIFICATION_PROMPT_STATE_KEY = 'tazakhabar.notificationPromptState.v1'
+export const NOTIFICATION_CLIENT_ID_KEY = 'khabro.notificationClientId.v1'
+export const NOTIFICATION_PROMPT_STATE_KEY = 'khabro.notificationPromptState.v1'
 
 export type NotificationPlatform = 'native' | 'web'
 export type NotificationDeliveryMode = 'breaking' | 'daily-digest'

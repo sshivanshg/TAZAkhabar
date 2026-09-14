@@ -5,7 +5,7 @@
 
 ## Purpose
 
-End-to-end picture of TazaKhabar: who talks to whom, where code lives, and why the stack looks like this.
+End-to-end picture of Khabro: who talks to whom, where code lives, and why the stack looks like this.
 
 ## Boundaries
 
@@ -72,10 +72,10 @@ flowchart TB
 
 | Component | Path / host | Role |
 |-----------|-------------|------|
-| Marketing site | `apps/site` → Cloudflare Pages `tazakhabar-site` | Public landing, legal, support, corrections |
+| Marketing site | `apps/site` → Cloudflare Pages `khabro-site` | Public landing, legal, support, corrections |
 | Reader | `apps/app` → Cloudflare Pages `newsfeed-web` | City feed, search, share, PWA |
 | Admin | `apps/admin` → Cloudflare Pages `newsfeed-admin` | Review queue, sources, uploads, live ingest |
-| API | `apps/api` → Render `tazakhabar-api` | Sole DB client; public + admin + ingest |
+| API | `apps/api` → Render `khabro-api` | Sole DB client; public + admin + ingest |
 | Notification worker | `apps/api` hosted service | Async article alert dispatch to Expo and browser push |
 | Shared types | `packages/shared-types` | OpenAPI → NSwag DTOs |
 | DB | Neon Postgres | Production data; local Docker Postgres |
@@ -167,7 +167,7 @@ sequenceDiagram
 - CORS allowlist only — never `AllowAnyOrigin` in staging/production.
 - Feed GETs may be ~60s stale at the Cloudflare edge.
 - Render health check is `/healthz` (not `/api/health`).
-- Product placeholder name is **TazaKhabar** until rename.
+- Product placeholder name is **Khabro** until rename.
 
 ## Related docs
 

@@ -23,16 +23,16 @@ self.addEventListener('push', (event) => {
     data = { body: event.data ? event.data.text() : '' }
   }
 
-  const title = data.title || 'TazaKhabar'
+  const title = data.title || 'Khabro'
   const options = {
-    body: data.body || 'Open TazaKhabar for the latest local story.',
+    body: data.body || 'Open Khabro for the latest local story.',
     icon: '/icon-192.png',
     badge: '/icon-192.png',
     data: {
       url: data.url || '/',
       articleId: data.articleId || null,
     },
-    tag: data.tag || 'tazakhabar-news',
+    tag: data.tag || 'khabro-news',
     renotify: true,
   }
 

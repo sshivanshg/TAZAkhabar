@@ -1,11 +1,11 @@
 # Marketing site
 
 > **Living doc** — update when the public website, legal routes, or reader handoff changes.  
-> **Last verified against:** 2026-08-27 (privacy disclosure for optional device-only location matching)
+> **Last verified against:** 2026-09-14 (Khabro rebrand; interim marketing alias `site.newsfeed-web.pages.dev` until dedicated `khabro-site` project exists)
 
 ## Purpose
 
-Describe the standalone public-facing TazaKhabar website that explains the product, hosts launch formalities, and links into the Expo reader without embedding those pages inside the app.
+Describe the standalone public-facing Khabro website that explains the product, hosts launch formalities, and links into the Expo reader without embedding those pages inside the app.
 
 ## Boundaries
 
@@ -16,9 +16,9 @@ Describe the standalone public-facing TazaKhabar website that explains the produ
 
 ```mermaid
 flowchart LR
-  Visitor[Public visitor] --> Site[Marketing site<br/>apps/site<br/>Cloudflare Pages tazakhabar-site]
-  Site --> Reader[Expo reader<br/>newsfeed-web.pages.dev]
-  Reader --> API[TazaKhabar API]
+  Visitor[Public visitor] --> Site[Marketing site<br/>apps/site<br/>Cloudflare Pages alias site.newsfeed-web]
+  Site --> Reader[Expo reader<br/>khabro.in]
+  Reader --> API[Khabro API]
 ```
 
 ## Components / key types
@@ -35,10 +35,10 @@ flowchart LR
 
 ## Data & control flows
 
-1. Public visitor opens the marketing site on its own `pages.dev` subdomain.
+1. Public visitor opens the marketing site (currently `https://site.newsfeed-web.pages.dev`, the `site` branch alias of `newsfeed-web`, until a dedicated `khabro-site` Pages project can be created).
 2. The site explains product value, trust standards, and launch context.
 3. Legal/support routes are shareable URLs on the same public site.
-4. Reader CTAs send visitors to the Expo reader at `newsfeed-web.pages.dev`.
+4. Reader CTAs send visitors to the Expo reader at `khabro.in`.
 5. The Expo reader links back out to the public site for privacy, support, and related formalities.
 
 ## Key files
@@ -55,14 +55,14 @@ flowchart LR
 |------|-------|
 | Site build | `pnpm build:site` |
 | Deploy artifact | `apps/site/dist` |
-| Pages project | `tazakhabar-site` |
+| Pages project | Intended `khabro-site`; interim deploy uses `newsfeed-web` branch `site` → `https://site.newsfeed-web.pages.dev` |
 | Reader handoff env | `VITE_READER_URL`, `EXPO_PUBLIC_SITE_URL` |
 | Public URLs | `/about`, `/privacy`, `/terms`, `/support`, `/corrections` |
 
 ## Failure modes & invariants
 
 - The marketing site is a separate public surface, not a second reader client.
-- The Expo reader remains the only TazaKhabar reader codebase for web and native.
+- The Expo reader remains the only Khabro reader codebase for web and native.
 - Legal/support content must stay externally linkable and not depend on in-app Expo routes.
 - Privacy copy must disclose optional foreground location permission and accurately state that nearest-city matching remains on-device.
 - Support email can be empty at launch; the site must render a clear fallback message instead of inventing contact details.
