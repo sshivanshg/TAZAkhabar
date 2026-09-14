@@ -1,7 +1,7 @@
 # Hosting and CI
 
 > **Living doc** — update when Render, Cloudflare, Neon, Docker, workflows, or env templates change.  
-> **Last verified against:** 2026-09-14 (QA branch promotion flow into production)
+> **Last verified against:** 2026-09-14 (QA branch deployment and promotion flow into production)
 
 ## Purpose
 
@@ -21,15 +21,18 @@ flowchart TB
     Main[main branch]
     CI[ci.yml]
     Deploy[deploy.yml]
+    DeployQA[deploy-qa.yml]
     PromoteQA[promote-qa.yml]
   end
 
+  QA --> DeployQA
   QA --> PromoteQA
   PromoteQA -->|approved fast-forward| Main
   Main --> CI
   Main -->|auto| Render[Render tazakhabar-api<br/>Docker Dockerfile.api]
   Main --> Deploy
   Deploy --> PagesWeb[Cloudflare Pages<br/>newsfeed-web]
+  DeployQA --> PagesWebQA[Cloudflare Pages<br/>newsfeed-web / qa branch]
   Deploy --> PagesSite[Cloudflare Pages<br/>tazakhabar-site]
   Deploy --> PagesAdmin[Cloudflare Pages<br/>newsfeed-admin]
   Render --> Neon[(Neon Postgres)]
@@ -54,6 +57,7 @@ flowchart TB
 | Local stack | `docker-compose.yml` Postgres 16 + API + Expo reader; optional `tools` profile for admin/site |
 | CI | `.github/workflows/ci.yml` — API format/build/test + Postgres, migration SQL artifact, OpenAPI drift check; app lint/test/export; marketing site build; admin build |
 | Deploy | `.github/workflows/deploy.yml` — production Pages for reader + marketing site + admin; API via Render auto-deploy |
+| QA deploy | `.github/workflows/deploy-qa.yml` — deploys the `qa` branch to the `qa` branch of the existing `newsfeed-web` Pages project |
 | QA promotion | `.github/workflows/promote-qa.yml` — manually approved workflow fast-forwards `qa` into `main`; production deployment then runs from `main` |
 | Scheduled ingest | `.github/workflows/scheduled-ingest.yml` — RSS + scrape every 15 min (free-tier scheduler) |
 | Article purge | `.github/workflows/purge-old-articles.yml` — daily retention purge |
@@ -96,6 +100,7 @@ generated debug keystore for sideload testing, not Play Store signing.
 - `newsfeed-web.pages.dev` is the only canonical reader frontend deployment.
   Keep it on the Cloudflare Pages project `newsfeed-web`.
 - `qa` is the pre-production branch. It uses the same repository configuration as production; it is promoted manually into `main` after review.
+- QA is deployed to the `qa` branch of the existing `newsfeed-web` Pages project, typically available at `https://qa.newsfeed-web.pages.dev`.
 - Production promotion is explicit: run the `Promote QA to production` workflow after QA review. The workflow only allows a fast-forward from `qa` to `main`, so production receives exactly what was tested in QA.
 - Manual Wrangler reader deploys that should go live must target
   `newsfeed-web` with `--branch main` and directory `apps/app/dist`.
