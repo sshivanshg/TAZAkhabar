@@ -13,7 +13,7 @@ docker buildx build \
   --output "type=local,dest=${output_dir}" \
   --build-arg "EXPO_PUBLIC_API_BASE_URL=${EXPO_PUBLIC_API_BASE_URL:-https://buildy-140j.onrender.com}" \
   --build-arg "EXPO_PUBLIC_APP_ENV=${EXPO_PUBLIC_APP_ENV:-production}" \
-  --build-arg "EXPO_PUBLIC_SITE_URL=${EXPO_PUBLIC_SITE_URL:-https://site.newsfeed-web.pages.dev}" \
+  --build-arg "EXPO_PUBLIC_SITE_URL=${EXPO_PUBLIC_SITE_URL:-https://site.khabro.in}" \
   "${repo_dir}"
 
 echo "APK written to ${output_dir}/khabro-release.apk"

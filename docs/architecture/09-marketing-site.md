@@ -1,7 +1,7 @@
 # Marketing site
 
 > **Living doc** — update when the public website, legal routes, or reader handoff changes.  
-> **Last verified against:** 2026-09-14 (SEO: crawlable links, prerendered meta, robots/sitemap, JSON-LD)
+> **Last verified against:** 2026-09-15 (public-site visual redesign, SEO: crawlable links, prerendered meta, robots/sitemap, JSON-LD)
 
 ## Purpose
 

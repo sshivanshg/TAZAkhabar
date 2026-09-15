@@ -689,8 +689,8 @@ export function App() {
   }
 
   return (
-    <main className="page-shell">
-      <a className="skip-link" href="#home">Skip to content</a>
+    <main className="page-shell" id="main-content">
+      <a className="skip-link" href="#main-content">Skip to content</a>
       <header className="topbar shell">
         <NavLink className="brand" page="home" setPage={closeMenu} currentPage={page} aria-label="Khabro home">
           <img src="/khabro-mark.svg" alt="" />
@@ -707,13 +707,13 @@ export function App() {
           <span />
         </button>
         <nav className={`topnav ${isMenuOpen ? 'topnav-open' : ''}`} aria-label="Primary">
-          <a href="#home" onClick={() => setIsMenuOpen(false)}>Home</a>
-          <a href="#demo" onClick={() => setIsMenuOpen(false)}>Latest</a>
-          <a href="#categories" onClick={() => setIsMenuOpen(false)}>India</a>
-          <a href="#categories" onClick={() => setIsMenuOpen(false)}>World</a>
-          <a href="#categories" onClick={() => setIsMenuOpen(false)}>Business</a>
-          <a href="#categories" onClick={() => setIsMenuOpen(false)}>Technology</a>
-          <a href="#categories" onClick={() => setIsMenuOpen(false)}>Sports</a>
+          <a href="/#home" onClick={() => setIsMenuOpen(false)}>Home</a>
+          <a href="/#demo" onClick={() => setIsMenuOpen(false)}>Latest</a>
+          <a href="/#categories" onClick={() => setIsMenuOpen(false)}>India</a>
+          <a href="/#categories" onClick={() => setIsMenuOpen(false)}>World</a>
+          <a href="/#categories" onClick={() => setIsMenuOpen(false)}>Business</a>
+          <a href="/#categories" onClick={() => setIsMenuOpen(false)}>Technology</a>
+          <a href="/#categories" onClick={() => setIsMenuOpen(false)}>Sports</a>
           <NavLink page="about" setPage={closeMenu} currentPage={page}>About</NavLink>
         </nav>
         <a className="nav-cta" href={readerUrl}>Open reader</a>

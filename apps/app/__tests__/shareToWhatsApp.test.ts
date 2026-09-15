@@ -13,7 +13,7 @@ describe('formatWhatsAppShareText', () => {
         sourceUrl: 'https://example.com/story/1',
       }),
     ).toBe(
-      'Budget approved\n\nCouncil passed the annual plan.\n\nRead more: https://site.newsfeed-web.pages.dev',
+      'Budget approved\n\nCouncil passed the annual plan.\n\nRead more: https://site.khabro.in',
     )
   })
 
@@ -23,7 +23,7 @@ describe('formatWhatsAppShareText', () => {
         headline: 'Headline',
         summary: 'Summary',
       }),
-    ).toBe('Headline\n\nSummary\n\nRead more: https://site.newsfeed-web.pages.dev')
+    ).toBe('Headline\n\nSummary\n\nRead more: https://site.khabro.in')
   })
 })
 

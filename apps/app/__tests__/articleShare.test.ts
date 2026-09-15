@@ -11,7 +11,7 @@ describe('articleShareUrl', () => {
         headline: 'A',
         sourceUrl: 'https://example.com/story',
       }),
-    ).toBe('https://site.newsfeed-web.pages.dev')
+    ).toBe('https://site.khabro.in')
   })
 
   it('still shares the website URL when the source URL is not share-safe', () => {
@@ -20,7 +20,7 @@ describe('articleShareUrl', () => {
         headline: 'A',
         sourceUrl: 'http://example.com/story',
       }),
-    ).toBe('https://site.newsfeed-web.pages.dev')
+    ).toBe('https://site.khabro.in')
   })
 })
 
