@@ -1,7 +1,7 @@
 # Hosting and CI
 
 > **Living doc** — update when Render, Cloudflare, Neon, Docker, workflows, or env templates change.  
-> **Last verified against:** 2026-09-14 (qa-first branch flow; Pages build command + ingest hardening)
+> **Last verified against:** 2026-09-14 (marketing site SEO prerender in `pnpm build:site`; qa-first branch flow)
 
 ## Purpose
 
@@ -35,7 +35,7 @@ flowchart TB
   Main -->|Pages Git build| PagesWeb[Cloudflare Pages<br/>newsfeed-web]
   Deploy --> PagesWeb
   DeployQA --> PagesWebQA[Cloudflare Pages<br/>newsfeed-web / qa branch]
-  Deploy --> PagesSite[Cloudflare Pages<br/>newsfeed-web / site branch]
+  Deploy --> PagesSite[Cloudflare Pages<br/>khabro-site / site.khabro.in]
   Deploy --> PagesAdmin[Cloudflare Pages<br/>newsfeed-admin]
   Render --> Neon[(Neon Postgres)]
   GHAIngest[GitHub Actions scheduled ingest] --> Render
@@ -58,7 +58,7 @@ flowchart TB
 | Blueprint | `render.yaml` — web `tazakhabar-api` only (free tier; no Render crons; health payload service id is `khabro-api`) |
 | Local stack | `docker-compose.yml` Postgres 16 + API + Expo reader; optional `tools` profile for admin/site |
 | CI | `.github/workflows/ci.yml` — runs on `qa` and `main`; API format/build/test + Postgres, migration SQL artifact, OpenAPI drift check; app lint/test/export; marketing site build; admin build |
-| Deploy | `.github/workflows/deploy.yml` — production Pages for reader + marketing site + admin when `CLOUDFLARE_API_TOKEN` is set; API via Render auto-deploy. Cloudflare Pages Git builds are the fallback publisher for `newsfeed-web`. |
+| Deploy | `.github/workflows/deploy.yml` — production Pages for reader + marketing site + admin when `CLOUDFLARE_API_TOKEN` is set; API via Render auto-deploy. Cloudflare Pages Git builds are the fallback publisher for `newsfeed-web`. Marketing site `pnpm build:site` runs Vite then `scripts/prerender-seo.mjs` so `dist` includes per-route HTML, `robots.txt`, and `sitemap.xml`. |
 | QA deploy | `.github/workflows/deploy-qa.yml` — deploys the `qa` branch to the `qa` branch of `newsfeed-web` when the CF token is set; Pages Git also builds `qa` previews |
 | QA promotion | `.github/workflows/promote-qa.yml` — manually run to fast-forward `qa` into `main`; production then deploys from `main` |
 | Scheduled ingest | `.github/workflows/scheduled-ingest.yml` — RSS + scrape every 15 min (wake + retry; free-tier scheduler) |
@@ -115,7 +115,7 @@ generated debug keystore for sideload testing, not Play Store signing.
   `newsfeed-web` with `--branch main` and directory `apps/app/dist`.
 - After production is verified, prune stale preview / old immutable deployment
   URLs from `newsfeed-web` so operators do not confuse them with production.
-- Do not delete the marketing `site` branch alias or `newsfeed-admin` when consolidating reader
+- Do not delete `khabro-site` or `newsfeed-admin` when consolidating reader
   frontend deployments; those are distinct hosted surfaces.
 
 ### Render web service
@@ -156,7 +156,7 @@ generated debug keystore for sideload testing, not Play Store signing.
 | `VITE_READER_URL`, `VITE_SITE_URL`, `VITE_SUPPORT_EMAIL` | GitHub Actions production variables for the marketing site |
 | `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` | GitHub **production** environment secrets (Actions Pages publish when set; otherwise Pages Git builds / local wrangler publish) |
 | `CLOUDFLARE_PAGES_PROJECT_NAME` | default `newsfeed-web` (existing Cloudflare Pages project) |
-| `CLOUDFLARE_PAGES_SITE_PROJECT_NAME` | default `newsfeed-web` with branch `site` (interim marketing alias; intended future project `khabro-site`) |
+| `CLOUDFLARE_PAGES_SITE_PROJECT_NAME` | default `khabro-site` (custom domain `site.khabro.in`) |
 | `CLOUDFLARE_PAGES_ADMIN_PROJECT_NAME` | default `newsfeed-admin` (existing Cloudflare Pages project) |
 | `PRODUCTION_DATABASE_CONNECTION_STRING` | GitHub production environment secret for manual migration workflow |
 

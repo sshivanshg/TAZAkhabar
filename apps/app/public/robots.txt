@@ -1,0 +1,10 @@
+# Prefer indexing the public marketing site for brand and policy pages.
+# Keep thin Expo SPA routes (articles, onboarding) out of the index.
+User-agent: *
+Allow: /
+Disallow: /article/
+Disallow: /city
+Disallow: /language
+Disallow: /feed
+
+Sitemap: https://site.khabro.in/sitemap.xml

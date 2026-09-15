@@ -1,7 +1,7 @@
 # Reader app
 
 > **Living doc** — update when Expo routes, city/feed/share behavior, or desktop web layer change.  
-> **Last verified against:** 2026-09-14 (city optional — All India default; Home no longer re-asks via sticky `pickCity`)
+> **Last verified against:** 2026-09-14 (SEO hygiene: reader robots.txt + article `noindex`; city optional — All India default)
 
 ## Purpose
 
@@ -82,6 +82,8 @@ flowchart LR
 | `src/components/RelatedStoriesStrip.tsx` | Horizontal related cluster under a featured card |
 | `src/utils/feedLayout.ts` | Mixed mobile feed (featured / related / compact) |
 | `public/manifest.webmanifest`, `public/sw.js`, `public/_headers` | PWA installability (manifest + service worker) / Pages headers |
+| `public/robots.txt` | Allows reader home; disallows thin SPA routes (`/article/`, `/city`, `/language`, `/feed`); points sitemap at the marketing site |
+| `src/utils/setWebRobots.ts` | Article screens set `noindex,nofollow` on web so client shells are not indexed |
 | `src/components/AddToHomeBanner.tsx` | Soft install hint after city pick; Android **Install** uses `beforeinstallprompt` |
 | `src/pwa/installPrompt.ts` | Captures Chromium install event; `promptInstall()` opens the native dialog |
 | `src/pwa/registerWebServiceWorker.ts` | Registers `/sw.js` on web only (never Expo native) |

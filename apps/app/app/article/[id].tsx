@@ -58,6 +58,7 @@ import {
 import { shareArticleToWhatsApp, isHttpsUrl } from '../../src/utils/shareToWhatsApp'
 import { replaceArticlePathId } from '../../src/utils/syncArticleUrl'
 import { attachWebArticlePaging } from '../../src/utils/pagedArticleScroll'
+import { setWebRobots } from '../../src/utils/setWebRobots'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 export default function ArticleScreen() {
@@ -163,6 +164,8 @@ function ArticleFeedBody() {
   const activeIndexRef = useRef(0)
   const headerElevatedRef = useRef(false)
   const noticeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => setWebRobots('noindex,nofollow'), [])
 
   useEffect(() => {
     let cancelled = false

@@ -1,24 +1,81 @@
 <!doctype html>
-<html lang="en">
+<html lang="en-IN">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#F4F6FA" />
-    <meta name="description" content="Khabro is a calm local-news reader with city-specific updates, clear sourcing, and launch-ready public information." />
+    <meta name="robots" content="index,follow,max-image-preview:large" />
+    <meta name="description" content="Khabro is a calm local-news reader for Indian cities: city-specific updates, clear publisher sourcing, and no account required." />
     <meta property="og:type" content="website" />
-    <meta property="og:title" content="Khabro — Your city. Clearly told." />
-    <meta property="og:description" content="A calm local-news reader with city-specific updates, clear sourcing, and a launch-ready public website." />
-    <meta property="og:url" content="https://site.newsfeed-web.pages.dev/" />
-    <meta property="og:image" content="https://site.newsfeed-web.pages.dev/og.png" />
+    <meta property="og:site_name" content="Khabro" />
+    <meta property="og:locale" content="en_IN" />
+    <meta property="og:title" content="Khabro — Local news for your city, clearly told" />
+    <meta property="og:description" content="Khabro is a calm local-news reader for Indian cities: city-specific updates, clear publisher sourcing, and no account required." />
+    <meta property="og:url" content="https://site.khabro.in/" />
+    <meta property="og:image" content="https://site.khabro.in/og.png" />
+    <meta property="og:image:alt" content="Khabro — local news for your city" />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Khabro — Your city. Clearly told." />
-    <meta name="twitter:description" content="A calm local-news reader with city-specific updates, clear sourcing, and a launch-ready public website." />
-    <meta name="twitter:image" content="https://site.newsfeed-web.pages.dev/og.png" />
+    <meta name="twitter:title" content="Khabro — Local news for your city, clearly told" />
+    <meta name="twitter:description" content="Khabro is a calm local-news reader for Indian cities: city-specific updates, clear publisher sourcing, and no account required." />
+    <meta name="twitter:image" content="https://site.khabro.in/og.png" />
+    <meta name="twitter:image:alt" content="Khabro — local news for your city" />
+    <link rel="canonical" href="https://site.khabro.in/" />
     <link rel="icon" href="/khabro-mark.svg" type="image/svg+xml" />
-    <title>Khabro — Your city. Clearly told.</title>
+    <title>Khabro — Local news for your city, clearly told</title>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "Organization",
+            "@id": "https://site.khabro.in/#organization",
+            "name": "Khabro",
+            "url": "https://site.khabro.in/",
+            "logo": "https://site.khabro.in/khabro-mark.svg",
+            "description": "Khabro is a calm local-news reader for Indian cities: city-specific updates, clear publisher sourcing, and no account required."
+          },
+          {
+            "@type": "WebSite",
+            "@id": "https://site.khabro.in/#website",
+            "name": "Khabro",
+            "url": "https://site.khabro.in/",
+            "inLanguage": "en-IN",
+            "publisher": { "@id": "https://site.khabro.in/#organization" },
+            "potentialAction": {
+              "@type": "ReadAction",
+              "target": "https://khabro.in/"
+            }
+          },
+          {
+            "@type": "WebPage",
+            "@id": "https://site.khabro.in/#webpage",
+            "url": "https://site.khabro.in/",
+            "name": "Khabro — Local news for your city, clearly told",
+            "description": "Khabro is a calm local-news reader for Indian cities: city-specific updates, clear publisher sourcing, and no account required.",
+            "isPartOf": { "@id": "https://site.khabro.in/#website" },
+            "about": { "@id": "https://site.khabro.in/#organization" },
+            "inLanguage": "en-IN"
+          }
+        ]
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>
+    <noscript>
+      <main>
+        <h1>Khabro — Local news for your city, clearly told</h1>
+        <p>Khabro is a calm local-news reader for Indian cities: city-specific updates, clear publisher sourcing, and no account required.</p>
+        <p><a href="https://khabro.in/">Open the Khabro reader</a></p>
+        <nav aria-label="Site">
+          <a href="/about">About</a>
+          <a href="/privacy">Privacy</a>
+          <a href="/terms">Terms</a>
+          <a href="/support">Support</a>
+          <a href="/corrections">Corrections</a>
+        </nav>
+      </main>
+    </noscript>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

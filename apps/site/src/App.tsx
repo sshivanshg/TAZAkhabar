@@ -1,6 +1,5 @@
-import { useEffect, useMemo, useState } from 'react'
-
-type PageId = 'home' | 'about' | 'privacy' | 'terms' | 'support' | 'corrections'
+import { useEffect, useMemo, useState, type CSSProperties, type MouseEvent, type ReactNode } from 'react'
+import { applyPageSeo, hrefFor, type PageId } from './seo'
 
 type PageSection = {
   title: string
@@ -18,7 +17,7 @@ type LegalPage = {
 }
 
 const readerUrl = import.meta.env.VITE_READER_URL || 'https://khabro.in/'
-const siteUrl = import.meta.env.VITE_SITE_URL || 'https://site.newsfeed-web.pages.dev'
+const siteUrl = import.meta.env.VITE_SITE_URL || 'https://site.khabro.in'
 const supportEmail = (import.meta.env.VITE_SUPPORT_EMAIL || '').trim()
 
 const legalPages: Record<Exclude<PageId, 'home'>, LegalPage> = {
@@ -234,22 +233,6 @@ const legalPages: Record<Exclude<PageId, 'home'>, LegalPage> = {
   },
 }
 
-const pageMeta: Record<PageId, { title: string; description: string }> = {
-  home: {
-    title: 'Khabro — Your city. Clearly told.',
-    description:
-      'A calm local-news reader with city-specific updates, clear sourcing, and launch-ready public information.',
-  },
-  about: { title: 'About Khabro', description: legalPages.about.intro },
-  privacy: { title: 'Privacy policy — Khabro', description: legalPages.privacy.intro },
-  terms: { title: 'Terms of use — Khabro', description: legalPages.terms.intro },
-  support: { title: 'Support — Khabro', description: legalPages.support.intro },
-  corrections: {
-    title: 'Corrections and takedown — Khabro',
-    description: legalPages.corrections.intro,
-  },
-}
-
 const footerLinks: { id: Exclude<PageId, 'home'>; label: string }[] = [
   { id: 'about', label: 'About' },
   { id: 'privacy', label: 'Privacy' },
@@ -258,16 +241,48 @@ const footerLinks: { id: Exclude<PageId, 'home'>; label: string }[] = [
   { id: 'corrections', label: 'Corrections' },
 ]
 
+const categories = [
+  { label: 'India', text: 'Policy, public services, elections, and the civic changes that shape daily life.' },
+  { label: 'World', text: 'Global events explained through the lens of what changes for Indian readers.' },
+  { label: 'Business', text: 'Company moves, consumer prices, jobs, and local economy signals.' },
+  { label: 'Technology', text: 'Startups, platforms, policy, and useful digital shifts without hype.' },
+  { label: 'Sports', text: 'The result, the turning point, and what to watch next.' },
+  { label: 'Culture', text: 'Entertainment, festivals, civic life, and the softer pulse of the city.' },
+]
+
+const demoTabs = [
+  {
+    label: 'Quick brief',
+    title: 'RBI keeps policy rate unchanged, flags food inflation risk',
+    body: 'The decision keeps borrowing conditions stable for now, while households may still feel pressure from food prices.',
+    meta: '2 min read',
+  },
+  {
+    label: 'Context',
+    title: 'Why it matters',
+    body: 'Banks often price loans from this signal. A pause can help borrowers plan, but inflation commentary still affects market expectations.',
+    meta: 'Plain-language background',
+  },
+  {
+    label: 'Timeline',
+    title: 'What changed today',
+    body: 'Morning statement, market reaction by noon, and expected follow-up comments from banks and economists through the week.',
+    meta: 'Updated as the story moves',
+  },
+  {
+    label: 'Sources',
+    title: 'Original reporting stays visible',
+    body: 'Khabro keeps publisher attribution attached so readers can check the original article whenever they want more detail.',
+    meta: 'Source credited',
+  },
+]
+
 function getPageFromPath(pathname: string): PageId {
   const trimmed = pathname.replace(/\/+$/, '') || '/'
   if (trimmed === '/') return 'home'
   const slug = trimmed.slice(1)
   if (slug in legalPages) return slug as Exclude<PageId, 'home'>
   return 'home'
-}
-
-function hrefFor(page: PageId) {
-  return page === 'home' ? '/' : `/${page}`
 }
 
 function useCurrentPage() {
@@ -284,20 +299,7 @@ function useCurrentPage() {
 
 function usePageMeta(page: PageId) {
   useEffect(() => {
-    const meta = pageMeta[page]
-    document.title = meta.title
-    const description = document.querySelector('meta[name="description"]')
-    const ogTitle = document.querySelector('meta[property="og:title"]')
-    const ogDescription = document.querySelector('meta[property="og:description"]')
-    const ogUrl = document.querySelector('meta[property="og:url"]')
-    const twitterTitle = document.querySelector('meta[name="twitter:title"]')
-    const twitterDescription = document.querySelector('meta[name="twitter:description"]')
-    if (description) description.setAttribute('content', meta.description)
-    if (ogTitle) ogTitle.setAttribute('content', meta.title)
-    if (ogDescription) ogDescription.setAttribute('content', meta.description)
-    if (ogUrl) ogUrl.setAttribute('content', `${siteUrl}${hrefFor(page)}`)
-    if (twitterTitle) twitterTitle.setAttribute('content', meta.title)
-    if (twitterDescription) twitterDescription.setAttribute('content', meta.description)
+    applyPageSeo(page, siteUrl, readerUrl)
   }, [page])
 }
 
@@ -306,128 +308,291 @@ function navigate(next: PageId, setPage: (page: PageId) => void) {
   window.history.pushState({}, '', hrefFor(next))
 }
 
+function isModifiedClick(event: MouseEvent<HTMLAnchorElement>) {
+  return event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0
+}
+
+function NavLink({
+  page,
+  setPage,
+  children,
+  className,
+  currentPage,
+  'aria-label': ariaLabel,
+}: {
+  page: PageId
+  setPage: (page: PageId) => void
+  children: ReactNode
+  className?: string
+  currentPage?: PageId
+  'aria-label'?: string
+}) {
+  return (
+    <a
+      href={hrefFor(page)}
+      className={className}
+      aria-label={ariaLabel}
+      aria-current={currentPage === page ? 'page' : undefined}
+      onClick={(event) => {
+        if (isModifiedClick(event)) return
+        event.preventDefault()
+        navigate(page, setPage)
+      }}
+    >
+      {children}
+    </a>
+  )
+}
+
+function NewsStack() {
+  const [tilt, setTilt] = useState({ x: 0, y: 0 })
+
+  function handlePointerMove(event: MouseEvent<HTMLDivElement>) {
+    const bounds = event.currentTarget.getBoundingClientRect()
+    const x = ((event.clientX - bounds.left) / bounds.width - 0.5) * 12
+    const y = ((event.clientY - bounds.top) / bounds.height - 0.5) * -10
+    setTilt({ x, y })
+  }
+
+  const style = {
+    '--tilt-x': `${tilt.y}deg`,
+    '--tilt-y': `${tilt.x}deg`,
+  } as CSSProperties
+
+  return (
+    <div
+      className="news-stack"
+      style={style}
+      onPointerMove={handlePointerMove}
+      onPointerLeave={() => setTilt({ x: 0, y: 0 })}
+      aria-label="Layered Khabro news interface preview"
+    >
+      <div className="orbit orbit-one" />
+      <div className="orbit orbit-two" />
+      <article className="stack-card stack-card-primary">
+        <div className="stack-topline">
+          <span>Live brief</span>
+          <strong>Delhi</strong>
+        </div>
+        <h2>Metro timing changes begin from Monday</h2>
+        <p>The useful update, why it matters for commuters, and the original source in one calm view.</p>
+        <div className="brief-block">
+          <span>Why it matters</span>
+          <p>Peak-hour riders should plan an extra 12 minutes on two interchange-heavy routes.</p>
+        </div>
+        <div className="source-row">
+          <span>Source credited</span>
+          <span>2 min read</span>
+        </div>
+      </article>
+      <article className="stack-card stack-card-back stack-card-india">
+        <span>India</span>
+        <strong>Policy brief</strong>
+      </article>
+      <article className="stack-card stack-card-back stack-card-tech">
+        <span>Technology</span>
+        <strong>Startup update</strong>
+      </article>
+      <article className="stack-card stack-card-back stack-card-sports">
+        <span>Sports</span>
+        <strong>Match context</strong>
+      </article>
+      <div className="signal-node signal-node-one">National</div>
+      <div className="signal-node signal-node-two">World</div>
+      <div className="signal-node signal-node-three">Markets</div>
+    </div>
+  )
+}
+
 function HomeView({ setPage }: { setPage: (page: PageId) => void }) {
+  const [activeDemo, setActiveDemo] = useState(0)
+  const demo = demoTabs[activeDemo]
+
   return (
     <>
-      <section className="hero shell">
+      <section className="hero shell" id="home">
         <div className="hero-copy reveal">
-          <p className="eyebrow"><span /> Local news, made readable</p>
-          <h1>Your city. Clearly told.</h1>
+          <p className="status-pill"><span /> News, without the noise</p>
+          <h1>Understand what&apos;s happening. Without reading everything.</h1>
           <p className="lede">
-            Khabro turns crowded local reporting into a cleaner daily read, with city-specific updates,
-            visible sourcing, and zero account friction for readers.
+            Khabro turns crowded reporting into a calmer daily briefing for Indian cities, with short
+            summaries, visible sourcing, and context that respects your time.
           </p>
           <div className="hero-actions">
-            <a className="button button-primary" href={readerUrl}>Read today&apos;s feed</a>
-            <button className="button button-secondary" onClick={() => navigate('about', setPage)}>See how it works</button>
+            <a className="button button-primary" href={readerUrl}>Explore Khabro</a>
+            <a className="button button-secondary" href="#how-it-works">See how it works</a>
           </div>
-          <p className="trust-line">No login required <i /> Publisher links included <i /> Designed for readable daily use</p>
+          <p className="trust-line">No reader login <i /> City-first updates <i /> Publisher attribution preserved</p>
         </div>
 
         <div className="hero-stage reveal reveal-delay">
-          <div className="signal signal-top">
-            <span>Built for daily reading</span>
-            <strong>16px+</strong>
-          </div>
-          <div className="phone-card">
-            <div className="phone-top">
-              <span>Khabro</span>
-              <b>Delhi</b>
-            </div>
-            <div className="phone-alert"><span /> Fresh this morning</div>
-            <article className="lead-card">
-              <div className="lead-visual">
-                <div className="sun" />
-                <div className="road" />
-              </div>
-              <p>LOCAL BRIEF</p>
-              <h2>The useful city update, without the usual clutter</h2>
-              <small>2 min read · Source credited</small>
-            </article>
-            <div className="story-line">
-              <div>
-                <span>CITY</span>
-                <h3>Know what changed before the day gets noisy</h3>
-              </div>
-              <b>01</b>
-            </div>
-            <div className="story-line">
-              <div>
-                <span>STATE</span>
-                <h3>Plain-language summaries with the original link right there</h3>
-              </div>
-              <b>02</b>
-            </div>
-          </div>
-          <div className="signal signal-bottom">
-            <span>Launch surface</span>
-            <strong>Web + mobile</strong>
-          </div>
+          <NewsStack />
         </div>
       </section>
 
-      <section className="proof shell">
-        <div className="proof-intro">
-          <p>Made for readers who want the update, not the maze around it.</p>
+      <section className="proof shell" aria-label="Khabro product commitments">
+        <div className="proof-intro reveal">
+          <p>A modern operating system for understanding what changed around you.</p>
         </div>
-        <div><strong>1 city</strong><span>chosen once, remembered locally</span></div>
-        <div><strong>0 accounts</strong><span>needed for the MVP reader</span></div>
-        <div><strong>Every story</strong><span>keeps attribution and original context</span></div>
+        <div className="reveal"><strong>75</strong><span>Indian cities in the launch catalog</span></div>
+        <div className="reveal"><strong>0</strong><span>reader accounts needed for the MVP</span></div>
+        <div className="reveal"><strong>1 tap</strong><span>to share a useful brief on WhatsApp</span></div>
       </section>
 
-      <section className="story-layout shell">
+      <section className="story-layout shell" id="why">
         <div className="section-heading reveal">
-          <p className="eyebrow"><span /> Product direction</p>
-          <h2>A landing page that explains the product, not the app chrome</h2>
+          <p className="eyebrow"><span /> Why Khabro exists</p>
+          <h2>Too much news. Too little understanding.</h2>
+          <p>
+            Traditional news homepages ask readers to do the work: sort repeated headlines,
+            dodge clutter, compare sources, and guess what actually matters.
+          </p>
         </div>
-        <div className="zig-grid">
+        <div className="friction-grid">
           <article className="feature-card reveal">
             <p className="feature-kicker">01</p>
-            <h3>Calm entry point</h3>
-            <p>The public website gives launch context, trust signals, and formal pages without crowding the actual news-reading experience.</p>
+            <h3>Information overload</h3>
+            <p>Important updates are mixed with repetition, pop-ups, and low-value noise.</p>
           </article>
           <article className="feature-card feature-offset reveal reveal-delay">
             <p className="feature-kicker">02</p>
-            <h3>Reader stays focused</h3>
-            <p>The Expo app behaves like the product itself: city selection, feed, bookmarks, and profile, with public pages linked out instead of embedded.</p>
+            <h3>Missing context</h3>
+            <p>A headline tells you what happened, but rarely what changed for your day.</p>
           </article>
           <article className="feature-card reveal">
             <p className="feature-kicker">03</p>
-            <h3>Launch-ready formalities</h3>
-            <p>Privacy, terms, support, and corrections live on their own URLs so links can be shared, indexed, and updated independently.</p>
+            <h3>Endless scrolling</h3>
+            <p>Readers lose time moving between stories that say nearly the same thing.</p>
           </article>
         </div>
       </section>
 
-      <section className="operating-band">
-        <div className="shell operating-grid">
+      <section className="clarity-band">
+        <div className="shell clarity-grid">
           <div className="reveal">
-            <p className="eyebrow"><span /> Editorial trust</p>
-            <h2>Summaries are useful only when the source remains visible.</h2>
+            <p className="eyebrow"><span /> The Khabro method</p>
+            <h2>Khabro turns information into clarity.</h2>
           </div>
-          <div className="standards-card reveal reveal-delay">
-            <ul>
-              <li>Original publishers stay credited and linkable.</li>
-              <li>AI-assisted summaries can be challenged and corrected.</li>
-              <li>No raw publisher HTML is embedded in the public reader.</li>
-              <li>Rights holders have a documented review path before launch.</li>
-            </ul>
+          <p className="reveal reveal-delay">
+            The reader keeps the daily experience simple: choose your city, scan the important
+            updates, open context when you need it, and share clean summaries without sending
+            people into a cluttered maze.
+          </p>
+        </div>
+      </section>
+
+      <section className="how shell" id="how-it-works">
+        <div className="section-heading reveal">
+          <p className="eyebrow"><span /> How it works</p>
+          <h2>Three quiet steps from update to understanding.</h2>
+        </div>
+        <div className="workflow">
+          <article className="workflow-step reveal">
+            <span>01</span>
+            <h3>Discover</h3>
+            <p>Khabro watches city, state, national, and topic sources so readers do not start from a blank search box.</p>
+          </article>
+          <article className="workflow-step reveal reveal-delay">
+            <span>02</span>
+            <h3>Understand</h3>
+            <p>Stories become concise briefs with plain context, source links, and the next thing to watch.</p>
+          </article>
+          <article className="workflow-step reveal">
+            <span>03</span>
+            <h3>Stay updated</h3>
+            <p>Readers return to a local feed that remembers their city and stays readable on mobile.</p>
+          </article>
+        </div>
+      </section>
+
+      <section className="demo shell" id="demo">
+        <div className="demo-copy reveal">
+          <p className="eyebrow"><span /> Product preview</p>
+          <h2>One story, four useful ways to read it.</h2>
+          <p>
+            Khabro is designed for the moment after a headline catches your eye:
+            the quick version, the context, the timeline, and the original source.
+          </p>
+          <div className="demo-tabs" role="tablist" aria-label="Product preview modes">
+            {demoTabs.map((tab, index) => (
+              <button
+                key={tab.label}
+                type="button"
+                role="tab"
+                aria-selected={activeDemo === index}
+                onClick={() => setActiveDemo(index)}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        </div>
+        <article className="demo-panel reveal reveal-delay">
+          <div className="demo-phone-top">
+            <span>Khabro</span>
+            <strong>Business</strong>
+          </div>
+          <p className="feature-kicker">{demo.label}</p>
+          <h3>{demo.title}</h3>
+          <p>{demo.body}</p>
+          <div className="source-row">
+            <span>{demo.meta}</span>
+            <span>Original source</span>
+          </div>
+        </article>
+      </section>
+
+      <section className="categories shell" id="categories">
+        <div className="section-heading reveal">
+          <p className="eyebrow"><span /> Coverage</p>
+          <h2>Designed for the full shape of a reader&apos;s day.</h2>
+        </div>
+        <div className="category-board">
+          {categories.map((category, index) => (
+            <article key={category.label} className={`category-tile category-${index + 1} reveal`}>
+              <span>{category.label}</span>
+              <p>{category.text}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="personal shell">
+        <div className="personal-card reveal">
+          <p className="eyebrow"><span /> Personal news</p>
+          <h2>Your news. Your priorities.</h2>
+          <p>
+            Start with a city, then follow the topics that matter at home: local civic updates,
+            business, health, education, markets, sports, and the stories relatives will ask about.
+          </p>
+        </div>
+        <div className="preference-panel reveal reveal-delay">
+          {['Delhi', 'Health', 'Startups', 'Cricket', 'Markets'].map((item) => (
+            <span key={item}>{item}</span>
+          ))}
+          <div>
+            <strong>Readable by default</strong>
+            <p>Large type, calm contrast, and simple choices for the 40+ reader Khabro is built around.</p>
           </div>
         </div>
       </section>
 
-      <section className="formalities shell">
+      <section className="trust shell">
         <div className="section-heading reveal">
-          <p className="eyebrow"><span /> Formalities</p>
-          <h2>Everything public-facing lives here</h2>
+          <p className="eyebrow"><span /> Trust and formalities</p>
+          <h2>Useful summaries still need visible standards.</h2>
+          <p>
+            The public site keeps launch context, privacy, terms, support, and corrections separate
+            from the reader so these pages stay shareable and crawlable.
+          </p>
         </div>
         <div className="formalities-grid">
           {footerLinks.map((link) => (
-            <button key={link.id} className="formal-card reveal" onClick={() => navigate(link.id, setPage)}>
+            <NavLink key={link.id} className="formal-card reveal" page={link.id} setPage={setPage}>
               <span>{link.label}</span>
               <strong>{legalPages[link.id].title}</strong>
               <p>{legalPages[link.id].intro}</p>
-            </button>
+            </NavLink>
           ))}
         </div>
       </section>
@@ -435,13 +600,13 @@ function HomeView({ setPage }: { setPage: (page: PageId) => void }) {
       <section className="closing shell reveal">
         <div>
           <p className="eyebrow"><span /> Launch</p>
-          <h2>A proper Khabro website, separate from the reader app.</h2>
+          <h2>Open the reader and check today&apos;s city briefing.</h2>
         </div>
         <div className="closing-panel">
-          <p>The reader stays at <code>khabro.in</code>. This site becomes the public brand and policy surface on its own subdomain.</p>
+          <p>The reader stays at <code>khabro.in</code>. This site tells the product story and hosts the public trust pages.</p>
           <div className="hero-actions">
             <a className="button button-primary" href={readerUrl}>Open reader</a>
-            <button className="button button-secondary" onClick={() => navigate('support', setPage)}>Support and contact</button>
+            <NavLink className="button button-secondary" page="support" setPage={setPage}>Support and contact</NavLink>
           </div>
         </div>
       </section>
@@ -501,10 +666,10 @@ function LegalView({
         <div className="related-card">
           <p className="feature-kicker">More</p>
           {related.map((link) => (
-            <button key={link.id} className="related-link" onClick={() => navigate(link.id, setPage)}>
+            <NavLink key={link.id} className="related-link" page={link.id} setPage={setPage}>
               <span>{link.label}</span>
               <strong>{legalPages[link.id].title}</strong>
-            </button>
+            </NavLink>
           ))}
         </div>
       </div>
@@ -514,22 +679,42 @@ function LegalView({
 
 export function App() {
   const [page, setPage] = useCurrentPage()
+  const [isMenuOpen, setIsMenuOpen] = useState(false)
 
   usePageMeta(page)
 
+  const closeMenu = (next: PageId) => {
+    setIsMenuOpen(false)
+    setPage(next)
+  }
+
   return (
     <main className="page-shell">
-      <div className="bg-orb bg-orb-one" />
-      <div className="bg-orb bg-orb-two" />
+      <a className="skip-link" href="#home">Skip to content</a>
       <header className="topbar shell">
-        <button className="brand" onClick={() => navigate('home', setPage)} aria-label="Khabro home">
+        <NavLink className="brand" page="home" setPage={closeMenu} currentPage={page} aria-label="Khabro home">
           <img src="/khabro-mark.svg" alt="" />
           <span>Khabro</span>
+        </NavLink>
+        <button
+          className="menu-toggle"
+          type="button"
+          aria-label="Toggle navigation"
+          aria-expanded={isMenuOpen}
+          onClick={() => setIsMenuOpen((open) => !open)}
+        >
+          <span />
+          <span />
         </button>
-        <nav className="topnav" aria-label="Primary">
-          <button onClick={() => navigate('about', setPage)}>About</button>
-          <button onClick={() => navigate('privacy', setPage)}>Privacy</button>
-          <button onClick={() => navigate('support', setPage)}>Support</button>
+        <nav className={`topnav ${isMenuOpen ? 'topnav-open' : ''}`} aria-label="Primary">
+          <a href="#home" onClick={() => setIsMenuOpen(false)}>Home</a>
+          <a href="#demo" onClick={() => setIsMenuOpen(false)}>Latest</a>
+          <a href="#categories" onClick={() => setIsMenuOpen(false)}>India</a>
+          <a href="#categories" onClick={() => setIsMenuOpen(false)}>World</a>
+          <a href="#categories" onClick={() => setIsMenuOpen(false)}>Business</a>
+          <a href="#categories" onClick={() => setIsMenuOpen(false)}>Technology</a>
+          <a href="#categories" onClick={() => setIsMenuOpen(false)}>Sports</a>
+          <NavLink page="about" setPage={closeMenu} currentPage={page}>About</NavLink>
         </nav>
         <a className="nav-cta" href={readerUrl}>Open reader</a>
       </header>
@@ -543,7 +728,7 @@ export function App() {
         </div>
         <div className="footer-links" aria-label="Footer">
           {footerLinks.map((link) => (
-            <button key={link.id} onClick={() => navigate(link.id, setPage)}>{link.label}</button>
+            <NavLink key={link.id} page={link.id} setPage={setPage}>{link.label}</NavLink>
           ))}
           <a href={readerUrl}>Reader</a>
         </div>

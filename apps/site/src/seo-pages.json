@@ -1,0 +1,43 @@
+{
+  "siteName": "Khabro",
+  "defaultOgImagePath": "/og.png",
+  "locale": "en_IN",
+  "pages": {
+    "home": {
+      "path": "/",
+      "title": "Khabro — Local news for your city, clearly told",
+      "description": "Khabro is a calm local-news reader for Indian cities: city-specific updates, clear publisher sourcing, and no account required.",
+      "ogType": "website"
+    },
+    "about": {
+      "path": "/about",
+      "title": "About Khabro — Local news reader for Indian cities",
+      "description": "Khabro is building a calm front door to city news for readers who want the important update quickly, clearly, and without account friction.",
+      "ogType": "website"
+    },
+    "privacy": {
+      "path": "/privacy",
+      "title": "Privacy policy — Khabro",
+      "description": "How Khabro handles device preferences, optional location matching, and technical request data when you use the website or mobile reader.",
+      "ogType": "website"
+    },
+    "terms": {
+      "path": "/terms",
+      "title": "Terms of use — Khabro",
+      "description": "Terms for using Khabro’s local news discovery, summaries, bookmarks, and links to original publisher reports.",
+      "ogType": "website"
+    },
+    "support": {
+      "path": "/support",
+      "title": "Support — Khabro",
+      "description": "Get help with the Khabro reader or website. Include your city, device, and steps to reproduce so we can investigate quickly.",
+      "ogType": "website"
+    },
+    "corrections": {
+      "path": "/corrections",
+      "title": "Corrections and takedown — Khabro",
+      "description": "Report inaccurate summaries, attribution issues, publisher rights concerns, privacy requests, or urgent safety issues to Khabro.",
+      "ogType": "website"
+    }
+  }
+}
