@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState, type ReactNode } from 'react'
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native'
+import { Linking, Pressable, ScrollView, StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import Constants from 'expo-constants'
 import { useFocusEffect, useRouter } from 'expo-router'
@@ -8,6 +8,7 @@ import { MotiView } from 'moti'
 import Ban from 'lucide-react-native/icons/ban'
 import Info from 'lucide-react-native/icons/info'
 import Languages from 'lucide-react-native/icons/languages'
+import Mail from 'lucide-react-native/icons/mail'
 import MapPin from 'lucide-react-native/icons/map-pin'
 import Moon from 'lucide-react-native/icons/moon'
 import BellRing from 'lucide-react-native/icons/bell-ring'
@@ -38,6 +39,8 @@ import { HIT_TARGET, space, typography, type AppColors } from '../../src/theme/t
 import { iconStroke } from '../../src/theme/categoryIcons'
 import { useTabBarClearance } from '../../src/theme/useTabBarClearance'
 import { isDesktopLayout, useBreakpoint } from '../../src/hooks/useBreakpoint'
+
+const CONTACT_EMAIL = 'contact@khabro.in'
 
 export default function ProfileScreen() {
   return (
@@ -373,6 +376,37 @@ function ProfileBody() {
           </View>
         </Section>
 
+        <Section title="Contact us" Icon={Mail}>
+          <Text
+            fontSize={typography.summary.fontSize}
+            lineHeight={typography.summary.lineHeight}
+            color={colors.textSecondary}
+            mb="$3"
+          >
+            For app support, privacy questions, publisher requests, corrections, or other Khabro
+            contact needs, email the developer team.
+          </Text>
+          <Pressable
+            onPress={() => {
+              void Linking.openURL(`mailto:${CONTACT_EMAIL}`)
+            }}
+            accessibilityRole="link"
+            accessibilityLabel={`Email Khabro at ${CONTACT_EMAIL}`}
+            style={({ pressed }) => [styles.contactEmail, pressed ? styles.contactEmailPressed : null]}
+          >
+            <Mail size={18} strokeWidth={iconStroke} color={colors.accent} />
+            <Text style={styles.contactEmailText}>{CONTACT_EMAIL}</Text>
+          </Pressable>
+          <Text
+            fontSize={typography.meta.fontSize}
+            lineHeight={typography.meta.lineHeight}
+            color={colors.textMuted}
+            mt="$3"
+          >
+            This address is also listed on the Khabro website contact page.
+          </Text>
+        </Section>
+
         <Section title="About this app" Icon={Info}>
           <Text
             fontSize={typography.summary.fontSize}
@@ -615,6 +649,25 @@ function createStyles(c: AppColors) {
     },
     alertSecondary: {
       alignSelf: 'flex-start',
+    },
+    contactEmail: {
+      minHeight: HIT_TARGET,
+      alignSelf: 'flex-start',
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: space.xs,
+      paddingHorizontal: space.sm,
+      borderRadius: 12,
+      backgroundColor: c.surfaceRaised,
+    },
+    contactEmailPressed: {
+      opacity: 0.82,
+    },
+    contactEmailText: {
+      color: c.accent,
+      fontSize: typography.bodySemibold.fontSize,
+      lineHeight: typography.bodySemibold.lineHeight,
+      fontWeight: '700',
     },
     spacer: {
       height: space.md,

@@ -15,6 +15,12 @@
       "description": "Khabro is building a calm front door to city news for readers who want the important update quickly, clearly, and without account friction.",
       "ogType": "website"
     },
+    "contact": {
+      "path": "/contact",
+      "title": "Contact Khabro — App support and developer contact",
+      "description": "Contact Khabro at contact@khabro.in for app support, publisher requests, corrections, privacy questions, or policy matters.",
+      "ogType": "website"
+    },
     "privacy": {
       "path": "/privacy",
       "title": "Privacy policy — Khabro",

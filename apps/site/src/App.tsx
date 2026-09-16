@@ -18,7 +18,7 @@ type LegalPage = {
 
 const readerUrl = import.meta.env.VITE_READER_URL || 'https://khabro.in/'
 const siteUrl = import.meta.env.VITE_SITE_URL || 'https://site.khabro.in'
-const supportEmail = (import.meta.env.VITE_SUPPORT_EMAIL || '').trim()
+const supportEmail = (import.meta.env.VITE_SUPPORT_EMAIL || 'contact@khabro.in').trim()
 
 const legalPages: Record<Exclude<PageId, 'home'>, LegalPage> = {
   about: {
@@ -56,6 +56,35 @@ const legalPages: Record<Exclude<PageId, 'home'>, LegalPage> = {
         title: 'Coverage',
         body: [
           'Khabro supports 75 major Indian cities. Story volume and source depth can differ between locations while direct publisher coverage expands.',
+        ],
+      },
+    ],
+  },
+  contact: {
+    id: 'contact',
+    eyebrow: 'Contact us',
+    title: 'Contact Khabro',
+    intro:
+      'Use this page to contact the Khabro developer and editorial support team for app support, publisher requests, corrections, privacy questions, or policy matters.',
+    sections: [
+      {
+        title: 'Email',
+        body: [
+          `Reach Khabro at ${supportEmail}. This is the official contact email for the app and public website.`,
+        ],
+      },
+      {
+        title: 'What to include',
+        bullets: [
+          'For app support: your city, device, platform, and what happened.',
+          'For publisher or editorial requests: the Khabro headline, article link or ID, original publisher URL, and the requested correction or review.',
+          'For privacy requests: describe the information or issue you want reviewed without sending unnecessary personal data.',
+        ],
+      },
+      {
+        title: 'Response scope',
+        body: [
+          'The same inbox handles developer contact, reader support, corrections, takedown requests, and privacy questions. Social media accounts are not used as the primary contact channel.',
         ],
       },
     ],
@@ -235,6 +264,7 @@ const legalPages: Record<Exclude<PageId, 'home'>, LegalPage> = {
 
 const footerLinks: { id: Exclude<PageId, 'home'>; label: string }[] = [
   { id: 'about', label: 'About' },
+  { id: 'contact', label: 'Contact us' },
   { id: 'privacy', label: 'Privacy' },
   { id: 'terms', label: 'Terms' },
   { id: 'support', label: 'Support' },
@@ -622,7 +652,7 @@ function LegalView({
   setPage: (page: PageId) => void
 }) {
   const related = useMemo(() => footerLinks.filter((link) => link.id !== page.id), [page.id])
-  const showContactCard = page.id === 'support' || page.id === 'corrections' || page.id === 'privacy'
+  const showContactCard = page.id === 'contact' || page.id === 'support' || page.id === 'corrections' || page.id === 'privacy'
 
   return (
     <section className="legal shell">
@@ -654,13 +684,12 @@ function LegalView({
         {showContactCard ? (
           <div className="contact-card">
             <p className="feature-kicker">Contact</p>
-            <h3>{supportEmail ? `Email ${supportEmail}` : 'Public support email is being finalized'}</h3>
+            <h3>Email {supportEmail}</h3>
             <p>
-              {supportEmail
-                ? 'Use this address for support, privacy questions, or editorial review requests.'
-                : 'The launch site still renders a clear fallback until the final public inbox is configured.'}
+              Use this address for app support, privacy questions, publisher requests, corrections,
+              and other Khabro contact needs.
             </p>
-            {supportEmail ? <a className="button button-primary" href={`mailto:${supportEmail}`}>Email us</a> : null}
+            <a className="button button-primary" href={`mailto:${supportEmail}`}>Email us</a>
           </div>
         ) : null}
         <div className="related-card">
@@ -715,6 +744,7 @@ export function App() {
           <a href="/#categories" onClick={() => setIsMenuOpen(false)}>Technology</a>
           <a href="/#categories" onClick={() => setIsMenuOpen(false)}>Sports</a>
           <NavLink page="about" setPage={closeMenu} currentPage={page}>About</NavLink>
+          <NavLink page="contact" setPage={closeMenu} currentPage={page}>Contact us</NavLink>
         </nav>
         <a className="nav-cta" href={readerUrl}>Open reader</a>
       </header>

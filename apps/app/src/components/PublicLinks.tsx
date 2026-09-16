@@ -9,6 +9,7 @@ const siteUrl = getPublicSiteUrl()
 
 const PUBLIC_PAGE_LINKS = [
   { id: 'about', label: 'About', href: `${siteUrl}/about` },
+  { id: 'contact', label: 'Contact us', href: `${siteUrl}/contact` },
   { id: 'privacy', label: 'Privacy', href: `${siteUrl}/privacy` },
   { id: 'terms', label: 'Terms', href: `${siteUrl}/terms` },
   { id: 'support', label: 'Support', href: `${siteUrl}/support` },
