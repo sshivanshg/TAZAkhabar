@@ -4,70 +4,156 @@ namespace NewsFeed.Api.Ingest;
 
 /// <summary>
 /// Normalizes headlines and summaries before an article is saved: strips trailing
-/// " - Source" / " | Source" suffixes and drops summaries that only repeat the headline.
+/// " - Source" / " | Source" suffixes and removes summary text that only repeats the headline.
 /// </summary>
 public static class IngestTextCleaner
 {
-    private static readonly string[] Separators = [" - ", " | ", " – ", " — "];
+    // Hyphen, figure dash, en dash, em dash, minus sign, pipe.
+    private static readonly char[] SeparatorChars = ['-', '‒', '–', '—', '−', '|'];
 
-    public static string CleanHeadline(string title, params string?[] sourceNames)
+    public static string CleanHeadline(string? title, params string?[] sourceNames)
     {
-        var original = (title ?? "").Trim();
-        var names = sourceNames
-            .Where(n => !string.IsNullOrWhiteSpace(n))
-            .Select(n => n!.Trim())
-            .ToList();
+        var original = NormalizeSpaces(title);
+        var names = CleanNames(sourceNames);
         if (names.Count == 0 || original.Length == 0)
         {
             return original;
         }
 
         var current = original;
-        var changed = true;
-        while (changed)
+        while (TryStripSuffix(current, names, out var head))
         {
-            changed = false;
-            foreach (var sep in Separators)
-            {
-                var idx = current.LastIndexOf(sep, StringComparison.Ordinal);
-                if (idx <= 0)
-                {
-                    continue;
-                }
-
-                var tail = current[(idx + sep.Length)..].Trim();
-                if (names.Any(n => string.Equals(n, tail, StringComparison.OrdinalIgnoreCase)))
-                {
-                    var head = current[..idx].TrimEnd();
-                    if (head.Length == 0)
-                    {
-                        continue;
-                    }
-
-                    current = head;
-                    changed = true;
-                    break;
-                }
-            }
+            current = head;
         }
 
         return current.Length > 0 ? current : original;
     }
 
-    /// <summary>Returns "" when the summary equals or starts with the headline (normalized).</summary>
-    public static string CleanSummary(string? summary, string headline)
+    /// <summary>
+    /// Returns "" when the summary is just the headline (optionally followed by a source suffix);
+    /// when it starts with the headline, strips that prefix and keeps the rest.
+    /// </summary>
+    public static string CleanSummary(string? summary, string headline, params string?[] sourceNames)
     {
-        var s = (summary ?? "").Trim();
-        var normSummary = Normalize(s);
+        var s = NormalizeSpaces(summary);
         var normHeadline = Normalize(headline);
-        if (normSummary.Length == 0 || normHeadline.Length == 0)
+        if (s.Length == 0 || normHeadline.Length == 0)
         {
             return s;
         }
 
-        var repeats = normSummary == normHeadline
-            || normSummary.StartsWith(normHeadline + " ", StringComparison.Ordinal);
-        return repeats ? "" : s;
+        var cut = PrefixEnd(s, normHeadline);
+        if (cut < 0)
+        {
+            return s;
+        }
+
+        var rest = s[cut..].TrimStart(' ', '.', ',', ':', ';', '!', '?', '-', '‒', '–', '—', '−', '|').Trim();
+        if (rest.Length == 0)
+        {
+            return "";
+        }
+
+        var names = CleanNames(sourceNames);
+        return names.Any(n => string.Equals(n, rest.TrimEnd('.', ' '), StringComparison.OrdinalIgnoreCase)) ? "" : rest;
+    }
+
+    private static bool TryStripSuffix(string text, List<string> names, out string head)
+    {
+        head = text;
+        foreach (var name in names)
+        {
+            if (!text.EndsWith(name, StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            var before = text[..^name.Length];
+            var trimmed = before.TrimEnd();
+            if (trimmed.Length == before.Length || trimmed.Length == 0
+                || Array.IndexOf(SeparatorChars, trimmed[^1]) < 0)
+            {
+                continue;
+            }
+
+            var candidate = trimmed[..^1];
+            if (candidate.Length == 0 || candidate[^1] != ' ')
+            {
+                continue;
+            }
+
+            candidate = candidate.TrimEnd();
+            if (candidate.Length == 0)
+            {
+                continue;
+            }
+
+            head = candidate;
+            return true;
+        }
+
+        return false;
+    }
+
+    /// <summary>Index in <paramref name="text"/> just after the headline prefix, or -1.</summary>
+    private static int PrefixEnd(string text, string normHeadline)
+    {
+        var sb = new StringBuilder();
+        var lastSpace = true;
+        for (var i = 0; i < text.Length; i++)
+        {
+            var ch = char.ToLowerInvariant(text[i]);
+            if (char.IsLetterOrDigit(ch))
+            {
+                sb.Append(ch);
+                lastSpace = false;
+                if (sb.Length == normHeadline.Length)
+                {
+                    var atBoundary = i + 1 >= text.Length || !char.IsLetterOrDigit(text[i + 1]);
+                    return atBoundary && sb.ToString() == normHeadline ? i + 1 : -1;
+                }
+            }
+            else if (!lastSpace)
+            {
+                sb.Append(' ');
+                lastSpace = true;
+            }
+
+            if (sb.Length > normHeadline.Length || !normHeadline.StartsWith(sb.ToString(), StringComparison.Ordinal))
+            {
+                return -1;
+            }
+        }
+
+        return -1;
+    }
+
+    private static List<string> CleanNames(string?[] names) =>
+        names.Where(n => !string.IsNullOrWhiteSpace(n)).Select(n => NormalizeSpaces(n)).Distinct().ToList();
+
+    private static string NormalizeSpaces(string? text)
+    {
+        var sb = new StringBuilder();
+        var lastSpace = false;
+        foreach (var ch in text ?? "")
+        {
+            if (char.IsWhiteSpace(ch) || char.IsSeparator(ch))
+            {
+                if (!lastSpace)
+                {
+                    sb.Append(' ');
+                }
+
+                lastSpace = true;
+            }
+            else
+            {
+                sb.Append(ch);
+                lastSpace = false;
+            }
+        }
+
+        return sb.ToString().Trim();
     }
 
     private static string Normalize(string? text)

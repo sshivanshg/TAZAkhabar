@@ -304,6 +304,7 @@ public sealed class RssIngestService(
         var sourceName = string.IsNullOrWhiteSpace(item.SourceName)
             ? source.Name
             : item.SourceName.Trim();
+        var headline = IngestTextCleaner.CleanHeadline(item.Title, source.Name, item.SourceName);
         var snippet = item.Snippet;
         var summary = string.IsNullOrWhiteSpace(snippet)
             ? $"Tap to read the full story on {sourceName}"
@@ -313,8 +314,8 @@ public sealed class RssIngestService(
         {
             try
             {
-                IngestionEvents.Emit(events, run.Id, "progress", $"Summarizing · {HtmlText.Truncate(item.Title, 80)}");
-                var rewritten = await intelligence.SummarizeArticleAsync(item.Title, snippet, city.Slug, cancellationToken);
+                IngestionEvents.Emit(events, run.Id, "progress", $"Summarizing · {HtmlText.Truncate(headline, 80)}");
+                var rewritten = await intelligence.SummarizeArticleAsync(headline, snippet, city.Slug, cancellationToken);
                 if (!string.IsNullOrWhiteSpace(rewritten))
                 {
                     summary = rewritten;
@@ -338,8 +339,7 @@ public sealed class RssIngestService(
             ? await TryFetchArticleBodyAsync(sourceUrl, cancellationToken)
             : null;
 
-        var headline = IngestTextCleaner.CleanHeadline(item.Title, source.Name, item.SourceName);
-        summary = IngestTextCleaner.CleanSummary(summary, headline);
+        summary = IngestTextCleaner.CleanSummary(summary, headline, source.Name, item.SourceName);
 
         var now = DateTimeOffset.UtcNow;
         var article = new Article
@@ -351,14 +351,14 @@ public sealed class RssIngestService(
             SourceName = sourceName,
             SourceUrl = sourceUrl,
             PublishedAt = ToUtc(item.PublishedAt ?? now),
-            Category = ContentCategoryClassifier.EffectiveCategory("Local", item.Title, summary),
+            Category = ContentCategoryClassifier.EffectiveCategory("Local", headline, summary),
             ImageUrl = NormalizeImageUrl(item.ImageUrl),
             Status = autoPublish ? ArticleStatus.Published : ArticleStatus.PendingReview,
             IsMock = false,
             IngestedAt = now,
             SourceId = source.Id,
             DetectedLanguage = ArticleLanguageDetector.Detect(
-                item.Title,
+                headline,
                 summary,
                 fallback: source.Language),
         };
