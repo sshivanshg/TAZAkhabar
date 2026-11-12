@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, type ReactNode } from 'react'
 import {
   Platform,
   Pressable,
@@ -33,6 +33,8 @@ type Props = {
   onPress: (article: ArticleResponse) => void
   onLongPress?: (article: ArticleResponse) => void
   onMorePress?: (article: ArticleResponse) => void
+  /** Extra control in the meta row (e.g. Bookmarks "Remove"), before the divider. */
+  metaAction?: ReactNode
   onSeeMorePress?: (article: ArticleResponse) => void
   /** Kept for callers; actions live in the overflow sheet for a cleaner feed. */
   onSavePress?: (article: ArticleResponse) => void
@@ -73,6 +75,7 @@ export function CompactArticleCard({
   onLongPress,
   onMorePress,
   onSeeMorePress,
+  metaAction,
   density = 'default',
 }: Props) {
   const { colors } = useTheme()
@@ -195,6 +198,7 @@ export function CompactArticleCard({
               <Ellipsis size={18} strokeWidth={iconStroke} color={colors.textSecondary} />
             </Pressable>
           ) : null}
+          {metaAction}
         </View>
       </View>
       <View style={styles.divider} />

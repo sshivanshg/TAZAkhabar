@@ -247,6 +247,7 @@ function ArticleFeedBody() {
           if (!initialFromParams) {
             setError(translate('article.notFound'))
             setStack([])
+            setHasMore(false)
             setLoading(false)
             return
           }
@@ -258,6 +259,7 @@ function ArticleFeedBody() {
       if (items.length === 0) {
         setError(translate('article.notFound'))
         setStack([])
+        setHasMore(false)
         setLoading(false)
         return
       }
@@ -418,10 +420,11 @@ function ArticleFeedBody() {
   }, [activeLocalIndex, visibleStack, hydrateArticle])
 
   useEffect(() => {
-    if (activeLocalIndex >= visibleStack.length - 3 && hasMore) {
+    // Never page the feed under a dead deep link (404): no stack, no load-more.
+    if (activeLocalIndex >= visibleStack.length - 3 && !error && visibleStack.length > 0 && hasMore) {
       void loadMore()
     }
-  }, [activeLocalIndex, visibleStack.length, hasMore, loadMore])
+  }, [activeLocalIndex, visibleStack.length, hasMore, loadMore, error])
 
   useEffect(() => {
     const next = visibleStack[activeLocalIndex + 1]

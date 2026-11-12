@@ -84,7 +84,8 @@ import {
 } from '../../src/utils/expandedFeedLayout'
 import { openArticleSource } from '../../src/utils/openArticleSource'
 import { shareArticle } from '../../src/utils/shareArticle'
-import { feedCategoryLabel, readableErrorMessage, translate, useT } from '../../src/i18n'
+import { feedCategoryLabel, readableErrorMessage, translate, useAppLanguage, useT } from '../../src/i18n'
+import { scriptTracking } from '../../src/theme/scriptTypography'
 
 type ListRow =
   | { kind: 'breaking'; key: 'breaking' }
@@ -216,6 +217,9 @@ function HomeFeedBody() {
       return next
     })
   }, [])
+
+  const bookmarkedIdsRef = useRef(bookmarkedIds)
+  bookmarkedIdsRef.current = bookmarkedIds
 
   useFocusEffect(
     useCallback(() => {
@@ -704,7 +708,8 @@ function HomeFeedBody() {
         void toggleBookmarkAction({
           article: actionArticle,
           citySlug: citySlug ?? undefined,
-          currentlySaved: saved,
+          // Live ref (like the article screen): a fast re-tap sees the latest state.
+          currentlySaved: actionArticle.id != null && bookmarkedIdsRef.current.has(actionArticle.id),
           setSaved: setBookmarkSaved,
         })
       },
@@ -1153,6 +1158,7 @@ function SectionHeader({
   flush?: boolean
 }) {
   const { colors } = useTheme()
+  const sectionLang = useAppLanguage()
   const styles = useMemo(() => createStyles(colors), [colors])
   return (
     <View
@@ -1174,7 +1180,7 @@ function SectionHeader({
         fontSize={expanded ? typography.headlineSm.fontSize : 18}
         lineHeight={expanded ? typography.headlineSm.lineHeight : 24}
         fontWeight="$semibold"
-        letterSpacing={-0.2}
+        letterSpacing={scriptTracking(sectionLang, -0.2)}
         color={colors.text}
         flex={1}
       >

@@ -273,6 +273,23 @@ describe('ArticleScreen', () => {
     expect(await screen.findByText('Story unavailable')).toBeTruthy()
   })
 
+  it('dead deep link: not-found id shows unavailable and fetches no more feed', async () => {
+    mockParams.id = '999999999'
+    mockGetArticles.mockResolvedValue({
+      items: [{ id: 1, headline: 'Top story', summary: 's', sourceName: 'X', sourceUrl: 'https://x.test/1' }],
+      total: 40,
+      offset: 0,
+      limit: 20,
+    })
+    mockGetArticle.mockRejectedValueOnce(new Error('not found'))
+    renderArticle()
+
+    expect(await screen.findByText('Story unavailable')).toBeTruthy()
+    await new Promise((r) => setTimeout(r, 50))
+    expect(mockGetArticles).toHaveBeenCalledTimes(1)
+    expect(screen.queryByText('Top story')).toBeNull()
+  })
+
   it('does not render a source CTA when the publisher URL is missing', async () => {
     mockGetArticles.mockResolvedValue({
       items: [{ ...listed, sourceUrl: undefined, sourceName: 'City Desk' }],

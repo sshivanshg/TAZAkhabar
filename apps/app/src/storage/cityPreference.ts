@@ -33,7 +33,15 @@ export function getCityDisplayLabel(
     const hindi = cityNameHi(slug)
     if (hindi) return hindi
   }
-  return cityName ?? slug ?? translateIn(lang, 'city.allIndia')
+  if (cityName) return cityName
+  if (slug) {
+    // Offline / metadata not loaded yet: never show the raw slug.
+    return slug
+      .split(/[-_]+/)
+      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+      .join(' ')
+  }
+  return translateIn(lang, 'city.allIndia')
 }
 
 /**

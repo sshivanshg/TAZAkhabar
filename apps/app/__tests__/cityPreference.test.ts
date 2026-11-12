@@ -59,3 +59,12 @@ describe('pickFeedCity precedence', () => {
     expect(pickFeedCity({ paramCity: '', storedCity: null })).toBe('global')
   })
 })
+
+describe('getCityDisplayLabel without city metadata (offline)', () => {
+  const { getCityDisplayLabel } = jest.requireActual('../src/storage/cityPreference') as typeof import('../src/storage/cityPreference')
+  it('title-cases the slug instead of showing it raw', () => {
+    expect(getCityDisplayLabel('thiruvananthapuram', undefined, 'en')).toBe('Thiruvananthapuram')
+    expect(getCityDisplayLabel('port-blair', null, 'en')).toBe('Port Blair')
+    expect(getCityDisplayLabel('thiruvananthapuram', undefined, 'hi')).toBe('तिरुवनंतपुरम')
+  })
+})

@@ -83,6 +83,42 @@ const CITY_NAMES_HI: Record<string, readonly string[]> = {
   warangal: ['वारंगल'],
 }
 
+const STATE_NAMES_HI: Record<string, string> = {
+  'Andaman and Nicobar Islands': 'अंडमान और निकोबार',
+  'Andhra Pradesh': 'आंध्र प्रदेश',
+  'Arunachal Pradesh': 'अरुणाचल प्रदेश',
+  Assam: 'असम',
+  Bihar: 'बिहार',
+  Chandigarh: 'चंडीगढ़',
+  Chhattisgarh: 'छत्तीसगढ़',
+  Delhi: 'दिल्ली',
+  Goa: 'गोवा',
+  Gujarat: 'गुजरात',
+  Haryana: 'हरियाणा',
+  'Himachal Pradesh': 'हिमाचल प्रदेश',
+  'Jammu and Kashmir': 'जम्मू और कश्मीर',
+  Jharkhand: 'झारखंड',
+  Karnataka: 'कर्नाटक',
+  Kerala: 'केरल',
+  'Madhya Pradesh': 'मध्य प्रदेश',
+  Maharashtra: 'महाराष्ट्र',
+  Manipur: 'मणिपुर',
+  Meghalaya: 'मेघालय',
+  Mizoram: 'मिज़ोरम',
+  Nagaland: 'नगालैंड',
+  Odisha: 'ओडिशा',
+  Puducherry: 'पुडुचेरी',
+  Punjab: 'पंजाब',
+  Rajasthan: 'राजस्थान',
+  Sikkim: 'सिक्किम',
+  'Tamil Nadu': 'तमिलनाडु',
+  Telangana: 'तेलंगाना',
+  Tripura: 'त्रिपुरा',
+  'Uttar Pradesh': 'उत्तर प्रदेश',
+  Uttarakhand: 'उत्तराखंड',
+  'West Bengal': 'पश्चिम बंगाल',
+}
+
 /** Hindi display name for a slug, if known. */
 export function cityNameHi(slug: string | null | undefined): string | undefined {
   return slug ? CITY_NAMES_HI[slug.toLowerCase()]?.[0] : undefined
@@ -119,5 +155,6 @@ export function cityRowLabel(
   if (!state || english.includes(state.toLowerCase()) || name.toLowerCase().includes(state.toLowerCase())) {
     return name
   }
-  return `${name}, ${state}`
+  const shownState = lang === 'hi' ? (STATE_NAMES_HI[state] ?? state) : state
+  return `${name}, ${shownState}`
 }

@@ -60,3 +60,18 @@ describe('toggleBookmarkAction', () => {
     expect(mockAdd).toHaveBeenCalled()
   })
 })
+
+describe('undo goes through the in-flight guard', () => {
+  it('ignores undo while a write for the same id is in flight', async () => {
+    const setSaved = jest.fn()
+    await toggleBookmarkAction({ article: { id: 9 } as never, currentlySaved: true, setSaved })
+    const undo = (mockToast.mock.calls.at(-1)![0] as { onAction: () => void }).onAction
+    let release: () => void = () => {}
+    mockAdd.mockClear()
+    mockAdd.mockImplementationOnce(() => new Promise<undefined>((r) => (release = () => r(undefined))))
+    undo()
+    undo()
+    expect(mockAdd).toHaveBeenCalledTimes(1)
+    release()
+  })
+})

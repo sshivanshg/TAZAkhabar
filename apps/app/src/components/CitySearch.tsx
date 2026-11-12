@@ -28,7 +28,8 @@ export function filterCities(cities: CityResponse[], query: string): CityRespons
     return (
       name.includes(needle) ||
       state.includes(needle) ||
-      cityAliasesHi(city.slug).some((alias) => alias.includes(needle))
+      // A single Devanagari letter matches almost everything; wait for 2+.
+      (needle.length >= 2 && cityAliasesHi(city.slug).some((alias) => alias.includes(needle)))
     )
   })
 }

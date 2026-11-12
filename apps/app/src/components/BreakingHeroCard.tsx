@@ -12,7 +12,7 @@ import { SourceAvatar } from './SourceAvatar'
 import { cleanHeadline } from '../lib/headline'
 import { useMotionTransition } from '../hooks/usePrefersReducedMotion'
 import { cardPress, iconPress } from '../lib/pressFeedback'
-import { useT } from '../i18n'
+import { useAppLanguage, useT } from '../i18n'
 
 const CARD_GAP = space.sm
 
@@ -69,6 +69,7 @@ export function BreakingHeroCard({
 }: Props) {
   const { colors } = useTheme()
   const t = useT()
+  const heroLang = useAppLanguage()
   const styles = useMemo(() => createStyles(colors), [colors])
   const headline = cleanHeadline(article.headline ?? '', article.sourceName) || 'Untitled'
   const source = article.sourceName ?? t('common.unknownSource')
@@ -135,7 +136,7 @@ export function BreakingHeroCard({
             fontWeight="$bold"
             color={colors.text}
             numberOfLines={metrics.titleLines}
-            letterSpacing={-0.25}
+            letterSpacing={heroLang === 'hi' || /[\u0900-\u097F]/.test(headline) ? 0 : -0.25}
           >
             {headline}
           </Text>

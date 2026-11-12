@@ -40,7 +40,7 @@ export function ReadingLanguageToggle({ value, onChange, palette = 'app' }: Prop
             surface: readerColors.sheet,
             divider: readerColors.sheetBorder,
             selectedBg: readerColors.accentSoft,
-            text: readerColors.textMuted,
+            text: readerColors.textSecondary,
             textSelected: readerColors.accent,
           }
         : {
@@ -48,7 +48,7 @@ export function ReadingLanguageToggle({ value, onChange, palette = 'app' }: Prop
             surface: colors.surfaceRaised,
             divider: colors.border,
             selectedBg: colors.accentSoft,
-            text: colors.textMuted,
+            text: colors.textSecondary,
             textSelected: colors.accent,
           },
     [colors, palette, readerColors],

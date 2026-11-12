@@ -212,28 +212,23 @@ function BookmarksBody() {
                 />
               </View>
             ) : (
-              <View style={styles.savedRow}>
-                <View style={styles.savedCard}>
-                  <CompactArticleCard
-                    article={item}
-                    index={index}
-                    onPress={() => openArticle(item)}
-                  />
-                </View>
-                <Pressable
-                  onPress={() => void onRemove(item.id)}
-                  accessibilityRole="button"
-                  accessibilityLabel={t('bookmarks.removeA11y', { headline: item.headline ?? '' })}
-                  style={({ pressed }) => [
-                    styles.removeBtn,
-                    iconPress(pressed),
-                  ]}
-                >
-                  <Text fontSize={15} lineHeight={20} fontWeight="$semibold" color={colors.textSecondary}>
-                    {t('bookmarks.remove')}
-                  </Text>
-                </Pressable>
-              </View>
+              <CompactArticleCard
+                article={item}
+                index={index}
+                onPress={() => openArticle(item)}
+                metaAction={
+                  <Pressable
+                    onPress={() => void onRemove(item.id)}
+                    accessibilityRole="button"
+                    accessibilityLabel={t('bookmarks.removeA11y', { headline: item.headline ?? '' })}
+                    style={({ pressed }) => [styles.removeBtn, iconPress(pressed)]}
+                  >
+                    <Text fontSize={15} lineHeight={20} fontWeight="$semibold" color={colors.textSecondary}>
+                      {t('bookmarks.remove')}
+                    </Text>
+                  </Pressable>
+                }
+              />
             )
           }
         />
@@ -288,22 +283,13 @@ function createStyles(c: AppColors) {
       justifyContent: 'center',
       marginBottom: 8,
     },
-    savedRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-    },
-    savedCard: {
-      flex: 1,
-      minWidth: 0,
-    },
-    // Remove sits in the card row: a full 44px target, not a stray line below.
+    // Remove sits in the card's meta row (divider stays full width): a full 44px target, not a stray line below.
     removeBtn: {
       minHeight: 44,
       minWidth: 44,
       alignItems: 'center',
       justifyContent: 'center',
       paddingHorizontal: space.xs,
-      marginLeft: space.xxs,
     },
   })
 }

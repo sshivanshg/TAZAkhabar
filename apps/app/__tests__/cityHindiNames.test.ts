@@ -32,7 +32,18 @@ describe('cityRowLabel', () => {
     expect(cityRowLabel({ slug: 'global', name: 'All India', state: 'India' }, 'en', ((k: string) => (k === 'city.allIndia' ? 'All India' : k)) as never)).toBe('All India')
   })
   it('localizes names and keeps the state', () => {
-    expect(cityRowLabel({ slug: 'lucknow', name: 'Lucknow', state: 'Uttar Pradesh' }, 'hi', t)).toBe('लखनऊ, Uttar Pradesh')
+    expect(cityRowLabel({ slug: 'lucknow', name: 'Lucknow', state: 'Uttar Pradesh' }, 'hi', t)).toBe('लखनऊ, उत्तर प्रदेश')
     expect(cityRowLabel({ slug: 'delhi', name: 'Delhi', state: 'Delhi' }, 'en', t)).toBe('Delhi')
+  })
+})
+
+describe('Hindi query length and states', () => {
+  it('needs 2+ characters before Hindi alias matching', () => {
+    expect(filterCities(cities, 'ल')).toEqual([])
+    expect(filterCities(cities, 'लख').map((c) => c.slug)).toEqual(['lucknow'])
+  })
+  it('shows Hindi state names in Hindi rows', () => {
+    const { cityRowLabel } = jest.requireActual('../src/location/cityNamesHi') as typeof import('../src/location/cityNamesHi')
+    expect(cityRowLabel({ slug: 'agra', name: 'Agra', state: 'Uttar Pradesh' }, 'hi', ((k: string) => k) as never)).toBe('आगरा, उत्तर प्रदेश')
   })
 })

@@ -35,8 +35,12 @@ export async function toggleBookmarkAction(opts: {
         message: translate('toast.removed'),
         actionLabel: translate('toast.undo'),
         onAction: () => {
+          if (inFlight.has(id)) return
+          inFlight.add(id)
           setSaved(id, true)
-          void addBookmark(snapshot).catch(() => setSaved(id, false))
+          void addBookmark(snapshot)
+            .catch(() => setSaved(id, false))
+            .finally(() => inFlight.delete(id))
         },
       })
       return 'removed'
