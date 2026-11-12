@@ -23,7 +23,7 @@ type Props = {
   onSelectLanguage?: (code: ReadingLanguageCode) => void
 }
 
-/** Home top bar — search | brand | city (Google News–inspired chrome). */
+/** Home top bar — search | brand mark | EN·हि | city pill (fills the rest) (Google News–inspired chrome). */
 export function HomeTopBar({
   cityTitle,
   onCityPress,
@@ -109,20 +109,22 @@ function createStyles(c: AppColors) {
       justifyContent: 'space-between',
       minHeight: HIT_TARGET,
     },
+    // Phone-first: brand is a fixed icon-size mark so the city pill gets the
+    // remaining width (the city is the core of a local news app).
     center: {
-      flex: 1,
+      flexShrink: 0,
       alignItems: 'center',
       justifyContent: 'center',
-      paddingHorizontal: space.xs,
-      minWidth: 0,
+      paddingHorizontal: 2,
     },
     trailing: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: 6,
-      flexShrink: 1,
+      flex: 1,
+      justifyContent: 'flex-end',
       minWidth: 0,
-      maxWidth: '48%',
+      marginLeft: space.xs,
     },
     cityWrap: {
       flexShrink: 1,
@@ -144,9 +146,9 @@ function createStyles(c: AppColors) {
       gap: 4,
       flexShrink: 1,
       minWidth: 0,
-      maxWidth: 120,
+      maxWidth: 220,
       minHeight: HIT_TARGET,
-      paddingHorizontal: 8,
+      paddingHorizontal: 10,
       borderRadius: radius.full,
       backgroundColor: c.accentSoft,
     },
