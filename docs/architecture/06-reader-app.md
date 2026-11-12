@@ -1,7 +1,7 @@
 # Reader app
 
 > **Living doc** — update when Expo routes, city/feed/share behavior, or desktop web layer change.  
-> **Last verified against:** 2026-11-12 (in-app Contact us screen for Play News policy)
+> **Last verified against:** 2026-11-12 (brand blue #2563EB, 16px type floor, signal/textOnAccentMuted/floating shadow tokens)
 
 ## Purpose
 
@@ -76,7 +76,7 @@ flowchart LR
 | `src/components/desktop/*` | Expanded shell, top bar, category nav, top-stories cluster, local rail |
 | `src/storage/personalizationId.ts` | Persistent anonymous id (AsyncStorage/localStorage) for view recording + personalized feed |
 | `src/preferences/ThemePreferenceContext.tsx` | Light/dark/system preference → `useTheme()` (`colors`, `readerColors`, `shadows`) |
-| `src/theme/tokens.ts` | Shell palettes (light `#F4F6FA` / Google News grey dark `#202124`) + accent `#155EEF` (`accentFill`) |
+| `src/theme/tokens.ts` | Shell palettes (light `#F4F6FA` / Google News grey dark `#202124`) + accent `#2563EB` (`accentFill`) |
 | `src/theme/readerTokens.ts` | Article reader palette per color scheme |
 | `src/components/CompactArticleCard.tsx` | Google News–style list card (thumb when image, text-only otherwise) + See more + skeleton |
 | `src/components/BreakingHeroCard.tsx` | Top story: rounded image, circular source mark, headline/time |
@@ -219,7 +219,7 @@ Manual verification still required before claiming a comprehensive a11y sweep is
 
 - Use RN primitives (`View`/`Text`/`Pressable`) so web and native stay aligned — avoid raw HTML/CSS except thin `Platform` forks.
 - Do not add a second Vite reader app.
-- Appearance: Light / Dark / System (default Light), persisted in AsyncStorage; Profile controls it. Brand accent fill stays `#155EEF`.
+- Appearance: Light / Dark / System (default Light), persisted in AsyncStorage; Profile controls it. Brand accent fill stays `#2563EB`.
 - No login — city, theme, first-page feed cache, and the anonymous personalization id are device-local only.
 - Location permission is foreground-only and user initiated. Never request it at boot or make it mandatory for reading.
 - Contact, privacy, support, terms, and corrections live on the standalone public website and open externally from the reader. The in-app `/contact` screen (config in `src/config/contact.ts`) and Profile also show the contact email directly for Play News policy review.

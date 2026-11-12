@@ -26,8 +26,8 @@ export const readerColorsLight: ReaderColors = {
   text: '#101828',
   textMuted: '#667085',
   textSecondary: '#475467',
-  accent: '#2855E8',
-  accentSoft: '#EAF0FF',
+  accent: '#2563EB',
+  accentSoft: '#EFF6FF',
   overlay: 'rgba(16, 24, 40, 0.14)',
   sheet: '#FFFFFF',
   sheetBorder: '#E4E8EF',
@@ -35,7 +35,7 @@ export const readerColorsLight: ReaderColors = {
   header: 'rgba(255, 255, 255, 0.94)',
   headerSolid: 'rgba(255, 255, 255, 0.96)',
   progressTrack: '#E4E8EF',
-  progressFill: '#2855E8',
+  progressFill: '#2563EB',
   attribution: '#EEF2F6',
 }
 

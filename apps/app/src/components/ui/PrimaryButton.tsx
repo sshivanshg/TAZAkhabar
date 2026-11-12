@@ -96,7 +96,7 @@ export function SecondaryButton({
         fontSize={typography.button.fontSize}
         lineHeight={typography.button.lineHeight}
         fontWeight="$semibold"
-        color={colors.textSecondary}
+        color={colors.text}
       >
         {label}
       </Text>
@@ -135,7 +135,7 @@ function createStyles(c: AppColors) {
     outline: {
       backgroundColor: 'transparent',
       borderWidth: 1,
-      borderColor: c.border,
+      borderColor: c.borderSolid,
       shadowOpacity: 0,
       elevation: 0,
     },

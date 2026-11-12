@@ -133,7 +133,7 @@ For `apps/app/**/*.{ts,tsx}`:
   readability for a 40+ demographic.
 - MVP theme: light UI, near-white canvas (`#F4F6FA`), white cards with soft
   shadow, near-black headlines (`#101828`), mid-gray meta (`#667085`), primary
-  blue (`#155EEF`), and restrained saffron (`#FFB000`) freshness signals.
+  blue (`#2563EB`), and restrained saffron (`#FFB000`) freshness signals.
 - Product name is Khabro; follow `.codex/rules/branding.mdc`.
 - Develop primarily with `pnpm --filter @tazakhabar/app web` for MVP pilots.
 - Keep screens native-safe. Do not reintroduce a separate Vite app for the

@@ -25,6 +25,10 @@ export type AppColors = {
   textMuted: string
   /** Text on accent fill */
   textOnAccent: string
+  /** Secondary text on accent fill (subtitles on brand surfaces) */
+  textOnAccentMuted: string
+  /** Saffron freshness signal (live dots, "new" marks) — decorative, not text */
+  signal: string
   /** Overlay text on hero images */
   textOnImage: string
   textOnImageMuted: string
@@ -64,9 +68,11 @@ export const colorsLight: AppColors = {
   accentPressed: '#1D4ED8',
   accentSoft: '#EFF6FF',
   text: '#101828',
-  textSecondary: '#667085',
+  textSecondary: '#5D6779',
   textMuted: '#475467',
   textOnAccent: '#FFFFFF',
+  textOnAccentMuted: 'rgba(255, 255, 255, 0.85)',
+  signal: '#FFB000',
   textOnImage: '#FFFFFF',
   textOnImageMuted: 'rgba(255, 255, 255, 0.85)',
   border: '#E4E8EF',
@@ -96,9 +102,11 @@ export const colorsDark: AppColors = {
   accentPressed: '#AECBFA',
   accentSoft: '#17181A',
   text: '#E8EAED',
-  textSecondary: '#9AA0A6',
+  textSecondary: '#BDC1C6',
   textMuted: '#9AA0A6',
   textOnAccent: '#FFFFFF',
+  textOnAccentMuted: 'rgba(255, 255, 255, 0.85)',
+  signal: '#FFB000',
   textOnImage: '#FFFFFF',
   textOnImageMuted: 'rgba(255, 255, 255, 0.85)',
   border: '#3C4043',
@@ -198,6 +206,8 @@ export function getShadows(scheme: ColorScheme) {
   return {
     card: elevationShadow(10, 28, scheme === 'dark' ? 0.35 : 0.08, 4, shadow),
     tabBar: elevationShadow(12, 28, scheme === 'dark' ? 0.45 : 0.14, 10, shadow),
+    /** Floating chrome (article top/bottom bars, popovers) */
+    floating: elevationShadow(6, 18, scheme === 'dark' ? 0.4 : 0.12, 6, shadow),
   } as const
 }
 
@@ -220,10 +230,10 @@ export const typography = {
   summary: { fontSize: 16, lineHeight: 24, fontWeight: '400' as const },
   bodySemibold: { fontSize: 16, lineHeight: 24, fontWeight: '600' as const },
   /** ~caption */
-  meta: { fontSize: 13, lineHeight: 18, fontWeight: '500' as const, letterSpacing: 0.2 },
+  meta: { fontSize: 15, lineHeight: 20, fontWeight: '500' as const, letterSpacing: 0.2 },
   /** ~label — chips, badges, uppercase section headers */
-  label: { fontSize: 12, lineHeight: 16, fontWeight: '500' as const, letterSpacing: 0.4 },
-  chip: { fontSize: 13, lineHeight: 18, fontWeight: '500' as const },
+  label: { fontSize: 14, lineHeight: 20, fontWeight: '500' as const, letterSpacing: 0.4 },
+  chip: { fontSize: 15, lineHeight: 20, fontWeight: '500' as const },
   button: { fontSize: 16, lineHeight: 22, fontWeight: '600' as const },
 } as const
 
