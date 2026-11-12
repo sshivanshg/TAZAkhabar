@@ -1,7 +1,7 @@
 import { render, waitFor } from '@testing-library/react-native'
 
 const mockRedirect = jest.fn()
-const mockResolveCitySlug = jest.fn(async () => 'global')
+const mockResolveCitySlug = jest.fn(async (): Promise<string | null> => 'global')
 
 jest.mock('@react-native-async-storage/async-storage', () => ({
   getItem: jest.fn(async () => null),
@@ -10,6 +10,7 @@ jest.mock('@react-native-async-storage/async-storage', () => ({
 }))
 
 jest.mock('expo-router', () => ({
+  useLocalSearchParams: () => ({}),
   Redirect: (props: { href: unknown }) => {
     mockRedirect(props.href)
     return null
@@ -34,7 +35,7 @@ jest.mock('../src/preferences/LanguagePreferenceContext', () => ({
 }))
 
 jest.mock('../src/storage/cityPreference', () => ({
-  resolveCitySlug: () => mockResolveCitySlug(),
+  getStoredCitySlug: () => mockResolveCitySlug(),
 }))
 
 import IndexScreen from '../app/index'
@@ -46,7 +47,7 @@ describe('boot index', () => {
     mockResolveCitySlug.mockResolvedValue('global')
   })
 
-  it('sends readers to Home with the effective city, never /city', async () => {
+  it('sends returning readers straight to Home with their city', async () => {
     mockResolveCitySlug.mockResolvedValue('jhansi')
     render(<IndexScreen />)
 
@@ -59,15 +60,12 @@ describe('boot index', () => {
     expect(mockRedirect).not.toHaveBeenCalledWith('/city')
   })
 
-  it('defaults first-time readers to All India Home', async () => {
-    mockResolveCitySlug.mockResolvedValue('global')
+  it('sends a first-time reader (no stored city) to the city step', async () => {
+    mockResolveCitySlug.mockResolvedValue(null)
     render(<IndexScreen />)
 
     await waitFor(() => {
-      expect(mockRedirect).toHaveBeenCalledWith({
-        pathname: '/(tabs)',
-        params: { city: 'global' },
-      })
+      expect(mockRedirect).toHaveBeenCalledWith('/city')
     })
   })
 })

@@ -5,6 +5,7 @@ import Newspaper from 'lucide-react-native/icons/newspaper'
 import { useTheme } from '../preferences/ThemePreferenceContext'
 import { HIT_TARGET, radius, space, typography, type AppColors } from '../theme/tokens'
 import { iconStroke } from '../theme/categoryIcons'
+import { useT } from '../i18n'
 
 type Props = {
   onPress: () => void
@@ -12,15 +13,16 @@ type Props = {
 }
 
 /** Compact “See more” cluster control — outline pill with a newspaper mark. */
-export function SeeMorePill({ onPress, accessibilityLabel = 'See more' }: Props) {
+export function SeeMorePill({ onPress, accessibilityLabel }: Props) {
   const { colors } = useTheme()
+  const t = useT()
   const styles = useMemo(() => createStyles(colors), [colors])
 
   return (
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
-      accessibilityLabel={accessibilityLabel}
+      accessibilityLabel={accessibilityLabel ?? t('common.seeMore')}
       style={({ pressed }) => [styles.pill, pressed ? styles.pressed : null]}
     >
       <Newspaper size={14} strokeWidth={iconStroke} color={colors.accent} />
@@ -30,7 +32,7 @@ export function SeeMorePill({ onPress, accessibilityLabel = 'See more' }: Props)
         fontWeight="$semibold"
         color={colors.accent}
       >
-        See more
+        {t('common.seeMore')}
       </Text>
     </Pressable>
   )

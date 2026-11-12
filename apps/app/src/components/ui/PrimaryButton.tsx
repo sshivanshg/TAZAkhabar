@@ -3,6 +3,7 @@ import { ActivityIndicator, Pressable, StyleSheet, type StyleProp, type ViewStyl
 import { Text } from '@gluestack-ui/themed'
 import { useTheme } from '../../preferences/ThemePreferenceContext'
 import { HIT_TARGET, radius, space, typography, type AppColors } from '../../theme/tokens'
+import { useAccessibilityLanguage } from '../../i18n'
 
 type CommonProps = {
   label: string
@@ -26,6 +27,7 @@ export function PrimaryButton({
   fullWidth,
 }: CommonProps) {
   const { colors } = useTheme()
+  const a11yLang = useAccessibilityLanguage()
   const styles = useMemo(() => createStyles(colors), [colors])
 
   return (
@@ -33,6 +35,7 @@ export function PrimaryButton({
       onPress={onPress}
       disabled={disabled || loading}
       accessibilityRole="button"
+      accessibilityLanguage={a11yLang}
       accessibilityLabel={accessibilityLabel ?? label}
       accessibilityState={{ disabled: Boolean(disabled || loading) }}
       style={({ pressed }) => [
@@ -74,6 +77,7 @@ export function SecondaryButton({
   outline = false,
 }: CommonProps & { outline?: boolean }) {
   const { colors } = useTheme()
+  const a11yLang = useAccessibilityLanguage()
   const styles = useMemo(() => createStyles(colors), [colors])
 
   return (
@@ -81,6 +85,7 @@ export function SecondaryButton({
       onPress={onPress}
       disabled={disabled}
       accessibilityRole="button"
+      accessibilityLanguage={a11yLang}
       accessibilityLabel={accessibilityLabel ?? label}
       accessibilityState={{ disabled: Boolean(disabled) }}
       style={({ pressed }) => [

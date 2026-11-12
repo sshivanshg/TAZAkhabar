@@ -6,6 +6,7 @@ import { useTheme } from '../../preferences/ThemePreferenceContext'
 import { space, typography } from '../../theme/tokens'
 import { PrimaryButton } from './PrimaryButton'
 import { SecondaryButton } from './PrimaryButton'
+import { useAccessibilityLanguage, useT } from '../../i18n'
 
 type Props = {
   title?: string
@@ -34,19 +35,23 @@ function OfflineIcon({ stroke }: { stroke: string }) {
 }
 
 /**
- * Vertically centered error / empty failure state.
+ * Error state: explanation in the upper half, actions in the lower half.
  * Primary + secondary buttons stay visually distinct.
  */
 export function ErrorState({
-  title = 'Something went wrong',
+  title: titleProp,
   message,
   onRetry,
-  retryLabel = 'Try again',
+  retryLabel: retryLabelProp,
   retryAccessibilityLabel,
   onSecondary,
-  secondaryLabel = 'Back to feed',
+  secondaryLabel: secondaryLabelProp,
 }: Props) {
   const { colors } = useTheme()
+  const t = useT()
+  const title = titleProp ?? t('common.somethingWentWrong')
+  const retryLabel = retryLabelProp ?? t('common.tryAgain')
+  const secondaryLabel = secondaryLabelProp ?? t('error.backToFeed')
 
   return (
     <View style={styles.root} accessibilityRole="alert">
@@ -71,13 +76,16 @@ export function ErrorState({
         >
           {message}
         </Text>
+      </View>
+      {/* Actions sit in the lower half, inside thumb reach on a phone. */}
+      <View style={[styles.group, styles.actions]}>
         {onRetry ? (
           <PrimaryButton
             label={retryLabel}
             onPress={onRetry}
             accessibilityLabel={
               retryAccessibilityLabel ??
-              (retryLabel === 'Try again' ? 'Retry loading articles' : retryLabel)
+              (retryLabel === t('common.tryAgain') ? t('error.retryArticlesA11y') : retryLabel)
             }
             fullWidth
             style={styles.primary}
@@ -100,7 +108,7 @@ export function ErrorState({
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: 'space-evenly',
     alignItems: 'center',
     paddingHorizontal: space.xl,
     paddingVertical: space.xl,
@@ -111,6 +119,9 @@ const styles = StyleSheet.create({
     maxWidth: 360,
     alignItems: 'center',
     gap: space.xs,
+  },
+  actions: {
+    marginTop: space.xl,
   },
   message: {
     marginBottom: space.sm,

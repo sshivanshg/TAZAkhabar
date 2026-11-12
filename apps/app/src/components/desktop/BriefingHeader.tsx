@@ -4,6 +4,7 @@ import { Text } from '@gluestack-ui/themed'
 import { useTheme } from '../../preferences/ThemePreferenceContext'
 import { formatPickerDateLabel, todayCityIso } from '../../utils/cityCalendar'
 import { space, typography, type AppColors } from '../../theme/tokens'
+import { useT } from '../../i18n'
 
 type Props = {
   /** When omitted, shows the default “Your briefing” home title with today’s date. */
@@ -12,12 +13,14 @@ type Props = {
 }
 
 /** Page title for expanded home — briefing date or a category-focused heading. */
-export function BriefingHeader({ title = 'Your briefing', subtitle }: Props) {
+export function BriefingHeader({ title: titleProp, subtitle }: Props) {
   const { colors } = useTheme()
+  const t = useT()
+  const title = titleProp ?? t('briefing.title')
   const styles = useMemo(() => createStyles(colors), [colors])
   const todayLabel = formatPickerDateLabel(todayCityIso())
   const resolvedSubtitle =
-    subtitle ?? (title === 'Your briefing' ? todayLabel : undefined)
+    subtitle ?? (titleProp == null ? todayLabel : undefined)
 
   return (
     <View style={styles.wrap}>

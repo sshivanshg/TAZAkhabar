@@ -250,15 +250,15 @@ export const FEED_CATEGORIES = [
 
 export type FeedCategory = (typeof FEED_CATEGORIES)[number]
 
-/** Reader-facing labels — "All" reads as Google News "For you". */
-export const FEED_CATEGORY_LABELS: Record<FeedCategory, string> = {
-  All: 'For you',
-  Local: 'Local',
-  Health: 'Health',
-  Sports: 'Sports',
-  Business: 'Business',
-  State: 'State',
-}
+/** Catalog keys for the reader-facing labels — "All" reads as Google News "For you". */
+export const FEED_CATEGORY_LABEL_KEYS = {
+  All: 'category.All',
+  Local: 'category.Local',
+  Health: 'category.Health',
+  Sports: 'category.Sports',
+  Business: 'category.Business',
+  State: 'category.State',
+} as const satisfies Record<FeedCategory, string>
 
 export function isFeedCategory(value: string | undefined | null): value is FeedCategory {
   return value != null && (FEED_CATEGORIES as readonly string[]).includes(value)

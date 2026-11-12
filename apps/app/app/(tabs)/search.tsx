@@ -76,6 +76,7 @@ import { isDesktopLayout, useBreakpoint } from '../../src/hooks/useBreakpoint'
 import { articleRouteParams } from '../../src/utils/articleRouteParams'
 import { openArticleSource } from '../../src/utils/openArticleSource'
 import { shareArticle } from '../../src/utils/shareArticle'
+import { feedCategoryLabel, readableErrorMessage, translate, useT } from '../../src/i18n'
 
 export default function DiscoverScreen() {
   return (
@@ -95,6 +96,7 @@ function DiscoverBody() {
   const params = useLocalSearchParams<{ category?: string; from?: string; q?: string }>()
   const prefs = useFeedPreferences()
   const { preferredLanguage } = useLanguagePreference()
+  const t = useT()
   const tabClearance = useTabBarClearance()
   const desktop = isDesktopLayout(useBreakpoint())
   const [citySlug, setCitySlug] = useState<string | null>(null)
@@ -239,7 +241,7 @@ function DiscoverBody() {
         if (mode === 'replace' && !paintedFromCache) {
           setArticles([])
         }
-        setError(err instanceof Error ? err.message : 'Could not load stories')
+        setError(readableErrorMessage(err, 'search.loadFailed'))
       } finally {
         if (gen === loadGenRef.current) {
           setLoading(false)
@@ -352,18 +354,21 @@ function DiscoverBody() {
     () => [
       {
         key: 'city',
-        label: 'Change city',
+        label: t('common.changeCity'),
         onPress: () => router.push({ pathname: '/(tabs)', params: { pickCity: '1' } }),
       },
       ...visibleCategories
         .filter((c) => c !== 'All')
         .map((c) => ({
           key: `cat-${c}`,
-          label: category === c ? `${c} (selected)` : `Show ${c}`,
+          label:
+            category === c
+              ? t('search.categorySelected', { category: feedCategoryLabel(t, c) })
+              : t('search.showCategory', { category: feedCategoryLabel(t, c) }),
           onPress: () => setCategory(c),
         })),
     ],
-    [visibleCategories, category, router],
+    [visibleCategories, category, router, t],
   )
 
   return (
@@ -378,7 +383,7 @@ function DiscoverBody() {
           <Pressable
             onPress={() => router.back()}
             accessibilityRole="button"
-            accessibilityLabel="Go back"
+            accessibilityLabel={t('common.goBack')}
             hitSlop={8}
             style={({ pressed }) => [styles.backBtn, pressed ? styles.pressed : null]}
           >
@@ -387,10 +392,10 @@ function DiscoverBody() {
         ) : null}
         <VStack flex={1} pl={showBack ? '$1' : '$2'} pr="$2">
           <Text fontSize={24} lineHeight={30} fontWeight="$bold" color={colors.text}>
-            Discover
+            {t('search.title')}
           </Text>
           <Text fontSize={14} lineHeight={20} color={colors.textSecondary} mt="$0.5">
-            News from {cityTitle} and beyond
+            {t('search.subtitle', { city: cityTitle })}
           </Text>
         </VStack>
       </View>
@@ -400,9 +405,9 @@ function DiscoverBody() {
         <TextInput
           value={query}
           onChangeText={setQuery}
-          placeholder="Search"
+          placeholder={t('search.placeholder')}
           placeholderTextColor={colors.textMuted}
-          accessibilityLabel="Search headlines"
+          accessibilityLabel={t('common.searchHeadlines')}
           returnKeyType="search"
           autoCorrect={false}
           autoCapitalize="none"
@@ -411,7 +416,7 @@ function DiscoverBody() {
         <Pressable
           onPress={() => setFilterOpen(true)}
           accessibilityRole="button"
-          accessibilityLabel="Filter options"
+          accessibilityLabel={t('search.filterOptions')}
           hitSlop={4}
           style={({ pressed }) => [styles.filterBtn, pressed ? styles.pressed : null]}
         >
@@ -448,13 +453,13 @@ function DiscoverBody() {
           style={desktop ? styles.errorColumn : undefined}
         >
           <ErrorState
-            title="Something went wrong"
+            title={t('common.somethingWentWrong')}
             message={error}
             onRetry={() => void load('replace')}
-            retryLabel="Try again"
-            retryAccessibilityLabel="Retry loading stories"
+            retryLabel={t('common.tryAgain')}
+            retryAccessibilityLabel={t('search.retryA11y')}
             onSecondary={() => router.replace('/(tabs)')}
-            secondaryLabel="Back to feed"
+            secondaryLabel={t('search.backToFeed')}
           />
         </View>
       ) : null}
@@ -515,15 +520,18 @@ function DiscoverBody() {
           ListEmptyComponent={
             <View style={styles.emptyWrap}>
               <EmptyState
-                title={debounced ? 'No matches' : 'No stories yet'}
+                title={debounced ? t('search.noMatches') : t('home.emptyTitle')}
                 message={
                   debounced
-                    ? `No headlines matched “${debounced}” for ${cityTitle}.`
-                    : `We do not have articles for ${cityTitle}${
-                        category !== 'All' ? ` in ${category}` : ''
-                      } right now.`
+                    ? t('search.noMatchesMessage', { query: debounced, city: cityTitle })
+                    : category !== 'All'
+                      ? t('search.emptyMessageCategory', {
+                          city: cityTitle,
+                          category: feedCategoryLabel(t, category),
+                        })
+                      : t('search.emptyMessage', { city: cityTitle })
                 }
-                primaryLabel={debounced ? 'Clear search' : 'Browse Home'}
+                primaryLabel={debounced ? t('common.clearSearch') : t('search.browseHome')}
                 onPrimary={
                   debounced
                     ? () => {
@@ -532,14 +540,14 @@ function DiscoverBody() {
                       }
                     : () => router.replace('/(tabs)')
                 }
-                primaryAccessibilityLabel={debounced ? 'Clear search' : 'Browse Home'}
-                secondaryLabel={debounced ? 'Back to home' : 'Change city'}
+                primaryAccessibilityLabel={debounced ? t('common.clearSearch') : t('search.browseHome')}
+                secondaryLabel={debounced ? t('search.backToHome') : t('common.changeCity')}
                 onSecondary={
                   debounced
                     ? () => router.replace('/(tabs)')
                     : () => router.push({ pathname: '/(tabs)', params: { pickCity: '1' } })
                 }
-                secondaryAccessibilityLabel={debounced ? 'Back to home' : 'Change city'}
+                secondaryAccessibilityLabel={debounced ? t('search.backToHome') : t('common.changeCity')}
               />
             </View>
           }
@@ -548,7 +556,7 @@ function DiscoverBody() {
 
       <ActionSheet
         visible={filterOpen}
-        title="Filters"
+        title={t('search.filters')}
         items={filterItems}
         onClose={() => setFilterOpen(false)}
       />
@@ -570,9 +578,9 @@ function DiscoverBody() {
 
       <ConfirmModal
         visible={blockSourceName != null}
-        title="Block this source?"
-        message={`If you block ${blockSourceName ?? 'this source'}, you won't see stories from them again. You can change this later.`}
-        confirmLabel="Block source"
+        title={t('block.sourceTitle')}
+        message={t('block.sourceMessage', { name: blockSourceName ?? t('block.thisSource') })}
+        confirmLabel={t('block.sourceConfirm')}
         onCancel={() => setBlockSourceName(null)}
         onConfirm={() => {
           if (blockSourceName) {
@@ -584,9 +592,9 @@ function DiscoverBody() {
 
       <ConfirmModal
         visible={blockCategoryName != null}
-        title="Block this category?"
-        message={`If you block ${blockCategoryName ?? 'this category'}, you won't see stories in it again. You can change this later.`}
-        confirmLabel="Block category"
+        title={t('block.categoryTitle')}
+        message={t('block.categoryMessage', { name: blockCategoryName ? feedCategoryLabel(t, blockCategoryName) : t('block.thisCategory') })}
+        confirmLabel={t('block.categoryConfirm')}
         onCancel={() => setBlockCategoryName(null)}
         onConfirm={() => {
           if (blockCategoryName) {

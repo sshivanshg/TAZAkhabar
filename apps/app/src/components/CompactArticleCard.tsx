@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, type ReactNode } from 'react'
 import {
   Platform,
   Pressable,
@@ -18,6 +18,12 @@ import { formatRelativeTime } from '../utils/relativeTime'
 import { isHttpsUrl } from '../utils/shareToWhatsApp'
 import { SeeMorePill } from './SeeMorePill'
 import { SourceAvatar } from './SourceAvatar'
+import { MotiView } from 'moti'
+import { useMotionTransition, usePrefersReducedMotion } from '../hooks/usePrefersReducedMotion'
+import { cardPress, iconPress } from '../lib/pressFeedback'
+import { useT } from '../i18n'
+import { adaptStylesForScript } from '../theme/scriptTypography'
+import { useAppLanguage } from '../i18n'
 
 type Density = 'default' | 'compact'
 
@@ -27,6 +33,8 @@ type Props = {
   onPress: (article: ArticleResponse) => void
   onLongPress?: (article: ArticleResponse) => void
   onMorePress?: (article: ArticleResponse) => void
+  /** Extra control in the meta row (e.g. Bookmarks "Remove"), before the divider. */
+  metaAction?: ReactNode
   onSeeMorePress?: (article: ArticleResponse) => void
   /** Kept for callers; actions live in the overflow sheet for a cleaner feed. */
   onSavePress?: (article: ArticleResponse) => void
@@ -67,16 +75,22 @@ export function CompactArticleCard({
   onLongPress,
   onMorePress,
   onSeeMorePress,
+  metaAction,
   density = 'default',
 }: Props) {
   const { colors } = useTheme()
-  const styles = useMemo(() => createStyles(colors), [colors])
+  const t = useT()
+  const scriptLang = useAppLanguage()
+  const styles = useMemo(
+    () => adaptStylesForScript(createStyles(colors), scriptLang),
+    [colors, scriptLang],
+  )
   const dense = density === 'compact'
   const headline = cleanHeadline(article.headline ?? '', article.sourceName) || 'Untitled'
   const rawSummary = article.summary?.trim()
   const summary =
     rawSummary && !isRedundantSummary(article.headline, rawSummary) ? rawSummary : undefined
-  const source = article.sourceName?.trim() || 'Unknown source'
+  const source = article.sourceName?.trim() || t('common.unknownSource')
   const relative = formatRelativeTime(article.publishedAt)
   const imageUrl =
     article.imageUrl && isHttpsUrl(article.imageUrl) ? article.imageUrl.trim() : null
@@ -85,16 +99,23 @@ export function CompactArticleCard({
   const openMore = onMorePress ?? onLongPress
   const thumbSize = dense ? media.thumbDense : media.thumb
   const seeMore = onSeeMorePress ?? onPress
+  const fadeIn = useMotionTransition({ type: 'timing', duration: 180 })
 
   return (
-    <View style={styles.wrap} {...webArticleProps}>
+    <MotiView
+      from={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={fadeIn}
+      style={styles.wrap}
+      {...webArticleProps}
+    >
       <Pressable
         onPress={() => onPress(article)}
         onLongPress={onLongPress ? () => onLongPress(article) : undefined}
         delayLongPress={380}
         accessibilityRole="button"
         accessibilityLabel={`${[headline, source, relative].filter(Boolean).join('. ')}.${
-          showMore ? ' Open options for more actions.' : ''
+          showMore ? t('card.openOptionsHint') : ''
         }`}
         style={(state) => {
           const { pressed, hovered, focused } = state as WebPressableState
@@ -102,7 +123,7 @@ export function CompactArticleCard({
             styles.row,
             dense ? styles.rowDense : null,
             hovered && Platform.OS === 'web' ? styles.rowHover : null,
-            pressed ? styles.pressed : null,
+            cardPress(pressed),
             focusRing(colors.accent, focused),
           ]
         }}
@@ -156,20 +177,20 @@ export function CompactArticleCard({
           {!dense ? (
             <SeeMorePill
               onPress={() => seeMore(article)}
-              accessibilityLabel={`See more from ${source}`}
+              accessibilityLabel={t('card.seeMoreFrom', { source })}
             />
           ) : null}
           {showMore && openMore ? (
             <Pressable
               onPress={() => openMore(article)}
               accessibilityRole="button"
-              accessibilityLabel={`More options for ${headline}`}
+              accessibilityLabel={t('common.moreOptionsFor', { headline })}
               hitSlop={8}
               style={(state) => {
                 const { pressed, focused } = state as WebPressableState
                 return [
                   styles.moreButton,
-                  pressed ? styles.morePressed : null,
+                  iconPress(pressed),
                   focusRing(colors.accent, focused),
                 ]
               }}
@@ -177,10 +198,11 @@ export function CompactArticleCard({
               <Ellipsis size={18} strokeWidth={iconStroke} color={colors.textSecondary} />
             </Pressable>
           ) : null}
+          {metaAction}
         </View>
       </View>
       <View style={styles.divider} />
-    </View>
+    </MotiView>
   )
 }
 
@@ -193,13 +215,30 @@ export function CompactArticleCardSkeleton({
   withImage?: boolean
 }) {
   const { colors } = useTheme()
-  const styles = useMemo(() => createStyles(colors), [colors])
+  const t = useT()
+  const scriptLang = useAppLanguage()
+  const styles = useMemo(
+    () => adaptStylesForScript(createStyles(colors), scriptLang),
+    [colors, scriptLang],
+  )
   const dense = density === 'compact'
   const thumbSize = dense ? media.thumbDense : media.thumb
+  const reduced = usePrefersReducedMotion()
+  const pulse = useMotionTransition({
+    type: 'timing',
+    duration: 1100,
+    loop: true,
+    repeatReverse: true,
+  })
 
   return (
-    <View style={styles.wrap}>
-      <View style={[styles.row, dense ? styles.rowDense : null]}>
+    <View style={styles.wrap} accessibilityLabel={t('card.loadingStory')}>
+      <MotiView
+        from={{ opacity: reduced ? 1 : 0.55 }}
+        animate={{ opacity: 1 }}
+        transition={pulse}
+        style={[styles.row, dense ? styles.rowDense : null]}
+      >
         <View style={styles.textCol}>
           <View style={styles.sourceRow}>
             <Box h={20} w={20} bg={colors.skeleton} borderRadius={radius.xs} />
@@ -224,7 +263,7 @@ export function CompactArticleCardSkeleton({
             ]}
           />
         ) : null}
-      </View>
+      </MotiView>
       <View style={styles.divider} />
     </View>
   )

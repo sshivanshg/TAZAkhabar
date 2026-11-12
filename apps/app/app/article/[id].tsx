@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   FlatList,
   Image,
+  Linking,
   Platform,
   Pressable,
   RefreshControl,
@@ -15,7 +16,8 @@ import {
   type ViewToken,
 } from 'react-native'
 import { StatusBar } from 'expo-status-bar'
-import { useLocalSearchParams, useRouter } from 'expo-router'
+import { toggleBookmarkAction } from '../../src/lib/toggleBookmark'
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router'
 import Copy from 'lucide-react-native/icons/copy'
 import MessageCircle from 'lucide-react-native/icons/message-circle'
 import type { ArticleResponse } from '@tazakhabar/shared-types'
@@ -26,19 +28,17 @@ import {
   ArticleSkeleton,
   ArticleStory,
   ArticleTopBar,
+  ContentFadeIn,
   CaughtUpFooter,
   FeedSentinel,
 } from '../../src/components/article'
 import { ScreenErrorBoundary } from '../../src/components/ScreenErrorBoundary'
+import { readableErrorMessage, translate, useT } from '../../src/i18n'
 import { BottomSheet } from '../../src/components/ui/BottomSheet'
+import { iconPress } from '../../src/lib/pressFeedback'
 import { useLanguagePreference } from '../../src/preferences/LanguagePreferenceContext'
 import { useTheme } from '../../src/preferences/ThemePreferenceContext'
-import {
-  addBookmark,
-  articleToBookmark,
-  isBookmarked,
-  removeBookmark,
-} from '../../src/storage/bookmarks'
+import { isBookmarked } from '../../src/storage/bookmarks'
 import { getEffectiveCitySlug } from '../../src/storage/cityPreference'
 import { getPersonalizationId } from '../../src/storage/personalizationId'
 import { PAGE_SIZE } from '../../src/theme/tokens'
@@ -48,14 +48,19 @@ import {
   type ReaderColors,
 } from '../../src/theme/readerTokens'
 import { todayCityIso } from '../../src/utils/cityCalendar'
-import { formatLocationLabel } from '../../src/utils/formatLocationLabel'
 import { openArticleSource } from '../../src/utils/openArticleSource'
 import {
   articleShareUrl,
   copyTextToClipboard,
   shareArticle,
 } from '../../src/utils/shareArticle'
-import { shareArticleToWhatsApp, isHttpsUrl } from '../../src/utils/shareToWhatsApp'
+import {
+  canOpenWhatsApp,
+  formatWhatsAppShareText,
+  isHttpsUrl,
+  shareArticleToWhatsApp,
+  whatsAppShareUrl,
+} from '../../src/utils/shareToWhatsApp'
 import { replaceArticlePathId } from '../../src/utils/syncArticleUrl'
 import { attachWebArticlePaging } from '../../src/utils/pagedArticleScroll'
 import { setWebRobots } from '../../src/utils/setWebRobots'
@@ -86,6 +91,15 @@ function paramsLookComplete(params: {
 
 const HERO_ELEVATE_AFTER = 120
 
+/** Primary share: open WhatsApp directly when installed, else the existing share path. */
+async function openWhatsAppShare(article: ArticleResponse): Promise<void> {
+  if (Platform.OS !== 'web' && (await canOpenWhatsApp())) {
+    await Linking.openURL(whatsAppShareUrl(formatWhatsAppShareText(article)))
+    return
+  }
+  await shareArticleToWhatsApp(article)
+}
+
 function ArticleFeedBody() {
   const router = useRouter()
   const insets = useSafeAreaInsets()
@@ -110,8 +124,9 @@ function ArticleFeedBody() {
   const routeCity = paramString(raw.city)
   const feedCategory = paramString(raw.feedCategory)
   const routeDate = paramString(raw.date)
-  const { preferredLanguage } = useLanguagePreference()
+  const { preferredLanguage, setPreferredLanguage } = useLanguagePreference()
   const { readerColors } = useTheme()
+  const t = useT()
   const styles = useMemo(() => createStyles(readerColors), [readerColors])
   const lang = preferredLanguage
 
@@ -196,7 +211,7 @@ function ArticleFeedBody() {
   const loadStack = useCallback(async (mode: 'replace' | 'refresh' = 'replace') => {
     if (!citySlug) {
       if (!id) {
-        setError('Article not found')
+        setError(translate('article.notFound'))
         setLoading(false)
       }
       return
@@ -230,8 +245,9 @@ function ArticleFeedBody() {
           startIndex = 0
         } catch {
           if (!initialFromParams) {
-            setError('Article not found')
+            setError(translate('article.notFound'))
             setStack([])
+            setHasMore(false)
             setLoading(false)
             return
           }
@@ -241,8 +257,9 @@ function ArticleFeedBody() {
       }
 
       if (items.length === 0) {
-        setError('Article not found')
+        setError(translate('article.notFound'))
         setStack([])
+        setHasMore(false)
         setLoading(false)
         return
       }
@@ -270,7 +287,7 @@ function ArticleFeedBody() {
         activeIndexRef.current = 0
         return
       }
-      setError(err instanceof Error ? err.message : 'Could not load article')
+      setError(readableErrorMessage(err, 'article.loadFailed'))
     } finally {
       setLoading(false)
       setRefreshing(false)
@@ -403,10 +420,11 @@ function ArticleFeedBody() {
   }, [activeLocalIndex, visibleStack, hydrateArticle])
 
   useEffect(() => {
-    if (activeLocalIndex >= visibleStack.length - 3 && hasMore) {
+    // Never page the feed under a dead deep link (404): no stack, no load-more.
+    if (activeLocalIndex >= visibleStack.length - 3 && !error && visibleStack.length > 0 && hasMore) {
       void loadMore()
     }
-  }, [activeLocalIndex, visibleStack.length, hasMore, loadMore])
+  }, [activeLocalIndex, visibleStack.length, hasMore, loadMore, error])
 
   useEffect(() => {
     const next = visibleStack[activeLocalIndex + 1]
@@ -471,7 +489,7 @@ function ArticleFeedBody() {
     async (article: ArticleResponse) => {
       const result = await shareArticle(article)
       if (result === 'copied') {
-        flashNotice('Link copied')
+        flashNotice(translate('article.linkCopied'))
         return
       }
       if (result === 'unavailable') {
@@ -481,30 +499,40 @@ function ArticleFeedBody() {
     [flashNotice],
   )
 
+  const setBookmarkSaved = useCallback((id: number, saved: boolean) => {
+    setBookmarkedIds((prev) => {
+      const next = new Set(prev)
+      if (saved) next.add(id)
+      else next.delete(id)
+      return next
+    })
+  }, [])
+  // Live view of saved ids so a fast double-tap reads the latest state, not a stale closure.
+  const bookmarkedIdsRef = useRef(bookmarkedIds)
+  bookmarkedIdsRef.current = bookmarkedIds
+
   const onToggleBookmark = useCallback(
     async (article: ArticleResponse) => {
       if (article.id == null) {
         return
       }
-      const snapshot = articleToBookmark(article, citySlug || undefined)
-      if (!snapshot) {
-        return
-      }
-      const currently = bookmarkedIds.has(article.id)
-      if (currently) {
-        await removeBookmark(article.id)
-        setBookmarkedIds((prev) => {
-          const next = new Set(prev)
-          next.delete(article.id!)
-          return next
-        })
-      } else {
-        await addBookmark(snapshot)
-        setBookmarkedIds((prev) => new Set(prev).add(article.id!))
-      }
+      await toggleBookmarkAction({
+        article,
+        citySlug: citySlug || undefined,
+        currentlySaved: bookmarkedIdsRef.current.has(article.id),
+        setSaved: setBookmarkSaved,
+      })
     },
-    [bookmarkedIds, citySlug],
+    [citySlug, setBookmarkSaved],
   )
+
+  // "Next story ↓" cue: advance the pager one page (same snap the swipe uses).
+  const goToNextStory = useCallback((fromIndex: number) => {
+    listRef.current?.scrollToOffset({
+      offset: pageHeightRef.current * (fromIndex + 1),
+      animated: true,
+    })
+  }, [])
 
   const onReadSource = useCallback(
     (article: ArticleResponse, storyIndex: number) => {
@@ -555,7 +583,6 @@ function ArticleFeedBody() {
   const loadedCount = visibleStack.length
   const scrollProgress =
     loadedCount <= 1 ? 0 : activeLocalIndex / Math.max(1, loadedCount - 1)
-  const cityLabel = formatLocationLabel(citySlug)
   const pageHeight = viewportHeight > 0 ? viewportHeight : windowHeight
   const padTop = articleChromeTop(insets.top)
   const padBottom = articleChromeBottom(insets.bottom)
@@ -632,15 +659,15 @@ function ArticleFeedBody() {
   if (error && stack.length === 0) {
     return (
       <View style={styles.center}>
-        <Text style={styles.errorTitle}>Story unavailable</Text>
+        <Text style={styles.errorTitle}>{t('article.unavailable')}</Text>
         <Text style={styles.errorBody}>{error}</Text>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Go back"
+          accessibilityLabel={t('common.goBack')}
           onPress={onBack}
-          style={styles.errorBtn}
+          style={({ pressed }) => [styles.errorBtn, iconPress(pressed)]}
         >
-          <Text style={styles.errorBtnText}>Back</Text>
+          <Text style={styles.errorBtnText}>{t('common.back')}</Text>
         </Pressable>
       </View>
     )
@@ -658,6 +685,8 @@ function ArticleFeedBody() {
       {...(Platform.OS === 'web' ? ({ role: 'main' } as object) : null)}
     >
       <StatusBar style="dark" />
+      {/* iOS edge/full-screen swipe-back pops to the screen that opened the story. */}
+      <Stack.Screen options={{ gestureEnabled: true, fullScreenGestureEnabled: true }} />
       <FlatList
         ref={listRef}
         testID="article-feed"
@@ -673,9 +702,12 @@ function ArticleFeedBody() {
               padTop={padTop}
               padBottom={padBottom}
             >
+              <ContentFadeIn>
               <ArticleStory
                 article={item}
-                cityLabel={cityLabel}
+                citySlug={citySlug}
+                showNextCue={itemIndex < visibleStack.length - 1 || hasMore}
+                onNextStory={() => goToNextStory(itemIndex)}
                 priorityImage={itemIndex <= 1}
                 bodyLoading={
                   item.id != null &&
@@ -686,6 +718,7 @@ function ArticleFeedBody() {
                 onReadSource={() => onReadSource(item, globalIndex)}
                 onRetry={() => void retryArticle(item)}
               />
+              </ContentFadeIn>
             </ArticlePage>
           )
         }}
@@ -697,11 +730,11 @@ function ArticleFeedBody() {
                 {loadMoreError ? (
                   <Pressable
                     accessibilityRole="button"
-                    accessibilityLabel="Retry loading the next story"
+                    accessibilityLabel={t('article.retryNextA11y')}
                     onPress={() => void loadMore()}
-                    style={styles.retryMore}
+                    style={({ pressed }) => [styles.retryMore, iconPress(pressed)]}
                   >
-                    <Text style={styles.retryMoreText}>Couldn’t load the next story. Retry</Text>
+                    <Text style={styles.retryMoreText}>{t('article.nextFailed')}</Text>
                   </Pressable>
                 ) : null}
                 <FeedSentinel disabled={!hasMore} onVisible={() => void loadMore()} />
@@ -713,10 +746,8 @@ function ArticleFeedBody() {
         }
         showsVerticalScrollIndicator={false}
         pagingEnabled
-        snapToInterval={pageHeight}
-        snapToAlignment="start"
         disableIntervalMomentum
-        decelerationRate="normal"
+        decelerationRate="fast"
         getItemLayout={(_, index) => ({
           length: pageHeight,
           offset: pageHeight * index,
@@ -755,10 +786,15 @@ function ArticleFeedBody() {
 
       <ArticleBottomBar
         bookmarked={activeArticle?.id != null && bookmarkedIds.has(activeArticle.id)}
+        onBack={onBack}
+        language={lang}
+        onLanguageChange={setPreferredLanguage}
         onShare={() => {
-          if (activeArticle) {
-            void onShare(activeArticle)
+          if (!activeArticle) {
+            return
           }
+          // WhatsApp is the primary share; fall back to the generic share path.
+          openWhatsAppShare(activeArticle).catch(() => void onShare(activeArticle))
         }}
         onSave={() => {
           if (activeArticle) {
@@ -778,21 +814,21 @@ function ArticleFeedBody() {
 
       <BottomSheet
         visible={shareTarget != null}
-        title="Share story"
+        title={t('article.shareStory')}
         onClose={() => setShareTarget(null)}
         items={
           shareTarget
             ? [
                 {
                   key: 'copy',
-                  label: 'Copy link',
+                  label: t('article.copyLink'),
                   Icon: Copy,
                   onPress: () => {
                     const url = articleShareUrl(shareTarget)
                     if (url) {
                       void copyTextToClipboard(url).then((ok) => {
                         if (ok) {
-                          flashNotice('Link copied')
+                          flashNotice(translate('article.linkCopied'))
                         }
                       })
                     }

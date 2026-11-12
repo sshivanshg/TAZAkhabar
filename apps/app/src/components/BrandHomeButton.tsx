@@ -5,6 +5,7 @@ import { useTheme } from '../preferences/ThemePreferenceContext'
 import { goToGlobalHome } from '../navigation/goToGlobalHome'
 import { HIT_TARGET, radius, space, type AppColors } from '../theme/tokens'
 import { BrandMark } from './BrandMark'
+import { useT } from '../i18n'
 
 type Props = {
   /** Mark size in px. */
@@ -15,6 +16,7 @@ type Props = {
 
 export function BrandHomeButton({ size = 28, showWordmark = false }: Props) {
   const { colors } = useTheme()
+  const t = useT()
   const styles = useMemo(() => createStyles(colors), [colors])
 
   const onPress = useCallback(() => {
@@ -25,7 +27,7 @@ export function BrandHomeButton({ size = 28, showWordmark = false }: Props) {
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
-      accessibilityLabel="All India home feed"
+      accessibilityLabel={t('brandHome.a11y')}
       hitSlop={6}
       style={({ pressed }) => [
         styles.hit,

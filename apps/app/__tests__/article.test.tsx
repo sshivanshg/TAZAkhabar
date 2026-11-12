@@ -19,7 +19,15 @@ jest.mock('expo-router', () => ({
   }),
   useLocalSearchParams: () => mockParams,
   usePathname: () => '/article/1',
+  Stack: { Screen: () => null },
 }))
+
+const mockShowToast = jest.fn()
+jest.mock(
+  '../src/components/ui/Toast',
+  () => ({ showToast: (...args: unknown[]) => mockShowToast(...args) }),
+  { virtual: true },
+)
 
 jest.mock('../src/api/client', () => ({
   apiClient: {
@@ -40,6 +48,14 @@ jest.mock('@react-native-async-storage/async-storage', () => ({
   setItem: jest.fn(async () => undefined),
 }))
 
+jest.mock('expo-haptics', () => ({
+  selectionAsync: jest.fn(() => Promise.resolve()),
+  impactAsync: jest.fn(() => Promise.resolve()),
+  notificationAsync: jest.fn(() => Promise.resolve()),
+  ImpactFeedbackStyle: { Light: 'light' },
+  NotificationFeedbackType: { Success: 'success' },
+}))
+
 jest.mock('react-native-svg', () => {
   const React = require('react')
   const { View } = require('react-native')
@@ -58,6 +74,10 @@ jest.mock('react-native-svg', () => {
   }
 })
 
+import AsyncStorage from '@react-native-async-storage/async-storage'
+import * as Haptics from 'expo-haptics'
+import { AccessibilityInfo, Platform } from 'react-native'
+import { BOOKMARKS_STORAGE_KEY } from '../src/storage/bookmarks'
 import ArticleScreen from '../app/article/[id]'
 
 const listed: ArticleResponse = {
@@ -125,7 +145,10 @@ describe('ArticleScreen', () => {
     expect(await screen.findByText('Fetched headline')).toBeTruthy()
     expect(await screen.findByText('Full story from the publisher.')).toBeTruthy()
     expect(screen.getByTestId('article-bottom-bar')).toBeTruthy()
-    expect(screen.getByLabelText('Share')).toBeTruthy()
+    expect(screen.getByLabelText('Share on WhatsApp')).toBeTruthy()
+    expect(screen.getByText('WhatsApp')).toBeTruthy()
+    expect(screen.getByLabelText('Back to news')).toBeTruthy()
+    expect(screen.getByTestId('language-segment')).toBeTruthy()
     expect(screen.getByLabelText('Save')).toBeTruthy()
     expect(mockGetArticles).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -151,12 +174,15 @@ describe('ArticleScreen', () => {
 
     await screen.findByText('Fetched headline')
     const feed = screen.UNSAFE_getByType(FlatList)
-    const pageHeight = feed.props.snapToInterval as number
+    const firstPage = feed.props.getItemLayout(null, 0)
+    const pageHeight = firstPage.length as number
     const secondPage = feed.props.getItemLayout(null, 1)
 
     expect(feed.props.pagingEnabled).toBe(true)
     expect(feed.props.disableIntervalMomentum).toBe(true)
-    expect(feed.props.decelerationRate).toBe('normal')
+    expect(feed.props.decelerationRate).toBe('fast')
+    expect(feed.props.snapToInterval).toBeUndefined()
+    expect(feed.props.snapToAlignment).toBeUndefined()
     expect(feed.props.testID).toBe('article-feed')
     expect(pageHeight).toBeGreaterThan(0)
     expect(secondPage).toEqual({
@@ -245,6 +271,23 @@ describe('ArticleScreen', () => {
     renderArticle()
 
     expect(await screen.findByText('Story unavailable')).toBeTruthy()
+  })
+
+  it('dead deep link: not-found id shows unavailable and fetches no more feed', async () => {
+    mockParams.id = '999999999'
+    mockGetArticles.mockResolvedValue({
+      items: [{ id: 1, headline: 'Top story', summary: 's', sourceName: 'X', sourceUrl: 'https://x.test/1' }],
+      total: 40,
+      offset: 0,
+      limit: 20,
+    })
+    mockGetArticle.mockRejectedValueOnce(new Error('not found'))
+    renderArticle()
+
+    expect(await screen.findByText('Story unavailable')).toBeTruthy()
+    await new Promise((r) => setTimeout(r, 50))
+    expect(mockGetArticles).toHaveBeenCalledTimes(1)
+    expect(screen.queryByText('Top story')).toBeNull()
   })
 
   it('does not render a source CTA when the publisher URL is missing', async () => {
@@ -337,5 +380,103 @@ describe('ArticleScreen', () => {
     })
 
     expect(screen.queryByText('Unable to load this story.')).toBeNull()
+  })
+
+  it('Back to news in the bottom bar returns Home', async () => {
+    renderArticle()
+
+    await screen.findByText('Fetched headline')
+    fireEvent.press(screen.getByLabelText('Back to news'))
+
+    expect(mockReplace).toHaveBeenCalledWith('/(tabs)')
+  })
+
+  it('shows a calm next-story cue when another story follows', async () => {
+    renderArticle()
+
+    await screen.findByText('Fetched headline')
+    expect(screen.getAllByText('Next story ↓').length).toBeGreaterThan(0)
+  })
+
+  it('labels the eyebrow with the reader city', async () => {
+    renderArticle()
+
+    await screen.findByText('Fetched headline')
+    expect(screen.getAllByText('JHANSI').length).toBeGreaterThan(0)
+    expect(screen.queryByText('GLOBAL')).toBeNull()
+  })
+
+  it('never labels a story GLOBAL for the All India feed', async () => {
+    mockParams.city = 'global'
+    renderArticle()
+
+    await screen.findByText('Fetched headline')
+    expect(screen.queryByText('GLOBAL')).toBeNull()
+    expect(screen.queryByText('global')).toBeNull()
+  })
+
+  it('confirms save and offers undo on remove via toast', async () => {
+    renderArticle()
+
+    await screen.findByText('Fetched headline')
+    fireEvent.press(screen.getByLabelText('Save'))
+    await waitFor(() =>
+      expect(mockShowToast).toHaveBeenCalledWith(expect.objectContaining({ message: 'Saved' })),
+    )
+
+    fireEvent.press(await screen.findByLabelText('Remove bookmark'))
+    await waitFor(() =>
+      expect(mockShowToast).toHaveBeenCalledWith(
+        expect.objectContaining({ message: 'Removed', actionLabel: 'Undo' }),
+      ),
+    )
+  })
+
+  describe('bookmark save (M2)', () => {
+    const originalOS = Platform.OS
+    afterEach(() => {
+      Object.defineProperty(Platform, 'OS', { value: originalOS, configurable: true })
+    })
+
+    it('saves optimistically with a light haptic and one toast (the only announcer)', async () => {
+      const announce = jest.spyOn(AccessibilityInfo, 'announceForAccessibility')
+      renderArticle()
+      await screen.findByText('Fetched headline')
+      await act(async () => {
+        fireEvent.press(screen.getByLabelText('Save'))
+      })
+      expect(Haptics.impactAsync).toHaveBeenCalledWith('light')
+      expect(announce).not.toHaveBeenCalled()
+      expect(mockShowToast).toHaveBeenCalledTimes(1)
+      expect(mockShowToast).toHaveBeenCalledWith({ message: 'Saved' })
+      const save = screen.getByLabelText('Remove bookmark')
+      expect(save.props.accessibilityState).toEqual({ selected: true })
+    })
+
+    it('rolls back and shows an error toast when saving fails', async () => {
+      ;(AsyncStorage.setItem as jest.Mock).mockImplementation(async (key: string) => {
+        if (key === BOOKMARKS_STORAGE_KEY) throw new Error('disk full')
+      })
+      renderArticle()
+      await screen.findByText('Fetched headline')
+      await act(async () => {
+        fireEvent.press(screen.getByLabelText('Save'))
+      })
+      await waitFor(() => expect(screen.getByLabelText('Save')).toBeTruthy())
+      expect(screen.getByLabelText('Save').props.accessibilityState).toEqual({ selected: false })
+      expect(mockShowToast).toHaveBeenCalledTimes(1)
+      expect(mockShowToast).not.toHaveBeenCalledWith({ message: 'Saved' })
+      ;(AsyncStorage.setItem as jest.Mock).mockImplementation(async () => undefined)
+    })
+
+    it('does not fire haptics on web', async () => {
+      renderArticle()
+      await screen.findByText('Fetched headline')
+      Object.defineProperty(Platform, 'OS', { value: 'web', configurable: true })
+      await act(async () => {
+        fireEvent.press(screen.getByLabelText('Save'))
+      })
+      expect(Haptics.impactAsync).not.toHaveBeenCalled()
+    })
   })
 })

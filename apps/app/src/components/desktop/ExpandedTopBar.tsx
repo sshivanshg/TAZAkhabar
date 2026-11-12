@@ -18,6 +18,7 @@ import { iconStroke } from '../../theme/categoryIcons'
 import { HIT_TARGET, radius, space, typography, type AppColors } from '../../theme/tokens'
 import { ReadingLanguageToggle } from '../ReadingLanguageToggle'
 import type { ReadingLanguageCode } from '../../storage/languagePreference'
+import { useT } from '../../i18n'
 
 type Props = {
   cityTitle?: string
@@ -48,6 +49,7 @@ export function ExpandedTopBar({
   const insets = useSafeAreaInsets()
   const [query, setQuery] = useState('')
   const { colors } = useTheme()
+  const t = useT()
   const styles = useMemo(() => createStyles(colors), [colors])
 
   const submit = useCallback(() => {
@@ -72,9 +74,9 @@ export function ExpandedTopBar({
             value={query}
             onChangeText={setQuery}
             onSubmitEditing={submit}
-            placeholder="Search for topics, locations & sources"
+            placeholder={t('expandedTop.placeholder')}
             placeholderTextColor={colors.textMuted}
-            accessibilityLabel="Search headlines"
+            accessibilityLabel={t('common.searchHeadlines')}
             returnKeyType="search"
             autoCorrect={false}
             autoCapitalize="none"
@@ -88,7 +90,7 @@ export function ExpandedTopBar({
               <Pressable
                 onPress={onCityPress}
                 accessibilityRole="button"
-                accessibilityLabel={`Change city, currently ${cityTitle}`}
+                accessibilityLabel={t('common.changeCityCurrently', { city: cityTitle })}
                 style={(state) => {
                   const { pressed, hovered } = state as WebPressableState
                   return [

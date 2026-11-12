@@ -9,9 +9,21 @@ import { BrandMark } from '../src/components/BrandMark'
 import { NewsStartBackdrop } from '../src/components/onboarding/NewsStartBackdrop'
 import { useLanguagePreference } from '../src/preferences/LanguagePreferenceContext'
 import { useTheme } from '../src/preferences/ThemePreferenceContext'
+import { getStoredCitySlug } from '../src/storage/cityPreference'
+import { routeAfterLanguage } from '../src/lib/onboarding'
 import { READING_LANGUAGES, type ReadingLanguageCode } from '../src/storage/languagePreference'
+import {
+  resolveMotionTransition,
+  usePrefersReducedMotion,
+} from '../src/hooks/usePrefersReducedMotion'
+import { hapticSelection } from '../src/lib/haptics'
+import { cardPress } from '../src/lib/pressFeedback'
+import { useT } from '../src/i18n'
 import { HIT_TARGET, radius, space, type AppColors } from '../src/theme/tokens'
+import { adaptStylesForScript } from '../src/theme/scriptTypography'
+import { useAppLanguage } from '../src/i18n'
 
+// Each option is shown in its own language on purpose, whatever the app language is.
 const LANGUAGE_COPY: Record<
   ReadingLanguageCode,
   { hint: string; sample: string; accentLabel: string }
@@ -32,13 +44,23 @@ export default function LanguageScreen() {
   const router = useRouter()
   const insets = useSafeAreaInsets()
   const { colors, shadows } = useTheme()
-  const { preferredLanguage, setPreferredLanguage } = useLanguagePreference()
-  const styles = useMemo(() => createStyles(colors), [colors])
+  const { preferredLanguage, hasSelectedLanguage, setPreferredLanguage } =
+    useLanguagePreference()
+  const scriptLang = useAppLanguage()
+  const styles = useMemo(
+    () => adaptStylesForScript(createStyles(colors), scriptLang),
+    [colors, scriptLang],
+  )
+  const reduced = usePrefersReducedMotion()
+  const t = useT()
+  const motion = (config: { type: 'timing'; duration: number; delay?: number; loop?: boolean }) =>
+    resolveMotionTransition(config, reduced)
 
   const choose = (code: ReadingLanguageCode) => {
+    hapticSelection()
     setPreferredLanguage(code)
-    // Language is the only required first-run step; city defaults to All India.
-    router.replace('/(tabs)')
+    // First run continues to the city step; readers with a city go home.
+    void getStoredCitySlug().then((stored) => router.replace(routeAfterLanguage(stored)))
   }
 
   return (
@@ -57,30 +79,30 @@ export default function LanguageScreen() {
         <MotiView
           from={{ opacity: 0, translateY: 18, scale: 0.94 }}
           animate={{ opacity: 1, translateY: 0, scale: 1 }}
-          transition={{ type: 'timing', duration: 520 }}
+          transition={motion({ type: 'timing' as const, duration: 520 })}
           style={styles.hero}
         >
           <View style={styles.markWrap}>
             <MotiView
               from={{ opacity: 0.7, scale: 0.88 }}
               animate={{ opacity: 1, scale: 1 }}
-              transition={{ type: 'timing', duration: 900 }}
+              transition={motion({ type: 'timing' as const, duration: 900 })}
             >
               <BrandMark size={72} />
             </MotiView>
             <MotiView
               from={{ opacity: 0, scale: 0.6 }}
               animate={{ opacity: 1, scale: 1 }}
-              transition={{ type: 'timing', duration: 480, delay: 280 }}
+              transition={motion({ type: 'timing' as const, duration: 480, delay: 280 })}
               style={styles.liveBadge}
             >
               <MotiView
                 from={{ opacity: 0.35 }}
                 animate={{ opacity: 1 }}
-                transition={{ type: 'timing', duration: 900, loop: true }}
+                transition={motion({ type: 'timing' as const, duration: 900, loop: true })}
                 style={styles.liveDot}
               />
-              <Text style={styles.liveText}>LIVE</Text>
+              <Text style={styles.liveText}>{t('onboarding.live')}</Text>
             </MotiView>
           </View>
 
@@ -91,28 +113,29 @@ export default function LanguageScreen() {
         <MotiView
           from={{ opacity: 0, translateY: 16 }}
           animate={{ opacity: 1, translateY: 0 }}
-          transition={{ type: 'timing', duration: 480, delay: 180 }}
+          transition={motion({ type: 'timing' as const, duration: 480, delay: 180 })}
           style={styles.copyBlock}
         >
-          <Text style={styles.eyebrow}>START YOUR BRIEF</Text>
-          <Text style={styles.title}>How do you want to read the news?</Text>
-          <Text style={styles.subtitle}>Pick once — change anytime from your profile.</Text>
+          <Text style={styles.eyebrow}>{t('onboarding.eyebrow')}</Text>
+          <Text style={styles.title}>{t('onboarding.title')}</Text>
+          <Text style={styles.subtitle}>{t('onboarding.subtitle')}</Text>
         </MotiView>
 
         <View style={styles.options}>
           {READING_LANGUAGES.map((language, index) => {
-            const selected = language.code === preferredLanguage
+            // No preselection on first launch: the default 'en' is not a choice.
+            const selected = hasSelectedLanguage && language.code === preferredLanguage
             const copy = LANGUAGE_COPY[language.code]
             return (
               <MotiView
                 key={language.code}
                 from={{ opacity: 0, translateY: 22 }}
                 animate={{ opacity: 1, translateY: 0 }}
-                transition={{
-                  type: 'timing',
+                transition={motion({
+                  type: 'timing' as const,
                   duration: 420,
                   delay: 280 + index * 90,
-                }}
+                })}
               >
                 <Pressable
                   accessibilityRole="radio"
@@ -123,7 +146,7 @@ export default function LanguageScreen() {
                     styles.option,
                     selected && styles.optionSelected,
                     shadows.card,
-                    pressed && styles.pressed,
+                    cardPress(pressed),
                   ]}
                 >
                   <View style={[styles.langChip, selected && styles.langChipSelected]}>
@@ -141,7 +164,6 @@ export default function LanguageScreen() {
                     </Text>
                     <Text
                       style={[styles.optionSample, selected && styles.optionSampleSelected]}
-                      numberOfLines={1}
                     >
                       {copy.sample}
                     </Text>
@@ -163,11 +185,11 @@ export default function LanguageScreen() {
         <MotiView
           from={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ type: 'timing', duration: 500, delay: 520 }}
+          transition={motion({ type: 'timing' as const, duration: 500, delay: 520 })}
           style={styles.footer}
         >
           <View style={styles.footerRule} />
-          <Text style={styles.footerText}>Local stories · Clear language · Fresh every day</Text>
+          <Text style={styles.footerText}>{t('onboarding.footer')}</Text>
         </MotiView>
       </View>
     </View>
@@ -344,10 +366,6 @@ function createStyles(c: AppColors) {
     },
     optionActionSelected: {
       backgroundColor: c.surface,
-    },
-    pressed: {
-      opacity: 0.9,
-      transform: [{ scale: 0.985 }],
     },
     footer: {
       marginTop: space.xxl,

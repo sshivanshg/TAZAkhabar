@@ -8,14 +8,30 @@ import type { getShadows } from '../../theme/tokens'
 type Shadows = ReturnType<typeof getShadows>
 import { ARTICLE_BOTTOM_BAR_HEIGHT, type ReaderColors } from '../../theme/readerTokens'
 import { ArticleActions } from './ArticleActions'
+import { LanguageSegment } from './LanguageSegment'
+import type { ReadingLanguageCode } from '../../storage/languagePreference'
 
 type Props = {
   bookmarked: boolean
   onShare: () => void
   onSave: () => void
+  onBack?: () => void
+  language?: ReadingLanguageCode
+  onLanguageChange?: (code: ReadingLanguageCode) => void
 }
 
-export function ArticleBottomBar({ bookmarked, onShare, onSave }: Props) {
+/**
+ * Thumb-zone article bar: Back to news · EN|हि · Save · WhatsApp (primary).
+ * Every target is >= 44px and the row fits a 360px-wide phone.
+ */
+export function ArticleBottomBar({
+  bookmarked,
+  onShare,
+  onSave,
+  onBack,
+  language,
+  onLanguageChange,
+}: Props) {
   const insets = useSafeAreaInsets()
   const sidebarInset = useShellSidebarInset()
   const { readerColors, shadows } = useTheme()
@@ -34,7 +50,17 @@ export function ArticleBottomBar({ bookmarked, onShare, onSave }: Props) {
       ]}
     >
       <View style={styles.shell}>
-        <ArticleActions bookmarked={bookmarked} onShare={onShare} onSave={onSave} />
+        <ArticleActions
+          bookmarked={bookmarked}
+          onShare={onShare}
+          onSave={onSave}
+          onBack={onBack}
+          languageSlot={
+            language && onLanguageChange ? (
+              <LanguageSegment value={language} onChange={onLanguageChange} />
+            ) : undefined
+          }
+        />
       </View>
     </View>
   )
@@ -63,7 +89,7 @@ function createStyles(c: ReaderColors, sh: Shadows) {
       width: '100%',
       maxWidth: 760,
       alignSelf: 'center',
-      paddingHorizontal: 12,
+      paddingHorizontal: 8,
       backgroundColor: c.headerSolid,
     },
   })

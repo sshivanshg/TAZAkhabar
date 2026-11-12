@@ -9,6 +9,9 @@ import { iconStroke } from '../theme/categoryIcons'
 import { formatRelativeTime } from '../utils/relativeTime'
 import { SourceAvatar } from './SourceAvatar'
 import { cleanHeadline } from '../lib/headline'
+import { useT } from '../i18n'
+import { adaptStylesForScript } from '../theme/scriptTypography'
+import { useAppLanguage } from '../i18n'
 
 type Props = {
   articles: ArticleResponse[]
@@ -21,7 +24,12 @@ const CARD_WIDTH = 220
 /** Horizontal related-story strip under a featured card (Google News cluster). */
 export function RelatedStoriesStrip({ articles, onPress, onMorePress }: Props) {
   const { colors } = useTheme()
-  const styles = useMemo(() => createStyles(colors), [colors])
+  const t = useT()
+  const scriptLang = useAppLanguage()
+  const styles = useMemo(
+    () => adaptStylesForScript(createStyles(colors), scriptLang),
+    [colors, scriptLang],
+  )
 
   if (articles.length === 0) {
     return null
@@ -38,7 +46,7 @@ export function RelatedStoriesStrip({ articles, onPress, onMorePress }: Props) {
     >
       {articles.map((article) => {
         const headline = cleanHeadline(article.headline ?? '', article.sourceName) || 'Untitled'
-        const source = article.sourceName?.trim() || 'Unknown source'
+        const source = article.sourceName?.trim() || t('common.unknownSource')
         const relative = formatRelativeTime(article.publishedAt)
         return (
           <View key={String(article.id ?? headline)} style={styles.cardWrap}>
@@ -70,7 +78,7 @@ export function RelatedStoriesStrip({ articles, onPress, onMorePress }: Props) {
               <Pressable
                 onPress={() => onMorePress(article)}
                 accessibilityRole="button"
-                accessibilityLabel={`More options for ${headline}`}
+                accessibilityLabel={t('common.moreOptionsFor', { headline })}
                 hitSlop={0}
                 style={({ pressed }) => [styles.more, pressed ? styles.morePressed : null]}
               >

@@ -10,6 +10,7 @@ import { formatRelativeTime } from '../../utils/relativeTime'
 import { isHttpsUrl } from '../../utils/shareToWhatsApp'
 import { SourceAvatar } from '../SourceAvatar'
 import { cleanHeadline } from '../../lib/headline'
+import { useT } from '../../i18n'
 
 type Props = {
   articles: ArticleResponse[]
@@ -20,6 +21,7 @@ type Props = {
 /** Right-rail local news list — Google News desktop sidebar. */
 export function LocalNewsRail({ articles, onPress, onFilterPress }: Props) {
   const { colors } = useTheme()
+  const t = useT()
   const styles = useMemo(() => createStyles(colors), [colors])
 
   if (articles.length === 0) {
@@ -27,14 +29,14 @@ export function LocalNewsRail({ articles, onPress, onFilterPress }: Props) {
   }
 
   return (
-    <View style={styles.rail} accessibilityLabel="Local news">
+    <View style={styles.rail} accessibilityLabel={t('localRail.title')}>
       <View style={styles.header}>
-        <Text style={styles.title}>Local news</Text>
+        <Text style={styles.title}>{t('localRail.title')}</Text>
         {onFilterPress ? (
           <Pressable
             onPress={onFilterPress}
             accessibilityRole="button"
-            accessibilityLabel="Filter local news"
+            accessibilityLabel={t('localRail.filterA11y')}
             hitSlop={8}
             style={({ pressed }) => [styles.settingsBtn, pressed ? styles.pressed : null]}
           >
@@ -49,7 +51,7 @@ export function LocalNewsRail({ articles, onPress, onFilterPress }: Props) {
       >
         {articles.map((article, index) => {
           const headline = cleanHeadline(article.headline ?? '', article.sourceName).trim() || 'Untitled'
-          const source = article.sourceName?.trim() || 'Unknown source'
+          const source = article.sourceName?.trim() || t('common.unknownSource')
           const imageUrl =
             article.imageUrl && isHttpsUrl(article.imageUrl) ? article.imageUrl.trim() : null
           return (

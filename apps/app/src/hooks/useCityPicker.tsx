@@ -10,7 +10,16 @@ import {
 } from '../components/CityPickerDropdown'
 import { getCurrentCoordinates } from '../location/getCurrentCoordinates'
 import { findNearestCity } from '../location/nearestCity'
-import { setStoredCitySlug, GLOBAL_CITY_SLUG, createGlobalCity } from '../storage/cityPreference'
+import {
+  setStoredCitySlug,
+  GLOBAL_CITY_SLUG,
+  createGlobalCity,
+  getCityDisplayLabel,
+} from '../storage/cityPreference'
+import { showToast } from '../components/ui/Toast'
+import { hapticSelection } from '../lib/haptics'
+import { translate } from '../i18n'
+
 
 const EMPTY_CITIES: CityResponse[] = []
 const TEST_CITY_SLUG = 'emptyville'
@@ -86,11 +95,13 @@ export function useCityPicker({
         closeCityPicker()
         return
       }
+      hapticSelection()
       setSavingSlug(city.slug)
       try {
         await setStoredCitySlug(city.slug)
         onCitySelected(city)
         closeCityPicker()
+        showToast({ message: translate('city.savedToast', { city: getCityDisplayLabel(city.slug, city.name) }) })
       } finally {
         setSavingSlug(null)
       }
@@ -108,12 +119,12 @@ export function useCityPicker({
       const coordinates = await getCurrentCoordinates()
       const match = findNearestCity(coordinates, selectableCities)
       if (!match) {
-        setLocationMessage('Could not match your location.')
+        setLocationMessage(translate('cityPicker.noMatch'))
         return
       }
       await selectCity(match.city)
     } catch {
-      setLocationMessage('Location unavailable. Pick a city below.')
+      setLocationMessage(translate('cityPicker.unavailable'))
     } finally {
       setDetectingLocation(false)
     }
@@ -125,7 +136,7 @@ export function useCityPicker({
       anchor={anchor}
       cities={selectableCities}
       loading={open && cityList.loading}
-      error={open && cityList.error ? 'Could not load cities.' : null}
+      error={open && cityList.error ? translate('cityPicker.loadFailed') : null}
       selectedSlug={citySlug}
       savingSlug={savingSlug}
       onSelect={(city) => void selectCity(city)}

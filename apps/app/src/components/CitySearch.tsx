@@ -7,6 +7,8 @@ import type { CityResponse } from '@tazakhabar/shared-types'
 import { useTheme } from '../preferences/ThemePreferenceContext'
 import { HIT_TARGET, radius, space, type AppColors } from '../theme/tokens'
 import { iconStroke } from '../theme/categoryIcons'
+import { useT } from '../i18n'
+import { cityAliasesHi } from '../location/cityNamesHi'
 
 type Props = {
   value: string
@@ -23,15 +25,22 @@ export function filterCities(cities: CityResponse[], query: string): CityRespons
   return cities.filter((city) => {
     const name = (city.name ?? '').toLowerCase()
     const state = (city.state ?? '').toLowerCase()
-    return name.includes(needle) || state.includes(needle)
+    return (
+      name.includes(needle) ||
+      state.includes(needle) ||
+      // A single Devanagari letter matches almost everything; wait for 2+.
+      (needle.length >= 2 && cityAliasesHi(city.slug).some((alias) => alias.includes(needle)))
+    )
   })
 }
 
 /** Live city/state filter field for the city picker. */
-export function CitySearch({ value, onChange, label = 'Search by city or state', helperText }: Props) {
+export function CitySearch({ value, onChange, label: labelProp, helperText }: Props) {
   const [focused, setFocused] = useState(false)
   const hasQuery = value.length > 0
   const { colors } = useTheme()
+  const t = useT()
+  const label = labelProp ?? t('citySearch.label')
   const styles = useMemo(() => createStyles(colors), [colors])
 
   return (
@@ -59,9 +68,9 @@ export function CitySearch({ value, onChange, label = 'Search by city or state',
           onChangeText={onChange}
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
-          placeholder="Search cities"
+          placeholder={t('common.searchCities')}
           placeholderTextColor={colors.textMuted}
-          accessibilityLabel="Search cities"
+          accessibilityLabel={t('common.searchCities')}
           returnKeyType="search"
           autoCorrect={false}
           autoCapitalize="none"
@@ -73,7 +82,7 @@ export function CitySearch({ value, onChange, label = 'Search by city or state',
           <Pressable
             onPress={() => onChange('')}
             accessibilityRole="button"
-            accessibilityLabel="Clear search"
+            accessibilityLabel={t('common.clearSearch')}
             hitSlop={8}
             style={({ pressed }) => [styles.clear, pressed ? styles.clearPressed : null]}
           >

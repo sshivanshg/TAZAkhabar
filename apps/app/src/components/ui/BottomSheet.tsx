@@ -6,6 +6,9 @@ import { MotiView } from 'moti'
 import { useTheme } from '../../preferences/ThemePreferenceContext'
 import { HIT_TARGET, radius, space, typography, type AppColors } from '../../theme/tokens'
 import { iconStroke } from '../../theme/categoryIcons'
+import { useMotionTransition } from '../../hooks/usePrefersReducedMotion'
+import { cardPress } from '../../lib/pressFeedback'
+import { useAccessibilityLanguage, useT } from '../../i18n'
 
 type IconProps = { size?: number; strokeWidth?: number; color?: string; style?: object }
 
@@ -42,15 +45,25 @@ export function BottomSheet({
   sections,
   items,
   onClose,
-  cancelLabel = 'Cancel',
+  cancelLabel: cancelLabelProp,
   showCancel = false,
 }: Props) {
   const insets = useSafeAreaInsets()
   const { colors } = useTheme()
+  const a11yLang = useAccessibilityLanguage()
+  const t = useT()
+  const cancelLabel = cancelLabelProp ?? t('common.cancel')
   const styles = useMemo(() => createStyles(colors), [colors])
   const resolvedSections: BottomSheetSection[] =
     sections ??
     (items && items.length > 0 ? [{ key: 'default', items }] : [])
+  // M6: spring in, quick timing out; backdrop 200ms.
+  const backdropTransition = useMotionTransition({ type: 'timing', duration: 200 })
+  const sheetTransition = useMotionTransition(
+    visible
+      ? { type: 'spring', damping: 22, stiffness: 260, mass: 0.9 }
+      : { type: 'timing', duration: 200 },
+  )
 
   return (
     <Modal visible={visible} transparent animationType="none" onRequestClose={onClose}>
@@ -59,12 +72,13 @@ export function BottomSheet({
           style={StyleSheet.absoluteFill}
           onPress={onClose}
           accessibilityRole="button"
-          accessibilityLabel="Dismiss actions"
+          accessibilityLanguage={a11yLang}
+          accessibilityLabel={t('common.dismissActions')}
         >
           <MotiView
             from={{ opacity: 0 }}
             animate={{ opacity: visible ? 1 : 0 }}
-            transition={{ type: 'timing', duration: 220 }}
+            transition={backdropTransition}
             style={styles.overlay}
           />
         </Pressable>
@@ -72,7 +86,7 @@ export function BottomSheet({
         <MotiView
           from={{ opacity: 0, translateY: 40 }}
           animate={{ opacity: visible ? 1 : 0, translateY: visible ? 0 : 40 }}
-          transition={{ type: 'timing', duration: 280 }}
+          transition={sheetTransition}
           style={[styles.sheetWrap, { paddingBottom: Math.max(insets.bottom, space.md) }]}
         >
           <View style={styles.sheet}>
@@ -102,6 +116,7 @@ export function BottomSheet({
                         requestAnimationFrame(() => item.onPress())
                       }}
                       accessibilityRole="button"
+                      accessibilityLanguage={a11yLang}
                       accessibilityLabel={
                         item.detail ? `${item.label}. ${item.detail}` : item.label
                       }
@@ -156,8 +171,9 @@ export function BottomSheet({
             <Pressable
               onPress={onClose}
               accessibilityRole="button"
+              accessibilityLanguage={a11yLang}
               accessibilityLabel={cancelLabel}
-              style={({ pressed }) => [styles.cancel, pressed ? styles.cancelPressed : null]}
+              style={({ pressed }) => [styles.cancel, cardPress(pressed)]}
             >
               <Text
                 fontSize={typography.button.fontSize}

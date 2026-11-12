@@ -12,6 +12,7 @@ import { iconStroke } from '../../theme/categoryIcons'
 import { readerHeaderChrome, type ReaderColors } from '../../theme/readerTokens'
 import { usePrefersReducedMotion } from '../../hooks/usePrefersReducedMotion'
 import { pressableState, webFocusRing } from './focusStyle'
+import { useT } from '../../i18n'
 
 type Props = {
   elevated: boolean
@@ -27,6 +28,7 @@ export function ArticleTopBar({ elevated, scrollProgress, onBack }: Props) {
   const compact = useWindowDimensions().width >= 768
   const reducedMotion = usePrefersReducedMotion()
   const { readerColors, shadows } = useTheme()
+  const t = useT()
   const styles = useMemo(() => createStyles(readerColors, shadows), [readerColors, shadows])
   const safeTop = Math.max(insets.top, 8)
   const progress = Math.min(1, Math.max(0, scrollProgress))
@@ -49,7 +51,7 @@ export function ArticleTopBar({ elevated, scrollProgress, onBack }: Props) {
           <View style={styles.row}>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Go back"
+              accessibilityLabel={t('common.goBack')}
               onPress={onBack}
               hitSlop={4}
               style={(state) => {

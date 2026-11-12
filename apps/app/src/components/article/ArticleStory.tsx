@@ -20,10 +20,20 @@ import { isHttpsUrl } from '../../utils/shareToWhatsApp'
 import { normalizeArticleSourceUrl } from '../../utils/normalizeArticleSourceUrl'
 import type { ArticleBlock } from '../../utils/splitArticleBody'
 import { pressableState, webFocusRing } from './focusStyle'
+import { storyEyebrow } from './eyebrow'
+import { cityNameHiByEnglish } from '../../location/cityNamesHi'
+import { feedCategoryLabel, useT } from '../../i18n'
+import { adaptStylesForScript } from '../../theme/scriptTypography'
+import { useAppLanguage } from '../../i18n'
 
 type Props = {
   article: ArticleResponse
-  cityLabel?: string
+  /** Reader's city slug; `global` falls back to the story category. */
+  citySlug?: string
+  /** Show the calm "Next story ↓" cue at the end of the story. */
+  showNextCue?: boolean
+  /** Advance the pager when the cue is tapped. */
+  onNextStory?: () => void
   priorityImage?: boolean
   bodyLoading?: boolean
   /** True only when fetching the full story failed (not when the API has no body). */
@@ -72,7 +82,9 @@ function ArticleHero({
 
 function ArticleStoryBase({
   article,
-  cityLabel,
+  citySlug,
+  showNextCue = false,
+  onNextStory,
   priorityImage = false,
   bodyLoading = false,
   onReadSource,
@@ -80,12 +92,18 @@ function ArticleStoryBase({
   bodyFailed = false,
 }: Props) {
   const { readerColors } = useTheme()
-  const styles = useMemo(() => createStyles(readerColors), [readerColors])
+  const t = useT()
+  const scriptLang = useAppLanguage()
+  const styles = useMemo(
+    () => adaptStylesForScript(createStyles(readerColors), scriptLang),
+    [readerColors, scriptLang],
+  )
   const { width } = useWindowDimensions()
   const imageUri = article.imageUrl && isHttpsUrl(article.imageUrl) ? article.imageUrl : null
-  const category = article.category?.trim()
-  const displayCategory = category?.toLowerCase() === 'local' ? undefined : category
-  const location = cityLabel?.trim() || displayCategory
+  const eyebrow = storyEyebrow(citySlug, article.category)
+  const location = eyebrow
+    ? (scriptLang === 'hi' ? cityNameHiByEnglish(eyebrow) : undefined) ?? feedCategoryLabel(t, eyebrow)
+    : undefined
   const publisher = publisherName(article)
   const sourceUrl = (() => {
     const normalized = normalizeArticleSourceUrl(article.sourceUrl)
@@ -104,9 +122,11 @@ function ArticleStoryBase({
     estimateReadingMinutes(estimateArticleReadableText(displayContent)),
   )
   const metaParts = [publisher, time, readingTime].filter(Boolean)
-  const headline = cleanHeadline(article.headline ?? '', publisher) || 'Untitled story'
+  const headline = cleanHeadline(article.headline ?? '', publisher) || t('article.untitled')
+  // Devanagari needs room for matras above the shirorekha and no tracking.
+  const devanagari = scriptLang === 'hi' || DEVANAGARI.test(headline)
   const headlineSize = width >= 768 ? 36 : 30
-  const headlineLine = width >= 768 ? 40 : 34
+  const headlineLine = devanagari ? (width >= 768 ? 48 : 40) : width >= 768 ? 40 : 34
   const hasContent = displayContent.hasReadableContent
   const showLoadError = bodyFailed && !hasContent && !bodyLoading
   const showBodyLoading = bodyLoading && !hasContent
@@ -152,7 +172,13 @@ function ArticleStoryBase({
           style={styles.header}
         >
           {location ? <Text style={styles.eyebrow}>{location}</Text> : null}
-          <Text style={[styles.headline, { fontSize: headlineSize, lineHeight: headlineLine }]}>
+          <Text
+            style={[
+              styles.headline,
+              { fontSize: headlineSize, lineHeight: headlineLine },
+              devanagari ? { letterSpacing: 0 } : null,
+            ]}
+          >
             {headline}
           </Text>
           {metaParts.length > 0 ? <Text style={styles.meta}>{metaParts.join(' · ')}</Text> : null}
@@ -170,17 +196,17 @@ function ArticleStoryBase({
                 {renderBlocks(displayContent.bodyBlocks, 'body')}
               </>
             ) : showBodyLoading ? (
-              <View style={styles.loadingBody} accessibilityLabel="Loading full story">
+              <View style={styles.loadingBody} accessibilityLabel={t('article.loadingFullA11y')}>
                 <ActivityIndicator color={readerColors.accent} />
-                <Text style={styles.loadingLabel}>Loading full story…</Text>
+                <Text style={styles.loadingLabel}>{t('article.loadingFull')}</Text>
               </View>
             ) : (
               <View style={styles.emptyBody}>
-                <Text style={styles.emptyTitle}>Unable to load this story.</Text>
+                <Text style={styles.emptyTitle}>{t('article.bodyFailed')}</Text>
                 {onRetry ? (
                   <Pressable
                     accessibilityRole="button"
-                    accessibilityLabel="Retry loading this story"
+                    accessibilityLabel={t('article.retryA11y')}
                     onPress={onRetry}
                     style={(state) => {
                       const { pressed, focused } = pressableState(state)
@@ -191,7 +217,7 @@ function ArticleStoryBase({
                       ]
                     }}
                   >
-                    <Text style={styles.retryLabel}>Retry</Text>
+                    <Text style={styles.retryLabel}>{t('common.retry')}</Text>
                   </Pressable>
                 ) : null}
               </View>
@@ -203,7 +229,7 @@ function ArticleStoryBase({
           <Pressable
             testID="read-original"
             accessibilityRole="link"
-            accessibilityLabel={`Read original article from ${publisher ?? 'the publisher'}`}
+            accessibilityLabel={t('article.readOriginalA11y', { publisher: publisher ?? t('article.thePublisher') })}
             onPress={onReadSource}
             style={(state) => {
               const { pressed, focused } = pressableState(state)
@@ -214,19 +240,32 @@ function ArticleStoryBase({
               ]
             }}
           >
-            <Text style={styles.originalCtaText}>Read original article ↗</Text>
+            <Text style={styles.originalCtaText}>{t('article.readOriginal')}</Text>
           </Pressable>
         ) : null}
 
         {publisher || sourceUrl ? (
           <View style={styles.attribution}>
-            <Text style={styles.attributionKicker}>Original reporting</Text>
+            <Text style={styles.attributionKicker}>{t('article.originalReporting')}</Text>
             <Text style={styles.attributionBody}>
               {publisher
-                ? `This story is based on reporting published by ${publisher}.`
-                : 'This story is based on the original publisher’s reporting.'}
+                ? t('article.basedOn', { publisher })
+                : t('article.basedOnGeneric')}
             </Text>
           </View>
+        ) : null}
+
+        {showNextCue ? (
+          <Pressable
+            testID="next-story-cue"
+            onPress={onNextStory}
+            disabled={!onNextStory}
+            accessibilityRole="button"
+            accessibilityLabel={t('article.nextStoryA11y')}
+            style={({ pressed }) => [styles.nextCue, pressed ? { opacity: 0.7 } : null]}
+          >
+            <Text style={styles.nextCueText}>{t('article.nextStory')}</Text>
+          </Pressable>
         ) : null}
       </View>
     </View>
@@ -234,6 +273,8 @@ function ArticleStoryBase({
 }
 
 export const ArticleStory = memo(ArticleStoryBase)
+
+const DEVANAGARI = /[\u0900-\u097F]/
 
 function createStyles(c: ReaderColors) {
   return StyleSheet.create({
@@ -404,6 +445,21 @@ function createStyles(c: ReaderColors) {
     },
     pressed: {
       opacity: 0.78,
+    },
+    nextCue: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      alignSelf: 'center',
+      minHeight: 44,
+      minWidth: 44,
+      paddingHorizontal: 16,
+      marginTop: 12,
+    },
+    nextCueText: {
+      color: c.textMuted,
+      fontSize: 15,
+      lineHeight: 22,
+      fontWeight: '600',
     },
   })
 }

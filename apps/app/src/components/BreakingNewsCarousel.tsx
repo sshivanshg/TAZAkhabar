@@ -13,6 +13,7 @@ import type { ArticleResponse } from '@tazakhabar/shared-types'
 import { useTheme } from '../preferences/ThemePreferenceContext'
 import { HIT_TARGET, radius, space, type AppColors } from '../theme/tokens'
 import { BreakingHeroCard } from './BreakingHeroCard'
+import { useT } from '../i18n'
 
 type Props = {
   articles: ArticleResponse[]
@@ -33,6 +34,7 @@ export function BreakingNewsCarousel({ articles, onPress, onMorePress }: Props) 
   const [page, setPage] = useState(0)
   const listRef = useRef<FlatList<ArticleResponse>>(null)
   const { colors } = useTheme()
+  const t = useT()
   const styles = useMemo(() => createStyles(colors), [colors])
 
   const updatePageFromOffset = useCallback(
@@ -99,7 +101,7 @@ export function BreakingNewsCarousel({ articles, onPress, onMorePress }: Props) 
                 }}
                 accessibilityRole="tab"
                 accessibilityState={{ selected: active }}
-                accessibilityLabel={`Breaking story ${index + 1} of ${articles.length}`}
+                accessibilityLabel={t('carousel.storyA11y', { index: index + 1, total: articles.length })}
                 hitSlop={8}
                 style={styles.dotHit}
               >

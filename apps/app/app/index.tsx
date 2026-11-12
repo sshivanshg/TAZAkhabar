@@ -1,19 +1,23 @@
 import { useEffect, useState } from 'react'
-import { Redirect } from 'expo-router'
+import { Redirect, useLocalSearchParams } from 'expo-router'
 import { Box, Spinner, Text, VStack } from '@gluestack-ui/themed'
 import { useTheme } from '../src/preferences/ThemePreferenceContext'
 import { useLanguagePreference } from '../src/preferences/LanguagePreferenceContext'
-import { resolveCitySlug } from '../src/storage/cityPreference'
+import { getStoredCitySlug } from '../src/storage/cityPreference'
+import { resolveBootRoute } from '../src/lib/onboarding'
+import { useT } from '../src/i18n'
 
 export default function IndexScreen() {
   const { colors } = useTheme()
+  const t = useT()
   const { ready: languageReady, hasSelectedLanguage } = useLanguagePreference()
+  const { city: urlCity } = useLocalSearchParams<{ city?: string }>()
   const [ready, setReady] = useState(false)
   const [slug, setSlug] = useState<string | null>(null)
 
   useEffect(() => {
     let cancelled = false
-    resolveCitySlug().then((value) => {
+    getStoredCitySlug().then((value) => {
       if (!cancelled) {
         setSlug(value)
         setReady(true)
@@ -30,18 +34,13 @@ export default function IndexScreen() {
         <VStack space="md" alignItems="center">
           <Spinner color={colors.textSecondary} size="large" />
           <Text fontSize={16} lineHeight={24} color={colors.textMuted}>
-            Loading Khabro…
+            {t('boot.loading')}
           </Text>
         </VStack>
       </Box>
     )
   }
 
-  if (!hasSelectedLanguage) {
-    return <Redirect href="/language" />
-  }
-
-  // City is optional: default All India is already persisted by resolveCitySlug.
-  // Never force /city onboarding — readers change city from the home header.
-  return <Redirect href={{ pathname: '/(tabs)', params: { city: slug ?? undefined } }} />
+  // language → city → tabs; returning readers (stored city) go straight to tabs.
+  return <Redirect href={resolveBootRoute({ hasSelectedLanguage, storedCity: slug, urlCity })} />
 }

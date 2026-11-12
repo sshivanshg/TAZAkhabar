@@ -12,14 +12,21 @@ import {
   iconInactiveColor,
   iconStroke,
 } from '../../src/theme/categoryIcons'
+import { useMotionTransition, usePrefersReducedMotion } from '../../src/hooks/usePrefersReducedMotion'
+import { hapticLight } from '../../src/lib/haptics'
+import { cardPress } from '../../src/lib/pressFeedback'
+import { feedCategoryLabel, useT } from '../../src/i18n'
 import { type FeedCategory, radius, space, type AppColors } from '../../src/theme/tokens'
 
 export default function CategoriesScreen() {
   const router = useRouter()
   const prefs = useFeedPreferences()
   const { colors } = useTheme()
+  const t = useT()
   const styles = useMemo(() => createStyles(colors), [colors])
   const [blockCategoryName, setBlockCategoryName] = useState<string | null>(null)
+  const reduced = usePrefersReducedMotion()
+  const screenTransition = useMotionTransition({ type: 'timing', duration: 220 })
 
   const categories = useMemo(
     () => TOPIC_CATEGORIES.filter((c) => !prefs.isCategoryBlocked(c)),
@@ -34,7 +41,7 @@ export default function CategoriesScreen() {
     <MotiView
       from={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      transition={{ type: 'timing', duration: 220 }}
+      transition={screenTransition}
       style={styles.root}
     >
       <FlatList
@@ -44,25 +51,23 @@ export default function CategoriesScreen() {
         ListHeaderComponent={
           <VStack px="$4" pt="$2" pb="$4" space="sm">
             <Text fontSize={14} lineHeight={20} color={colors.textSecondary}>
-              Browse by topic. Long-press a category to block it from your feed.
+              {t('categories.hint')}
             </Text>
           </VStack>
         }
         renderItem={({ item, index }) => {
           const Icon = categoryIcon(item)
-          return (
-            <MotiView
-              from={{ opacity: 0, translateY: 8 }}
-              animate={{ opacity: 1, translateY: 0 }}
-              transition={{ type: 'timing', duration: 220, delay: Math.min(index * 40, 200) }}
-            >
+          const row = (
               <Pressable
                 onPress={() => openCategory(item)}
-                onLongPress={() => setBlockCategoryName(item)}
+                onLongPress={() => {
+                  hapticLight()
+                  setBlockCategoryName(item)
+                }}
                 delayLongPress={380}
                 accessibilityRole="button"
-                accessibilityLabel={`${item} category. Long press to block.`}
-                style={({ pressed }) => [styles.row, pressed ? styles.rowPressed : null]}
+                accessibilityLabel={t('categories.itemA11y', { category: feedCategoryLabel(t, item) })}
+                style={({ pressed }) => [styles.row, cardPress(pressed)]}
               >
                 <View style={styles.iconWrap}>
                   <Icon size={22} strokeWidth={iconStroke} color={iconInactiveColor(colors)} />
@@ -74,12 +79,24 @@ export default function CategoriesScreen() {
                   color={colors.text}
                   style={{ flex: 1 }}
                 >
-                  {item}
+                  {feedCategoryLabel(t, item)}
                 </Text>
                 <Text fontSize={14} lineHeight={20} color={colors.textMuted}>
-                  Open
+                  {t('categories.open')}
                 </Text>
               </Pressable>
+          )
+          // M9: stagger only the first rows; reduced motion renders them static.
+          if (reduced || index >= 6) {
+            return row
+          }
+          return (
+            <MotiView
+              from={{ opacity: 0, translateY: 8 }}
+              animate={{ opacity: 1, translateY: 0 }}
+              transition={{ type: 'timing', duration: 220, delay: index * 40 }}
+            >
+              {row}
             </MotiView>
           )
         }}
@@ -90,9 +107,9 @@ export default function CategoriesScreen() {
 
       <ConfirmModal
         visible={blockCategoryName != null}
-        title="Block this category?"
-        message={`If you block ${blockCategoryName ?? 'this category'}, you won't see stories in it again. You can change this later.`}
-        confirmLabel="Block category"
+        title={t('block.categoryTitle')}
+        message={t('block.categoryMessage', { name: blockCategoryName ? feedCategoryLabel(t, blockCategoryName) : t('block.thisCategory') })}
+        confirmLabel={t('block.categoryConfirm')}
         onCancel={() => setBlockCategoryName(null)}
         onConfirm={() => {
           if (blockCategoryName) {
@@ -106,13 +123,14 @@ export default function CategoriesScreen() {
 }
 
 function BoxEmpty({ colors }: { colors: AppColors }) {
+  const t = useT()
   return (
     <VStack px="$4" py="$10" space="sm">
       <Text fontSize={18} lineHeight={28} fontWeight="$bold" color={colors.text}>
-        No categories available
+        {t('categories.emptyTitle')}
       </Text>
       <Text fontSize={16} lineHeight={24} color={colors.textSecondary}>
-        All topics are blocked. Unblock them from Profile.
+        {t('categories.emptyBody')}
       </Text>
     </VStack>
   )

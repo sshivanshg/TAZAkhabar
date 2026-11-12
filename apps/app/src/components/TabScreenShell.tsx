@@ -4,6 +4,7 @@ import { useIsFocused } from '@react-navigation/native'
 import { MotiView } from 'moti'
 import { useTheme } from '../preferences/ThemePreferenceContext'
 import { type AppColors } from '../theme/tokens'
+import { useMotionTransition } from '../hooks/usePrefersReducedMotion'
 
 type Props = {
   children: ReactNode
@@ -19,6 +20,7 @@ export function TabScreenShell({ children }: Props) {
   const [mounted, setMounted] = useState(focused)
   const { colors } = useTheme()
   const styles = useMemo(() => createStyles(colors), [colors])
+  const transition = useMotionTransition({ type: 'timing', duration: 220 })
 
   useEffect(() => {
     if (focused) {
@@ -47,7 +49,7 @@ export function TabScreenShell({ children }: Props) {
         opacity: focused ? 1 : 0,
         translateY: focused ? 0 : 8,
       }}
-      transition={{ type: 'timing', duration: 220 }}
+      transition={transition}
       style={[styles.root, focused ? styles.shown : styles.hidden]}
       accessibilityElementsHidden={!focused}
       importantForAccessibility={focused ? 'auto' : 'no-hide-descendants'}

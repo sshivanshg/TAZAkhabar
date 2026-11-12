@@ -1,72 +1,162 @@
-import { memo, useMemo, type ReactNode } from 'react'
+import { memo, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { MotiView } from 'moti'
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native'
 import Bookmark from 'lucide-react-native/icons/bookmark'
 import BookmarkCheck from 'lucide-react-native/icons/bookmark-check'
-import Share2 from 'lucide-react-native/icons/share-2'
+import ChevronLeft from 'lucide-react-native/icons/chevron-left'
+import MessageCircle from 'lucide-react-native/icons/message-circle'
 import { useTheme } from '../../preferences/ThemePreferenceContext'
 import { HIT_TARGET } from '../../theme/tokens'
 import { iconStroke } from '../../theme/categoryIcons'
 import type { ReaderColors } from '../../theme/readerTokens'
 import { pressableState, webFocusRing } from './focusStyle'
+import { usePrefersReducedMotion } from '../../hooks/usePrefersReducedMotion'
+import { cardPress } from '../../lib/pressFeedback'
+import { useAccessibilityLanguage, useAppLanguage, useT, type AppLanguage } from '../../i18n'
 
 type Props = {
   bookmarked: boolean
   onShare: () => void
   onSave: () => void
+  /** "Back to news" — shown in the thumb zone when provided. */
+  onBack?: () => void
+  /** Article reading-language switch, rendered between Back and Save. */
+  languageSlot?: ReactNode
 }
 
 type ActionProps = {
   label: string
   accessibilityLabel: string
   onPress: () => void
+  primary?: boolean
+  size?: 'wide' | 'narrow'
+  testID?: string
+  selected?: boolean
   children: ReactNode
 }
 
-function ActionButton({ label, accessibilityLabel, onPress, children }: ActionProps) {
+function ActionButton({
+  label,
+  accessibilityLabel,
+  onPress,
+  primary = false,
+  size,
+  testID,
+  selected,
+  children,
+}: ActionProps) {
   const { readerColors } = useTheme()
-  const styles = useMemo(() => createStyles(readerColors), [readerColors])
+  const a11yLang = useAccessibilityLanguage()
+  const scriptLang = useAppLanguage()
+  const styles = useMemo(() => createStyles(readerColors, scriptLang), [readerColors, scriptLang])
 
   return (
     <Pressable
+      testID={testID}
       accessibilityRole="button"
+      accessibilityLanguage={a11yLang}
       accessibilityLabel={accessibilityLabel}
+      accessibilityState={selected === undefined ? undefined : { selected }}
       onPress={onPress}
+      hitSlop={4}
       style={(state) => {
         const { pressed, focused } = pressableState(state)
         return [
           styles.btn,
-          pressed ? styles.pressed : null,
+          size === 'wide' ? styles.btnWide : size === 'narrow' ? styles.btnNarrow : null,
+          primary ? styles.btnPrimary : null,
+          cardPress(pressed),
           webFocusRing(Boolean(focused), readerColors),
         ]
       }}
     >
       {children}
-      <Text style={styles.label}>{label}</Text>
+      <Text
+        style={[styles.label, primary ? styles.labelPrimary : null]}
+        numberOfLines={1}
+        adjustsFontSizeToFit
+        minimumFontScale={0.85}
+      >
+        {label}
+      </Text>
     </Pressable>
   )
 }
 
-function ArticleActionsBase({ bookmarked, onShare, onSave }: Props) {
+const POP_SPRING = { type: 'spring' as const, damping: 14, stiffness: 220, mass: 0.6 }
+
+/** Pops the save icon 1→1.15→1 when it becomes saved. Static under reduced motion. */
+export function SavePop({ saved, children }: { saved: boolean; children: ReactNode }) {
+  const reduced = usePrefersReducedMotion()
+  const [popKey, setPopKey] = useState(0)
+  const prev = useRef(saved)
+  useEffect(() => {
+    if (saved && !prev.current) setPopKey((k) => k + 1)
+    prev.current = saved
+  }, [saved])
+
+  if (reduced || popKey === 0) {
+    return <View testID="save-pop-static">{children}</View>
+  }
+  return (
+    <MotiView
+      key={popKey}
+      testID="save-pop"
+      from={{ scale: 1 }}
+      animate={{ scale: [1.15, 1] }}
+      transition={POP_SPRING}
+    >
+      {children}
+    </MotiView>
+  )
+}
+
+function ArticleActionsBase({ bookmarked, onShare, onSave, onBack, languageSlot }: Props) {
   const { readerColors } = useTheme()
-  const styles = useMemo(() => createStyles(readerColors), [readerColors])
+  const scriptLang = useAppLanguage()
+  const styles = useMemo(() => createStyles(readerColors, scriptLang), [readerColors, scriptLang])
   const SaveIcon = bookmarked ? BookmarkCheck : Bookmark
+  const t = useT()
 
   return (
     <View style={styles.row} accessibilityRole="toolbar">
-      <ActionButton label="Share" accessibilityLabel="Share" onPress={onShare}>
-        <Share2 size={18} strokeWidth={iconStroke} color={readerColors.text} />
-      </ActionButton>
+      {onBack ? (
+        <ActionButton
+          testID="bottom-back"
+          size="wide"
+          // Short visible label keeps the 4-control row inside 360px in Hindi.
+          label={t('article.backLabel')}
+          accessibilityLabel={t('article.backToNews')}
+          onPress={onBack}
+        >
+          <ChevronLeft size={18} strokeWidth={iconStroke} color={readerColors.text} />
+        </ActionButton>
+      ) : null}
+      {languageSlot ? <View style={styles.langSlot}>{languageSlot}</View> : null}
       <ActionButton
-        label={bookmarked ? 'Saved' : 'Save'}
-        accessibilityLabel={bookmarked ? 'Remove bookmark' : 'Save'}
+        label={bookmarked ? t('article.saved') : t('article.save')}
+        accessibilityLabel={bookmarked ? t('article.removeBookmark') : t('article.save')}
+        selected={bookmarked}
+        size={onBack ? 'narrow' : undefined}
         onPress={onSave}
       >
-        <SaveIcon
-          size={18}
-          strokeWidth={iconStroke}
-          color={bookmarked ? readerColors.accent : readerColors.text}
-          fill={bookmarked ? readerColors.accent : 'none'}
-        />
+        <SavePop saved={bookmarked}>
+          <SaveIcon
+            size={18}
+            strokeWidth={iconStroke}
+            color={bookmarked ? readerColors.accent : readerColors.text}
+            fill={bookmarked ? readerColors.accent : 'none'}
+          />
+        </SavePop>
+      </ActionButton>
+      <ActionButton
+        testID="bottom-whatsapp"
+        primary
+        label={t('article.whatsapp')}
+        accessibilityLabel={t('article.shareOnWhatsApp')}
+        onPress={onShare}
+      >
+        <MessageCircle size={18} strokeWidth={iconStroke} color={readerColors.accent} />
       </ActionButton>
     </View>
   )
@@ -74,14 +164,14 @@ function ArticleActionsBase({ bookmarked, onShare, onSave }: Props) {
 
 export const ArticleActions = memo(ArticleActionsBase)
 
-function createStyles(c: ReaderColors) {
+function createStyles(c: ReaderColors, lang: AppLanguage) {
   return StyleSheet.create({
     row: {
       flexDirection: 'row',
       alignItems: 'stretch',
       justifyContent: 'space-between',
-      gap: 10,
-      padding: 6,
+      gap: 6,
+      paddingVertical: 4,
       backgroundColor: c.headerSolid,
     },
     btn: {
@@ -89,19 +179,37 @@ function createStyles(c: ReaderColors) {
       minHeight: HIT_TARGET + 4,
       alignItems: 'center',
       justifyContent: 'center',
-      gap: 4,
-      paddingVertical: 8,
-      borderRadius: 16,
+      minWidth: HIT_TARGET,
+      gap: 2,
+      paddingVertical: 6,
+      paddingHorizontal: 4,
+      borderRadius: 14,
       backgroundColor: c.sheet,
     },
+    // Widths tuned so the 4-control row fits 360px: Back gets the most room for its label.
+    btnWide: {
+      flex: 1.25,
+    },
+    btnNarrow: {
+      flex: 0.85,
+    },
+    btnPrimary: {
+      flex: 1.15,
+      backgroundColor: c.accentSoft,
+    },
     label: {
-      fontSize: 13,
+      // Devanagari at 13px loses its matras; Hindi bar labels are 14px.
+      fontSize: lang === 'hi' ? 14 : 13,
       fontWeight: '600',
       color: c.textSecondary,
     },
-    pressed: {
-      opacity: 0.78,
-      transform: [{ scale: 0.985 }],
+    labelPrimary: {
+      color: c.accent,
+      fontWeight: '700',
+    },
+    langSlot: {
+      justifyContent: 'center',
+      flexShrink: 0,
     },
   })
 }

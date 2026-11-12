@@ -67,6 +67,7 @@ export function buildExpandedFeedSlices(
     forYou,
     showBriefing: category === 'All',
     showLocalRail: showLocalRail && localRail.length > 0,
+    // 'All' renders BriefingHeader's own (translated) default title; this value is unused there.
     pageTitle: category === 'All' ? 'Your briefing' : categoryLabel,
   }
 }

@@ -34,35 +34,35 @@ import { HomeTopBar } from '../../src/components/HomeTopBar'
 import { ScreenErrorBoundary } from '../../src/components/ScreenErrorBoundary'
 import { TabScreenShell } from '../../src/components/TabScreenShell'
 import { ErrorState } from '../../src/components/ui/ErrorState'
+import { OfflineBanner } from '../../src/components/OfflineBanner'
+import { readOfflineFeed } from '../../src/lib/feedCache'
+import { hapticSuccess } from '../../src/lib/haptics'
 import { EmptyState } from '../../src/components/ui/EmptyState'
 import { useFeedPreferences } from '../../src/preferences/FeedPreferencesContext'
 import { useLanguagePreference } from '../../src/preferences/LanguagePreferenceContext'
 import { useTheme } from '../../src/preferences/ThemePreferenceContext'
-import {
-  articleToBookmark,
-  getBookmarks,
-  removeBookmark,
-  addBookmark,
-} from '../../src/storage/bookmarks'
+import { getBookmarks } from '../../src/storage/bookmarks'
+import { toggleBookmarkAction } from '../../src/lib/toggleBookmark'
+import { sectionTitle } from '../../src/utils/feedSectionTitle'
 import {
   createGlobalCity,
   getCityDisplayLabel,
   getStoredCitySlug,
   GLOBAL_CITY_SLUG,
   isGlobalCitySlug,
+  pickFeedCity,
   setStoredCitySlug,
 } from '../../src/storage/cityPreference'
 import { getPersonalizationId } from '../../src/storage/personalizationId'
 import {
   feedCacheKey,
   isFeedCacheFresh,
-  readFeedCache,
   writeFeedCache,
 } from '../../src/storage/feedCache'
 import {
   BREAKING_NEWS_COUNT,
   FEED_CATEGORIES,
-  FEED_CATEGORY_LABELS,
+  FEED_CATEGORY_LABEL_KEYS,
   type FeedCategory,
   PAGE_SIZE,
   ERROR_COLUMN_MAX,
@@ -84,6 +84,8 @@ import {
 } from '../../src/utils/expandedFeedLayout'
 import { openArticleSource } from '../../src/utils/openArticleSource'
 import { shareArticle } from '../../src/utils/shareArticle'
+import { feedCategoryLabel, readableErrorMessage, translate, useAppLanguage, useT } from '../../src/i18n'
+import { scriptTracking } from '../../src/theme/scriptTypography'
 
 type ListRow =
   | { kind: 'breaking'; key: 'breaking' }
@@ -164,6 +166,7 @@ function HomeFeedBody() {
   const { colors } = useTheme()
   const styles = useMemo(() => createStyles(colors), [colors])
   const tabClearance = useTabBarClearance()
+  const t = useT()
   const bp = useBreakpoint()
   const desktop = isDesktopLayout(bp)
   const expanded = isExpandedLayout(bp)
@@ -177,6 +180,8 @@ function HomeFeedBody() {
   )
   const [trendingEpoch, setTrendingEpoch] = useState(0)
   const [articles, setArticles] = useState<ArticleResponse[]>([])
+  const articlesRef = useRef<ArticleResponse[]>([])
+  articlesRef.current = articles
   // Sectioned For-you partition from getFeedSections; null = flat list mode
   // (category drill-down, fallback, or cached entry without sections).
   const [sections, setSections] = useState<FeedSection[] | null>(null)
@@ -193,6 +198,7 @@ function HomeFeedBody() {
   const cityButtonRef = useRef<View>(null)
   const [blockSourceName, setBlockSourceName] = useState<string | null>(null)
   const [blockCategoryName, setBlockCategoryName] = useState<string | null>(null)
+  const [manageTopicsOpen, setManageTopicsOpen] = useState(false)
   const [bookmarkedIds, setBookmarkedIds] = useState<Set<number>>(new Set())
   const offsetRef = useRef(0)
   const loadingMoreLock = useRef(false)
@@ -202,6 +208,18 @@ function HomeFeedBody() {
     const list = await getBookmarks()
     setBookmarkedIds(new Set(list.map((b) => b.id)))
   }, [])
+
+  const setBookmarkSaved = useCallback((id: number, saved: boolean) => {
+    setBookmarkedIds((prev) => {
+      const next = new Set(prev)
+      if (saved) next.add(id)
+      else next.delete(id)
+      return next
+    })
+  }, [])
+
+  const bookmarkedIdsRef = useRef(bookmarkedIds)
+  bookmarkedIdsRef.current = bookmarkedIds
 
   useFocusEffect(
     useCallback(() => {
@@ -215,33 +233,25 @@ function HomeFeedBody() {
     }
   }, [params.category, category])
 
+  // City precedence (see pickFeedCity): URL ?city= > stored > All India.
+  // Keyed on params.city only — a fresh pick updates the param via setParams,
+  // so this never snaps the feed back to a stale URL city.
   useEffect(() => {
     let cancelled = false
     async function resolveCity() {
-      const fromParams = params.city
-      if (fromParams) {
-        if (!cancelled) {
-          if (citySlug !== fromParams) {
-            setCitySlug(fromParams)
-          }
-          await setStoredCitySlug(fromParams)
-        }
-        return
-      }
       const stored = await getStoredCitySlug()
-      const effective = stored ?? GLOBAL_CITY_SLUG
-      if (!cancelled) {
-        setCitySlug(effective)
-        if (!stored) {
-          await setStoredCitySlug(GLOBAL_CITY_SLUG)
-        }
+      const next = pickFeedCity({ paramCity: params.city, storedCity: stored })
+      if (cancelled) return
+      setCitySlug(next)
+      if (next !== stored) {
+        await setStoredCitySlug(next)
       }
     }
     void resolveCity()
     return () => {
       cancelled = true
     }
-  }, [citySlug, params.city])
+  }, [params.city])
 
   const cityList = useAsyncResource(
     () => apiClient.getCities(),
@@ -301,7 +311,8 @@ function HomeFeedBody() {
         setAppendError(false)
         offsetRef.current = 0
 
-        const cached = await readFeedCache(cacheKey)
+        // Cached copies older than 7 days are never shown (article retention).
+        const cached = await readOfflineFeed(cacheKey)
         if (gen !== loadGenRef.current) {
           return
         }
@@ -392,6 +403,10 @@ function HomeFeedBody() {
         const items = result.items ?? []
         const nextTotal = result.total ?? items.length
         setTotal(nextTotal)
+        if (mode === 'refresh') {
+          const seen = new Set(articlesRef.current.map((a) => a.id))
+          if (items.some((a) => !seen.has(a.id))) hapticSuccess()
+        }
         setArticles((prev) => (mode === 'append' ? [...prev, ...items] : items))
         if (mode !== 'append') {
           setSections(nextSections)
@@ -411,7 +426,7 @@ function HomeFeedBody() {
         if (mode === 'append') {
           setAppendError(true)
         } else {
-          setError(err instanceof Error ? err.message : 'Could not load articles')
+          setError(readableErrorMessage(err, 'home.loadFailed'))
         }
         // Keep prior items on refresh/append/stale-cache failure; clear only when replace had nothing.
         if (mode === 'replace' && !paintedFromCache) {
@@ -439,7 +454,7 @@ function HomeFeedBody() {
     }
   }, [citySlug, category, preferredLanguage, languageReady, loadPage])
 
-  const cityTitle = getCityDisplayLabel(citySlug, cityMeta?.name)
+  const cityTitle = getCityDisplayLabel(citySlug, cityMeta?.name, preferredLanguage)
 
   const { openCityPicker, picker: cityPicker } = useCityPicker({
     citySlug,
@@ -449,6 +464,7 @@ function HomeFeedBody() {
       if (city.slug) {
         setCitySlug(city.slug)
         setCityMeta(city)
+        router.setParams({ city: city.slug })
       }
     },
   })
@@ -514,9 +530,9 @@ function HomeFeedBody() {
       buildExpandedFeedSlices(visibleArticles, visibleTrending, {
         category,
         desktop,
-        categoryLabel: FEED_CATEGORY_LABELS[category],
+        categoryLabel: t(FEED_CATEGORY_LABEL_KEYS[category]),
       }),
-    [visibleArticles, visibleTrending, category, desktop],
+    [visibleArticles, visibleTrending, category, desktop, t],
   )
 
   const recommendations = useMemo(
@@ -539,7 +555,7 @@ function HomeFeedBody() {
           rows.push({
             kind: 'section',
             key: `section-${section.key ?? 'general'}`,
-            title: section.title ?? '',
+            title: sectionTitle(section, t),
           })
           for (const row of buildMobileFeedRows(section.items)) {
             if (row.kind !== 'empty') {
@@ -565,7 +581,7 @@ function HomeFeedBody() {
       rows.push({ kind: 'trending', key: 'trending' })
     }
     if (recommendations.length > 0) {
-      rows.push({ kind: 'section', key: 'section', title: 'For you', showAction: true })
+      rows.push({ kind: 'section', key: 'section', title: t('home.forYou'), showAction: true })
       for (let i = 0; i < recommendations.length; i += 2) {
         const left = recommendations[i]
         if (!left) {
@@ -584,7 +600,7 @@ function HomeFeedBody() {
       rows.push({ kind: 'empty', key: 'empty' })
     }
     return rows
-  }, [breaking, recommendations, loading, mobile, expanded, feedSlices, visibleArticles, visibleSections, visibleTrending])
+  }, [breaking, recommendations, loading, mobile, expanded, feedSlices, visibleArticles, visibleSections, visibleTrending, t])
 
   const openArticle = useCallback(
     (article: ArticleResponse) => {
@@ -682,27 +698,20 @@ function HomeFeedBody() {
       return []
     }
     const cat = actionArticle.category ?? ''
-    const source = actionArticle.sourceName ?? 'this source'
+    const source = actionArticle.sourceName ?? t('block.thisSource')
     const saved =
       actionArticle.id != null && bookmarkedIds.has(actionArticle.id)
     return buildStorySections({
       article: actionArticle,
       saved,
       onSave: () => {
-        void (async () => {
-          if (actionArticle.id == null) {
-            return
-          }
-          if (saved) {
-            await removeBookmark(actionArticle.id)
-          } else {
-            const snap = articleToBookmark(actionArticle, citySlug ?? undefined)
-            if (snap) {
-              await addBookmark(snap)
-            }
-          }
-          await refreshBookmarks()
-        })()
+        void toggleBookmarkAction({
+          article: actionArticle,
+          citySlug: citySlug ?? undefined,
+          // Live ref (like the article screen): a fast re-tap sees the latest state.
+          currentlySaved: actionArticle.id != null && bookmarkedIdsRef.current.has(actionArticle.id),
+          setSaved: setBookmarkSaved,
+        })
       },
       onShare: () => {
         void shareArticle({
@@ -729,7 +738,7 @@ function HomeFeedBody() {
         ? () => setBlockCategoryName(cat)
         : undefined,
     })
-  }, [actionArticle, bookmarkedIds, citySlug, prefs, refreshBookmarks])
+  }, [actionArticle, bookmarkedIds, citySlug, prefs, setBookmarkSaved, t])
 
   const onEndReached = () => {
     if (!loading && !refreshing && !loadingMore && hasMore) {
@@ -768,6 +777,8 @@ function HomeFeedBody() {
           selected={category}
           onSelect={setCategory}
           categories={visibleCategories}
+          onManageTopics={() => setManageTopicsOpen(true)}
+          manageTopicsLabel={t('home.manageTopics')}
           onLongPressCategory={(chip) => {
             if (chip !== 'All') {
               setBlockCategoryName(chip)
@@ -795,16 +806,19 @@ function HomeFeedBody() {
             transition={{ type: 'timing', duration: 220 }}
             style={{ flex: 1 }}
           >
+            {error && articles.length > 0 ? (
+              <OfflineBanner onRetry={() => void loadPage('replace')} />
+            ) : null}
             {error && articles.length === 0 ? (
               <View
                 testID={expanded ? 'error-column' : undefined}
-                style={expanded ? styles.errorColumn : undefined}
+                style={expanded ? styles.errorColumn : styles.listFlex}
               >
                 <ErrorState
-                  title="Something went wrong"
-                  message={error}
+                  title={t('home.errorTitle')}
+                  message={t('home.errorMessage')}
                   onRetry={() => void loadPage('replace')}
-                  retryLabel="Try again"
+                  retryLabel={t('common.tryAgain')}
                 />
               </View>
             ) : (
@@ -819,8 +833,8 @@ function HomeFeedBody() {
                     return (
                       <View style={styles.sectionBlock}>
                         <SectionHeader
-                          title="Top stories"
-                          actionLabel="View all"
+                          title={t('home.topStories')}
+                          actionLabel={t('home.viewAll')}
                           onAction={goDiscover}
                           expanded={expanded}
                         />
@@ -844,8 +858,8 @@ function HomeFeedBody() {
                     return (
                       <View style={styles.sectionBlock}>
                         <SectionHeader
-                          title="Picks for you"
-                          subtitle="Recommended based on your interests"
+                          title={t('home.picksForYou')}
+                          subtitle={t('home.picksSubtitle')}
                           expanded={expanded}
                         />
                       </View>
@@ -855,8 +869,8 @@ function HomeFeedBody() {
                     return (
                       <View style={styles.sectionPad}>
                         <SectionHeader
-                          title="For you"
-                          actionLabel="View all"
+                          title={t('home.forYou')}
+                          actionLabel={t('home.viewAll')}
                           onAction={goDiscover}
                           expanded={expanded}
                         />
@@ -866,7 +880,7 @@ function HomeFeedBody() {
                   if (item.kind === 'trending') {
                     return (
                       <View style={styles.sectionBlock}>
-                        <SectionHeader title="Picks for you" />
+                        <SectionHeader title={t('home.picksForYou')} />
                         {visibleTrending.map((article, index) => (
                           <View key={String(article.id ?? index)} style={styles.trendingRow}>
                             <Text
@@ -875,7 +889,7 @@ function HomeFeedBody() {
                               fontWeight="$semibold"
                               color={colors.textMuted}
                               style={styles.trendingRank}
-                              accessibilityLabel={`Rank ${index + 1}`}
+                              accessibilityLabel={t('home.rank', { rank: index + 1 })}
                             >
                               {index + 1}
                             </Text>
@@ -895,7 +909,7 @@ function HomeFeedBody() {
                       <View style={expanded ? styles.sectionPad : null}>
                         <SectionHeader
                           title={item.title}
-                          actionLabel={item.showAction ? 'View all' : undefined}
+                          actionLabel={item.showAction ? t('home.viewAll') : undefined}
                           onAction={item.showAction ? goDiscover : undefined}
                           expanded={expanded}
                           flush={!expanded}
@@ -907,19 +921,23 @@ function HomeFeedBody() {
                     const filteredAway =
                       articles.length > 0 && visibleArticles.length === 0
                     const title = filteredAway
-                      ? 'Stories hidden by your filters'
-                      : 'No stories yet'
+                      ? t('home.filteredTitle')
+                      : t('home.emptyTitle')
                     const message = filteredAway
-                      ? 'Unblock sources or categories in Profile, then pull to refresh.'
-                      : `We do not have articles for ${cityTitle}${
-                          category !== 'All' ? ` in ${category}` : ''
-                        } right now. Pull down to refresh, or try another city.`
+                      ? t('home.filteredMessage')
+                      : category !== 'All'
+                        ? t('home.emptyMessageCategory', {
+                            city: cityTitle,
+                            category: t(FEED_CATEGORY_LABEL_KEYS[category]),
+                          })
+                        : t('home.emptyMessage', { city: cityTitle })
                     const primaryLabel = filteredAway
-                      ? 'Open Profile'
-                      : 'Change city'
+                      ? t('home.openSettings')
+                      : t('common.changeCity')
+                    // Empty (not filtered): an explicit Refresh beside Change city.
                     const secondaryLabel = filteredAway
-                      ? 'Change city'
-                      : undefined
+                      ? t('common.changeCity')
+                      : t('home.refresh')
                     return (
                       <EmptyState
                         title={title}
@@ -932,7 +950,9 @@ function HomeFeedBody() {
                         }
                         primaryAccessibilityLabel={primaryLabel}
                         secondaryLabel={secondaryLabel}
-                        onSecondary={filteredAway ? openCityPicker : undefined}
+                        onSecondary={
+                          filteredAway ? openCityPicker : () => void loadPage('replace')
+                        }
                         secondaryAccessibilityLabel={secondaryLabel}
                       />
                     )
@@ -992,7 +1012,7 @@ function HomeFeedBody() {
                     <BriefingHeader
                       title={feedSlices.showBriefing ? undefined : feedSlices.pageTitle}
                       subtitle={
-                        feedSlices.showBriefing ? undefined : 'Stories in this section'
+                        feedSlices.showBriefing ? undefined : t('home.sectionSubtitle')
                       }
                     />
                   ) : null
@@ -1007,7 +1027,7 @@ function HomeFeedBody() {
                   ) : appendError ? (
                     <Pressable
                       accessibilityRole="button"
-                      accessibilityLabel="Retry loading more articles"
+                      accessibilityLabel={t('home.retryMoreA11y')}
                       onPress={() => void loadPage('append')}
                       style={{ paddingVertical: space.md, paddingHorizontal: space.lg }}
                     >
@@ -1016,7 +1036,7 @@ function HomeFeedBody() {
                         fontSize={typography.meta.fontSize}
                         textAlign="center"
                       >
-                        Couldn’t load more · Tap to retry
+                        {t('home.loadMoreFailed')}
                       </Text>
                     </Pressable>
                   ) : !hasMore && articles.length > 0 ? (
@@ -1027,7 +1047,7 @@ function HomeFeedBody() {
                       textAlign="center"
                       py="$4"
                     >
-                      You’re caught up
+                      {t('home.caughtUp')}
                     </Text>
                   ) : null
                 }
@@ -1062,11 +1082,36 @@ function HomeFeedBody() {
         />
       )}
 
+      <BottomSheet
+        visible={manageTopicsOpen}
+        title={t('home.manageTopics')}
+        showCancel
+        items={FEED_CATEGORIES.filter((c) => c !== 'All').map((c) => {
+          const hidden = prefs.blockedCategories.includes(c)
+          return {
+            key: c,
+            label: t(FEED_CATEGORY_LABEL_KEYS[c]),
+            detail: hidden ? t('home.topicHidden') : t('home.topicShown'),
+            onPress: () => {
+              if (hidden) {
+                prefs.unblockCategory(c)
+              } else {
+                prefs.blockCategory(c)
+                if (category === c) {
+                  setCategory('All')
+                }
+              }
+            },
+          }
+        })}
+        onClose={() => setManageTopicsOpen(false)}
+      />
+
       <ConfirmModal
         visible={blockSourceName != null}
-        title="Block this source?"
-        message={`If you block ${blockSourceName ?? 'this source'}, you won't see stories from them again. You can change this later.`}
-        confirmLabel="Block source"
+        title={t('block.sourceTitle')}
+        message={t('block.sourceMessage', { name: blockSourceName ?? t('block.thisSource') })}
+        confirmLabel={t('block.sourceConfirm')}
         onCancel={() => setBlockSourceName(null)}
         onConfirm={() => {
           if (blockSourceName) {
@@ -1078,9 +1123,9 @@ function HomeFeedBody() {
 
       <ConfirmModal
         visible={blockCategoryName != null}
-        title="Block this category?"
-        message={`If you block ${blockCategoryName ?? 'this category'}, you won't see stories in it again. You can change this later.`}
-        confirmLabel="Block category"
+        title={t('block.categoryTitle')}
+        message={t('block.categoryMessage', { name: blockCategoryName ? feedCategoryLabel(t, blockCategoryName) : t('block.thisCategory') })}
+        confirmLabel={t('block.categoryConfirm')}
         onCancel={() => setBlockCategoryName(null)}
         onConfirm={() => {
           if (blockCategoryName) {
@@ -1113,6 +1158,7 @@ function SectionHeader({
   flush?: boolean
 }) {
   const { colors } = useTheme()
+  const sectionLang = useAppLanguage()
   const styles = useMemo(() => createStyles(colors), [colors])
   return (
     <View
@@ -1134,7 +1180,7 @@ function SectionHeader({
         fontSize={expanded ? typography.headlineSm.fontSize : 18}
         lineHeight={expanded ? typography.headlineSm.lineHeight : 24}
         fontWeight="$semibold"
-        letterSpacing={-0.2}
+        letterSpacing={scriptTracking(sectionLang, -0.2)}
         color={colors.text}
         flex={1}
       >

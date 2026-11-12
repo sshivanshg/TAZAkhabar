@@ -12,11 +12,13 @@ import { useTheme } from '../src/preferences/ThemePreferenceContext'
 import { CONTACT_EMAIL, DEVELOPER_NAME, getContactPageUrl } from '../src/config/contact'
 import { HIT_TARGET, space, typography, type AppColors } from '../src/theme/tokens'
 import { iconStroke } from '../src/theme/categoryIcons'
+import { useT } from '../src/i18n'
 
 export default function ContactScreen() {
+  const t = useT()
   return (
     <ScreenErrorBoundary name="contact">
-      <Stack.Screen options={{ title: 'Contact us', headerShown: false }} />
+      <Stack.Screen options={{ title: t('contact.title'), headerShown: false }} />
       <ContactBody />
     </ScreenErrorBoundary>
   )
@@ -28,6 +30,7 @@ function ContactBody() {
   const contactUrl = getContactPageUrl()
   const router = useRouter()
   const insets = useSafeAreaInsets()
+  const t = useT()
 
   // Opened directly (deep link / refresh) there is no history: fall back home.
   const onBack = () => {
@@ -48,41 +51,38 @@ function ContactBody() {
           <Pressable
             onPress={onBack}
             accessibilityRole="button"
-            accessibilityLabel="Go back"
+            accessibilityLabel={t('common.goBack')}
             hitSlop={4}
             style={({ pressed }) => [styles.back, pressed ? styles.pressed : null]}
           >
             <ArrowLeft size={22} strokeWidth={iconStroke} color={colors.text} />
           </Pressable>
           <Text style={styles.title} accessibilityRole="header">
-            Contact us
+            {t('contact.title')}
           </Text>
         </View>
         <Card>
           <View style={styles.body}>
-            <Text style={styles.label}>Developer / publisher</Text>
+            <Text style={styles.label}>{t('contact.developer')}</Text>
             <Text style={styles.value}>{DEVELOPER_NAME}</Text>
 
-            <Text style={[styles.label, styles.gap]}>Email</Text>
+            <Text style={[styles.label, styles.gap]}>{t('contact.email')}</Text>
             <Pressable
               onPress={() => void Linking.openURL(`mailto:${CONTACT_EMAIL}`)}
               accessibilityRole="link"
-              accessibilityLabel={`Email Khabro at ${CONTACT_EMAIL}`}
+              accessibilityLabel={t('contact.emailA11y', { email: CONTACT_EMAIL })}
               style={({ pressed }) => [styles.action, pressed ? styles.pressed : null]}
             >
               <Mail size={18} strokeWidth={iconStroke} color={colors.accent} />
               <Text style={styles.actionText}>{CONTACT_EMAIL}</Text>
             </Pressable>
-            <Text style={styles.note}>
-              For app support, privacy questions, publisher requests, corrections, or takedown
-              requests.
-            </Text>
+            <Text style={styles.note}>{t('contact.emailNote')}</Text>
 
-            <Text style={[styles.label, styles.gap]}>Website</Text>
+            <Text style={[styles.label, styles.gap]}>{t('contact.website')}</Text>
             <Pressable
               onPress={() => void Linking.openURL(contactUrl)}
               accessibilityRole="link"
-              accessibilityLabel="Open the Khabro website contact page"
+              accessibilityLabel={t('contact.websiteA11y')}
               style={({ pressed }) => [styles.action, pressed ? styles.pressed : null]}
             >
               <Globe size={18} strokeWidth={iconStroke} color={colors.accent} />
@@ -92,11 +92,8 @@ function ContactBody() {
         </Card>
         <Card style={styles.cardGap}>
           <View style={styles.body}>
-            <Text style={styles.label}>About our content</Text>
-            <Text style={styles.note}>
-              Khabro is a news aggregator. Articles belong to their original publishers; every story
-              shows its source and links to the original article.
-            </Text>
+            <Text style={styles.label}>{t('contact.aboutContent')}</Text>
+            <Text style={styles.note}>{t('contact.aboutContentBody')}</Text>
           </View>
         </Card>
       </View>

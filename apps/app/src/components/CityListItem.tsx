@@ -16,6 +16,7 @@ import type { CityResponse } from '@tazakhabar/shared-types'
 import { useTheme } from '../preferences/ThemePreferenceContext'
 import { HIT_TARGET, radius, space, type AppColors } from '../theme/tokens'
 import { iconStroke } from '../theme/categoryIcons'
+import { translate } from '../i18n'
 
 type Props = {
   city: CityResponse
@@ -33,9 +34,12 @@ type WebPressableState = PressableStateCallbackType & {
 }
 
 function cityLabel(city: CityResponse): { name: string; state: string } {
+  const name = city.name?.trim() || translate('common.unknownCity')
+  const state = city.state?.trim() || ''
+  // "All India, India" reads twice; drop the state when the name already says it.
   return {
-    name: city.name?.trim() || 'Unknown city',
-    state: city.state?.trim() || '',
+    name,
+    state: state && name.toLowerCase().includes(state.toLowerCase()) ? '' : state,
   }
 }
 
@@ -125,7 +129,7 @@ export function CityListItem({
               fontWeight="$semibold"
               color={colors.textOnAccent}
             >
-              Saving
+              {translate('cityList.saving')}
             </Text>
           </View>
         ) : selected ? (
@@ -150,7 +154,7 @@ export function CityListSkeleton() {
   const styles = useMemo(() => createStyles(colors), [colors])
 
   return (
-    <View style={styles.skeletonBlock} accessibilityLabel="Loading cities">
+    <View style={styles.skeletonBlock} accessibilityLabel={translate('cityList.loadingA11y')}>
       <View style={styles.searchSkeleton} />
       <View style={styles.sectionSkeleton} />
       {[0, 1, 2, 3].map((i) => (

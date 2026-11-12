@@ -12,6 +12,7 @@ import {
 import { radius, space, typography, type AppColors } from '../theme/tokens'
 import { getStoredCitySlug } from '../storage/cityPreference'
 import { shouldOfferAddToHome } from '../utils/shouldOfferAddToHome'
+import { useT, type TFunction } from '../i18n'
 
 /** Bump when install UX changes so prior soft-hint dismissals resurface. */
 const A2HS_DISMISSED_KEY = 'khabro.a2hs.dismissed.v2'
@@ -23,19 +24,19 @@ function isAndroidBrowser(): boolean {
   return /Android/i.test(navigator.userAgent || '')
 }
 
-function installHintCopy(canNativeInstall: boolean): string {
+function installHintCopy(canNativeInstall: boolean, t: TFunction): string {
   if (canNativeInstall) {
-    return 'Install Khabro for quick access from your home screen'
+    return t('install.native')
   }
   if (Platform.OS !== 'web' || typeof navigator === 'undefined') {
-    return 'Add Khabro to your home screen for quick access'
+    return t('install.generic')
   }
   const ua = navigator.userAgent || ''
   const isIOS = /iPad|iPhone|iPod/.test(ua)
   if (isIOS) {
-    return 'On iPhone: tap Share, then Add to Home Screen'
+    return t('install.ios')
   }
-  return 'Install Khabro from your browser menu for quick access'
+  return t('install.browser')
 }
 
 /**
@@ -50,6 +51,7 @@ export function AddToHomeBanner() {
     () => getDeferredInstallPrompt(),
   )
   const { colors } = useTheme()
+  const t = useT()
   const styles = useMemo(() => createStyles(colors), [colors])
   const canNativeInstall = installEvent != null
 
@@ -112,7 +114,7 @@ export function AddToHomeBanner() {
   return (
     <View
       style={styles.banner}
-      accessibilityLabel={installHintCopy(canNativeInstall)}
+      accessibilityLabel={installHintCopy(canNativeInstall, t)}
     >
       <Text
         flex={1}
@@ -121,13 +123,13 @@ export function AddToHomeBanner() {
         fontWeight="$medium"
         color={colors.text}
       >
-        {installHintCopy(canNativeInstall)}
+        {installHintCopy(canNativeInstall, t)}
       </Text>
       {canNativeInstall ? (
         <Pressable
           onPress={onInstall}
           accessibilityRole="button"
-          accessibilityLabel="Install Khabro"
+          accessibilityLabel={t('install.installA11y')}
           hitSlop={8}
           style={({ pressed }) => [styles.installBtn, pressed ? styles.pressed : null]}
         >
@@ -137,7 +139,7 @@ export function AddToHomeBanner() {
             fontWeight="$semibold"
             color={colors.accentFill}
           >
-            Install
+            {t('install.install')}
           </Text>
         </Pressable>
       ) : isAndroidBrowser() ? (
@@ -147,13 +149,13 @@ export function AddToHomeBanner() {
           fontWeight="$semibold"
           color={colors.accent}
         >
-          Menu → Install
+          {t('install.menuInstall')}
         </Text>
       ) : null}
       <Pressable
         onPress={dismiss}
         accessibilityRole="button"
-        accessibilityLabel="Dismiss add to home screen hint"
+        accessibilityLabel={t('install.dismissA11y')}
         hitSlop={8}
         style={({ pressed }) => [styles.dismissBtn, pressed ? styles.pressed : null]}
       >
@@ -163,7 +165,7 @@ export function AddToHomeBanner() {
           fontWeight="$semibold"
           color={colors.accent}
         >
-          Dismiss
+          {t('install.dismiss')}
         </Text>
       </Pressable>
     </View>

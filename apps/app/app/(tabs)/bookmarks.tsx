@@ -16,8 +16,11 @@ import { TabScreenShell } from '../../src/components/TabScreenShell'
 import type { BottomSheetSection } from '../../src/components/ui/BottomSheet'
 import { EmptyState } from '../../src/components/ui/EmptyState'
 import { useTheme } from '../../src/preferences/ThemePreferenceContext'
+import { showToast } from '../../src/components/ui/Toast'
+import { iconPress } from '../../src/lib/pressFeedback'
 import {
   type BookmarkSnapshot,
+  addBookmark,
   getBookmarks,
   removeBookmark,
 } from '../../src/storage/bookmarks'
@@ -25,7 +28,9 @@ import { radius, space, type AppColors } from '../../src/theme/tokens'
 import { useTabBarClearance } from '../../src/theme/useTabBarClearance'
 import { isDesktopLayout, useBreakpoint } from '../../src/hooks/useBreakpoint'
 import { articleRouteParams } from '../../src/utils/articleRouteParams'
+import { translate, useT } from '../../src/i18n'
 
+/** Bookmarks copy. English for now; phase 3 moves these into the string catalog. */
 export default function BookmarksScreen() {
   return (
     <ScreenErrorBoundary name="bookmarks">
@@ -42,6 +47,7 @@ function BookmarksBody() {
   const tabClearance = useTabBarClearance()
   const desktop = isDesktopLayout(useBreakpoint())
   const { colors } = useTheme()
+  const t = useT()
   const styles = useMemo(() => createStyles(colors), [colors])
   const [bookmarks, setBookmarks] = useState<BookmarkSnapshot[]>([])
   const [ready, setReady] = useState(false)
@@ -77,10 +83,25 @@ function BookmarksBody() {
 
   const onRemove = useCallback(
     async (id: number) => {
-      await removeBookmark(id)
+      const snapshot = bookmarks.find((item) => item.id === id)
+      try {
+        await removeBookmark(id)
+      } catch {
+        showToast({ message: translate('bookmarks.removeFailed') })
+        return
+      }
       await reload()
+      showToast({
+        message: translate('toast.removed'),
+        actionLabel: snapshot ? translate('toast.undo') : undefined,
+        onAction: snapshot
+          ? () => {
+              void addBookmark(snapshot).then(reload)
+            }
+          : undefined,
+      })
     },
-    [reload],
+    [bookmarks, reload],
   )
 
   const closeStoryActions = useCallback(() => {
@@ -98,7 +119,7 @@ function BookmarksBody() {
         items: [
           {
             key: 'remove',
-            label: 'Remove bookmark',
+            label: translate('bookmarks.removeBookmark'),
             destructive: true,
             Icon: Bookmark,
             onPress: () => {
@@ -108,7 +129,7 @@ function BookmarksBody() {
         ],
       },
     ]
-  }, [actionItem, onRemove])
+  }, [actionItem, onRemove, t])
 
   return (
     <MotiView
@@ -129,32 +150,32 @@ function BookmarksBody() {
           fontWeight="$bold"
           color={colors.text}
         >
-          Bookmarks
+          {t('bookmarks.title')}
         </Text>
         <Text fontSize={14} lineHeight={20} color={colors.textSecondary} mt="$1">
-          Stories saved on this device
+          {t('bookmarks.subtitle')}
         </Text>
       </View>
 
       {!ready ? (
         <VStack flex={1} justifyContent="center" alignItems="center" px="$6">
           <Text fontSize={16} lineHeight={24} color={colors.textSecondary}>
-            Loading saved stories…
+            {t('bookmarks.loading')}
           </Text>
         </VStack>
       ) : bookmarks.length === 0 ? (
         <View style={styles.emptyWrap}>
           <EmptyState
-            title="No saved stories yet"
-            message="Save stories as you read. They'll stay here on this device for later."
-            primaryLabel="Browse stories"
+            title={t('bookmarks.emptyTitle')}
+            message={t('bookmarks.emptyMessage')}
+            primaryLabel={t('bookmarks.browse')}
             onPrimary={() => router.replace('/(tabs)')}
-            primaryAccessibilityLabel="Browse stories"
-            secondaryLabel="Change city"
+            primaryAccessibilityLabel={t('bookmarks.browse')}
+            secondaryLabel={t('common.changeCity')}
             onSecondary={() =>
               router.push({ pathname: '/(tabs)', params: { pickCity: '1' } })
             }
-            secondaryAccessibilityLabel="Change city"
+            secondaryAccessibilityLabel={t('common.changeCity')}
             icon={<Bookmark size={28} strokeWidth={1.8} color={colors.accent} />}
           />
         </View>
@@ -191,26 +212,23 @@ function BookmarksBody() {
                 />
               </View>
             ) : (
-              <View>
-                <CompactArticleCard
-                  article={item}
-                  index={index}
-                  onPress={() => openArticle(item)}
-                />
-                <Pressable
-                  onPress={() => void onRemove(item.id)}
-                  accessibilityRole="button"
-                  accessibilityLabel={`Remove bookmark ${item.headline}`}
-                  style={({ pressed }) => [
-                    styles.removeBtn,
-                    pressed ? styles.removePressed : null,
-                  ]}
-                >
-                  <Text fontSize={15} lineHeight={20} fontWeight="$semibold" color={colors.textSecondary}>
-                    Remove
-                  </Text>
-                </Pressable>
-              </View>
+              <CompactArticleCard
+                article={item}
+                index={index}
+                onPress={() => openArticle(item)}
+                metaAction={
+                  <Pressable
+                    onPress={() => void onRemove(item.id)}
+                    accessibilityRole="button"
+                    accessibilityLabel={t('bookmarks.removeA11y', { headline: item.headline ?? '' })}
+                    style={({ pressed }) => [styles.removeBtn, iconPress(pressed)]}
+                  >
+                    <Text fontSize={15} lineHeight={20} fontWeight="$semibold" color={colors.textSecondary}>
+                      {t('bookmarks.remove')}
+                    </Text>
+                  </Pressable>
+                }
+              />
             )
           }
         />
@@ -220,7 +238,7 @@ function BookmarksBody() {
         <StoryOptionsPopover
           visible={actionItem != null}
           anchor={popoverAnchor}
-          title="Story options"
+          title={t('bookmarks.storyOptions')}
           sections={bookmarkSections}
           onClose={closeStoryActions}
         />
@@ -265,17 +283,13 @@ function createStyles(c: AppColors) {
       justifyContent: 'center',
       marginBottom: 8,
     },
+    // Remove sits in the card's meta row (divider stays full width): a full 44px target, not a stray line below.
     removeBtn: {
-      alignSelf: 'flex-start',
       minHeight: 44,
+      minWidth: 44,
+      alignItems: 'center',
       justifyContent: 'center',
-      paddingVertical: space.xs,
-      paddingHorizontal: space.xxs,
-      marginBottom: space.sm,
-      marginTop: -space.xs,
-    },
-    removePressed: {
-      opacity: 0.7,
+      paddingHorizontal: space.xs,
     },
   })
 }

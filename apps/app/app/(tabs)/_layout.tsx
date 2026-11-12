@@ -14,6 +14,9 @@ import { iconStroke } from '../../src/theme/categoryIcons'
 import { ScreenErrorBoundary } from '../../src/components/ScreenErrorBoundary'
 import { isExpandedLayout, useBreakpoint } from '../../src/hooks/useBreakpoint'
 import { useTheme } from '../../src/preferences/ThemePreferenceContext'
+import { useMotionTransition } from '../../src/hooks/usePrefersReducedMotion'
+import { hapticSelection } from '../../src/lib/haptics'
+import { useAppLanguage, useT } from '../../src/i18n'
 
 /** Spec 2026-11-12 #13: room for the 13px label under the icon pill. */
 const TAB_BAR_HEIGHT = 76
@@ -27,14 +30,14 @@ function TabIcon({
 }) {
   const { colors } = useTheme()
   const styles = useMemo(() => createStyles(colors), [colors])
+  const transition = useMotionTransition({ type: 'timing', duration: 160 })
 
   return (
     <MotiView
       animate={{
-        scale: focused ? 1 : 0.96,
         backgroundColor: focused ? colors.accentFill : 'transparent',
       }}
-      transition={{ type: 'timing', duration: 200 }}
+      transition={transition}
       style={styles.tabIconWrap}
     >
       <Icon
@@ -56,11 +59,20 @@ export default function TabsLayout() {
   const bottomPad = Platform.OS === 'web' || expanded ? 0 : Math.max(insets.bottom, space.xs)
   const { colors } = useTheme()
   const styles = useMemo(() => createStyles(colors), [colors])
+  const t = useT()
+  // Devanagari matras need extra line height to avoid clipping.
+  const isHindi = useAppLanguage() === 'hi'
 
   return (
     <ScreenErrorBoundary name="tabs">
       <View style={[styles.shell, { paddingBottom: bottomPad }]}>
         <Tabs
+          screenListeners={({ navigation }) => ({
+            tabPress: () => {
+              // Selection haptic only when the tab actually changes.
+              if (!navigation.isFocused()) hapticSelection()
+            },
+          })}
           screenOptions={{
             headerStyle: { backgroundColor: colors.background },
             headerTintColor: colors.text,
@@ -96,42 +108,43 @@ export default function TabsLayout() {
             tabBarActiveTintColor: colors.accent,
             tabBarInactiveTintColor: colors.textMuted,
             tabBarLabelStyle: {
-              fontSize: 13,
-              lineHeight: 16,
+              fontSize: isHindi ? 14 : 13,
+              lineHeight: isHindi ? 20 : 16,
               fontWeight: '600',
-              letterSpacing: 0.1,
+              letterSpacing: isHindi ? 0 : 0.1,
             },
           }}
         >
           <Tabs.Screen
             name="index"
             options={{
-              title: 'Home',
+              title: t('tabs.home'),
               headerShown: false,
-              tabBarLabel: 'Home',
+              tabBarLabel: t('tabs.home'),
               tabBarIcon: ({ focused }) => <TabIcon Icon={Home} focused={focused} />,
-              tabBarAccessibilityLabel: 'Home feed',
+              tabBarAccessibilityLabel: t('tabs.homeA11y'),
             }}
           />
           <Tabs.Screen
             name="bookmarks"
             options={{
-              title: 'Bookmarks',
+              title: t('tabs.bookmarks'),
               headerShown: false,
-              tabBarLabel: 'Bookmarks',
+              // Short label keeps the 360px bar on one line in Hindi.
+              tabBarLabel: isHindi ? t('tabs.bookmarksShort') : t('tabs.bookmarks'),
               tabBarIcon: ({ focused }) => <TabIcon Icon={Bookmark} focused={focused} />,
-              tabBarAccessibilityLabel: 'Bookmarks',
+              tabBarAccessibilityLabel: t('tabs.bookmarks'),
             }}
           />
           <Tabs.Screen
             name="profile"
             options={{
-              title: 'Profile',
+              title: t('tabs.settings'),
               // Title renders in-page inside the 720 column (not at the rail edge).
               headerShown: false,
-              tabBarLabel: 'Profile',
+              tabBarLabel: t('tabs.settings'),
               tabBarIcon: ({ focused }) => <TabIcon Icon={User} focused={focused} />,
-              tabBarAccessibilityLabel: 'Profile and settings',
+              tabBarAccessibilityLabel: t('tabs.settings'),
             }}
           />
           <Tabs.Screen

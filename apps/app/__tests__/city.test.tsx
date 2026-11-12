@@ -1,26 +1,56 @@
-import { render, screen } from '@testing-library/react-native'
-import CityRoute from '../app/city'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react-native'
 
-const mockRedirect = jest.fn()
+const mockReplace = jest.fn()
+const mockSetCity = jest.fn(async (_slug: string) => undefined)
 
-jest.mock('expo-router', () => ({
-  Redirect: (props: { href: unknown }) => {
-    mockRedirect(props.href)
-    return null
-  },
+jest.mock('@react-native-async-storage/async-storage', () => ({
+  getItem: jest.fn(async () => null),
+  setItem: jest.fn(async () => undefined),
+  removeItem: jest.fn(async () => undefined),
+}))
+jest.mock('../src/components/ui/PrimaryButton', () => {
+  const React = require('react')
+  const { Pressable, Text } = require('react-native')
+  const Btn = ({ label, onPress }: { label: string; onPress: () => void }) =>
+    React.createElement(Pressable, { onPress }, React.createElement(Text, null, label))
+  return { PrimaryButton: Btn, SecondaryButton: Btn }
+})
+jest.mock('expo-router', () => ({ useRouter: () => ({ replace: mockReplace }) }))
+jest.mock('react-native-safe-area-context', () => ({
+  useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
+}))
+jest.mock('../src/hooks/useCityPicker', () => ({
+  useCityPicker: () => ({ openCityPicker: jest.fn(), picker: null }),
+}))
+jest.mock('../src/location/getCurrentCoordinates', () => ({ getCurrentCoordinates: jest.fn() }))
+jest.mock('../src/api/client', () => ({ apiClient: { getCities: jest.fn() } }))
+jest.mock('../src/storage/cityPreference', () => ({
+  ...jest.requireActual('../src/storage/cityPreference'),
+  setStoredCitySlug: (slug: string) => mockSetCity(slug),
 }))
 
-describe('city route', () => {
+import CityStepScreen from '../app/city'
+import { translate } from '../src/i18n'
+
+describe('city onboarding step', () => {
   beforeEach(() => {
-    mockRedirect.mockClear()
+    mockReplace.mockClear()
+    mockSetCity.mockClear()
   })
 
-  it('redirects to home with city picker open', () => {
-    render(<CityRoute />)
+  it('offers location, search and skip', () => {
+    render(<CityStepScreen />)
+    expect(screen.getByText(translate('city.useLocation'))).toBeTruthy()
+    expect(screen.getByText(translate('city.search'))).toBeTruthy()
+    expect(screen.getByText(translate('city.skip'))).toBeTruthy()
+  })
 
-    expect(mockRedirect).toHaveBeenCalledWith({
-      pathname: '/(tabs)',
-      params: { pickCity: '1' },
+  it('Skip stores All India and goes to the tabs', async () => {
+    render(<CityStepScreen />)
+    fireEvent.press(screen.getByText(translate('city.skip')))
+    await waitFor(() => {
+      expect(mockReplace).toHaveBeenCalledWith({ pathname: '/(tabs)', params: { city: 'global' } })
     })
+    expect(mockSetCity).toHaveBeenCalledWith('global')
   })
 })

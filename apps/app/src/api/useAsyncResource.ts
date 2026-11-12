@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { translate } from '../i18n/runtime'
 
 type AsyncStatus = 'idle' | 'loading' | 'success' | 'error'
 
@@ -18,7 +19,7 @@ export type AsyncResource<T> = {
 }
 
 function toError(value: unknown): Error {
-  return value instanceof Error ? value : new Error('Something went wrong')
+  return value instanceof Error ? value : new Error(translate('common.somethingWentWrong'))
 }
 
 /**

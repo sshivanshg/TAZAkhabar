@@ -10,19 +10,22 @@ import { iconStroke, type AppIcon } from '../../theme/categoryIcons'
 import { HIT_TARGET, radius, space, typography, type AppColors } from '../../theme/tokens'
 import { BrandHomeButton } from '../BrandHomeButton'
 import { getPublicSiteUrl } from '../../utils/publicSiteUrl'
+import { useT, type StringKey } from '../../i18n'
+import { adaptStylesForScript } from '../../theme/scriptTypography'
+import { useAppLanguage } from '../../i18n'
 
 type NavItem = {
   id: 'home' | 'bookmarks' | 'profile'
-  label: string
+  labelKey: StringKey
   href: Href
   testID: string
   Icon: AppIcon
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { id: 'home', label: 'Home', href: '/(tabs)', testID: 'sidebar-nav-home', Icon: Home },
-  { id: 'bookmarks', label: 'Bookmarks', href: '/(tabs)/bookmarks', testID: 'sidebar-nav-bookmarks', Icon: Bookmark },
-  { id: 'profile', label: 'Profile', href: '/(tabs)/profile', testID: 'sidebar-nav-profile', Icon: User },
+  { id: 'home', labelKey: 'tabs.home', href: '/(tabs)', testID: 'sidebar-nav-home', Icon: Home },
+  { id: 'bookmarks', labelKey: 'tabs.bookmarks', href: '/(tabs)/bookmarks', testID: 'sidebar-nav-bookmarks', Icon: Bookmark },
+  { id: 'profile', labelKey: 'tabs.settings', href: '/(tabs)/profile', testID: 'sidebar-nav-profile', Icon: User },
 ]
 
 const siteUrl = getPublicSiteUrl()
@@ -52,7 +55,12 @@ export function DesktopSidebar() {
   const router = useRouter()
   const insets = useSafeAreaInsets()
   const { colors } = useTheme()
-  const styles = useMemo(() => createStyles(colors), [colors])
+  const t = useT()
+  const scriptLang = useAppLanguage()
+  const styles = useMemo(
+    () => adaptStylesForScript(createStyles(colors), scriptLang),
+    [colors, scriptLang],
+  )
   const openExternal = (path: string) => {
     void Linking.openURL(`${siteUrl}${path}`)
   }
@@ -60,7 +68,7 @@ export function DesktopSidebar() {
   return (
     <View
       accessibilityRole={'navigation' as AccessibilityRole}
-      accessibilityLabel="Desktop navigation"
+      accessibilityLabel={t('sidebar.navA11y')}
       style={[
         styles.root,
         {
@@ -83,7 +91,7 @@ export function DesktopSidebar() {
               testID={item.testID}
               onPress={() => router.push(item.href)}
               accessibilityRole="link"
-              accessibilityLabel={item.label}
+              accessibilityLabel={t(item.labelKey)}
               accessibilityState={{ selected }}
               style={(state) => {
                 const { pressed, hovered, focused } = state as WebPressableState
@@ -102,7 +110,7 @@ export function DesktopSidebar() {
                 strokeWidth={iconStroke}
                 color={selected ? colors.accent : colors.textMuted}
               />
-              <Text style={[styles.label, selected ? styles.labelActive : null]}>{item.label}</Text>
+              <Text style={[styles.label, selected ? styles.labelActive : null]}>{t(item.labelKey)}</Text>
             </Pressable>
           )
         })}
@@ -114,29 +122,29 @@ export function DesktopSidebar() {
           <Pressable
             onPress={() => openExternal('/privacy')}
             accessibilityRole="link"
-            accessibilityLabel="Privacy"
+            accessibilityLabel={t('links.privacy')}
             style={({ pressed }) => [styles.footerLink, pressed ? styles.itemPressed : null]}
           >
-            <Text style={styles.footerLinkText}>Privacy</Text>
+            <Text style={styles.footerLinkText}>{t('links.privacy')}</Text>
           </Pressable>
           <Pressable
             onPress={() => openExternal('/support')}
             accessibilityRole="link"
-            accessibilityLabel="Support"
+            accessibilityLabel={t('links.support')}
             style={({ pressed }) => [styles.footerLink, pressed ? styles.itemPressed : null]}
           >
-            <Text style={styles.footerLinkText}>Support</Text>
+            <Text style={styles.footerLinkText}>{t('links.support')}</Text>
           </Pressable>
           <Pressable
             onPress={() => router.push('/contact' as Href)}
             accessibilityRole="link"
-            accessibilityLabel="Contact us"
+            accessibilityLabel={t('common.contactUs')}
             style={({ pressed }) => [styles.footerLink, pressed ? styles.itemPressed : null]}
           >
-            <Text style={styles.footerLinkText}>Contact us</Text>
+            <Text style={styles.footerLinkText}>{t('common.contactUs')}</Text>
           </Pressable>
         </View>
-        <Text style={styles.footerText} accessibilityLabel="Khabro version 0.1">
+        <Text style={styles.footerText} accessibilityLabel={t('sidebar.versionA11y', { version: '0.1' })}>
           Khabro v0.1
         </Text>
       </View>

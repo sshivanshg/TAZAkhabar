@@ -20,6 +20,7 @@ import { iconStroke } from '../../theme/categoryIcons'
 import { HIT_TARGET, radius, space, typography, type AppColors } from '../../theme/tokens'
 import { ReadingLanguageToggle } from '../ReadingLanguageToggle'
 import type { ReadingLanguageCode } from '../../storage/languagePreference'
+import { useT } from '../../i18n'
 
 type Props = {
   cityTitle?: string
@@ -53,6 +54,7 @@ export function DesktopTopBar({
   const [expanded, setExpanded] = useState(false)
   const [query, setQuery] = useState('')
   const { colors } = useTheme()
+  const t = useT()
   const styles = useMemo(() => createStyles(colors), [colors])
 
   const expand = useCallback(() => {
@@ -143,7 +145,7 @@ export function DesktopTopBar({
           <Pressable
             onPress={onCityPress}
             accessibilityRole="button"
-            accessibilityLabel={`Change city, currently ${cityTitle}`}
+            accessibilityLabel={t('common.changeCityCurrently', { city: cityTitle })}
             hitSlop={4}
             style={(state) => {
               const { pressed, hovered, focused } = state as WebPressableState
@@ -173,7 +175,7 @@ export function DesktopTopBar({
           color={colors.textSecondary}
           numberOfLines={1}
         >
-          Local editions, polished for reading
+          {t('desktopTop.tagline')}
         </Text>
       </View>
 
@@ -195,7 +197,7 @@ export function DesktopTopBar({
               <Pressable
                 onPress={expand}
                 accessibilityRole="button"
-                accessibilityLabel="Search and discover"
+                accessibilityLabel={t('common.searchAndDiscover')}
                 hitSlop={8}
                 style={(state) => {
                   const { pressed, hovered, focused } = state as WebPressableState
@@ -226,9 +228,9 @@ export function DesktopTopBar({
                 onKeyPress={onKeyPress}
                 editable={expanded}
                 accessible={expanded}
-                placeholder="Search"
+                placeholder={t('search.placeholder')}
                 placeholderTextColor={colors.textMuted}
-                accessibilityLabel="Search headlines"
+                accessibilityLabel={t('common.searchHeadlines')}
                 returnKeyType="search"
                 autoCorrect={false}
                 autoCapitalize="none"

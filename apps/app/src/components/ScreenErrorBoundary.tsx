@@ -3,6 +3,7 @@ import { StyleSheet, View } from 'react-native'
 import { useTheme } from '../preferences/ThemePreferenceContext'
 import { type AppColors } from '../theme/tokens'
 import { ErrorState } from './ui/ErrorState'
+import { useT } from '../i18n'
 
 type Props = {
   children: ReactNode
@@ -18,8 +19,8 @@ type State = {
 }
 
 type FallbackProps = {
-  title: string
-  message: string
+  title?: string
+  message?: string
   onRetry: () => void
   onBackToFeed?: () => void
 }
@@ -27,16 +28,17 @@ type FallbackProps = {
 function ScreenErrorFallback({ title, message, onRetry, onBackToFeed }: FallbackProps) {
   const { colors } = useTheme()
   const styles = useMemo(() => createStyles(colors), [colors])
+  const t = useT()
 
   return (
     <View style={styles.root}>
       <ErrorState
-        title={title}
-        message={message}
+        title={title ?? t('common.somethingWentWrong')}
+        message={message ?? t('errorBoundary.message')}
         onRetry={onRetry}
-        retryLabel="Try again"
+        retryLabel={t('common.tryAgain')}
         onSecondary={onBackToFeed}
-        secondaryLabel="Back to feed"
+        secondaryLabel={t('error.backToFeed')}
       />
     </View>
   )
@@ -82,10 +84,8 @@ export class ScreenErrorBoundary extends Component<Props, State> {
       return this.props.children
     }
 
-    const title = this.props.fallbackTitle ?? 'Something went wrong'
-    const message =
-      this.props.fallbackMessage ??
-      'This section hit an unexpected error. You can try again without leaving the app.'
+    const title = this.props.fallbackTitle
+    const message = this.props.fallbackMessage
 
     return (
       <ScreenErrorFallback

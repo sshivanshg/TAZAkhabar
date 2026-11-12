@@ -4,6 +4,8 @@ import { Text, VStack } from '@gluestack-ui/themed'
 import { MotiView } from 'moti'
 import { useTheme } from '../preferences/ThemePreferenceContext'
 import { radius, type AppColors } from '../theme/tokens'
+import { useMotionTransition } from '../hooks/usePrefersReducedMotion'
+import { useAccessibilityLanguage, useT } from '../i18n'
 
 type Props = {
   visible: boolean
@@ -20,13 +22,19 @@ export function ConfirmModal({
   visible,
   title,
   message,
-  confirmLabel = 'Block',
-  cancelLabel = 'Cancel',
+  confirmLabel: confirmLabelProp,
+  cancelLabel: cancelLabelProp,
   onConfirm,
   onCancel,
 }: Props) {
   const { colors } = useTheme()
+  const a11yLang = useAccessibilityLanguage()
+  const t = useT()
+  const confirmLabel = confirmLabelProp ?? t('common.block')
+  const cancelLabel = cancelLabelProp ?? t('common.cancel')
   const styles = useMemo(() => createStyles(colors), [colors])
+  const overlayTransition = useMotionTransition({ type: 'timing', duration: 200 })
+  const cardTransition = useMotionTransition({ type: 'timing', duration: 220 })
 
   return (
     <Modal visible={visible} transparent animationType="none" onRequestClose={onCancel}>
@@ -35,12 +43,13 @@ export function ConfirmModal({
           style={StyleSheet.absoluteFill}
           onPress={onCancel}
           accessibilityRole="button"
-          accessibilityLabel="Dismiss confirmation"
+          accessibilityLanguage={a11yLang}
+          accessibilityLabel={t('common.dismissConfirmation')}
         >
           <MotiView
             from={{ opacity: 0 }}
             animate={{ opacity: visible ? 1 : 0 }}
-            transition={{ type: 'timing', duration: 200 }}
+            transition={overlayTransition}
             style={styles.overlay}
           />
         </Pressable>
@@ -48,7 +57,7 @@ export function ConfirmModal({
         <MotiView
           from={{ opacity: 0, scale: 0.94 }}
           animate={{ opacity: visible ? 1 : 0, scale: visible ? 1 : 0.94 }}
-          transition={{ type: 'timing', duration: 220 }}
+          transition={cardTransition}
           style={styles.card}
         >
           <VStack space="md" px="$5" pt="$5" pb="$3">
@@ -63,6 +72,7 @@ export function ConfirmModal({
             <Pressable
               onPress={onCancel}
               accessibilityRole="button"
+              accessibilityLanguage={a11yLang}
               accessibilityLabel={cancelLabel}
               style={({ pressed }) => [styles.actionBtn, pressed ? styles.pressed : null]}
             >
@@ -74,6 +84,7 @@ export function ConfirmModal({
             <Pressable
               onPress={onConfirm}
               accessibilityRole="button"
+              accessibilityLanguage={a11yLang}
               accessibilityLabel={confirmLabel}
               style={({ pressed }) => [styles.actionBtn, pressed ? styles.pressed : null]}
             >

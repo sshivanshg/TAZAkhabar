@@ -44,6 +44,7 @@ import { HIT_TARGET, space, typography, type AppColors } from '../../src/theme/t
 import { iconStroke } from '../../src/theme/categoryIcons'
 import { useTabBarClearance } from '../../src/theme/useTabBarClearance'
 import { isDesktopLayout, useBreakpoint } from '../../src/hooks/useBreakpoint'
+import { translate, useT } from '../../src/i18n'
 
 
 export default function ProfileScreen() {
@@ -70,6 +71,8 @@ function ProfileBody() {
   } = useTheme()
   const styles = useMemo(() => createStyles(colors), [colors])
   const tabClearance = useTabBarClearance()
+  const t = useT()
+  const schemeLabel = t(colorScheme === 'dark' ? 'settings.schemeDark' : 'settings.schemeLight')
   const desktop = isDesktopLayout(useBreakpoint())
   const [cityMeta, setCityMeta] = useState<CityResponse | null>(null)
   const [citySlug, setCitySlug] = useState<string | null>(null)
@@ -134,7 +137,7 @@ function ProfileBody() {
             color={colors.text}
             accessibilityRole="header"
           >
-            Profile
+            {t('settings.title')}
           </Text>
           <Text
             fontSize={typography.summary.fontSize}
@@ -142,7 +145,7 @@ function ProfileBody() {
             color={colors.textSecondary}
             mt="$1"
           >
-            Make Khabro work better for you.
+            {t('settings.subtitle')}
           </Text>
         </View>
 
@@ -150,33 +153,33 @@ function ProfileBody() {
           style={({ pressed }) => [styles.welcomeCard, pressed && styles.welcomePressed]}
           onPress={() => router.push('/city')}
           accessibilityRole="button"
-          accessibilityLabel={`Change city from ${cityTitle}`}
+          accessibilityLabel={t('settings.changeCityFrom', { city: cityTitle })}
         >
           <View style={styles.welcomeIcon}>
             <MapPin size={22} color={colors.textOnAccent} strokeWidth={2.2} />
           </View>
           <View style={styles.welcomeCopy}>
             <Text style={styles.welcomeTitle}>{cityTitle}</Text>
-            <Text style={styles.welcomeSubtitle}>Your local news edition</Text>
+            <Text style={styles.welcomeSubtitle}>{t('settings.localEdition')}</Text>
           </View>
           <ChevronRight size={22} color={colors.textOnAccent} />
         </Pressable>
 
-        <Section title="Appearance" Icon={Moon}>
+        <Section title={t('settings.appearance')} Icon={Moon}>
           <Text
             fontSize={typography.summary.fontSize}
             lineHeight={typography.summary.lineHeight}
             color={colors.textSecondary}
             mb="$3"
           >
-            Choose the look that feels most comfortable. Saved on this device.
+            {t('settings.appearanceHint')}
           </Text>
           <View style={styles.langRow}>
             {(
               [
-                { value: 'light' as const, label: 'Light' },
-                { value: 'dark' as const, label: 'Dark' },
-                { value: 'system' as const, label: 'System' },
+                { value: 'light' as const, label: t('settings.themeLight') },
+                { value: 'dark' as const, label: t('settings.themeDark') },
+                { value: 'system' as const, label: t('settings.themeSystem') },
               ] satisfies { value: ThemePreference; label: string }[]
             ).map((option) => {
               const selected = themeReady && themePreference === option.value
@@ -188,8 +191,8 @@ function ProfileBody() {
                   accessibilityState={{ selected }}
                   accessibilityLabel={
                     option.value === 'system'
-                      ? `Appearance system, currently ${colorScheme}`
-                      : `Appearance ${option.label}`
+                      ? t('settings.appearanceSystemA11y', { scheme: schemeLabel })
+                      : t('settings.appearanceA11y', { option: option.label })
                   }
                   style={[styles.langChip, selected ? styles.langChipSelected : null]}
                 >
@@ -212,19 +215,19 @@ function ProfileBody() {
               color={colors.textMuted}
               mt="$2"
             >
-              Following device ({colorScheme})
+              {t('settings.followingDevice', { scheme: schemeLabel })}
             </Text>
           ) : null}
         </Section>
 
-        <Section title="Reading language" Icon={Languages}>
+        <Section title={t('settings.language')} Icon={Languages}>
           <Text
             fontSize={typography.summary.fontSize}
             lineHeight={typography.summary.lineHeight}
             color={colors.textSecondary}
             mb="$3"
           >
-            Choose the language you prefer for reading news.
+            {t('settings.languageHint')}
           </Text>
           <View style={styles.langRow}>
             {READING_LANGUAGES.map((lang) => {
@@ -235,7 +238,7 @@ function ProfileBody() {
                   onPress={() => setPreferredLanguage(lang.code)}
                   accessibilityRole="button"
                   accessibilityState={{ selected }}
-                  accessibilityLabel={`Prefer ${lang.accessibilityLabel}`}
+                  accessibilityLabel={t('settings.preferLanguage', { language: t(`language.${lang.code}`) })}
                   style={[styles.langChip, selected ? styles.langChipSelected : null]}
                 >
                   <Text
@@ -252,35 +255,34 @@ function ProfileBody() {
           </View>
         </Section>
 
-        <Section title="Blocked" Icon={Ban}>
+        <Section title={t('settings.blocked')} Icon={Ban}>
           <BlockedRow
             Icon={Ban}
-            label="Sources"
+            label={t('settings.sources')}
             count={prefs.blockedSources.length}
-            empty="No sources blocked"
+            empty={t('settings.noSourcesBlocked')}
             items={prefs.blockedSources}
             onRemove={(name) => prefs.unblockSource(name)}
           />
           <View style={styles.spacer} />
           <BlockedRow
             Icon={Tag}
-            label="Categories"
+            label={t('settings.categories')}
             count={prefs.blockedCategories.length}
-            empty="No categories blocked"
+            empty={t('settings.noCategoriesBlocked')}
             items={prefs.blockedCategories}
             onRemove={(name) => prefs.unblockCategory(name)}
           />
         </Section>
 
-        <Section title="Alerts" Icon={BellRing}>
+        <Section title={t('settings.alerts')} Icon={BellRing}>
           <Text
             fontSize={typography.summary.fontSize}
             lineHeight={typography.summary.lineHeight}
             color={colors.textSecondary}
             mb="$3"
           >
-            Turn on city-specific news alerts for breaking stories. We ask once, then back off if
-            you say not now.
+            {t('settings.alertsHint')}
           </Text>
           <Text
             fontSize={typography.bodySemibold.fontSize}
@@ -289,12 +291,15 @@ function ProfileBody() {
             color={colors.text}
             mb="$2"
           >
-            Status:{' '}
-            {notificationStatus === 'granted'
-              ? 'On'
-              : notificationStatus === 'denied'
-                ? 'Off'
-                : 'Not set'}
+            {t('settings.status', {
+              status: t(
+                notificationStatus === 'granted'
+                  ? 'settings.statusOn'
+                  : notificationStatus === 'denied'
+                    ? 'settings.statusOff'
+                    : 'settings.statusNotSet',
+              ),
+            })}
           </Text>
           {notificationError ? (
             <Text
@@ -312,12 +317,12 @@ function ProfileBody() {
               color={colors.textMuted}
               mb="$3"
             >
-              Notifications are off in device or browser settings.
+              {t('settings.notificationsOffDevice')}
             </Text>
           ) : null}
           <View style={styles.alertActions}>
             <PrimaryButton
-              label={notificationStatus === 'granted' ? 'Refresh alerts' : 'Enable alerts'}
+              label={t(notificationStatus === 'granted' ? 'settings.refreshAlerts' : 'settings.enableAlerts')}
               onPress={() => {
                 void (async () => {
                   if (!citySlug) {
@@ -338,7 +343,7 @@ function ProfileBody() {
                       await suppressNotificationPrompt('denied')
                       setNotificationError(
                         result.reason ??
-                          'Notifications are blocked for this app. Check device or browser settings.',
+                          translate('settings.notificationsBlocked'),
                       )
                     } else if (result.status === 'unsupported') {
                       await suppressNotificationPrompt('dismissed')
@@ -350,19 +355,20 @@ function ProfileBody() {
                     }
                   } catch (caught) {
                     setNotificationError(
-                      caught instanceof Error ? caught.message : 'Could not enable news alerts.',
+                      translate('settings.enableAlertsFailed'),
                     )
                   } finally {
                     setNotificationBusy(false)
                   }
                 })()
               }}
-              accessibilityLabel="Enable alerts"
+              accessibilityLabel={t('settings.enableAlerts')}
               style={styles.alertPrimary}
               disabled={notificationBusy}
             />
+            {notificationStatus === 'granted' ? (
             <SecondaryButton
-              label="Turn off"
+              label={t('settings.turnOff')}
               onPress={() => {
                 void (async () => {
                   const clientId = await getOrCreateNotificationClientId()
@@ -377,11 +383,12 @@ function ProfileBody() {
                   }
                 })()
               }}
-              accessibilityLabel="Turn off alerts"
+              accessibilityLabel={t('settings.turnOffAlerts')}
               style={styles.alertSecondary}
               outline
-              disabled={notificationBusy || notificationStatus !== 'granted'}
+              disabled={notificationBusy}
             />
+            ) : null}
           </View>
         </Section>
 
@@ -390,8 +397,8 @@ function ProfileBody() {
           <Pressable
             onPress={() => router.push('/contact')}
             accessibilityRole="link"
-            accessibilityLabel="Contact us"
-            accessibilityHint="Opens the contact page"
+            accessibilityLabel={t('common.contactUs')}
+            accessibilityHint={t('settings.contactHint')}
             style={({ pressed }) => [pressed ? styles.contactEmailPressed : null]}
           >
             <Card>
@@ -404,7 +411,7 @@ function ProfileBody() {
                     fontWeight="$semibold"
                     color={colors.text}
                   >
-                    Contact us
+                    {t('common.contactUs')}
                   </Text>
                   <Text
                     fontSize={typography.summary.fontSize}
@@ -412,7 +419,7 @@ function ProfileBody() {
                     color={colors.textSecondary}
                     mt="$1"
                   >
-                    Support, privacy, publisher requests and corrections.
+                    {t('settings.contactBody')}
                   </Text>
                 </View>
                 <ChevronRight size={20} strokeWidth={iconStroke} color={colors.textMuted} />
@@ -421,10 +428,9 @@ function ProfileBody() {
           </Pressable>
         </View>
 
-        <Section title="About this app" Icon={Info}>
+        <Section title={t('settings.about')} Icon={Info}>
           <Text fontSize={typography.summary.fontSize} lineHeight={24} color={colors.textSecondary}>
-            Khabro is a local news summary you can add to your home screen. No login — pick a city,
-            read short summaries, save stories on this device, and share to WhatsApp in one tap.
+            {t('settings.aboutBody')}
           </Text>
           <Text
             fontSize={typography.label.fontSize}
@@ -433,7 +439,7 @@ function ProfileBody() {
             color={colors.textMuted}
             mt="$4"
           >
-            Version {version}
+            {t('settings.version', { version })}
           </Text>
           <Text
             fontSize={typography.meta.fontSize}
@@ -441,7 +447,7 @@ function ProfileBody() {
             color={colors.textMuted}
             mt="$2"
           >
-            Khabro is a news aggregator. Articles belong to their original publishers.
+            {t('settings.aggregatorNote')}
           </Text>
           <PublicLinks exclude={['contact']} />
         </Section>
@@ -500,6 +506,7 @@ function BlockedRow({
 }) {
   const { colors } = useTheme()
   const styles = useMemo(() => createStyles(colors), [colors])
+  const t = useT()
   return (
     <VStack>
       <View style={styles.blockedSummary}>
@@ -544,7 +551,7 @@ function BlockedRow({
             <Pressable
               onPress={() => onRemove(item)}
               accessibilityRole="button"
-              accessibilityLabel={`Unblock ${item}`}
+              accessibilityLabel={t('settings.unblockA11y', { name: item })}
               hitSlop={8}
               style={styles.unblockHit}
             >
@@ -554,7 +561,7 @@ function BlockedRow({
                 fontWeight="$semibold"
                 color={colors.text}
               >
-                Unblock
+                {t('settings.unblock')}
               </Text>
             </Pressable>
           </View>

@@ -9,6 +9,7 @@ import {
   setNotificationPromptState,
   type NotificationDeliveryMode,
 } from '../storage/notificationPreferences'
+import { translate } from '../i18n/runtime'
 
 const DEFAULT_WEB_PUSH_PUBLIC_KEY =
   'BFGuSy4Gmrl6BjAbr0WAJ82X6KMTH6IiFMl_gfMtiWSEr7whkfHaavzIrfirbw0UDrxx_DpX_QWVx9Ck9s2nt_M'
@@ -64,7 +65,7 @@ async function persistGrantedPromptState() {
 async function registerNativeNotifications(citySlug: string, preferredLanguage?: string | null) {
   if (Platform.OS === 'android') {
     await Notifications.setNotificationChannelAsync('default', {
-      name: 'Breaking news',
+      name: translate('notifications.channelName'),
       importance: Notifications.AndroidImportance.DEFAULT,
       vibrationPattern: [0, 250, 250, 250],
       lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
@@ -76,7 +77,7 @@ async function registerNativeNotifications(citySlug: string, preferredLanguage?:
     return {
       status: 'unsupported' as const,
       platform: 'native' as const,
-      reason: 'Expo project id is missing.',
+      reason: translate('notifications.missingProjectId'),
     }
   }
 
@@ -85,7 +86,7 @@ async function registerNativeNotifications(citySlug: string, preferredLanguage?:
     return {
       status: 'denied' as const,
       platform: 'native' as const,
-      reason: 'Notifications are blocked for this app. Allow them in device settings, then try again.',
+      reason: translate('notifications.blockedApp'),
     }
   }
 
@@ -117,9 +118,7 @@ async function registerNativeNotifications(citySlug: string, preferredLanguage?:
       platform: 'native' as const,
       synced: false,
       reason:
-        error instanceof Error
-          ? 'Permission was granted, but we could not finish syncing alerts yet. Try again from Profile when your connection is better.'
-          : 'Permission was granted, but we could not finish syncing alerts yet. Try again from Profile when your connection is better.',
+        translate('notifications.syncFailed'),
     }
   }
 }
@@ -129,7 +128,7 @@ async function registerWebNotifications(citySlug: string, preferredLanguage?: st
     return {
       status: 'unsupported' as const,
       platform: 'web' as const,
-      reason: 'Browser notifications are unavailable in this environment.',
+      reason: translate('notifications.browserUnavailable'),
     }
   }
 
@@ -137,7 +136,7 @@ async function registerWebNotifications(citySlug: string, preferredLanguage?: st
     return {
       status: 'unsupported' as const,
       platform: 'web' as const,
-      reason: 'This browser does not support push notifications.',
+      reason: translate('notifications.browserUnsupported'),
     }
   }
 
@@ -147,7 +146,7 @@ async function registerWebNotifications(citySlug: string, preferredLanguage?: st
     return {
       status: 'unsupported' as const,
       platform: 'web' as const,
-      reason: 'Web push public key is missing.',
+      reason: translate('notifications.keyMissing'),
     }
   }
 
@@ -156,7 +155,7 @@ async function registerWebNotifications(citySlug: string, preferredLanguage?: st
     return {
       status: 'unsupported' as const,
       platform: 'web' as const,
-      reason: 'Web push public key is invalid.',
+      reason: translate('notifications.keyInvalid'),
     }
   }
 
@@ -164,7 +163,7 @@ async function registerWebNotifications(citySlug: string, preferredLanguage?: st
     return {
       status: 'denied' as const,
       platform: 'web' as const,
-      reason: 'Notifications are blocked for this site. Allow them in browser site settings, then try again.',
+      reason: translate('notifications.blockedSite'),
     }
   }
 
@@ -174,8 +173,8 @@ async function registerWebNotifications(citySlug: string, preferredLanguage?: st
       status: 'denied' as const,
       platform: 'web' as const,
       reason: permission === 'denied'
-        ? 'Notifications are blocked for this site. Allow them in browser site settings, then try again.'
-        : 'Permission was not granted. Tap Enable alerts again when you are ready.',
+        ? translate('notifications.blockedSite')
+        : translate('notifications.notGranted'),
     }
   }
 
@@ -229,9 +228,7 @@ async function registerWebNotifications(citySlug: string, preferredLanguage?: st
       platform: 'web' as const,
       synced: false,
       reason:
-        error instanceof Error
-          ? 'Permission was granted, but we could not finish syncing alerts yet. Try again from Profile when your connection is better.'
-          : 'Permission was granted, but we could not finish syncing alerts yet. Try again from Profile when your connection is better.',
+        translate('notifications.syncFailed'),
     }
   }
 }

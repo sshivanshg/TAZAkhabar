@@ -12,19 +12,23 @@ import { useTheme } from '../preferences/ThemePreferenceContext'
 import { isExpandedLayout, useBreakpoint } from '../hooks/useBreakpoint'
 import {
   FEED_CATEGORIES,
-  FEED_CATEGORY_LABELS,
+  FEED_CATEGORY_LABEL_KEYS,
   HIT_TARGET,
   type FeedCategory,
   space,
   typography,
   type AppColors,
 } from '../theme/tokens'
+import { useT } from '../i18n'
 
 type Props = {
   selected: FeedCategory
   onSelect: (category: FeedCategory) => void
   onLongPressCategory?: (category: FeedCategory) => void
   categories?: readonly FeedCategory[]
+  /** Shows a trailing "Manage topics" control (explicit alternative to long press). */
+  onManageTopics?: () => void
+  manageTopicsLabel?: string
 }
 
 type WebPressableState = PressableStateCallbackType & {
@@ -40,9 +44,13 @@ export function CategoryChipRow({
   onSelect,
   onLongPressCategory,
   categories = FEED_CATEGORIES,
+  onManageTopics,
+  manageTopicsLabel: manageTopicsLabelProp,
 }: Props) {
   const expanded = isExpandedLayout(useBreakpoint())
   const { colors } = useTheme()
+  const t = useT()
+  const manageTopicsLabel = manageTopicsLabelProp ?? t('home.manageTopics')
   const styles = useMemo(() => createStyles(colors, expanded), [colors, expanded])
 
   return (
@@ -56,7 +64,7 @@ export function CategoryChipRow({
       >
         {categories.map((category) => {
           const isActive = category === selected
-          const label = FEED_CATEGORY_LABELS[category]
+          const label = t(FEED_CATEGORY_LABEL_KEYS[category])
           return (
             <Pressable
               key={category}
@@ -70,8 +78,8 @@ export function CategoryChipRow({
               accessibilityState={{ selected: isActive }}
               accessibilityLabel={
                 category === 'All'
-                  ? `Filter ${label}`
-                  : `Filter ${label}. Long press to block.`
+                  ? t('chips.filter', { label })
+                  : t('chips.filterBlockable', { label })
               }
               style={(state) => {
                 const { pressed, hovered } = state as WebPressableState
@@ -94,6 +102,23 @@ export function CategoryChipRow({
             </Pressable>
           )
         })}
+        {onManageTopics ? (
+          <Pressable
+            onPress={onManageTopics}
+            accessibilityRole="button"
+            accessibilityLabel={manageTopicsLabel}
+            style={({ pressed }) => [styles.tab, pressed ? styles.tabPressed : null]}
+          >
+            <Text
+              fontSize={typography.bodySemibold.fontSize}
+              lineHeight={typography.bodySemibold.lineHeight}
+              fontWeight="$semibold"
+              color={colors.accent}
+            >
+              {manageTopicsLabel}
+            </Text>
+          </Pressable>
+        ) : null}
       </ScrollView>
       <View style={styles.rule} />
     </View>
