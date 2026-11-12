@@ -1,6 +1,9 @@
 import { useMemo, useState } from 'react'
 import { Platform, ScrollView, StyleSheet, View } from 'react-native'
 import { useTheme } from '../../preferences/ThemePreferenceContext'
+import type { getShadows } from '../../theme/tokens'
+
+type Shadows = ReturnType<typeof getShadows>
 import type { ReaderColors } from '../../theme/readerTokens'
 
 type Props = {
@@ -11,14 +14,9 @@ type Props = {
 }
 
 /** One viewport-tall story page so paging never shows two articles at once. */
-export function ArticlePage({
-  height,
-  padTop,
-  padBottom,
-  children,
-}: Props) {
-  const { readerColors } = useTheme()
-  const styles = useMemo(() => createStyles(readerColors), [readerColors])
+export function ArticlePage({ height, padTop, padBottom, children }: Props) {
+  const { readerColors, shadows } = useTheme()
+  const styles = useMemo(() => createStyles(readerColors, shadows), [readerColors, shadows])
   const [scrollable, setScrollable] = useState(false)
 
   return (
@@ -47,7 +45,7 @@ export function ArticlePage({
   )
 }
 
-function createStyles(c: ReaderColors) {
+function createStyles(c: ReaderColors, sh: Shadows) {
   return StyleSheet.create({
     page: {
       width: '100%',
@@ -71,17 +69,7 @@ function createStyles(c: ReaderColors) {
       backgroundColor: c.card,
       borderRadius: 28,
       overflow: 'hidden',
-      ...(Platform.OS === 'web'
-        ? ({
-            boxShadow: '0px 18px 48px rgba(16, 24, 40, 0.12)',
-          } as object)
-        : {
-            shadowColor: '#101828',
-            shadowOffset: { width: 0, height: 10 },
-            shadowOpacity: 0.08,
-            shadowRadius: 24,
-            elevation: 4,
-          }),
+      ...sh.floating,
     },
   })
 }

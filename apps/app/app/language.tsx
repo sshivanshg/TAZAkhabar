@@ -108,7 +108,11 @@ export default function LanguageScreen() {
                 key={language.code}
                 from={{ opacity: 0, translateY: 22 }}
                 animate={{ opacity: 1, translateY: 0 }}
-                transition={{ type: 'timing', duration: 420, delay: 280 + index * 90 }}
+                transition={{
+                  type: 'timing',
+                  duration: 420,
+                  delay: 280 + index * 90,
+                }}
               >
                 <Pressable
                   accessibilityRole="radio"
@@ -201,15 +205,15 @@ function createStyles(c: AppColors) {
       paddingHorizontal: 10,
       paddingVertical: 6,
       borderRadius: radius.full,
-      backgroundColor: 'rgba(255, 176, 0, 0.16)',
+      backgroundColor: `${c.signal}29`, // signal @ ~16%
       borderWidth: 1,
-      borderColor: 'rgba(255, 176, 0, 0.45)',
+      borderColor: `${c.signal}73`, // signal @ ~45%
     },
     liveDot: {
       width: 7,
       height: 7,
       borderRadius: 4,
-      backgroundColor: '#FFB000',
+      backgroundColor: c.signal,
     },
     liveText: {
       color: c.text,
@@ -351,7 +355,7 @@ function createStyles(c: AppColors) {
       width: 36,
       height: 3,
       borderRadius: 2,
-      backgroundColor: '#FFB000',
+      backgroundColor: c.signal,
       opacity: 0.7,
     },
     footerText: {

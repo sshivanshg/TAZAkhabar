@@ -103,7 +103,7 @@ function createStyles(c: AppColors) {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      minHeight: 44,
+      minHeight: HIT_TARGET,
     },
     center: {
       flex: 1,
@@ -120,8 +120,8 @@ function createStyles(c: AppColors) {
       maxWidth: '52%',
     },
     iconHit: {
-      width: 40,
-      height: 40,
+      width: HIT_TARGET,
+      height: HIT_TARGET,
       alignItems: 'center',
       justifyContent: 'center',
     },
@@ -132,7 +132,7 @@ function createStyles(c: AppColors) {
       flexShrink: 1,
       minWidth: 0,
       maxWidth: 120,
-      minHeight: 40,
+      minHeight: HIT_TARGET,
       paddingHorizontal: 8,
       borderRadius: radius.full,
       backgroundColor: c.accentSoft,

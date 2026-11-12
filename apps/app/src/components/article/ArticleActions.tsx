@@ -22,12 +22,7 @@ type ActionProps = {
   children: ReactNode
 }
 
-function ActionButton({
-  label,
-  accessibilityLabel,
-  onPress,
-  children,
-}: ActionProps) {
+function ActionButton({ label, accessibilityLabel, onPress, children }: ActionProps) {
   const { readerColors } = useTheme()
   const styles = useMemo(() => createStyles(readerColors), [readerColors])
 
@@ -98,9 +93,6 @@ function createStyles(c: ReaderColors) {
       paddingVertical: 8,
       borderRadius: 16,
       backgroundColor: c.sheet,
-      ...(Platform.OS === 'web'
-        ? ({ boxShadow: '0px 3px 10px rgba(16, 24, 40, 0.06)' } as object)
-        : {}),
     },
     label: {
       fontSize: 13,

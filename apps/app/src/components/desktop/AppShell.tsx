@@ -1,21 +1,28 @@
 import { useMemo, type ReactNode } from 'react'
 import { StyleSheet, View } from 'react-native'
+import { usePathname } from 'expo-router'
 import { isExpandedLayout, useBreakpoint } from '../../hooks/useBreakpoint'
 import { useTheme } from '../../preferences/ThemePreferenceContext'
-import { type AppColors } from '../../theme/tokens'
+import { SIDEBAR_WIDTH, type AppColors } from '../../theme/tokens'
 import { ContentRail } from './ContentRail'
+import { DesktopSidebar } from './DesktopSidebar'
 
 type Props = {
   children: ReactNode
-  sidebar?: ReactNode
 }
+
+/** Onboarding routes render full-bleed, without the navigation sidebar. */
+const BARE_ROUTES = new Set(['/language'])
 
 /**
  * Root layout switch. Phone returns children unchanged.
- * Tablet+ uses a centered wide content rail (Google News — no left sidebar).
+ * Tablet+ (>=768px) is the shared desktop shell for every route: a fixed left
+ * DesktopSidebar (Home / Bookmarks / Profile, footer links) next to a centred
+ * content rail. Screens never render their own sidebar.
  */
 export function AppShell({ children }: Props): ReactNode {
   const bp = useBreakpoint()
+  const pathname = usePathname()
   const { colors } = useTheme()
   const styles = useMemo(() => createStyles(colors), [colors])
 
@@ -23,9 +30,18 @@ export function AppShell({ children }: Props): ReactNode {
     return children
   }
 
+  const showSidebar = !BARE_ROUTES.has(pathname)
+
   return (
     <View accessibilityLabel="Expanded shell" style={styles.root}>
-      <ContentRail>{children}</ContentRail>
+      {showSidebar ? (
+        <View style={styles.sidebar} testID="desktop-shell-sidebar">
+          <DesktopSidebar />
+        </View>
+      ) : null}
+      <View style={styles.main}>
+        <ContentRail>{children}</ContentRail>
+      </View>
     </View>
   )
 }
@@ -34,7 +50,16 @@ function createStyles(c: AppColors) {
   return StyleSheet.create({
     root: {
       flex: 1,
+      flexDirection: 'row',
       backgroundColor: c.background,
+    },
+    sidebar: {
+      width: SIDEBAR_WIDTH,
+      flexShrink: 0,
+    },
+    main: {
+      flex: 1,
+      minWidth: 0,
     },
   })
 }

@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { StyleSheet, View } from 'react-native'
+import { Platform, StyleSheet, View } from 'react-native'
 import { MotiView } from 'moti'
 import Svg, { Circle, Defs, LinearGradient, Rect, Stop } from 'react-native-svg'
 import { useTheme } from '../../preferences/ThemePreferenceContext'
@@ -23,13 +23,17 @@ export function NewsStartBackdrop() {
       <Svg width="100%" height="100%" style={StyleSheet.absoluteFill}>
         <Defs>
           <LinearGradient id="khabroWash" x1="0" y1="0" x2="1" y2="1">
-            <Stop offset="0" stopColor={isDark ? '#1A2332' : '#DBEAFE'} stopOpacity={isDark ? 0.9 : 0.95} />
+            <Stop offset="0" stopColor={colors.accentFill} stopOpacity={isDark ? 0.14 : 0.16} />
             <Stop offset="0.45" stopColor={colors.background} stopOpacity={1} />
-            <Stop offset="1" stopColor={isDark ? '#202124' : '#EFF6FF'} stopOpacity={1} />
+            <Stop
+              offset="1"
+              stopColor={isDark ? colors.background : colors.accentSoft}
+              stopOpacity={1}
+            />
           </LinearGradient>
         </Defs>
         <Rect x="0" y="0" width="100%" height="100%" fill="url(#khabroWash)" />
-        <Circle cx="86%" cy="8%" r="120" fill="#FFB000" opacity={isDark ? 0.08 : 0.12} />
+        <Circle cx="86%" cy="8%" r="120" fill={colors.signal} opacity={isDark ? 0.08 : 0.12} />
         <Circle cx="12%" cy="88%" r="160" fill={colors.accentFill} opacity={isDark ? 0.1 : 0.08} />
       </Svg>
 
@@ -53,8 +57,11 @@ export function NewsStartBackdrop() {
             }}
             style={styles.tickerTrack}
           >
-            <HeadlineStrip colors={colors} isDark={isDark} />
-            <HeadlineStrip colors={colors} isDark={isDark} />
+            {/* Fix 15: enough strips to overflow a 1440px+ lane even after the
+                -280 drift, so the track never ends in a hard visible edge. */}
+            {STRIP_REPEAT.map((key) => (
+              <HeadlineStrip key={key} colors={colors} />
+            ))}
           </MotiView>
         </View>
       ))}
@@ -64,9 +71,12 @@ export function NewsStartBackdrop() {
   )
 }
 
-function HeadlineStrip({ colors, isDark }: { colors: AppColors; isDark: boolean }) {
-  const bar = isDark ? 'rgba(138, 180, 248, 0.18)' : 'rgba(37, 99, 235, 0.14)'
-  const accent = isDark ? 'rgba(255, 176, 0, 0.35)' : 'rgba(255, 176, 0, 0.45)'
+const STRIP_REPEAT = ['a', 'b', 'c', 'd'] as const
+
+function HeadlineStrip({ colors }: { colors: AppColors }) {
+  // Hex alpha suffixes: 0x26 ≈ 15%, 0x66 = 40%.
+  const bar = `${colors.accent}26`
+  const accent = `${colors.signal}66`
   return (
     <View style={styles.strip}>
       <View style={[styles.liveDot, { backgroundColor: accent }]} />
@@ -91,7 +101,7 @@ function createStyles(c: AppColors) {
       width: 220,
       height: 220,
       borderRadius: 110,
-      backgroundColor: '#FFB000',
+      backgroundColor: c.signal,
       opacity: 0.18,
     },
     tickerLane: {
@@ -99,6 +109,15 @@ function createStyles(c: AppColors) {
       left: -40,
       right: -40,
       overflow: 'hidden',
+      // Fix 15: feather the lane ends so strips fade instead of clipping on wide screens.
+      ...(Platform.OS === 'web'
+        ? ({
+            maskImage:
+              'linear-gradient(to right, transparent 0%, black 12%, black 88%, transparent 100%)',
+            WebkitMaskImage:
+              'linear-gradient(to right, transparent 0%, black 12%, black 88%, transparent 100%)',
+          } as object)
+        : null),
     },
     tickerTrack: {
       flexDirection: 'row',

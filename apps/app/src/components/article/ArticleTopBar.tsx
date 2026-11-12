@@ -3,12 +3,12 @@ import { Platform, Pressable, StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import ArrowLeft from 'lucide-react-native/icons/arrow-left'
 import { useTheme } from '../../preferences/ThemePreferenceContext'
+import type { getShadows } from '../../theme/tokens'
+
+type Shadows = ReturnType<typeof getShadows>
 import { HIT_TARGET } from '../../theme/tokens'
 import { iconStroke } from '../../theme/categoryIcons'
-import {
-  readerHeaderChrome,
-  type ReaderColors,
-} from '../../theme/readerTokens'
+import { readerHeaderChrome, type ReaderColors } from '../../theme/readerTokens'
 import { usePrefersReducedMotion } from '../../hooks/usePrefersReducedMotion'
 import { pressableState, webFocusRing } from './focusStyle'
 
@@ -19,15 +19,11 @@ type Props = {
   onBack: () => void
 }
 
-export function ArticleTopBar({
-  elevated,
-  scrollProgress,
-  onBack,
-}: Props) {
+export function ArticleTopBar({ elevated, scrollProgress, onBack }: Props) {
   const insets = useSafeAreaInsets()
   const reducedMotion = usePrefersReducedMotion()
-  const { readerColors } = useTheme()
-  const styles = useMemo(() => createStyles(readerColors), [readerColors])
+  const { readerColors, shadows } = useTheme()
+  const styles = useMemo(() => createStyles(readerColors, shadows), [readerColors, shadows])
   const safeTop = Math.max(insets.top, 8)
   const progress = Math.min(1, Math.max(0, scrollProgress))
 
@@ -36,17 +32,9 @@ export function ArticleTopBar({
       testID="article-top-bar"
       accessibilityRole="header"
       pointerEvents="box-none"
-      style={[
-        styles.wrap,
-        { paddingTop: safeTop },
-      ]}
+      style={[styles.wrap, { paddingTop: safeTop }]}
     >
-      <View
-        style={[
-          styles.shell,
-          readerHeaderChrome(elevated, reducedMotion, readerColors),
-        ]}
-      >
+      <View style={[styles.shell, readerHeaderChrome(elevated, reducedMotion, readerColors)]}>
         <View style={styles.row}>
           <Pressable
             accessibilityRole="button"
@@ -64,7 +52,6 @@ export function ArticleTopBar({
           >
             <ArrowLeft size={22} strokeWidth={iconStroke} color={readerColors.text} />
           </Pressable>
-
         </View>
         <View
           style={styles.track}
@@ -82,7 +69,7 @@ export function ArticleTopBar({
   )
 }
 
-function createStyles(c: ReaderColors) {
+function createStyles(c: ReaderColors, sh: Shadows) {
   return StyleSheet.create({
     wrap: {
       position: Platform.OS === 'web' ? ('fixed' as 'absolute') : 'absolute',
@@ -100,17 +87,7 @@ function createStyles(c: ReaderColors) {
       overflow: 'hidden',
       borderRadius: 24,
       backgroundColor: c.headerSolid,
-      ...(Platform.OS === 'web'
-        ? ({
-            boxShadow: '0px 10px 30px rgba(16, 24, 40, 0.10)',
-          } as object)
-        : {
-            shadowColor: '#101828',
-            shadowOffset: { width: 0, height: 6 },
-            shadowOpacity: 0.08,
-            shadowRadius: 16,
-            elevation: 4,
-          }),
+      ...sh.floating,
     },
     row: {
       minHeight: HIT_TARGET,
@@ -130,15 +107,7 @@ function createStyles(c: ReaderColors) {
       borderRadius: 18,
       backgroundColor: c.headerSolid,
       borderWidth: 0,
-      ...(Platform.OS === 'web'
-        ? ({ boxShadow: '0px 6px 18px rgba(16, 24, 40, 0.12)' } as object)
-        : {
-            shadowColor: '#101828',
-            shadowOffset: { width: 0, height: 4 },
-            shadowOpacity: 0.12,
-            shadowRadius: 10,
-            elevation: 4,
-          }),
+      ...sh.floating,
     },
     pressed: {
       opacity: 0.72,

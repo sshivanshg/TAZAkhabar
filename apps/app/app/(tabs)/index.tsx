@@ -774,16 +774,6 @@ function HomeFeedBody() {
             }
           }}
         />
-        {expanded ? (
-          <BriefingHeader
-            title={feedSlices.showBriefing ? undefined : feedSlices.pageTitle}
-            subtitle={
-              feedSlices.showBriefing
-                ? undefined
-                : 'Stories in this section'
-            }
-          />
-        ) : null}
 
         {(loading && !showContent) || !prefs.ready ? (
           <Box pt="$2" px="$4">
@@ -991,6 +981,18 @@ function HomeFeedBody() {
                     title=""
                   />
                 }
+                // Desktop briefing header scrolls with the feed (spec #14), so
+                // the category chips stay the only pinned chrome.
+                ListHeaderComponent={
+                  expanded ? (
+                    <BriefingHeader
+                      title={feedSlices.showBriefing ? undefined : feedSlices.pageTitle}
+                      subtitle={
+                        feedSlices.showBriefing ? undefined : 'Stories in this section'
+                      }
+                    />
+                  ) : null
+                }
                 onEndReached={onEndReached}
                 onEndReachedThreshold={0.4}
                 ListFooterComponent={
@@ -1106,11 +1108,11 @@ function SectionHeader({
   const { colors } = useTheme()
   const styles = useMemo(() => createStyles(colors), [colors])
   return (
-    <View style={styles.sectionHeaderWrap}>
+    <View style={[styles.sectionHeaderWrap, expanded ? null : styles.sectionHeaderWrapMobile]}>
     <HStack
       px="$4"
       mt={expanded ? '$1' : '$3'}
-      mb={subtitle ? '$1' : '$2'}
+      mb={subtitle ? '$1' : expanded ? '$2' : 0}
       alignItems="center"
       justifyContent="space-between"
       minHeight={36}
@@ -1185,6 +1187,10 @@ function createStyles(c: AppColors) {
   },
   sectionHeaderWrap: {
     marginBottom: space.xs,
+  },
+  // Mobile: one space.sm gap between a section title and its content (#17).
+  sectionHeaderWrapMobile: {
+    marginBottom: space.sm,
   },
   sectionPad: {
     marginBottom: space.xs,

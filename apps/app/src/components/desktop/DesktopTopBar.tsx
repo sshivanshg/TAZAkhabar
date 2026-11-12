@@ -34,7 +34,7 @@ type WebPressableState = PressableStateCallbackType & {
 }
 
 /** Collapsed control is a compact button. */
-const SEARCH_COLLAPSED_WIDTH = 40
+const SEARCH_COLLAPSED_WIDTH = HIT_TARGET
 /** Fixed expanded width; grows left from the right-aligned icon, does not reflow the rail. */
 const SEARCH_EXPANDED_WIDTH = 280
 const MOTION_MS = 200
@@ -279,7 +279,7 @@ function createStyles(c: AppColors) {
       gap: space.xxs,
       paddingHorizontal: space.sm,
       paddingVertical: 6,
-      minHeight: 32,
+      minHeight: HIT_TARGET,
       borderRadius: radius.md,
       backgroundColor: c.accentSoft,
       maxWidth: '100%',

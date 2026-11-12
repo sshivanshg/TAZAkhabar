@@ -9,16 +9,13 @@ import {
 } from 'react-native'
 import { Text } from '@gluestack-ui/themed'
 import { useRouter } from 'expo-router'
-import Bookmark from 'lucide-react-native/icons/bookmark'
 import ChevronDown from 'lucide-react-native/icons/chevron-down'
 import MapPin from 'lucide-react-native/icons/map-pin'
 import Search from 'lucide-react-native/icons/search'
-import User from 'lucide-react-native/icons/user'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useTheme } from '../../preferences/ThemePreferenceContext'
 import { iconStroke } from '../../theme/categoryIcons'
 import { HIT_TARGET, radius, space, typography, type AppColors } from '../../theme/tokens'
-import { BrandHomeButton } from '../BrandHomeButton'
 import { ReadingLanguageToggle } from '../ReadingLanguageToggle'
 import type { ReadingLanguageCode } from '../../storage/languagePreference'
 
@@ -35,7 +32,10 @@ type WebPressableState = PressableStateCallbackType & {
   focused?: boolean
 }
 
-/** Google News–style top bar for tablet/desktop — logo, pill search, quick nav. */
+/**
+ * Home-feed header inside the desktop shell: pill search, city, reading language.
+ * Brand and Bookmarks/Profile live in the shared DesktopSidebar (AppShell).
+ */
 export function ExpandedTopBar({
   cityTitle,
   onCityPress,
@@ -65,8 +65,6 @@ export function ExpandedTopBar({
       ]}
     >
       <View style={styles.row}>
-        <BrandHomeButton size={32} />
-
         <View style={styles.searchWrap}>
           <Search size={18} strokeWidth={iconStroke} color={colors.textMuted} />
           <TextInput
@@ -118,29 +116,6 @@ export function ExpandedTopBar({
             <ReadingLanguageToggle value={readingLanguage} onChange={onSelectLanguage} />
           ) : null}
 
-          <Pressable
-            onPress={() => router.push('/(tabs)/bookmarks')}
-            accessibilityRole="button"
-            accessibilityLabel="Bookmarks"
-            style={(state) => {
-              const { pressed, hovered } = state as WebPressableState
-              return [styles.iconBtn, hovered ? styles.hover : null, pressed ? styles.pressed : null]
-            }}
-          >
-            <Bookmark size={20} strokeWidth={iconStroke} color={colors.textSecondary} />
-          </Pressable>
-
-          <Pressable
-            onPress={() => router.push('/(tabs)/profile')}
-            accessibilityRole="button"
-            accessibilityLabel="Profile and settings"
-            style={(state) => {
-              const { pressed, hovered } = state as WebPressableState
-              return [styles.iconBtn, hovered ? styles.hover : null, pressed ? styles.pressed : null]
-            }}
-          >
-            <User size={20} strokeWidth={iconStroke} color={colors.textSecondary} />
-          </Pressable>
         </View>
       </View>
     </View>
@@ -167,9 +142,8 @@ function createStyles(c: AppColors) {
       flexDirection: 'row',
       alignItems: 'center',
       gap: space.sm,
-      minHeight: 44,
+      minHeight: HIT_TARGET,
       maxWidth: 640,
-      alignSelf: 'center',
       paddingHorizontal: space.md,
       borderRadius: radius.full,
       backgroundColor: c.surface,
@@ -199,19 +173,12 @@ function createStyles(c: AppColors) {
       gap: space.xxs,
       paddingHorizontal: space.sm,
       paddingVertical: 6,
-      minHeight: 32,
+      minHeight: HIT_TARGET,
       borderRadius: radius.md,
       backgroundColor: c.accentSoft,
       borderWidth: StyleSheet.hairlineWidth,
       borderColor: c.badgeSoftBorder,
       maxWidth: 160,
-    },
-    iconBtn: {
-      width: HIT_TARGET,
-      height: HIT_TARGET,
-      alignItems: 'center',
-      justifyContent: 'center',
-      borderRadius: radius.full,
     },
     hover: {
       backgroundColor: c.surfaceRaised,

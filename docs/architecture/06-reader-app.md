@@ -1,13 +1,13 @@
 # Reader app
 
 > **Living doc** — update when Expo routes, city/feed/share behavior, or desktop web layer change.  
-> **Last verified against:** 2026-11-12 (brand blue #2563EB, 16px type floor, signal/textOnAccentMuted/floating shadow tokens)
+> **Last verified against:** 2026-11-12 (brand blue #2563EB, 16px type floor, signal/textOnAccentMuted/floating shadow tokens; shared desktop sidebar shell)
 
 ## Purpose
 
 Universal Expo client (`apps/app`) for readers: web/PWA now, native later. Phone-first localized feed with WhatsApp share ([ADR-003](../adr/003-expo-universal-client.md)).
 
-Build **mobile-first** (touch targets, feed density, bottom tabs) while keeping breakpoint responsiveness from `useBreakpoint`. **Phone** (`<768px`) keeps the existing mobile feed: bottom tabs, chip category row, featured/related/compact card stream. **Tablet and desktop** (`≥768px`, `isExpandedLayout`) switch to Google News–style chrome: top logo + pill search + bookmarks/profile actions, underline category nav, “Your briefing” header, top-stories cluster card (lead image + related headlines), two-column “For you” grid, and on desktop/wide a right **Local news** rail when the feed category is All. Bottom tabs are hidden on tablet+; navigation moves to the top bar.
+Build **mobile-first** (touch targets, feed density, bottom tabs) while keeping breakpoint responsiveness from `useBreakpoint`. **Phone** (`<768px`) keeps the existing mobile feed: bottom tabs, chip category row, featured/related/compact card stream. **Tablet and desktop** (`≥768px`, `isExpandedLayout`) switch to the shared desktop shell: `AppShell` (root `app/_layout.tsx`) renders a fixed 240px `DesktopSidebar` (brand, Home / Bookmarks / Profile, Privacy / Support / Contact footer) beside a centred content rail on **every** route, including profile, contact and article (only `/language` onboarding is bare). The home feed adds `ExpandedTopBar` (pill search, city, reading language only), category chips, a “Your briefing” header that scrolls with the feed, top-stories cluster card (lead image + related headlines), two-column “For you” grid, and on desktop/wide a right **Local news** rail when the feed category is All. Bottom tabs are hidden on tablet+; navigation moves to the sidebar. `DesktopTopBar` stays unwired.
 
 On mobile, the top bar and category rail sit outside the only vertical scroll
 surface, the virtualized feed. The bottom tab bar remains in the navigator shell
@@ -73,7 +73,7 @@ flowchart LR
 | `src/components/CityListItem.tsx` | Tappable city row + list skeleton |
 | `src/components/CitySearch.tsx` | Live city/state filter field |
 | `src/utils/shareToWhatsApp.ts` | Share deep link / intent to the public Khabro website |
-| `src/components/desktop/*` | Expanded shell, top bar, category nav, top-stories cluster, local rail |
+| `src/components/desktop/*` | `AppShell` (sidebar + content rail for all routes), sidebar, home top bar, top-stories cluster (text-only lead when no image), local rail |
 | `src/storage/personalizationId.ts` | Persistent anonymous id (AsyncStorage/localStorage) for view recording + personalized feed |
 | `src/preferences/ThemePreferenceContext.tsx` | Light/dark/system preference → `useTheme()` (`colors`, `readerColors`, `shadows`) |
 | `src/theme/tokens.ts` | Shell palettes (light `#F4F6FA` / Google News grey dark `#202124`) + accent `#2563EB` (`accentFill`) |
