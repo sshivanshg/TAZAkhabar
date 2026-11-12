@@ -248,7 +248,7 @@ public sealed class ScrapeIngestService
                 {
                     var articleHtml = await _http.GetStringAsync(link, ct);
                     var (headline, snippet, body, publishedAt) = HtmlArticleExtractor.ExtractArticle(articleHtml);
-                    headline = HtmlText.Truncate(headline.Trim(), 300);
+                    headline = HtmlText.Truncate(IngestTextCleaner.CleanHeadline(headline, source.Name), 300);
                     if (string.IsNullOrWhiteSpace(headline))
                     {
                         skipped++;
@@ -309,7 +309,7 @@ public sealed class ScrapeIngestService
                             {
                                 if (!string.IsNullOrWhiteSpace(rewritten.Headline))
                                 {
-                                    headline = HtmlText.Truncate(rewritten.Headline.Trim(), 300);
+                                    headline = HtmlText.Truncate(IngestTextCleaner.CleanHeadline(rewritten.Headline, source.Name), 300);
                                 }
 
                                 if (!string.IsNullOrWhiteSpace(rewritten.Summary))
@@ -489,6 +489,9 @@ public sealed class ScrapeIngestService
         {
             return false;
         }
+
+        headline = IngestTextCleaner.CleanHeadline(headline, source.Name);
+        summary = IngestTextCleaner.CleanSummary(summary, headline, source.Name);
 
         var now = DateTimeOffset.UtcNow;
         var article = new Article
