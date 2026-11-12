@@ -6,13 +6,7 @@ import { useTheme } from '../../preferences/ThemePreferenceContext'
 import { space, typography } from '../../theme/tokens'
 import { PrimaryButton } from './PrimaryButton'
 import { SecondaryButton } from './PrimaryButton'
-
-export const ERROR_STATE_COPY = {
-  title: 'Something went wrong',
-  retry: 'Try again',
-  retryA11y: 'Retry loading articles',
-  secondary: 'Back to feed',
-} as const
+import { useAccessibilityLanguage, useT } from '../../i18n'
 
 type Props = {
   title?: string
@@ -45,15 +39,19 @@ function OfflineIcon({ stroke }: { stroke: string }) {
  * Primary + secondary buttons stay visually distinct.
  */
 export function ErrorState({
-  title = ERROR_STATE_COPY.title,
+  title: titleProp,
   message,
   onRetry,
-  retryLabel = ERROR_STATE_COPY.retry,
+  retryLabel: retryLabelProp,
   retryAccessibilityLabel,
   onSecondary,
-  secondaryLabel = ERROR_STATE_COPY.secondary,
+  secondaryLabel: secondaryLabelProp,
 }: Props) {
   const { colors } = useTheme()
+  const t = useT()
+  const title = titleProp ?? t('common.somethingWentWrong')
+  const retryLabel = retryLabelProp ?? t('common.tryAgain')
+  const secondaryLabel = secondaryLabelProp ?? t('error.backToFeed')
 
   return (
     <View style={styles.root} accessibilityRole="alert">
@@ -87,7 +85,7 @@ export function ErrorState({
             onPress={onRetry}
             accessibilityLabel={
               retryAccessibilityLabel ??
-              (retryLabel === ERROR_STATE_COPY.retry ? ERROR_STATE_COPY.retryA11y : retryLabel)
+              (retryLabel === t('common.tryAgain') ? t('error.retryArticlesA11y') : retryLabel)
             }
             fullWidth
             style={styles.primary}

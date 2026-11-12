@@ -10,6 +10,7 @@ import Ban from 'lucide-react-native/icons/ban'
 import type { ArticleResponse } from '@tazakhabar/shared-types'
 import { isHttpsUrl } from '../utils/shareToWhatsApp'
 import type { BottomSheetSection } from './ui/BottomSheet'
+import { feedCategoryLabel, translate } from '../i18n'
 
 type IconProps = { size?: number; strokeWidth?: number; color?: string; style?: object }
 
@@ -51,20 +52,21 @@ export function buildStorySections({
   onBlockSource,
   onFewerAboutTopic,
 }: Args): BottomSheetSection[] {
-  const source = article.sourceName?.trim() || 'this source'
-  const topic = article.category?.trim()
+  const source = article.sourceName?.trim() || translate('block.thisSource')
+  const rawTopic = article.category?.trim()
+  const topic = rawTopic ? feedCategoryLabel(translate, rawTopic) : undefined
   const canOpenSource = isHttpsUrl(article.sourceUrl)
 
   return [
     {
       key: 'primary',
       items: [
-        item('save', saved ? 'Remove from saved' : 'Save for later', Bookmark, onSave),
-        item('share', 'Share', Share2, onShare),
+        item('save', translate(saved ? 'story.removeFromSaved' : 'story.saveForLater'), Bookmark, onSave),
+        item('share', translate('story.share'), Share2, onShare),
         ...(canOpenSource
-          ? [item('source', `Go to ${source}`, ExternalLink, onOpenSource)]
+          ? [item('source', translate('story.goToSource', { source }), ExternalLink, onOpenSource)]
           : []),
-        item('block', `Hide all stories from ${source}`, Ban, onBlockSource, {
+        item('block', translate('story.hideAllFrom', { source }), Ban, onBlockSource, {
           destructive: true,
         }),
       ],
@@ -72,16 +74,16 @@ export function buildStorySections({
     {
       key: 'signals',
       items: [
-        item('like', 'I like this', ThumbsUp, onLike),
-        item('dislike', "I don't like this", ThumbsDown, onDislike),
+        item('like', translate('story.like'), ThumbsUp, onLike),
+        item('dislike', translate('story.dislike'), ThumbsDown, onDislike),
         ...(topic && onFewerAboutTopic
           ? [
-              item('fewer', 'Fewer stories about a topic', Frown, onFewerAboutTopic, {
+              item('fewer', translate('story.fewerAboutTopic'), Frown, onFewerAboutTopic, {
                 detail: topic,
               }),
             ]
           : []),
-        item('hide', 'Hide this story', EyeOff, onHide),
+        item('hide', translate('story.hide'), EyeOff, onHide),
       ],
     },
   ]

@@ -6,6 +6,7 @@ import { useMotionTransition } from '../../hooks/usePrefersReducedMotion'
 import { iconPress } from '../../lib/pressFeedback'
 import { useTheme } from '../../preferences/ThemePreferenceContext'
 import { HIT_TARGET, radius, space } from '../../theme/tokens'
+import { useAccessibilityLanguage } from '../../i18n'
 
 export type ToastOptions = {
   message: string
@@ -33,6 +34,7 @@ export function ToastHost(): JSX.Element {
   const [toast, setToast] = useState<ActiveToast | null>(null)
   const insets = useSafeAreaInsets()
   const { colors } = useTheme()
+  const a11yLang = useAccessibilityLanguage()
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const transition = useMotionTransition({ type: 'timing', duration: 180 })
 
@@ -66,12 +68,14 @@ export function ToastHost(): JSX.Element {
           transition={transition}
           testID="toast"
           accessibilityRole="alert"
+          accessibilityLanguage={a11yLang}
           style={[styles.toast, { backgroundColor: colors.text }]}
         >
           <Text style={[styles.message, { color: colors.background }]}>{toast.message}</Text>
           {toast.actionLabel && toast.onAction ? (
             <Pressable
               accessibilityRole="button"
+              accessibilityLanguage={a11yLang}
               accessibilityLabel={toast.actionLabel}
               hitSlop={8}
               onPress={() => {

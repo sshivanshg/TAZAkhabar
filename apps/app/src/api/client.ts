@@ -10,12 +10,12 @@ import type {
   ProblemDetails,
   TrendingArticlesResponse,
 } from '@tazakhabar/shared-types'
+import { translate } from '../i18n/runtime'
 
 export type NotificationPlatform = 'native' | 'web'
 
 const API_BASE_URL = (process.env.EXPO_PUBLIC_API_BASE_URL ?? '').replace(/\/$/, '')
 const REQUEST_TIMEOUT_MS = 15000
-const NETWORK_ERROR_MESSAGE = 'Check your connection and try again.'
 
 export class ApiError extends Error {
   readonly status: number
@@ -42,7 +42,7 @@ function toFriendlyNetworkError(err: unknown): Error {
   if (err instanceof ApiError) {
     return err
   }
-  return new Error(NETWORK_ERROR_MESSAGE)
+  return new Error(translate('common.networkError'))
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {

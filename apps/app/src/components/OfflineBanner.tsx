@@ -2,32 +2,28 @@ import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { iconPress } from '../lib/pressFeedback'
 import { useTheme } from '../preferences/ThemePreferenceContext'
 import { HIT_TARGET, radius, space } from '../theme/tokens'
-
-export const OFFLINE_BANNER_COPY = {
-  message: "You're offline. Showing saved stories.",
-  retry: 'Retry',
-  retryA11y: 'Retry loading the latest stories',
-} as const
+import { useT } from '../i18n'
 
 /** Shown above a cached feed when the latest fetch failed. */
 export function OfflineBanner({ onRetry }: { onRetry?: () => void }) {
   const { colors } = useTheme()
+  const t = useT()
   return (
     <View
       testID="offline-banner"
       accessibilityLiveRegion="polite"
       style={[styles.root, { backgroundColor: colors.surfaceRaised, borderColor: colors.border }]}
     >
-      <Text style={[styles.text, { color: colors.text }]}>{OFFLINE_BANNER_COPY.message}</Text>
+      <Text style={[styles.text, { color: colors.text }]}>{t('offline.message')}</Text>
       {onRetry ? (
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={OFFLINE_BANNER_COPY.retryA11y}
+          accessibilityLabel={t('offline.retryA11y')}
           onPress={onRetry}
           style={({ pressed }) => [styles.retry, iconPress(pressed)]}
         >
           <Text style={[styles.retryText, { color: colors.accent }]}>
-            {OFFLINE_BANNER_COPY.retry}
+            {t('common.retry')}
           </Text>
         </Pressable>
       ) : null}

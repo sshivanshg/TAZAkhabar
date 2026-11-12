@@ -1,5 +1,6 @@
 import { Linking, Platform, Share } from 'react-native'
 import { getPublicSiteUrl } from './publicSiteUrl'
+import { translate } from '../i18n/runtime'
 
 export type ShareableArticle = {
   headline?: string | null
@@ -25,7 +26,7 @@ export function formatWhatsAppShareText(article: ShareableArticle): string {
   const headline = (article.headline ?? '').trim()
   const summary = (article.summary ?? '').trim()
   const parts = [headline, '', summary]
-  parts.push('', `Read more: ${getPublicSiteUrl()}`)
+  parts.push('', translate('share.readMore', { url: getPublicSiteUrl() }))
   return parts.join('\n')
 }
 

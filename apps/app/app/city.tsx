@@ -17,19 +17,8 @@ import {
   setStoredCitySlug,
 } from '../src/storage/cityPreference'
 import { space, type AppColors } from '../src/theme/tokens'
+import { translate, useT } from '../src/i18n'
 
-/** English for now; extracted to the string catalog in phase 3. */
-export const CITY_STEP_COPY = {
-  eyebrow: 'YOUR CITY',
-  title: 'Which city do you want news from?',
-  subtitle: 'We show local stories first. Change it anytime in Settings.',
-  useLocation: 'Use my location',
-  locating: 'Finding your city…',
-  search: 'Search for your city',
-  skip: 'Skip, show All India',
-  noMatch: "We couldn't match your location. Search for your city instead.",
-  savedToast: (city: string) => `Showing news for ${city}`,
-} as const
 
 /** Onboarding step after language (also reachable from Settings). */
 export default function CityStepScreen() {
@@ -37,6 +26,7 @@ export default function CityStepScreen() {
   const insets = useSafeAreaInsets()
   const { colors } = useTheme()
   const styles = createStyles(colors)
+  const t = useT()
   const [locating, setLocating] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
 
@@ -61,7 +51,7 @@ export default function CityStepScreen() {
       hapticSelection()
       await setStoredCitySlug(city.slug)
       showToast({
-        message: CITY_STEP_COPY.savedToast(getCityDisplayLabel(city.slug, city.name)),
+        message: translate('city.savedToast', { city: getCityDisplayLabel(city.slug, city.name) }),
       })
       goHome(city.slug)
     },
@@ -81,10 +71,10 @@ export default function CityStepScreen() {
       if (match) {
         await choose(match.city)
       } else {
-        setMessage(CITY_STEP_COPY.noMatch)
+        setMessage(translate('city.noMatch'))
       }
     } catch {
-      setMessage(CITY_STEP_COPY.noMatch)
+      setMessage(translate('city.noMatch'))
     } finally {
       setLocating(false)
     }
@@ -103,11 +93,11 @@ export default function CityStepScreen() {
       ]}
     >
       <View style={styles.copy}>
-        <Text style={styles.eyebrow}>{CITY_STEP_COPY.eyebrow}</Text>
+        <Text style={styles.eyebrow}>{t('city.eyebrow')}</Text>
         <Text style={styles.title} accessibilityRole="header">
-          {CITY_STEP_COPY.title}
+          {t('city.title')}
         </Text>
-        <Text style={styles.subtitle}>{CITY_STEP_COPY.subtitle}</Text>
+        <Text style={styles.subtitle}>{t('city.subtitle')}</Text>
         {message ? (
           <Text style={styles.message} accessibilityLiveRegion="polite">
             {message}
@@ -118,19 +108,19 @@ export default function CityStepScreen() {
       {/* Actions live in the lower half for one-handed use. */}
       <View style={styles.actions}>
         <PrimaryButton
-          label={locating ? CITY_STEP_COPY.locating : CITY_STEP_COPY.useLocation}
+          label={locating ? t('city.locating') : t('city.useLocation')}
           onPress={() => void useLocation()}
           loading={locating}
           disabled={locating}
           fullWidth
         />
         <SecondaryButton
-          label={CITY_STEP_COPY.search}
+          label={t('city.search')}
           onPress={openCityPicker}
           fullWidth
           outline
         />
-        <SecondaryButton label={CITY_STEP_COPY.skip} onPress={() => void skip()} fullWidth />
+        <SecondaryButton label={t('city.skip')} onPress={() => void skip()} fullWidth />
       </View>
       {picker}
     </View>

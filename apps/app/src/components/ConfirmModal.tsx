@@ -5,6 +5,7 @@ import { MotiView } from 'moti'
 import { useTheme } from '../preferences/ThemePreferenceContext'
 import { radius, type AppColors } from '../theme/tokens'
 import { useMotionTransition } from '../hooks/usePrefersReducedMotion'
+import { useAccessibilityLanguage, useT } from '../i18n'
 
 type Props = {
   visible: boolean
@@ -21,12 +22,16 @@ export function ConfirmModal({
   visible,
   title,
   message,
-  confirmLabel = 'Block',
-  cancelLabel = 'Cancel',
+  confirmLabel: confirmLabelProp,
+  cancelLabel: cancelLabelProp,
   onConfirm,
   onCancel,
 }: Props) {
   const { colors } = useTheme()
+  const a11yLang = useAccessibilityLanguage()
+  const t = useT()
+  const confirmLabel = confirmLabelProp ?? t('common.block')
+  const cancelLabel = cancelLabelProp ?? t('common.cancel')
   const styles = useMemo(() => createStyles(colors), [colors])
   const overlayTransition = useMotionTransition({ type: 'timing', duration: 200 })
   const cardTransition = useMotionTransition({ type: 'timing', duration: 220 })
@@ -38,7 +43,8 @@ export function ConfirmModal({
           style={StyleSheet.absoluteFill}
           onPress={onCancel}
           accessibilityRole="button"
-          accessibilityLabel="Dismiss confirmation"
+          accessibilityLanguage={a11yLang}
+          accessibilityLabel={t('common.dismissConfirmation')}
         >
           <MotiView
             from={{ opacity: 0 }}
@@ -66,6 +72,7 @@ export function ConfirmModal({
             <Pressable
               onPress={onCancel}
               accessibilityRole="button"
+              accessibilityLanguage={a11yLang}
               accessibilityLabel={cancelLabel}
               style={({ pressed }) => [styles.actionBtn, pressed ? styles.pressed : null]}
             >
@@ -77,6 +84,7 @@ export function ConfirmModal({
             <Pressable
               onPress={onConfirm}
               accessibilityRole="button"
+              accessibilityLanguage={a11yLang}
               accessibilityLabel={confirmLabel}
               style={({ pressed }) => [styles.actionBtn, pressed ? styles.pressed : null]}
             >

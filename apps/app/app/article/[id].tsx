@@ -33,7 +33,7 @@ import {
   FeedSentinel,
 } from '../../src/components/article'
 import { ScreenErrorBoundary } from '../../src/components/ScreenErrorBoundary'
-import { ARTICLE_COPY } from '../../src/components/article/copy'
+import { readableErrorMessage, translate, useT } from '../../src/i18n'
 import { BottomSheet } from '../../src/components/ui/BottomSheet'
 import { showToast } from '../../src/components/ui/Toast'
 import { hapticLight } from '../../src/lib/haptics'
@@ -133,6 +133,7 @@ function ArticleFeedBody() {
   const routeDate = paramString(raw.date)
   const { preferredLanguage, setPreferredLanguage } = useLanguagePreference()
   const { readerColors } = useTheme()
+  const t = useT()
   const styles = useMemo(() => createStyles(readerColors), [readerColors])
   const lang = preferredLanguage
 
@@ -217,7 +218,7 @@ function ArticleFeedBody() {
   const loadStack = useCallback(async (mode: 'replace' | 'refresh' = 'replace') => {
     if (!citySlug) {
       if (!id) {
-        setError('Article not found')
+        setError(translate('article.notFound'))
         setLoading(false)
       }
       return
@@ -251,7 +252,7 @@ function ArticleFeedBody() {
           startIndex = 0
         } catch {
           if (!initialFromParams) {
-            setError('Article not found')
+            setError(translate('article.notFound'))
             setStack([])
             setLoading(false)
             return
@@ -262,7 +263,7 @@ function ArticleFeedBody() {
       }
 
       if (items.length === 0) {
-        setError('Article not found')
+        setError(translate('article.notFound'))
         setStack([])
         setLoading(false)
         return
@@ -291,7 +292,7 @@ function ArticleFeedBody() {
         activeIndexRef.current = 0
         return
       }
-      setError(err instanceof Error ? err.message : 'Could not load article')
+      setError(readableErrorMessage(err, 'article.loadFailed'))
     } finally {
       setLoading(false)
       setRefreshing(false)
@@ -492,7 +493,7 @@ function ArticleFeedBody() {
     async (article: ArticleResponse) => {
       const result = await shareArticle(article)
       if (result === 'copied') {
-        flashNotice('Link copied')
+        flashNotice(translate('article.linkCopied'))
         return
       }
       if (result === 'unavailable') {
@@ -524,14 +525,14 @@ function ArticleFeedBody() {
       markSaved(!currently)
       if (!currently) {
         hapticLight()
-        AccessibilityInfo.announceForAccessibility(ARTICLE_COPY.toastSaved)
+        AccessibilityInfo.announceForAccessibility(translate('toast.saved'))
       }
       try {
         if (currently) {
           await removeBookmark(articleId)
           showToast({
-            message: ARTICLE_COPY.toastRemoved,
-            actionLabel: ARTICLE_COPY.toastUndo,
+            message: translate('toast.removed'),
+            actionLabel: translate('toast.undo'),
             onAction: () => {
               markSaved(true)
               void addBookmark(snapshot).catch(() => markSaved(false))
@@ -539,11 +540,11 @@ function ArticleFeedBody() {
           })
         } else {
           await addBookmark(snapshot)
-          showToast({ message: ARTICLE_COPY.toastSaved })
+          showToast({ message: translate('toast.saved') })
         }
       } catch {
         markSaved(currently)
-        showToast({ message: ARTICLE_COPY.toastSaveFailed })
+        showToast({ message: translate('article.saveFailed') })
       }
     },
     [bookmarkedIds, citySlug],
@@ -674,15 +675,15 @@ function ArticleFeedBody() {
   if (error && stack.length === 0) {
     return (
       <View style={styles.center}>
-        <Text style={styles.errorTitle}>Story unavailable</Text>
+        <Text style={styles.errorTitle}>{t('article.unavailable')}</Text>
         <Text style={styles.errorBody}>{error}</Text>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Go back"
+          accessibilityLabel={t('common.goBack')}
           onPress={onBack}
           style={({ pressed }) => [styles.errorBtn, iconPress(pressed)]}
         >
-          <Text style={styles.errorBtnText}>Back</Text>
+          <Text style={styles.errorBtnText}>{t('common.back')}</Text>
         </Pressable>
       </View>
     )
@@ -744,11 +745,11 @@ function ArticleFeedBody() {
                 {loadMoreError ? (
                   <Pressable
                     accessibilityRole="button"
-                    accessibilityLabel="Retry loading the next story"
+                    accessibilityLabel={t('article.retryNextA11y')}
                     onPress={() => void loadMore()}
                     style={({ pressed }) => [styles.retryMore, iconPress(pressed)]}
                   >
-                    <Text style={styles.retryMoreText}>Couldn’t load the next story. Retry</Text>
+                    <Text style={styles.retryMoreText}>{t('article.nextFailed')}</Text>
                   </Pressable>
                 ) : null}
                 <FeedSentinel disabled={!hasMore} onVisible={() => void loadMore()} />
@@ -828,21 +829,21 @@ function ArticleFeedBody() {
 
       <BottomSheet
         visible={shareTarget != null}
-        title="Share story"
+        title={t('article.shareStory')}
         onClose={() => setShareTarget(null)}
         items={
           shareTarget
             ? [
                 {
                   key: 'copy',
-                  label: 'Copy link',
+                  label: t('article.copyLink'),
                   Icon: Copy,
                   onPress: () => {
                     const url = articleShareUrl(shareTarget)
                     if (url) {
                       void copyTextToClipboard(url).then((ok) => {
                         if (ok) {
-                          flashNotice('Link copied')
+                          flashNotice(translate('article.linkCopied'))
                         }
                       })
                     }

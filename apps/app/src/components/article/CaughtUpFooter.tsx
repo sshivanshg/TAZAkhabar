@@ -4,6 +4,7 @@ import { useTheme } from '../../preferences/ThemePreferenceContext'
 import { HIT_TARGET } from '../../theme/tokens'
 import type { ReaderColors } from '../../theme/readerTokens'
 import { pressableState, webFocusRing } from './focusStyle'
+import { useT } from '../../i18n'
 
 type Props = {
   onBack: () => void
@@ -11,16 +12,17 @@ type Props = {
 
 export function CaughtUpFooter({ onBack }: Props) {
   const { readerColors } = useTheme()
+  const t = useT()
   const styles = useMemo(() => createStyles(readerColors), [readerColors])
 
   return (
     <View testID="caught-up" style={styles.wrap}>
       <View style={styles.rule} />
-      <Text style={styles.title}>You’re all caught up</Text>
-      <Text style={styles.body}>That’s all the latest for now.</Text>
+      <Text style={styles.title}>{t('caughtUp.title')}</Text>
+      <Text style={styles.body}>{t('caughtUp.body')}</Text>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel="Back to latest news"
+        accessibilityLabel={t('caughtUp.back')}
         onPress={onBack}
         style={(state) => {
           const { pressed, focused } = pressableState(state)
@@ -31,7 +33,7 @@ export function CaughtUpFooter({ onBack }: Props) {
           ]
         }}
       >
-        <Text style={styles.btnLabel}>Back to latest news</Text>
+        <Text style={styles.btnLabel}>{t('caughtUp.back')}</Text>
       </Pressable>
     </View>
   )

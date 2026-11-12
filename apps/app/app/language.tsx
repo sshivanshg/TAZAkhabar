@@ -18,8 +18,10 @@ import {
 } from '../src/hooks/usePrefersReducedMotion'
 import { hapticSelection } from '../src/lib/haptics'
 import { cardPress } from '../src/lib/pressFeedback'
+import { useT } from '../src/i18n'
 import { HIT_TARGET, radius, space, type AppColors } from '../src/theme/tokens'
 
+// Each option is shown in its own language on purpose, whatever the app language is.
 const LANGUAGE_COPY: Record<
   ReadingLanguageCode,
   { hint: string; sample: string; accentLabel: string }
@@ -44,6 +46,7 @@ export default function LanguageScreen() {
     useLanguagePreference()
   const styles = useMemo(() => createStyles(colors), [colors])
   const reduced = usePrefersReducedMotion()
+  const t = useT()
   const motion = (config: { type: 'timing'; duration: number; delay?: number; loop?: boolean }) =>
     resolveMotionTransition(config, reduced)
 
@@ -93,7 +96,7 @@ export default function LanguageScreen() {
                 transition={motion({ type: 'timing' as const, duration: 900, loop: true })}
                 style={styles.liveDot}
               />
-              <Text style={styles.liveText}>LIVE</Text>
+              <Text style={styles.liveText}>{t('onboarding.live')}</Text>
             </MotiView>
           </View>
 
@@ -107,9 +110,9 @@ export default function LanguageScreen() {
           transition={motion({ type: 'timing' as const, duration: 480, delay: 180 })}
           style={styles.copyBlock}
         >
-          <Text style={styles.eyebrow}>START YOUR BRIEF</Text>
-          <Text style={styles.title}>How do you want to read the news?</Text>
-          <Text style={styles.subtitle}>Pick once — change anytime in Settings.</Text>
+          <Text style={styles.eyebrow}>{t('onboarding.eyebrow')}</Text>
+          <Text style={styles.title}>{t('onboarding.title')}</Text>
+          <Text style={styles.subtitle}>{t('onboarding.subtitle')}</Text>
         </MotiView>
 
         <View style={styles.options}>
@@ -181,7 +184,7 @@ export default function LanguageScreen() {
           style={styles.footer}
         >
           <View style={styles.footerRule} />
-          <Text style={styles.footerText}>Local stories · Clear language · Fresh every day</Text>
+          <Text style={styles.footerText}>{t('onboarding.footer')}</Text>
         </MotiView>
       </View>
     </View>

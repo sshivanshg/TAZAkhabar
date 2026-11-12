@@ -29,7 +29,8 @@ jest.mock('../src/storage/cityPreference', () => ({
   setStoredCitySlug: (slug: string) => mockSetCity(slug),
 }))
 
-import CityStepScreen, { CITY_STEP_COPY } from '../app/city'
+import CityStepScreen from '../app/city'
+import { translate } from '../src/i18n'
 
 describe('city onboarding step', () => {
   beforeEach(() => {
@@ -39,14 +40,14 @@ describe('city onboarding step', () => {
 
   it('offers location, search and skip', () => {
     render(<CityStepScreen />)
-    expect(screen.getByText(CITY_STEP_COPY.useLocation)).toBeTruthy()
-    expect(screen.getByText(CITY_STEP_COPY.search)).toBeTruthy()
-    expect(screen.getByText(CITY_STEP_COPY.skip)).toBeTruthy()
+    expect(screen.getByText(translate('city.useLocation'))).toBeTruthy()
+    expect(screen.getByText(translate('city.search'))).toBeTruthy()
+    expect(screen.getByText(translate('city.skip'))).toBeTruthy()
   })
 
   it('Skip stores All India and goes to the tabs', async () => {
     render(<CityStepScreen />)
-    fireEvent.press(screen.getByText(CITY_STEP_COPY.skip))
+    fireEvent.press(screen.getByText(translate('city.skip')))
     await waitFor(() => {
       expect(mockReplace).toHaveBeenCalledWith({ pathname: '/(tabs)', params: { city: 'global' } })
     })

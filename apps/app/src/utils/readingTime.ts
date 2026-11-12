@@ -1,3 +1,5 @@
+import { translate } from '../i18n/runtime'
+
 const WORDS_PER_MINUTE = 200
 
 /** Whole minutes of reading time from article text. Minimum 1 when any copy exists. */
@@ -16,5 +18,5 @@ export function formatReadingTime(minutes: number | null | undefined): string | 
   if (minutes == null || minutes < 1) {
     return null
   }
-  return minutes === 1 ? '1 min read' : `${minutes} min read`
+  return translate('time.minRead', { count: minutes })
 }

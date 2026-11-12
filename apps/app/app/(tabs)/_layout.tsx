@@ -16,6 +16,7 @@ import { isExpandedLayout, useBreakpoint } from '../../src/hooks/useBreakpoint'
 import { useTheme } from '../../src/preferences/ThemePreferenceContext'
 import { useMotionTransition } from '../../src/hooks/usePrefersReducedMotion'
 import { hapticSelection } from '../../src/lib/haptics'
+import { useAppLanguage, useT } from '../../src/i18n'
 
 /** Spec 2026-11-12 #13: room for the 13px label under the icon pill. */
 const TAB_BAR_HEIGHT = 76
@@ -58,6 +59,9 @@ export default function TabsLayout() {
   const bottomPad = Platform.OS === 'web' || expanded ? 0 : Math.max(insets.bottom, space.xs)
   const { colors } = useTheme()
   const styles = useMemo(() => createStyles(colors), [colors])
+  const t = useT()
+  // Devanagari matras need extra line height to avoid clipping.
+  const isHindi = useAppLanguage() === 'hi'
 
   return (
     <ScreenErrorBoundary name="tabs">
@@ -105,7 +109,7 @@ export default function TabsLayout() {
             tabBarInactiveTintColor: colors.textMuted,
             tabBarLabelStyle: {
               fontSize: 13,
-              lineHeight: 16,
+              lineHeight: isHindi ? 19 : 16,
               fontWeight: '600',
               letterSpacing: 0.1,
             },
@@ -114,32 +118,33 @@ export default function TabsLayout() {
           <Tabs.Screen
             name="index"
             options={{
-              title: 'Home',
+              title: t('tabs.home'),
               headerShown: false,
-              tabBarLabel: 'Home',
+              tabBarLabel: t('tabs.home'),
               tabBarIcon: ({ focused }) => <TabIcon Icon={Home} focused={focused} />,
-              tabBarAccessibilityLabel: 'Home feed',
+              tabBarAccessibilityLabel: t('tabs.homeA11y'),
             }}
           />
           <Tabs.Screen
             name="bookmarks"
             options={{
-              title: 'Bookmarks',
+              title: t('tabs.bookmarks'),
               headerShown: false,
-              tabBarLabel: 'Bookmarks',
+              // Short label keeps the 360px bar on one line in Hindi.
+              tabBarLabel: isHindi ? t('tabs.bookmarksShort') : t('tabs.bookmarks'),
               tabBarIcon: ({ focused }) => <TabIcon Icon={Bookmark} focused={focused} />,
-              tabBarAccessibilityLabel: 'Bookmarks',
+              tabBarAccessibilityLabel: t('tabs.bookmarks'),
             }}
           />
           <Tabs.Screen
             name="profile"
             options={{
-              title: 'Settings',
+              title: t('tabs.settings'),
               // Title renders in-page inside the 720 column (not at the rail edge).
               headerShown: false,
-              tabBarLabel: 'Settings',
+              tabBarLabel: t('tabs.settings'),
               tabBarIcon: ({ focused }) => <TabIcon Icon={User} focused={focused} />,
-              tabBarAccessibilityLabel: 'Settings',
+              tabBarAccessibilityLabel: t('tabs.settings'),
             }}
           />
           <Tabs.Screen

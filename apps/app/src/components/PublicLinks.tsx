@@ -4,16 +4,17 @@ import { Text } from '@gluestack-ui/themed'
 import { useTheme } from '../preferences/ThemePreferenceContext'
 import { HIT_TARGET, radius, space, typography, type AppColors } from '../theme/tokens'
 import { getPublicSiteUrl } from '../utils/publicSiteUrl'
+import { useT } from '../i18n'
 
 const siteUrl = getPublicSiteUrl()
 
 const PUBLIC_PAGE_LINKS = [
-  { id: 'about', label: 'About', href: `${siteUrl}/about` },
-  { id: 'contact', label: 'Contact us', href: `${siteUrl}/contact` },
-  { id: 'privacy', label: 'Privacy', href: `${siteUrl}/privacy` },
-  { id: 'terms', label: 'Terms', href: `${siteUrl}/terms` },
-  { id: 'support', label: 'Support', href: `${siteUrl}/support` },
-  { id: 'corrections', label: 'Corrections', href: `${siteUrl}/corrections` },
+  { id: 'about', labelKey: 'links.about', href: `${siteUrl}/about` },
+  { id: 'contact', labelKey: 'common.contactUs', href: `${siteUrl}/contact` },
+  { id: 'privacy', labelKey: 'links.privacy', href: `${siteUrl}/privacy` },
+  { id: 'terms', labelKey: 'links.terms', href: `${siteUrl}/terms` },
+  { id: 'support', labelKey: 'links.support', href: `${siteUrl}/support` },
+  { id: 'corrections', labelKey: 'links.corrections', href: `${siteUrl}/corrections` },
 ] as const
 
 type PublicLinkId = (typeof PUBLIC_PAGE_LINKS)[number]['id']
@@ -26,12 +27,13 @@ export function PublicLinks({
   exclude?: PublicLinkId[]
 }) {
   const { colors } = useTheme()
+  const t = useT()
   const styles = useMemo(() => createStyles(colors), [colors])
 
   return (
     <View
       accessibilityRole={'navigation' as AccessibilityRole}
-      accessibilityLabel="Khabro information"
+      accessibilityLabel={t('links.groupA11y')}
       style={[styles.root, compact ? styles.compact : null]}
     >
       {PUBLIC_PAGE_LINKS.filter((link) => !exclude.includes(link.id)).map((link) => (
@@ -41,10 +43,10 @@ export function PublicLinks({
             void Linking.openURL(link.href)
           }}
           accessibilityRole="link"
-          accessibilityLabel={link.label}
+          accessibilityLabel={t(link.labelKey)}
           style={({ pressed }) => [styles.link, pressed ? styles.linkPressed : null]}
         >
-          <Text style={styles.label}>{link.label}</Text>
+          <Text style={styles.label}>{t(link.labelKey)}</Text>
         </Pressable>
       ))}
     </View>

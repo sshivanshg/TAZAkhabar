@@ -24,6 +24,7 @@ import { iconStroke } from '../theme/categoryIcons'
 import { filterCities } from './CitySearch'
 import { useMotionTransition } from '../hooks/usePrefersReducedMotion'
 import { hapticSelection } from '../lib/haptics'
+import { translate, useT } from '../i18n'
 
 export type CityPickerAnchor = {
   x: number
@@ -87,7 +88,7 @@ function popoverPosition(
 }
 
 function cityLine(city: CityResponse): string {
-  const name = city.name?.trim() || 'Unknown city'
+  const name = city.name?.trim() || translate('common.unknownCity')
   const state = city.state?.trim()
   return state ? `${name}, ${state}` : name
 }
@@ -114,6 +115,7 @@ export function CityPickerDropdown({
   const [query, setQuery] = useState('')
   const returnFocusRef = useRef<HTMLElement | null>(null)
   const { colors, shadows } = useTheme()
+  const t = useT()
   const motionTransition = useMotionTransition({ type: 'timing', duration: MOTION_MS })
   const styles = useMemo(() => createStyles(colors, shadows), [colors, shadows])
 
@@ -174,7 +176,7 @@ export function CityPickerDropdown({
           style={StyleSheet.absoluteFill}
           onPress={close}
           accessibilityRole="button"
-          accessibilityLabel="Dismiss city picker"
+          accessibilityLabel={t('cityPicker.dismissA11y')}
         >
           <MotiView
             from={{ opacity: 0 }}
@@ -210,9 +212,9 @@ export function CityPickerDropdown({
             <TextInput
               value={query}
               onChangeText={setQuery}
-              placeholder="Search city"
+              placeholder={t('cityPicker.placeholder')}
               placeholderTextColor={colors.textMuted}
-              accessibilityLabel="Search cities"
+              accessibilityLabel={t('common.searchCities')}
               returnKeyType="search"
               autoCorrect={false}
               autoCapitalize="none"
@@ -225,7 +227,7 @@ export function CityPickerDropdown({
               onPress={onDetectLocation}
               disabled={detectingLocation}
               accessibilityRole="button"
-              accessibilityLabel="Use current location"
+              accessibilityLabel={t('cityPicker.useCurrentLocation')}
               style={(pressState) => {
                 const { pressed, hovered } = pressState as WebPressableState
                 return [
@@ -240,7 +242,7 @@ export function CityPickerDropdown({
               ) : (
                 <LocateFixed size={14} strokeWidth={iconStroke} color={colors.accent} />
               )}
-              <Text style={styles.locateText}>Use current location</Text>
+              <Text style={styles.locateText}>{t('cityPicker.useCurrentLocation')}</Text>
             </Pressable>
           ) : null}
 
@@ -258,7 +260,7 @@ export function CityPickerDropdown({
             ) : error ? (
               <Text style={styles.errorText}>{error}</Text>
             ) : matches.length === 0 ? (
-              <Text style={styles.emptyText}>No matches</Text>
+              <Text style={styles.emptyText}>{t('common.noMatches')}</Text>
             ) : (
               matches.map((city, index) => {
                 const slug = city.slug ?? ''

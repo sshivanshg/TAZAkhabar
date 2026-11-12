@@ -18,13 +18,8 @@ import {
 } from '../storage/cityPreference'
 import { showToast } from '../components/ui/Toast'
 import { hapticSelection } from '../lib/haptics'
+import { translate } from '../i18n'
 
-/** English for now; extracted to the string catalog in phase 3. */
-export const CITY_PICKER_COPY = {
-  savedToast: (city: string) => `Showing news for ${city}`,
-  noMatch: 'Could not match your location.',
-  unavailable: 'Location unavailable. Pick a city below.',
-} as const
 
 const EMPTY_CITIES: CityResponse[] = []
 const TEST_CITY_SLUG = 'emptyville'
@@ -106,7 +101,7 @@ export function useCityPicker({
         await setStoredCitySlug(city.slug)
         onCitySelected(city)
         closeCityPicker()
-        showToast({ message: CITY_PICKER_COPY.savedToast(getCityDisplayLabel(city.slug, city.name)) })
+        showToast({ message: translate('city.savedToast', { city: getCityDisplayLabel(city.slug, city.name) }) })
       } finally {
         setSavingSlug(null)
       }
@@ -124,12 +119,12 @@ export function useCityPicker({
       const coordinates = await getCurrentCoordinates()
       const match = findNearestCity(coordinates, selectableCities)
       if (!match) {
-        setLocationMessage(CITY_PICKER_COPY.noMatch)
+        setLocationMessage(translate('cityPicker.noMatch'))
         return
       }
       await selectCity(match.city)
     } catch {
-      setLocationMessage(CITY_PICKER_COPY.unavailable)
+      setLocationMessage(translate('cityPicker.unavailable'))
     } finally {
       setDetectingLocation(false)
     }
@@ -141,7 +136,7 @@ export function useCityPicker({
       anchor={anchor}
       cities={selectableCities}
       loading={open && cityList.loading}
-      error={open && cityList.error ? 'Could not load cities.' : null}
+      error={open && cityList.error ? translate('cityPicker.loadFailed') : null}
       selectedSlug={citySlug}
       savingSlug={savingSlug}
       onSelect={(city) => void selectCity(city)}

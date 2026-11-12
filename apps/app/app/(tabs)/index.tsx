@@ -64,7 +64,7 @@ import {
 import {
   BREAKING_NEWS_COUNT,
   FEED_CATEGORIES,
-  FEED_CATEGORY_LABELS,
+  FEED_CATEGORY_LABEL_KEYS,
   type FeedCategory,
   PAGE_SIZE,
   ERROR_COLUMN_MAX,
@@ -86,6 +86,7 @@ import {
 } from '../../src/utils/expandedFeedLayout'
 import { openArticleSource } from '../../src/utils/openArticleSource'
 import { shareArticle } from '../../src/utils/shareArticle'
+import { feedCategoryLabel, readableErrorMessage, translate, useT } from '../../src/i18n'
 
 type ListRow =
   | { kind: 'breaking'; key: 'breaking' }
@@ -109,16 +110,6 @@ type WebHoverHandlers = {
   onMouseEnter?: () => void
   onMouseLeave?: () => void
 }
-
-/** English for now; extracted to the string catalog in phase 3. */
-const HOME_COPY = {
-  errorTitle: "Couldn't load the news",
-  errorMessage: 'Check your internet connection and try again.',
-  retry: 'Try again',
-  manageTopics: 'Manage topics',
-  topicShown: 'Shown · tap to hide',
-  topicHidden: 'Hidden · tap to show',
-} as const
 
 const EMPTY_CITIES: CityResponse[] = []
 const EMPTY_ARTICLES: ArticleResponse[] = []
@@ -176,6 +167,7 @@ function HomeFeedBody() {
   const { colors } = useTheme()
   const styles = useMemo(() => createStyles(colors), [colors])
   const tabClearance = useTabBarClearance()
+  const t = useT()
   const bp = useBreakpoint()
   const desktop = isDesktopLayout(bp)
   const expanded = isExpandedLayout(bp)
@@ -431,7 +423,7 @@ function HomeFeedBody() {
         if (mode === 'append') {
           setAppendError(true)
         } else {
-          setError(err instanceof Error ? err.message : 'Could not load articles')
+          setError(readableErrorMessage(err, 'home.loadFailed'))
         }
         // Keep prior items on refresh/append/stale-cache failure; clear only when replace had nothing.
         if (mode === 'replace' && !paintedFromCache) {
@@ -534,9 +526,9 @@ function HomeFeedBody() {
       buildExpandedFeedSlices(visibleArticles, visibleTrending, {
         category,
         desktop,
-        categoryLabel: FEED_CATEGORY_LABELS[category],
+        categoryLabel: t(FEED_CATEGORY_LABEL_KEYS[category]),
       }),
-    [visibleArticles, visibleTrending, category, desktop],
+    [visibleArticles, visibleTrending, category, desktop, t],
   )
 
   const recommendations = useMemo(
@@ -585,7 +577,7 @@ function HomeFeedBody() {
       rows.push({ kind: 'trending', key: 'trending' })
     }
     if (recommendations.length > 0) {
-      rows.push({ kind: 'section', key: 'section', title: 'For you', showAction: true })
+      rows.push({ kind: 'section', key: 'section', title: t('home.forYou'), showAction: true })
       for (let i = 0; i < recommendations.length; i += 2) {
         const left = recommendations[i]
         if (!left) {
@@ -604,7 +596,7 @@ function HomeFeedBody() {
       rows.push({ kind: 'empty', key: 'empty' })
     }
     return rows
-  }, [breaking, recommendations, loading, mobile, expanded, feedSlices, visibleArticles, visibleSections, visibleTrending])
+  }, [breaking, recommendations, loading, mobile, expanded, feedSlices, visibleArticles, visibleSections, visibleTrending, t])
 
   const openArticle = useCallback(
     (article: ArticleResponse) => {
@@ -789,7 +781,7 @@ function HomeFeedBody() {
           onSelect={setCategory}
           categories={visibleCategories}
           onManageTopics={() => setManageTopicsOpen(true)}
-          manageTopicsLabel={HOME_COPY.manageTopics}
+          manageTopicsLabel={t('home.manageTopics')}
           onLongPressCategory={(chip) => {
             if (chip !== 'All') {
               setBlockCategoryName(chip)
@@ -826,10 +818,10 @@ function HomeFeedBody() {
                 style={expanded ? styles.errorColumn : undefined}
               >
                 <ErrorState
-                  title={HOME_COPY.errorTitle}
-                  message={HOME_COPY.errorMessage}
+                  title={t('home.errorTitle')}
+                  message={t('home.errorMessage')}
                   onRetry={() => void loadPage('replace')}
-                  retryLabel={HOME_COPY.retry}
+                  retryLabel={t('common.tryAgain')}
                 />
               </View>
             ) : (
@@ -844,8 +836,8 @@ function HomeFeedBody() {
                     return (
                       <View style={styles.sectionBlock}>
                         <SectionHeader
-                          title="Top stories"
-                          actionLabel="View all"
+                          title={t('home.topStories')}
+                          actionLabel={t('home.viewAll')}
                           onAction={goDiscover}
                           expanded={expanded}
                         />
@@ -869,8 +861,8 @@ function HomeFeedBody() {
                     return (
                       <View style={styles.sectionBlock}>
                         <SectionHeader
-                          title="Picks for you"
-                          subtitle="Recommended based on your interests"
+                          title={t('home.picksForYou')}
+                          subtitle={t('home.picksSubtitle')}
                           expanded={expanded}
                         />
                       </View>
@@ -880,8 +872,8 @@ function HomeFeedBody() {
                     return (
                       <View style={styles.sectionPad}>
                         <SectionHeader
-                          title="For you"
-                          actionLabel="View all"
+                          title={t('home.forYou')}
+                          actionLabel={t('home.viewAll')}
                           onAction={goDiscover}
                           expanded={expanded}
                         />
@@ -891,7 +883,7 @@ function HomeFeedBody() {
                   if (item.kind === 'trending') {
                     return (
                       <View style={styles.sectionBlock}>
-                        <SectionHeader title="Picks for you" />
+                        <SectionHeader title={t('home.picksForYou')} />
                         {visibleTrending.map((article, index) => (
                           <View key={String(article.id ?? index)} style={styles.trendingRow}>
                             <Text
@@ -900,7 +892,7 @@ function HomeFeedBody() {
                               fontWeight="$semibold"
                               color={colors.textMuted}
                               style={styles.trendingRank}
-                              accessibilityLabel={`Rank ${index + 1}`}
+                              accessibilityLabel={t('home.rank', { rank: index + 1 })}
                             >
                               {index + 1}
                             </Text>
@@ -920,7 +912,7 @@ function HomeFeedBody() {
                       <View style={expanded ? styles.sectionPad : null}>
                         <SectionHeader
                           title={item.title}
-                          actionLabel={item.showAction ? 'View all' : undefined}
+                          actionLabel={item.showAction ? t('home.viewAll') : undefined}
                           onAction={item.showAction ? goDiscover : undefined}
                           expanded={expanded}
                           flush={!expanded}
@@ -932,18 +924,21 @@ function HomeFeedBody() {
                     const filteredAway =
                       articles.length > 0 && visibleArticles.length === 0
                     const title = filteredAway
-                      ? 'Stories hidden by your filters'
-                      : 'No stories yet'
+                      ? t('home.filteredTitle')
+                      : t('home.emptyTitle')
                     const message = filteredAway
-                      ? 'Unblock sources or categories in Profile, then pull to refresh.'
-                      : `We do not have articles for ${cityTitle}${
-                          category !== 'All' ? ` in ${category}` : ''
-                        } right now. Pull down to refresh, or try another city.`
+                      ? t('home.filteredMessage')
+                      : category !== 'All'
+                        ? t('home.emptyMessageCategory', {
+                            city: cityTitle,
+                            category: t(FEED_CATEGORY_LABEL_KEYS[category]),
+                          })
+                        : t('home.emptyMessage', { city: cityTitle })
                     const primaryLabel = filteredAway
-                      ? 'Open Profile'
-                      : 'Change city'
+                      ? t('home.openSettings')
+                      : t('common.changeCity')
                     const secondaryLabel = filteredAway
-                      ? 'Change city'
+                      ? t('common.changeCity')
                       : undefined
                     return (
                       <EmptyState
@@ -1017,7 +1012,7 @@ function HomeFeedBody() {
                     <BriefingHeader
                       title={feedSlices.showBriefing ? undefined : feedSlices.pageTitle}
                       subtitle={
-                        feedSlices.showBriefing ? undefined : 'Stories in this section'
+                        feedSlices.showBriefing ? undefined : t('home.sectionSubtitle')
                       }
                     />
                   ) : null
@@ -1032,7 +1027,7 @@ function HomeFeedBody() {
                   ) : appendError ? (
                     <Pressable
                       accessibilityRole="button"
-                      accessibilityLabel="Retry loading more articles"
+                      accessibilityLabel={t('home.retryMoreA11y')}
                       onPress={() => void loadPage('append')}
                       style={{ paddingVertical: space.md, paddingHorizontal: space.lg }}
                     >
@@ -1041,7 +1036,7 @@ function HomeFeedBody() {
                         fontSize={typography.meta.fontSize}
                         textAlign="center"
                       >
-                        Couldn’t load more · Tap to retry
+                        {t('home.loadMoreFailed')}
                       </Text>
                     </Pressable>
                   ) : !hasMore && articles.length > 0 ? (
@@ -1052,7 +1047,7 @@ function HomeFeedBody() {
                       textAlign="center"
                       py="$4"
                     >
-                      You’re caught up
+                      {t('home.caughtUp')}
                     </Text>
                   ) : null
                 }
@@ -1089,14 +1084,14 @@ function HomeFeedBody() {
 
       <BottomSheet
         visible={manageTopicsOpen}
-        title={HOME_COPY.manageTopics}
+        title={t('home.manageTopics')}
         showCancel
         items={FEED_CATEGORIES.filter((c) => c !== 'All').map((c) => {
           const hidden = prefs.blockedCategories.includes(c)
           return {
             key: c,
-            label: FEED_CATEGORY_LABELS[c],
-            detail: hidden ? HOME_COPY.topicHidden : HOME_COPY.topicShown,
+            label: t(FEED_CATEGORY_LABEL_KEYS[c]),
+            detail: hidden ? t('home.topicHidden') : t('home.topicShown'),
             onPress: () => {
               if (hidden) {
                 prefs.unblockCategory(c)
@@ -1114,9 +1109,9 @@ function HomeFeedBody() {
 
       <ConfirmModal
         visible={blockSourceName != null}
-        title="Block this source?"
-        message={`If you block ${blockSourceName ?? 'this source'}, you won't see stories from them again. You can change this later.`}
-        confirmLabel="Block source"
+        title={t('block.sourceTitle')}
+        message={t('block.sourceMessage', { name: blockSourceName ?? t('block.thisSource') })}
+        confirmLabel={t('block.sourceConfirm')}
         onCancel={() => setBlockSourceName(null)}
         onConfirm={() => {
           if (blockSourceName) {
@@ -1128,9 +1123,9 @@ function HomeFeedBody() {
 
       <ConfirmModal
         visible={blockCategoryName != null}
-        title="Block this category?"
-        message={`If you block ${blockCategoryName ?? 'this category'}, you won't see stories in it again. You can change this later.`}
-        confirmLabel="Block category"
+        title={t('block.categoryTitle')}
+        message={t('block.categoryMessage', { name: blockCategoryName ? feedCategoryLabel(t, blockCategoryName) : t('block.thisCategory') })}
+        confirmLabel={t('block.categoryConfirm')}
         onCancel={() => setBlockCategoryName(null)}
         onConfirm={() => {
           if (blockCategoryName) {

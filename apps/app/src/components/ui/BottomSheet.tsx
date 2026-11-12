@@ -8,6 +8,7 @@ import { HIT_TARGET, radius, space, typography, type AppColors } from '../../the
 import { iconStroke } from '../../theme/categoryIcons'
 import { useMotionTransition } from '../../hooks/usePrefersReducedMotion'
 import { cardPress } from '../../lib/pressFeedback'
+import { useAccessibilityLanguage, useT } from '../../i18n'
 
 type IconProps = { size?: number; strokeWidth?: number; color?: string; style?: object }
 
@@ -44,11 +45,14 @@ export function BottomSheet({
   sections,
   items,
   onClose,
-  cancelLabel = 'Cancel',
+  cancelLabel: cancelLabelProp,
   showCancel = false,
 }: Props) {
   const insets = useSafeAreaInsets()
   const { colors } = useTheme()
+  const a11yLang = useAccessibilityLanguage()
+  const t = useT()
+  const cancelLabel = cancelLabelProp ?? t('common.cancel')
   const styles = useMemo(() => createStyles(colors), [colors])
   const resolvedSections: BottomSheetSection[] =
     sections ??
@@ -68,7 +72,8 @@ export function BottomSheet({
           style={StyleSheet.absoluteFill}
           onPress={onClose}
           accessibilityRole="button"
-          accessibilityLabel="Dismiss actions"
+          accessibilityLanguage={a11yLang}
+          accessibilityLabel={t('common.dismissActions')}
         >
           <MotiView
             from={{ opacity: 0 }}
@@ -111,6 +116,7 @@ export function BottomSheet({
                         requestAnimationFrame(() => item.onPress())
                       }}
                       accessibilityRole="button"
+                      accessibilityLanguage={a11yLang}
                       accessibilityLabel={
                         item.detail ? `${item.label}. ${item.detail}` : item.label
                       }
@@ -165,6 +171,7 @@ export function BottomSheet({
             <Pressable
               onPress={onClose}
               accessibilityRole="button"
+              accessibilityLanguage={a11yLang}
               accessibilityLabel={cancelLabel}
               style={({ pressed }) => [styles.cancel, cardPress(pressed)]}
             >

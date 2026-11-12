@@ -22,6 +22,7 @@ import {
 } from '../../theme/tokens'
 import { iconStroke } from '../../theme/categoryIcons'
 import type { BottomSheetSection } from '../ui/BottomSheet'
+import { useT } from '../../i18n'
 
 export type StoryOptionsAnchor = {
   x: number
@@ -90,6 +91,7 @@ export function StoryOptionsPopover({ visible, anchor, title, sections, onClose 
   const returnFocusRef = useRef<HTMLElement | null>(null)
   const hasCapturedFocusRef = useRef(false)
   const { colors, shadows } = useTheme()
+  const t = useT()
   const styles = useMemo(() => createStyles(colors, shadows), [colors, shadows])
 
   const focusableItems = useCallback((): HTMLElement[] => {
@@ -184,7 +186,7 @@ export function StoryOptionsPopover({ visible, anchor, title, sections, onClose 
           style={StyleSheet.absoluteFill}
           onPress={closeAndReturnFocus}
           accessibilityRole="button"
-          accessibilityLabel="Dismiss story options"
+          accessibilityLabel={t('popover.dismissA11y')}
         />
         {pos ? (
           <MotiView

@@ -11,6 +11,7 @@ import { iconStroke } from '../theme/categoryIcons'
 import { BrandHomeButton } from './BrandHomeButton'
 import { ReadingLanguageToggle } from './ReadingLanguageToggle'
 import type { ReadingLanguageCode } from '../storage/languagePreference'
+import { useT } from '../i18n'
 
 type Props = {
   cityTitle?: string
@@ -35,6 +36,7 @@ export function HomeTopBar({
   const insets = useSafeAreaInsets()
   const paddingTop = includeSafeArea ? Math.max(insets.top, space.xxs) : space.xxs
   const { colors } = useTheme()
+  const t = useT()
   const styles = useMemo(() => createStyles(colors), [colors])
 
   return (
@@ -43,7 +45,7 @@ export function HomeTopBar({
         <Pressable
           onPress={onSearchPress}
           accessibilityRole="button"
-          accessibilityLabel="Search and discover"
+          accessibilityLabel={t('common.searchAndDiscover')}
           hitSlop={8}
           style={({ pressed }) => [styles.iconHit, pressed ? styles.pressed : null]}
         >
@@ -63,7 +65,7 @@ export function HomeTopBar({
               <Pressable
                 onPress={onCityPress}
                 accessibilityRole="button"
-                accessibilityLabel={`Change city, currently ${cityTitle}`}
+                accessibilityLabel={t('common.changeCityCurrently', { city: cityTitle })}
                 hitSlop={4}
                 style={({ pressed }) => [styles.cityHit, pressed ? styles.pressed : null]}
               >

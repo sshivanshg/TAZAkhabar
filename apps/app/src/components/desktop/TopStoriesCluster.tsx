@@ -16,6 +16,7 @@ import { cleanHeadline } from '../../lib/headline'
 import { formatRelativeTime } from '../../utils/relativeTime'
 import { isHttpsUrl } from '../../utils/shareToWhatsApp'
 import { SourceAvatar } from '../SourceAvatar'
+import { useT } from '../../i18n'
 
 type Props = {
   articles: ArticleResponse[]
@@ -29,6 +30,7 @@ type Props = {
  */
 export function TopStoriesCluster({ articles, onPress, onSeeAll }: Props) {
   const { colors, shadows } = useTheme()
+  const t = useT()
   const styles = useMemo(() => createStyles(colors, shadows.card), [colors, shadows.card])
   const [width, setWidth] = useState(0)
 
@@ -43,7 +45,7 @@ export function TopStoriesCluster({ articles, onPress, onSeeAll }: Props) {
 
   const lead = articles[0]!
   const related = articles.slice(1, 4)
-  const leadHeadline = cleanHeadline(lead.headline ?? '', lead.sourceName) || 'Top stories'
+  const leadHeadline = cleanHeadline(lead.headline ?? '', lead.sourceName) || t('home.topStories')
   const leadImageUrl = lead.imageUrl && isHttpsUrl(lead.imageUrl) ? lead.imageUrl : null
   const gap = space.md
   // The body is inset by space.md on both sides; measure against the inner width (#3).
@@ -59,7 +61,7 @@ export function TopStoriesCluster({ articles, onPress, onSeeAll }: Props) {
       <Pressable
         onPress={() => onPress(lead)}
         accessibilityRole="button"
-        accessibilityLabel={`Top story cluster: ${leadHeadline}`}
+        accessibilityLabel={t('cluster.topStoryA11y', { headline: leadHeadline })}
         style={({ pressed }) => [styles.clusterTitle, pressed ? styles.pressed : null]}
       >
         <Text style={styles.clusterHeadline} numberOfLines={2}>
@@ -93,7 +95,7 @@ export function TopStoriesCluster({ articles, onPress, onSeeAll }: Props) {
             <View style={styles.sourceRow}>
               <SourceAvatar name={lead.sourceName ?? 'Source'} size={18} />
               <Text style={styles.source} numberOfLines={1}>
-                {lead.sourceName ?? 'Unknown source'}
+                {lead.sourceName ?? t('common.unknownSource')}
               </Text>
             </View>
             {leadImageUrl ? (
@@ -111,7 +113,7 @@ export function TopStoriesCluster({ articles, onPress, onSeeAll }: Props) {
           >
             {related.map((article, index) => {
               const headline = cleanHeadline(article.headline ?? '', article.sourceName) || 'Untitled'
-              const source = article.sourceName?.trim() || 'Unknown source'
+              const source = article.sourceName?.trim() || t('common.unknownSource')
               return (
                 <Pressable
                   key={String(article.id ?? index)}
@@ -145,11 +147,11 @@ export function TopStoriesCluster({ articles, onPress, onSeeAll }: Props) {
         <Pressable
           onPress={onSeeAll}
           accessibilityRole="button"
-          accessibilityLabel="See more headlines and perspectives"
+          accessibilityLabel={t('cluster.seeMore')}
           style={({ pressed }) => [styles.footer, pressed ? styles.pressed : null]}
         >
           <Newspaper size={18} strokeWidth={iconStroke} color={colors.accent} />
-          <Text style={styles.footerText}>See more headlines and perspectives</Text>
+          <Text style={styles.footerText}>{t('cluster.seeMore')}</Text>
         </Pressable>
       ) : null}
     </View>

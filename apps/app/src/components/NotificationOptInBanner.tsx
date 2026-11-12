@@ -6,7 +6,7 @@ import BellRing from 'lucide-react-native/icons/bell-ring'
 import ShieldAlert from 'lucide-react-native/icons/shield-alert'
 import { useTheme } from '../preferences/ThemePreferenceContext'
 import { PrimaryButton, SecondaryButton } from './ui/PrimaryButton'
-import { getEffectiveCitySlug, isGlobalCitySlug } from '../storage/cityPreference'
+import { getCityDisplayLabel, getEffectiveCitySlug, isGlobalCitySlug } from '../storage/cityPreference'
 import {
   getNotificationPromptState,
   shouldRePromptForNotifications,
@@ -17,6 +17,7 @@ import {
   suppressNotificationPrompt,
 } from '../notifications/registerNotifications'
 import { radius, space, typography, type AppColors } from '../theme/tokens'
+import { translate, useT } from '../i18n'
 
 const PROMPT_COOLDOWN_DAYS = 7
 
@@ -28,6 +29,7 @@ export function NotificationOptInBanner() {
   const [visible, setVisible] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const { colors, shadows } = useTheme()
+  const t = useT()
   const styles = useMemo(() => createStyles(colors), [colors])
 
   useEffect(() => {
@@ -69,7 +71,7 @@ export function NotificationOptInBanner() {
       if (result.status === 'denied') {
         await suppressNotificationPrompt('denied')
         setError(
-          result.reason ?? 'Notifications are blocked for this app. Check device or browser settings.',
+          result.reason ?? translate('settings.notificationsBlocked'),
         )
         setVisible(false)
         return
@@ -81,7 +83,7 @@ export function NotificationOptInBanner() {
         return
       }
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : 'Could not enable news alerts.')
+      setError(translate('settings.enableAlertsFailed'))
     } finally {
       setLoading(false)
     }
@@ -104,7 +106,7 @@ export function NotificationOptInBanner() {
             style={StyleSheet.absoluteFill}
             onPress={onLater}
             accessibilityRole="button"
-            accessibilityLabel="Close news alerts prompt"
+            accessibilityLabel={t('optIn.closeA11y')}
           >
             <View style={styles.overlay} />
           </Pressable>
@@ -126,7 +128,7 @@ export function NotificationOptInBanner() {
                 mt="$4"
                 style={styles.title}
               >
-                Get important local alerts
+                {t('optIn.title')}
               </Text>
               <Text
                 fontSize={typography.summary.fontSize}
@@ -135,7 +137,7 @@ export function NotificationOptInBanner() {
                 mt="$2"
                 style={styles.message}
               >
-                We will send only breaking stories from {citySlug}. You can turn alerts off anytime in Profile.
+                {t('optIn.message', { city: getCityDisplayLabel(citySlug) })}
               </Text>
               <View style={styles.trustRow}>
                 <ShieldAlert size={15} color={colors.textMuted} strokeWidth={2} />
@@ -145,7 +147,7 @@ export function NotificationOptInBanner() {
                   color={colors.textMuted}
                   style={styles.trustCopy}
                 >
-                  No daily noise. Just useful updates.
+                  {t('optIn.trust')}
                 </Text>
               </View>
               {error ? (
@@ -161,16 +163,16 @@ export function NotificationOptInBanner() {
             </View>
             <View style={styles.actions}>
               <SecondaryButton
-                label="Not now"
+                label={t('optIn.notNow')}
                 onPress={onLater}
-                accessibilityLabel="Not now"
+                accessibilityLabel={t('optIn.notNow')}
                 style={styles.secondaryAction}
               />
               <PrimaryButton
-                label="Enable alerts"
+                label={t('settings.enableAlerts')}
                 onPress={onEnable}
                 disabled={loading}
-                accessibilityLabel="Enable news alerts"
+                accessibilityLabel={t('optIn.enableA11y')}
                 style={styles.primaryAction}
                 loading={loading}
               />

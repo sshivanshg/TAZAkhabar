@@ -4,9 +4,11 @@ import { MotiView } from 'moti'
 import { usePrefersReducedMotion } from '../../hooks/usePrefersReducedMotion'
 import { useTheme } from '../../preferences/ThemePreferenceContext'
 import { ARTICLE_COLUMN_MAX, type ReaderColors } from '../../theme/readerTokens'
+import { useT } from '../../i18n'
 
 export function ArticleSkeleton() {
   const { readerColors } = useTheme()
+  const t = useT()
   const styles = useMemo(() => createStyles(readerColors), [readerColors])
   const reduced = usePrefersReducedMotion()
   const Column = reduced ? View : MotiView
@@ -19,7 +21,7 @@ export function ArticleSkeleton() {
       }
 
   return (
-    <View testID="article-skeleton" style={styles.root} accessibilityLabel="Loading next story">
+    <View testID="article-skeleton" style={styles.root} accessibilityLabel={t('article.loadingNextA11y')}>
       <Column testID={reduced ? 'skeleton-static' : 'skeleton-pulse'} style={styles.column} {...pulse}>
         <View style={[styles.line, styles.cat]} />
         <View style={[styles.line, styles.title]} />

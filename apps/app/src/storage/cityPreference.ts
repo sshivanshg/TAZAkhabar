@@ -1,9 +1,11 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import type { CityResponse } from '@tazakhabar/shared-types'
 import { CITY_STORAGE_KEY } from '../theme/tokens'
+import { translate } from '../i18n/runtime'
 
 /** Virtual feed scope: nationwide articles ranked with the same personalization pipeline. */
 export const GLOBAL_CITY_SLUG = 'global'
+/** English label; UI reads the translated one via getCityDisplayLabel. */
 export const GLOBAL_CITY_LABEL = 'All India'
 
 export function isGlobalCitySlug(slug: string | null | undefined): boolean {
@@ -23,9 +25,9 @@ export function getCityDisplayLabel(
   cityName?: string | null,
 ): string {
   if (isGlobalCitySlug(slug)) {
-    return GLOBAL_CITY_LABEL
+    return translate('city.allIndia')
   }
-  return cityName ?? slug ?? GLOBAL_CITY_LABEL
+  return cityName ?? slug ?? translate('city.allIndia')
 }
 
 export async function getStoredCitySlug(): Promise<string | null> {

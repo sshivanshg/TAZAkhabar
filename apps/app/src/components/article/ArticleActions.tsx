@@ -12,7 +12,7 @@ import type { ReaderColors } from '../../theme/readerTokens'
 import { pressableState, webFocusRing } from './focusStyle'
 import { usePrefersReducedMotion } from '../../hooks/usePrefersReducedMotion'
 import { cardPress } from '../../lib/pressFeedback'
-import { ARTICLE_COPY } from './copy'
+import { useAccessibilityLanguage, useT } from '../../i18n'
 
 type Props = {
   bookmarked: boolean
@@ -46,12 +46,14 @@ function ActionButton({
   children,
 }: ActionProps) {
   const { readerColors } = useTheme()
+  const a11yLang = useAccessibilityLanguage()
   const styles = useMemo(() => createStyles(readerColors), [readerColors])
 
   return (
     <Pressable
       testID={testID}
       accessibilityRole="button"
+      accessibilityLanguage={a11yLang}
       accessibilityLabel={accessibilityLabel}
       accessibilityState={selected === undefined ? undefined : { selected }}
       onPress={onPress}
@@ -112,6 +114,7 @@ function ArticleActionsBase({ bookmarked, onShare, onSave, onBack, languageSlot 
   const { readerColors } = useTheme()
   const styles = useMemo(() => createStyles(readerColors), [readerColors])
   const SaveIcon = bookmarked ? BookmarkCheck : Bookmark
+  const t = useT()
 
   return (
     <View style={styles.row} accessibilityRole="toolbar">
@@ -119,8 +122,9 @@ function ArticleActionsBase({ bookmarked, onShare, onSave, onBack, languageSlot 
         <ActionButton
           testID="bottom-back"
           size="wide"
-          label={ARTICLE_COPY.backToNews}
-          accessibilityLabel={ARTICLE_COPY.backToNews}
+          // Short visible label keeps the 4-control row inside 360px in Hindi.
+          label={t('article.backLabel')}
+          accessibilityLabel={t('article.backToNews')}
           onPress={onBack}
         >
           <ChevronLeft size={18} strokeWidth={iconStroke} color={readerColors.text} />
@@ -128,8 +132,8 @@ function ArticleActionsBase({ bookmarked, onShare, onSave, onBack, languageSlot 
       ) : null}
       {languageSlot ? <View style={styles.langSlot}>{languageSlot}</View> : null}
       <ActionButton
-        label={bookmarked ? ARTICLE_COPY.saved : ARTICLE_COPY.save}
-        accessibilityLabel={bookmarked ? ARTICLE_COPY.removeBookmark : ARTICLE_COPY.save}
+        label={bookmarked ? t('article.saved') : t('article.save')}
+        accessibilityLabel={bookmarked ? t('article.removeBookmark') : t('article.save')}
         selected={bookmarked}
         size={onBack ? 'narrow' : undefined}
         onPress={onSave}
@@ -146,8 +150,8 @@ function ArticleActionsBase({ bookmarked, onShare, onSave, onBack, languageSlot 
       <ActionButton
         testID="bottom-whatsapp"
         primary
-        label={ARTICLE_COPY.whatsapp}
-        accessibilityLabel={ARTICLE_COPY.shareOnWhatsApp}
+        label={t('article.whatsapp')}
+        accessibilityLabel={t('article.shareOnWhatsApp')}
         onPress={onShare}
       >
         <MessageCircle size={18} strokeWidth={iconStroke} color={readerColors.accent} />

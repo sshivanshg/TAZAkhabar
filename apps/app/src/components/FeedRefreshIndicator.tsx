@@ -4,10 +4,12 @@ import { MotiView } from 'moti'
 import { useTheme } from '../preferences/ThemePreferenceContext'
 import { radius, type AppColors } from '../theme/tokens'
 import { useMotionTransition, usePrefersReducedMotion } from '../hooks/usePrefersReducedMotion'
+import { useT } from '../i18n'
 
 /** Pull-to-refresh indicator — accent bar pulse, not the system spinner. */
 export function FeedRefreshIndicator({ visible }: { visible: boolean }) {
   const { colors } = useTheme()
+  const t = useT()
   const styles = useMemo(() => createStyles(colors), [colors])
   const reduced = usePrefersReducedMotion()
   const wrapTransition = useMotionTransition({ type: 'timing', duration: 180 })
@@ -25,7 +27,7 @@ export function FeedRefreshIndicator({ visible }: { visible: boolean }) {
       exit={{ opacity: 0, translateY: -8 }}
       transition={wrapTransition}
       style={styles.wrap}
-      accessibilityLabel="Refreshing feed"
+      accessibilityLabel={t('refresh.a11y')}
       accessibilityLiveRegion="polite"
     >
       <MotiView

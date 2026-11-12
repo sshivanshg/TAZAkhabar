@@ -1,7 +1,7 @@
 # Reader app
 
 > **Living doc** — update when Expo routes, city/feed/share behavior, or desktop web layer change.  
-> **Last verified against:** 2026-11-12 (brand blue #2563EB, 16px type floor, signal/textOnAccentMuted/floating shadow tokens; shared desktop sidebar shell)
+> **Last verified against:** 2026-11-12 (full Hindi app UI via src/i18n; brand blue #2563EB, 16px type floor, signal/textOnAccentMuted/floating shadow tokens; shared desktop sidebar shell)
 
 ## Purpose
 
@@ -175,6 +175,17 @@ picker usable. A successful match persists only the city slug.
 - `apps/app/src/api/client.ts`
 - `apps/app/app/**`
 - `apps/app/.env.example`, `apps/app/.env.production`
+
+## Internationalisation (app chrome)
+
+- Catalog: `src/i18n/en.ts` (source of truth, flat dotted keys, `{param}` interpolation) and `src/i18n/hi.ts`, typed `Record<StringKey, string>` so a missing Hindi key fails `tsc`. No i18n dependency.
+- Language: the chosen language from `LanguagePreferenceProvider` (`khabro.preferredReadingLanguage.v1`) drives both the article language and **all app chrome** (tabs, onboarding, settings, contact, errors, toasts, empty states, a11y labels).
+- `useT()` returns `t(key, params?)` for components (English outside the provider, e.g. tests); `translate()` in `src/i18n/runtime.ts` is the non-hook form for `showToast`, `announceForAccessibility`, utils and error messages. The provider keeps it in sync via `setAppLanguage()`.
+- `feedCategoryLabel(t, value)` maps feed categories to labels; API values stay English. `readableErrorMessage()` keeps server error text out of the UI.
+- Never translated: Khabro, the contact email, URLs, source names, city names from the API, article content. The language picker shows each option in its own language.
+- Fonts: the app uses the system font (no brand font), so Devanagari renders natively. Hindi tab labels use a taller line height and a short "सेव" label to fit 360px; the article Back button shows "वापस".
+- Accessibility: web sets `<html lang>` (`en-IN`/`hi-IN`); iOS gets `accessibilityLanguage` on shared buttons, toasts, sheets, modals and error states (`useAccessibilityLanguage()`); Android TalkBack detects script itself.
+- Tests: `__tests__/i18n.test.tsx` (key parity, non-empty, matching params, Hindi Contact screen render).
 
 ## Public contracts
 

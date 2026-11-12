@@ -21,7 +21,7 @@ import { normalizeArticleSourceUrl } from '../../utils/normalizeArticleSourceUrl
 import type { ArticleBlock } from '../../utils/splitArticleBody'
 import { pressableState, webFocusRing } from './focusStyle'
 import { storyEyebrow } from './eyebrow'
-import { ARTICLE_COPY } from './copy'
+import { feedCategoryLabel, useT } from '../../i18n'
 
 type Props = {
   article: ArticleResponse
@@ -86,10 +86,12 @@ function ArticleStoryBase({
   bodyFailed = false,
 }: Props) {
   const { readerColors } = useTheme()
+  const t = useT()
   const styles = useMemo(() => createStyles(readerColors), [readerColors])
   const { width } = useWindowDimensions()
   const imageUri = article.imageUrl && isHttpsUrl(article.imageUrl) ? article.imageUrl : null
-  const location = storyEyebrow(citySlug, article.category)
+  const eyebrow = storyEyebrow(citySlug, article.category)
+  const location = eyebrow ? feedCategoryLabel(t, eyebrow) : undefined
   const publisher = publisherName(article)
   const sourceUrl = (() => {
     const normalized = normalizeArticleSourceUrl(article.sourceUrl)
@@ -108,7 +110,7 @@ function ArticleStoryBase({
     estimateReadingMinutes(estimateArticleReadableText(displayContent)),
   )
   const metaParts = [publisher, time, readingTime].filter(Boolean)
-  const headline = cleanHeadline(article.headline ?? '', publisher) || 'Untitled story'
+  const headline = cleanHeadline(article.headline ?? '', publisher) || t('article.untitled')
   const headlineSize = width >= 768 ? 36 : 30
   const headlineLine = width >= 768 ? 40 : 34
   const hasContent = displayContent.hasReadableContent
@@ -174,17 +176,17 @@ function ArticleStoryBase({
                 {renderBlocks(displayContent.bodyBlocks, 'body')}
               </>
             ) : showBodyLoading ? (
-              <View style={styles.loadingBody} accessibilityLabel="Loading full story">
+              <View style={styles.loadingBody} accessibilityLabel={t('article.loadingFullA11y')}>
                 <ActivityIndicator color={readerColors.accent} />
-                <Text style={styles.loadingLabel}>Loading full story…</Text>
+                <Text style={styles.loadingLabel}>{t('article.loadingFull')}</Text>
               </View>
             ) : (
               <View style={styles.emptyBody}>
-                <Text style={styles.emptyTitle}>Unable to load this story.</Text>
+                <Text style={styles.emptyTitle}>{t('article.bodyFailed')}</Text>
                 {onRetry ? (
                   <Pressable
                     accessibilityRole="button"
-                    accessibilityLabel="Retry loading this story"
+                    accessibilityLabel={t('article.retryA11y')}
                     onPress={onRetry}
                     style={(state) => {
                       const { pressed, focused } = pressableState(state)
@@ -195,7 +197,7 @@ function ArticleStoryBase({
                       ]
                     }}
                   >
-                    <Text style={styles.retryLabel}>Retry</Text>
+                    <Text style={styles.retryLabel}>{t('common.retry')}</Text>
                   </Pressable>
                 ) : null}
               </View>
@@ -207,7 +209,7 @@ function ArticleStoryBase({
           <Pressable
             testID="read-original"
             accessibilityRole="link"
-            accessibilityLabel={`Read original article from ${publisher ?? 'the publisher'}`}
+            accessibilityLabel={t('article.readOriginalA11y', { publisher: publisher ?? t('article.thePublisher') })}
             onPress={onReadSource}
             style={(state) => {
               const { pressed, focused } = pressableState(state)
@@ -218,17 +220,17 @@ function ArticleStoryBase({
               ]
             }}
           >
-            <Text style={styles.originalCtaText}>Read original article ↗</Text>
+            <Text style={styles.originalCtaText}>{t('article.readOriginal')}</Text>
           </Pressable>
         ) : null}
 
         {publisher || sourceUrl ? (
           <View style={styles.attribution}>
-            <Text style={styles.attributionKicker}>Original reporting</Text>
+            <Text style={styles.attributionKicker}>{t('article.originalReporting')}</Text>
             <Text style={styles.attributionBody}>
               {publisher
-                ? `This story is based on reporting published by ${publisher}.`
-                : 'This story is based on the original publisher’s reporting.'}
+                ? t('article.basedOn', { publisher })
+                : t('article.basedOnGeneric')}
             </Text>
           </View>
         ) : null}
@@ -238,9 +240,9 @@ function ArticleStoryBase({
             testID="next-story-cue"
             style={styles.nextCue}
             accessible
-            accessibilityLabel={ARTICLE_COPY.nextStoryA11y}
+            accessibilityLabel={t('article.nextStoryA11y')}
           >
-            <Text style={styles.nextCueText}>{ARTICLE_COPY.nextStory}</Text>
+            <Text style={styles.nextCueText}>{t('article.nextStory')}</Text>
           </View>
         ) : null}
       </View>

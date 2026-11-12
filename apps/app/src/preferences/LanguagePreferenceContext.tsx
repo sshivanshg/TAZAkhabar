@@ -1,5 +1,4 @@
 import {
-  createContext,
   useCallback,
   useContext,
   useEffect,
@@ -13,15 +12,14 @@ import {
   setStoredReadingLanguage,
   type ReadingLanguageCode,
 } from '../storage/languagePreference'
+import { setAppLanguage } from '../i18n/runtime'
 
-type LanguagePreferenceContextValue = {
-  ready: boolean
-  hasSelectedLanguage: boolean
-  preferredLanguage: ReadingLanguageCode
-  setPreferredLanguage: (code: ReadingLanguageCode) => void
-}
+import {
+  LanguagePreferenceContext,
+  type LanguagePreferenceContextValue,
+} from './languagePreferenceContextObject'
 
-const LanguagePreferenceContext = createContext<LanguagePreferenceContextValue | null>(null)
+export { LanguagePreferenceContext }
 
 export function LanguagePreferenceProvider({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false)
@@ -49,6 +47,12 @@ export function LanguagePreferenceProvider({ children }: { children: ReactNode }
     setHasSelectedLanguage(true)
     void setStoredReadingLanguage(code)
   }, [])
+
+  // Keep the non-hook translate() (toasts, announcements) in sync with the chosen language.
+  setAppLanguage(preferredLanguage)
+  useEffect(() => {
+    setAppLanguage(preferredLanguage)
+  }, [preferredLanguage])
 
   const value = useMemo(
     () => ({ ready, hasSelectedLanguage, preferredLanguage, setPreferredLanguage }),

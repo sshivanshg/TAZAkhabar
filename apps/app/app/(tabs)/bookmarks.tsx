@@ -28,14 +28,9 @@ import { radius, space, type AppColors } from '../../src/theme/tokens'
 import { useTabBarClearance } from '../../src/theme/useTabBarClearance'
 import { isDesktopLayout, useBreakpoint } from '../../src/hooks/useBreakpoint'
 import { articleRouteParams } from '../../src/utils/articleRouteParams'
+import { translate, useT } from '../../src/i18n'
 
 /** Bookmarks copy. English for now; phase 3 moves these into the string catalog. */
-const BOOKMARKS_COPY = {
-  removed: 'Removed',
-  undo: 'Undo',
-  removeFailed: 'Couldn’t remove. Try again.',
-} as const
-
 export default function BookmarksScreen() {
   return (
     <ScreenErrorBoundary name="bookmarks">
@@ -52,6 +47,7 @@ function BookmarksBody() {
   const tabClearance = useTabBarClearance()
   const desktop = isDesktopLayout(useBreakpoint())
   const { colors } = useTheme()
+  const t = useT()
   const styles = useMemo(() => createStyles(colors), [colors])
   const [bookmarks, setBookmarks] = useState<BookmarkSnapshot[]>([])
   const [ready, setReady] = useState(false)
@@ -91,13 +87,13 @@ function BookmarksBody() {
       try {
         await removeBookmark(id)
       } catch {
-        showToast({ message: BOOKMARKS_COPY.removeFailed })
+        showToast({ message: translate('bookmarks.removeFailed') })
         return
       }
       await reload()
       showToast({
-        message: BOOKMARKS_COPY.removed,
-        actionLabel: snapshot ? BOOKMARKS_COPY.undo : undefined,
+        message: translate('toast.removed'),
+        actionLabel: snapshot ? translate('toast.undo') : undefined,
         onAction: snapshot
           ? () => {
               void addBookmark(snapshot).then(reload)
@@ -123,7 +119,7 @@ function BookmarksBody() {
         items: [
           {
             key: 'remove',
-            label: 'Remove bookmark',
+            label: translate('bookmarks.removeBookmark'),
             destructive: true,
             Icon: Bookmark,
             onPress: () => {
@@ -133,7 +129,7 @@ function BookmarksBody() {
         ],
       },
     ]
-  }, [actionItem, onRemove])
+  }, [actionItem, onRemove, t])
 
   return (
     <MotiView
@@ -154,32 +150,32 @@ function BookmarksBody() {
           fontWeight="$bold"
           color={colors.text}
         >
-          Bookmarks
+          {t('bookmarks.title')}
         </Text>
         <Text fontSize={14} lineHeight={20} color={colors.textSecondary} mt="$1">
-          Stories saved on this device
+          {t('bookmarks.subtitle')}
         </Text>
       </View>
 
       {!ready ? (
         <VStack flex={1} justifyContent="center" alignItems="center" px="$6">
           <Text fontSize={16} lineHeight={24} color={colors.textSecondary}>
-            Loading saved stories…
+            {t('bookmarks.loading')}
           </Text>
         </VStack>
       ) : bookmarks.length === 0 ? (
         <View style={styles.emptyWrap}>
           <EmptyState
-            title="No saved stories yet"
-            message="Save stories as you read. They'll stay here on this device for later."
-            primaryLabel="Browse stories"
+            title={t('bookmarks.emptyTitle')}
+            message={t('bookmarks.emptyMessage')}
+            primaryLabel={t('bookmarks.browse')}
             onPrimary={() => router.replace('/(tabs)')}
-            primaryAccessibilityLabel="Browse stories"
-            secondaryLabel="Change city"
+            primaryAccessibilityLabel={t('bookmarks.browse')}
+            secondaryLabel={t('common.changeCity')}
             onSecondary={() =>
               router.push({ pathname: '/(tabs)', params: { pickCity: '1' } })
             }
-            secondaryAccessibilityLabel="Change city"
+            secondaryAccessibilityLabel={t('common.changeCity')}
             icon={<Bookmark size={28} strokeWidth={1.8} color={colors.accent} />}
           />
         </View>
@@ -225,14 +221,14 @@ function BookmarksBody() {
                 <Pressable
                   onPress={() => void onRemove(item.id)}
                   accessibilityRole="button"
-                  accessibilityLabel={`Remove bookmark ${item.headline}`}
+                  accessibilityLabel={t('bookmarks.removeA11y', { headline: item.headline ?? '' })}
                   style={({ pressed }) => [
                     styles.removeBtn,
                     iconPress(pressed),
                   ]}
                 >
                   <Text fontSize={15} lineHeight={20} fontWeight="$semibold" color={colors.textSecondary}>
-                    Remove
+                    {t('bookmarks.remove')}
                   </Text>
                 </Pressable>
               </View>
@@ -245,7 +241,7 @@ function BookmarksBody() {
         <StoryOptionsPopover
           visible={actionItem != null}
           anchor={popoverAnchor}
-          title="Story options"
+          title={t('bookmarks.storyOptions')}
           sections={bookmarkSections}
           onClose={closeStoryActions}
         />

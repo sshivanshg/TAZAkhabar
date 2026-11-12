@@ -21,6 +21,7 @@ import { SourceAvatar } from './SourceAvatar'
 import { MotiView } from 'moti'
 import { useMotionTransition, usePrefersReducedMotion } from '../hooks/usePrefersReducedMotion'
 import { cardPress, iconPress } from '../lib/pressFeedback'
+import { useT } from '../i18n'
 
 type Density = 'default' | 'compact'
 
@@ -73,13 +74,14 @@ export function CompactArticleCard({
   density = 'default',
 }: Props) {
   const { colors } = useTheme()
+  const t = useT()
   const styles = useMemo(() => createStyles(colors), [colors])
   const dense = density === 'compact'
   const headline = cleanHeadline(article.headline ?? '', article.sourceName) || 'Untitled'
   const rawSummary = article.summary?.trim()
   const summary =
     rawSummary && !isRedundantSummary(article.headline, rawSummary) ? rawSummary : undefined
-  const source = article.sourceName?.trim() || 'Unknown source'
+  const source = article.sourceName?.trim() || t('common.unknownSource')
   const relative = formatRelativeTime(article.publishedAt)
   const imageUrl =
     article.imageUrl && isHttpsUrl(article.imageUrl) ? article.imageUrl.trim() : null
@@ -104,7 +106,7 @@ export function CompactArticleCard({
         delayLongPress={380}
         accessibilityRole="button"
         accessibilityLabel={`${[headline, source, relative].filter(Boolean).join('. ')}.${
-          showMore ? ' Open options for more actions.' : ''
+          showMore ? t('card.openOptionsHint') : ''
         }`}
         style={(state) => {
           const { pressed, hovered, focused } = state as WebPressableState
@@ -166,14 +168,14 @@ export function CompactArticleCard({
           {!dense ? (
             <SeeMorePill
               onPress={() => seeMore(article)}
-              accessibilityLabel={`See more from ${source}`}
+              accessibilityLabel={t('card.seeMoreFrom', { source })}
             />
           ) : null}
           {showMore && openMore ? (
             <Pressable
               onPress={() => openMore(article)}
               accessibilityRole="button"
-              accessibilityLabel={`More options for ${headline}`}
+              accessibilityLabel={t('common.moreOptionsFor', { headline })}
               hitSlop={8}
               style={(state) => {
                 const { pressed, focused } = state as WebPressableState
@@ -203,6 +205,7 @@ export function CompactArticleCardSkeleton({
   withImage?: boolean
 }) {
   const { colors } = useTheme()
+  const t = useT()
   const styles = useMemo(() => createStyles(colors), [colors])
   const dense = density === 'compact'
   const thumbSize = dense ? media.thumbDense : media.thumb
@@ -215,7 +218,7 @@ export function CompactArticleCardSkeleton({
   })
 
   return (
-    <View style={styles.wrap} accessibilityLabel="Loading story">
+    <View style={styles.wrap} accessibilityLabel={t('card.loadingStory')}>
       <MotiView
         from={{ opacity: reduced ? 1 : 0.55 }}
         animate={{ opacity: 1 }}

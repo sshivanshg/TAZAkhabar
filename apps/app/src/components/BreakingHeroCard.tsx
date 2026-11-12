@@ -12,6 +12,7 @@ import { SourceAvatar } from './SourceAvatar'
 import { cleanHeadline } from '../lib/headline'
 import { useMotionTransition } from '../hooks/usePrefersReducedMotion'
 import { cardPress, iconPress } from '../lib/pressFeedback'
+import { useT } from '../i18n'
 
 const CARD_GAP = space.sm
 
@@ -67,9 +68,10 @@ export function BreakingHeroCard({
   size = 'default',
 }: Props) {
   const { colors } = useTheme()
+  const t = useT()
   const styles = useMemo(() => createStyles(colors), [colors])
   const headline = cleanHeadline(article.headline ?? '', article.sourceName) || 'Untitled'
-  const source = article.sourceName ?? 'Unknown source'
+  const source = article.sourceName ?? t('common.unknownSource')
   const relative = formatRelativeTime(article.publishedAt)
   const imageUrl = article.imageUrl
   const metrics = heroMetrics(size)
@@ -90,7 +92,7 @@ export function BreakingHeroCard({
       <Pressable
         onPress={() => onPress(article)}
         accessibilityRole="button"
-        accessibilityLabel={`Top story: ${headline}. ${source}. ${relative}`}
+        accessibilityLabel={t('card.topStoryA11y', { headline, source, time: relative })}
         style={({ pressed }) => [styles.card, cardPress(pressed)]}
       >
         <View style={[styles.imageWrap, { height: metrics.imageHeight }]}>
@@ -156,7 +158,7 @@ export function BreakingHeroCard({
           <Pressable
             onPress={() => onMorePress(article)}
             accessibilityRole="button"
-            accessibilityLabel={`More options for ${headline}`}
+            accessibilityLabel={t('common.moreOptionsFor', { headline })}
             hitSlop={10}
             style={({ pressed }) => [styles.moreBtn, iconPress(pressed)]}
           >

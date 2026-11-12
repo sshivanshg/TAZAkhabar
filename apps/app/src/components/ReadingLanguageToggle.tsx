@@ -7,6 +7,7 @@ import {
 import { useTheme } from '../preferences/ThemePreferenceContext'
 import { radius } from '../theme/tokens'
 import { pressableState, webFocusRing } from './article/focusStyle'
+import { useT } from '../i18n'
 
 type Palette = 'app' | 'reader'
 
@@ -28,6 +29,7 @@ type ToggleColors = {
 /** Compact EN | हि segmented control for headers and the article reader. */
 export function ReadingLanguageToggle({ value, onChange, palette = 'app' }: Props) {
   const { colors, readerColors } = useTheme()
+  const t = useT()
   const toggleColors = useMemo<ToggleColors>(
     () =>
       palette === 'reader'
@@ -54,7 +56,7 @@ export function ReadingLanguageToggle({ value, onChange, palette = 'app' }: Prop
   return (
     <View
       accessibilityRole="radiogroup"
-      accessibilityLabel="Reading language"
+      accessibilityLabel={t('language.groupA11y')}
       testID="language-segment"
       style={styles.group}
     >
@@ -66,7 +68,7 @@ export function ReadingLanguageToggle({ value, onChange, palette = 'app' }: Prop
             key={lang.code}
             accessibilityRole="radio"
             accessibilityState={{ selected }}
-            accessibilityLabel={`Prefer ${lang.accessibilityLabel}`}
+            accessibilityLabel={t('settings.preferLanguage', { language: t(`language.${lang.code}`) })}
             onPress={() => onChange(lang.code)}
             style={(state) => {
               const { pressed, focused } = pressableState(state)

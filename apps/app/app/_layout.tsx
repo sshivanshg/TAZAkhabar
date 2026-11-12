@@ -19,9 +19,11 @@ import { applyWebColorScheme } from '../src/theme/applyWebColorScheme'
 import { registerWebServiceWorker } from '../src/pwa/registerWebServiceWorker'
 import { getDeferredInstallPrompt } from '../src/pwa/installPrompt'
 import { migrateBrandStorage } from '../src/storage/migrateBrandStorage'
+import { useT } from '../src/i18n'
 
 function RootNavigation() {
   const { colorScheme, colors } = useTheme()
+  const t = useT()
 
   useEffect(() => {
     applyWebColorScheme(colorScheme, colors)
@@ -53,7 +55,7 @@ function RootNavigation() {
           <Stack.Screen name="language" options={{ headerShown: false, animation: 'fade' }} />
           <Stack.Screen name="(tabs)" options={{ headerShown: false, animation: 'fade' }} />
           <Stack.Screen name="feed" options={{ headerShown: false }} />
-          <Stack.Screen name="contact" options={{ headerShown: false, title: 'Contact us' }} />
+          <Stack.Screen name="contact" options={{ headerShown: false, title: t('contact.title') }} />
           <Stack.Screen
             name="city"
             options={{
