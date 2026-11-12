@@ -10,6 +10,9 @@
         "type": "prompt",
         "prompt": "Before making structural or product-scope changes in this session, read `.cursor/rules/architecture.mdc` and `docs/PRD.md`. Remind yourself: API is the only DB client; no auth for MVP; the client is Expo at apps/app (web + native — no separate Vite app); OpenAPI + shared-types must stay in sync. Summarize any relevant constraints for this session in one short paragraph if helpful, then proceed with the user's request.",
         "timeout": 30
+      },
+      {
+        "command": "node .cursor/hooks/log-session-start.mjs"
       }
     ],
     "sessionEnd": [
@@ -33,6 +36,29 @@
         "command": ".cursor/hooks/verify-build.py",
         "timeout": 180,
         "loop_limit": 3
+      },
+      {
+        "command": "node .cursor/hooks/log-session-stop.mjs"
+      },
+      {
+        "command": "node .cursor/hooks/review-gate.mjs stop",
+        "loop_limit": 1
+      }
+    ],
+    "beforeSubmitPrompt": [
+      {
+        "command": "node .cursor/hooks/log-prompt.mjs"
+      }
+    ],
+    "subagentStop": [
+      {
+        "command": "node .cursor/hooks/review-gate.mjs record"
+      }
+    ],
+    "postToolUse": [
+      {
+        "command": "node .cursor/hooks/log-tool-use.mjs",
+        "matcher": "Shell|Write|StrReplace|Delete|EditNotebook|CallMcpTool|Task"
       }
     ]
   }
