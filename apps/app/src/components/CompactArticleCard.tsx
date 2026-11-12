@@ -115,7 +115,6 @@ export function CompactArticleCard({
             </Text>
           </View>
           <Text
-            accessibilityRole="header"
             style={[styles.headline, dense ? styles.headlineDense : null]}
             numberOfLines={hasImage ? 3 : 4}
           >

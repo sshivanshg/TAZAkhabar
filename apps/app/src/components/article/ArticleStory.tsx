@@ -140,7 +140,7 @@ function ArticleStoryBase({
 
   return (
     <View {...(Platform.OS === 'web' ? ({ role: 'article' } as object) : null)} style={styles.root}>
-      <ArticleHero uri={imageUri} headline={headline} priority={priorityImage} styles={styles} />
+      <ArticleHero key={imageUri} uri={imageUri} headline={headline} priority={priorityImage} styles={styles} />
 
       <View style={styles.column}>
         <View
