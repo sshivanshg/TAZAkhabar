@@ -73,3 +73,7 @@ apps/app/.expo/
 # Expo local (root)
 .expo/
 .worktrees/
+
+# Agent hook runtime state (session logs in docs/sessions are committed)
+.cursor/hooks/.current-session
+.cursor/hooks/.sessions/

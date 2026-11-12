@@ -1,0 +1,54 @@
+---
+description: Automatic khabro-* subagent routing and the mandatory fresh-reviewer quality shield for apps/, packages/ and infra/ changes
+alwaysApply: true
+---
+
+The coordinating agent routes work to the [khabro-* subagents](../../.claude/agents/khabro-principal-engineer.md)
+on its own; the user should never have to name one. Skip routing only for questions,
+docs-only edits and changes under ~10 lines.
+
+| When the task… | Run, in order |
+| --- | --- |
+| is a new feature, spans API + client, or is ambiguous | `khabro-principal-engineer` (plan) → `khabro-design-director` (art direction, if it has a screen) → `khabro-ux-engineer` (spec, if user-facing) → implementers in parallel on disjoint files → reviewers |
+| touches `apps/api` code | `khabro-backend-engineer` |
+| adds or changes an EF migration, `infra/migrations`, an index or a hot query | `khabro-database-engineer` |
+| touches `apps/app` (Expo reader) logic: navigation, hooks, data fetching | `khabro-mobile-engineer` |
+| touches `apps/admin`, `apps/site`, reader styling, tokens or screen polish | `khabro-frontend-engineer` (loads `ui-taste`, `ios-design`, `apple-design`; brand in `docs/brand.md`) |
+| touches motion, transitions, gestures or haptics | `khabro-motion-engineer`; screens consume its primitives |
+| changes OpenAPI or `packages/shared-types` | `khabro-backend-engineer` + `pnpm generate:types`; `khabro-architecture-reviewer` reviews |
+| touches CI, `render.yaml`, Cloudflare Pages, `infra/docker` or ingest workflows | `khabro-platform-engineer` |
+| fixes a bug or lacks coverage | `khabro-test-engineer` (failing test first) |
+| needs a GitHub issue, progress comment, commit/PR into `qa` or promotion | `khabro-git-steward` |
+| deploys, changes env vars, promotes `qa` → `main`, or hits a failed deploy, health check or ingest run | `khabro-ops-watcher` (diagnose; redeploy only when told); `khabro-sre` for incidents and reliability work |
+| finishes a substantial task (after reviewers pass) | `khabro-skill-curator` (capture new or repeated procedures as skills); the coordinator inspects its diff |
+
+Each subagent file lists its required skills; the coordinator passes the task condition in
+the brief. The coordinator itself uses `khabro-feature-delivery`,
+`subagent-driven-development`, `using-git-worktrees`, `incremental-implementation`, and
+`debugging-and-error-recovery` when a gate fails (all in `.agents/skills`).
+
+After any non-trivial implementation, spawn fresh reviewers in parallel; the author may
+not approve their own diff:
+
+- always `khabro-code-reviewer`;
+- `khabro-security-reviewer` for admin auth, CORS, rate limits, secrets, untrusted feed
+  content, public endpoints, CI or deploy config;
+- `khabro-performance-reviewer` for queries, migrations, ingestion, caching or feed lists;
+- `khabro-architecture-reviewer` for dependencies, contracts, module boundaries or schema
+  direction;
+- `khabro-ux-engineer` and `khabro-design-director` for user-facing screens or UI
+  primitives; a design dimension under 8 is a Required finding.
+
+Rules:
+
+- If a named subagent type is unavailable, spawn a general-purpose subagent told to follow
+  the matching `.claude/agents/khabro-*.md`; put the agent name in the task description so
+  the review gate hook recognizes reviewers.
+- Give reviewers the task, diff, source and acceptance criteria — not the author's
+  conclusion. Do not rubber-stamp.
+- Do not push or promote with Critical or Required findings open.
+- Multi-agent work uses disjoint files; the coordinator integrates.
+- The [review gate hook](../hooks/review-gate.mjs) sends the agent back to run
+  the matching reviewers when gated code changed since the last review. Answer it; do not
+  disable it.
+- `pnpm` checks and `ci.yml` are the mechanical gate; fresh reviewers are the agent gate.

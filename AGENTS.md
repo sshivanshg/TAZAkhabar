@@ -224,3 +224,58 @@ qa/GitHub trail, `khabro-ops-watcher` and `khabro-sre` watch Render, Pages, Neon
 ingest workflows, and `khabro-skill-curator` captures new procedures as skills. After any
 non-trivial change, run a fresh `khabro-code-reviewer`; the author never approves their
 own diff. These rules sit on top of the sections above, which stay authoritative.
+
+### Subagent coordination
+
+The main session is the coordinator. It routes substantial work to the `khabro-*`
+subagents itself (the user never has to name one), using the table in
+[khabro-quality-shield](.codex/rules/khabro-quality-shield.mdc). Skip routing only for
+questions, docs-only edits and changes under ~10 lines. Implementers get disjoint files;
+the coordinator integrates and runs the combined checks. The full flow is in
+[docs/agent-development/WORKFLOW.md](docs/agent-development/WORKFLOW.md).
+
+| Agent | Role | Model | Effort |
+| --- | --- | --- | --- |
+| `khabro-principal-engineer` | Plans substantial / cross-surface work | fable | max |
+| `khabro-architecture-reviewer` | Reviews boundaries, contracts, dependencies | fable | high |
+| `khabro-security-reviewer` | Reviews auth, CORS, secrets, untrusted content | fable | high |
+| `khabro-design-director` | Art direction and UI scoring | fable | high |
+| `khabro-code-reviewer` | Reviews every non-trivial diff | opus | high |
+| `khabro-performance-reviewer` | Reviews queries, ingestion, lists | opus | high |
+| `khabro-backend-engineer` | `apps/api` | opus | high |
+| `khabro-database-engineer` | Migrations, indexes, queries | opus | high |
+| `khabro-sre` | Incidents and reliability | opus | high |
+| `khabro-mobile-engineer` | Expo reader `apps/app` | opus | medium |
+| `khabro-frontend-engineer` | `apps/admin`, `apps/site`, styling | opus | medium |
+| `khabro-motion-engineer` | Motion, gestures, haptics | opus | medium |
+| `khabro-ux-engineer` | UX specs and UX review | opus | medium |
+| `khabro-platform-engineer` | CI, Render, Pages, Docker | sonnet | medium |
+| `khabro-test-engineer` | Failing-test-first coverage | sonnet | medium |
+| `khabro-skill-curator` | Captures procedures as skills | sonnet | medium |
+| `khabro-git-steward` | GitHub issues, commits, PRs into `qa` | haiku | low |
+| `khabro-ops-watcher` | Deploy/health/ingest checks | haiku | low |
+
+Model and effort come from each agent's frontmatter; change them there, not here.
+
+### Design principles and quality shield
+
+- A fresh reviewer is mandatory after any non-trivial change under `apps/`, `packages/`
+  or `infra/`: always `khabro-code-reviewer`, plus the security, performance,
+  architecture, UX and design reviewers the routing table names.
+- No self-approval: the author never approves their own diff. Reviewers get the task,
+  diff and acceptance criteria, not the author's conclusion.
+- No push or promotion with Critical or Required findings open.
+- The review gate hook (`.cursor/hooks/review-gate.mjs`, wired in `.claude/settings.json`
+  and `.cursor/hooks.json`) stops the turn once when gated code changed since the last
+  reviewer ran. Answer it; do not disable it.
+
+### Leave a useful history
+
+- Every session is logged by the hooks to `docs/sessions/<timestamp>.md`. Fill in its
+  **Goal** early and finish with a **Summary**: what changed, checks run with results,
+  review verdicts, open items.
+- Durable decisions become an ADR in `docs/adr/` (next number after the existing
+  `00N-*.md`), via the `documentation-and-adrs` skill.
+- Work lands on `qa` (directly for routine work, or as a PR into `qa` via
+  `khabro-git-steward`), with the GitHub issue updated; `main` moves only through the
+  Promote QA to production workflow.
