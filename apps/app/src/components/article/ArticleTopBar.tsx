@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { Platform, Pressable, StyleSheet, View } from 'react-native'
+import { Platform, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import ArrowLeft from 'lucide-react-native/icons/arrow-left'
 import { useTheme } from '../../preferences/ThemePreferenceContext'
@@ -23,6 +23,8 @@ type Props = {
 export function ArticleTopBar({ elevated, scrollProgress, onBack }: Props) {
   const insets = useSafeAreaInsets()
   const sidebarInset = useShellSidebarInset()
+  // Desktop: a compact back pill at the column's left edge, not an empty 640px bar.
+  const compact = useWindowDimensions().width >= 768
   const reducedMotion = usePrefersReducedMotion()
   const { readerColors, shadows } = useTheme()
   const styles = useMemo(() => createStyles(readerColors, shadows), [readerColors, shadows])
@@ -36,35 +38,43 @@ export function ArticleTopBar({ elevated, scrollProgress, onBack }: Props) {
       pointerEvents="box-none"
       style={[styles.wrap, { paddingTop: safeTop, left: sidebarInset }]}
     >
-      <View style={[styles.shell, readerHeaderChrome(elevated, reducedMotion, readerColors)]}>
-        <View style={styles.row}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Go back"
-            onPress={onBack}
-            hitSlop={4}
-            style={(state) => {
-              const { pressed, focused } = pressableState(state)
-              return [
-                styles.back,
-                pressed ? styles.pressed : null,
-                webFocusRing(Boolean(focused), readerColors),
-              ]
+      <View style={styles.column} pointerEvents="box-none">
+        <View
+          style={[
+            styles.shell,
+            compact ? styles.shellCompact : null,
+            readerHeaderChrome(elevated, reducedMotion, readerColors),
+          ]}
+        >
+          <View style={styles.row}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Go back"
+              onPress={onBack}
+              hitSlop={4}
+              style={(state) => {
+                const { pressed, focused } = pressableState(state)
+                return [
+                  styles.back,
+                  pressed ? styles.pressed : null,
+                  webFocusRing(Boolean(focused), readerColors),
+                ]
+              }}
+            >
+              <ArrowLeft size={22} strokeWidth={iconStroke} color={readerColors.text} />
+            </Pressable>
+          </View>
+          <View
+            style={styles.track}
+            accessibilityRole="progressbar"
+            accessibilityValue={{
+              min: 0,
+              max: 100,
+              now: Math.round(progress * 100),
             }}
           >
-            <ArrowLeft size={22} strokeWidth={iconStroke} color={readerColors.text} />
-          </Pressable>
-        </View>
-        <View
-          style={styles.track}
-          accessibilityRole="progressbar"
-          accessibilityValue={{
-            min: 0,
-            max: 100,
-            now: Math.round(progress * 100),
-          }}
-        >
-          <View style={[styles.fill, { width: `${progress * 100}%` }]} />
+            <View style={[styles.fill, { width: `${progress * 100}%` }]} />
+          </View>
         </View>
       </View>
     </View>
@@ -82,10 +92,17 @@ function createStyles(c: ReaderColors, sh: Shadows) {
       paddingHorizontal: 12,
       paddingBottom: 10,
     },
-    shell: {
+    column: {
       width: '100%',
       maxWidth: 760,
       alignSelf: 'center',
+    },
+    shellCompact: {
+      width: 'auto',
+      alignSelf: 'flex-start',
+    },
+    shell: {
+      width: '100%',
       overflow: 'hidden',
       borderRadius: 24,
       backgroundColor: c.headerSolid,

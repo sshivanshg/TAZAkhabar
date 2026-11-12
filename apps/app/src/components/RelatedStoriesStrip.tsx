@@ -8,6 +8,7 @@ import { HIT_TARGET, radius, space, typography, type AppColors } from '../theme/
 import { iconStroke } from '../theme/categoryIcons'
 import { formatRelativeTime } from '../utils/relativeTime'
 import { SourceAvatar } from './SourceAvatar'
+import { cleanHeadline } from '../lib/headline'
 
 type Props = {
   articles: ArticleResponse[]
@@ -36,7 +37,7 @@ export function RelatedStoriesStrip({ articles, onPress, onMorePress }: Props) {
       contentContainerStyle={styles.row}
     >
       {articles.map((article) => {
-        const headline = article.headline?.trim() || 'Untitled'
+        const headline = cleanHeadline(article.headline ?? '', article.sourceName) || 'Untitled'
         const source = article.sourceName?.trim() || 'Unknown source'
         const relative = formatRelativeTime(article.publishedAt)
         return (
@@ -124,8 +125,8 @@ function createStyles(c: AppColors) {
     },
     headline: {
       color: c.text,
-      fontSize: 15,
-      lineHeight: 20,
+      fontSize: 16,
+      lineHeight: 22,
       fontWeight: '700',
       letterSpacing: -0.2,
       flexGrow: 1,

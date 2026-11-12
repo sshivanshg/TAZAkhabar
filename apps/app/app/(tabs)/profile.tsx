@@ -197,7 +197,7 @@ function ProfileBody() {
                     fontSize={typography.label.fontSize}
                     lineHeight={typography.label.lineHeight}
                     fontWeight="$semibold"
-                    color={selected ? colors.chipSelectedText : colors.chipInactiveText}
+                    color={selected ? colors.chipSelectedText : colors.text}
                   >
                     {option.label}
                   </Text>
@@ -242,7 +242,7 @@ function ProfileBody() {
                     fontSize={typography.label.fontSize}
                     lineHeight={typography.label.lineHeight}
                     fontWeight="$semibold"
-                    color={selected ? colors.chipSelectedText : colors.chipInactiveText}
+                    color={selected ? colors.chipSelectedText : colors.text}
                   >
                     {lang.label}
                   </Text>
@@ -641,12 +641,14 @@ function createStyles(c: AppColors) {
       gap: space.xs,
     },
     langChip: {
-      minHeight: HIT_TARGET - 8,
+      minHeight: HIT_TARGET,
       paddingHorizontal: space.md,
       paddingVertical: space.xs,
       borderRadius: 999,
-      borderWidth: StyleSheet.hairlineWidth,
-      borderColor: c.chipInactiveBorder,
+      // Unselected chips need a full-strength border + text so dark mode
+      // doesn't read them as disabled.
+      borderWidth: 1,
+      borderColor: c.textMuted,
       backgroundColor: c.surface,
       justifyContent: 'center',
     },

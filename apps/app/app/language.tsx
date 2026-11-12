@@ -317,7 +317,8 @@ function createStyles(c: AppColors) {
     },
     optionHint: {
       color: c.textMuted,
-      fontSize: 14,
+      fontSize: 15,
+      lineHeight: 20,
       marginTop: 2,
     },
     optionHintSelected: {
@@ -325,7 +326,8 @@ function createStyles(c: AppColors) {
     },
     optionSample: {
       color: c.textSecondary,
-      fontSize: 13,
+      fontSize: 15,
+      lineHeight: 20,
       marginTop: 6,
       fontWeight: '500',
     },
@@ -361,8 +363,8 @@ function createStyles(c: AppColors) {
     },
     footerText: {
       color: c.textMuted,
-      fontSize: 13,
-      lineHeight: 18,
+      fontSize: 15,
+      lineHeight: 20,
       fontWeight: '500',
       textAlign: 'center',
     },

@@ -26,6 +26,8 @@ type Props = {
   cityLabel?: string
   priorityImage?: boolean
   bodyLoading?: boolean
+  /** True only when fetching the full story failed (not when the API has no body). */
+  bodyFailed?: boolean
   onReadSource: () => void
   onRetry?: () => void
 }
@@ -75,6 +77,7 @@ function ArticleStoryBase({
   bodyLoading = false,
   onReadSource,
   onRetry,
+  bodyFailed = false,
 }: Props) {
   const { readerColors } = useTheme()
   const styles = useMemo(() => createStyles(readerColors), [readerColors])
@@ -105,7 +108,7 @@ function ArticleStoryBase({
   const headlineSize = width >= 768 ? 36 : 30
   const headlineLine = width >= 768 ? 40 : 34
   const hasContent = displayContent.hasReadableContent
-  const showLoadError = !hasContent && !bodyLoading
+  const showLoadError = bodyFailed && !hasContent && !bodyLoading
   const showBodyLoading = bodyLoading && !hasContent
 
   const renderBlocks = (blocks: ArticleBlock[], keyPrefix: string) =>
@@ -389,15 +392,15 @@ function createStyles(c: ReaderColors) {
     },
     attributionKicker: {
       color: c.textSecondary,
-      fontSize: 12,
+      fontSize: 13,
       fontWeight: '700',
       letterSpacing: 0.6,
       textTransform: 'uppercase',
     },
     attributionBody: {
       color: c.textSecondary,
-      fontSize: 14,
-      lineHeight: 21,
+      fontSize: 16,
+      lineHeight: 24,
     },
     pressed: {
       opacity: 0.78,

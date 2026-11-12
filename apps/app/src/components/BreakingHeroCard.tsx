@@ -9,6 +9,7 @@ import { HIT_TARGET, media, radius, space, typography, type AppColors } from '..
 import { iconStroke } from '../theme/categoryIcons'
 import { formatRelativeTime } from '../utils/relativeTime'
 import { SourceAvatar } from './SourceAvatar'
+import { cleanHeadline } from '../lib/headline'
 
 const CARD_GAP = space.sm
 
@@ -65,7 +66,7 @@ export function BreakingHeroCard({
 }: Props) {
   const { colors } = useTheme()
   const styles = useMemo(() => createStyles(colors), [colors])
-  const headline = article.headline ?? 'Untitled'
+  const headline = cleanHeadline(article.headline ?? '', article.sourceName) || 'Untitled'
   const source = article.sourceName ?? 'Unknown source'
   const relative = formatRelativeTime(article.publishedAt)
   const imageUrl = article.imageUrl
