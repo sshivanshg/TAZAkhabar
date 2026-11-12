@@ -127,6 +127,8 @@ export default function TabsLayout() {
             name="profile"
             options={{
               title: 'Profile',
+              // Title renders in-page inside the 720 column (not at the rail edge).
+              headerShown: false,
               tabBarLabel: 'Profile',
               tabBarIcon: ({ focused }) => <TabIcon Icon={User} focused={focused} />,
               tabBarAccessibilityLabel: 'Profile and settings',

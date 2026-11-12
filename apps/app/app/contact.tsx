@@ -1,9 +1,11 @@
 import { useMemo } from 'react'
 import { Linking, Pressable, ScrollView, StyleSheet, View } from 'react-native'
-import { Stack } from 'expo-router'
+import { Stack, useRouter } from 'expo-router'
 import { Text } from '@gluestack-ui/themed'
 import Mail from 'lucide-react-native/icons/mail'
 import Globe from 'lucide-react-native/icons/globe'
+import ArrowLeft from 'lucide-react-native/icons/arrow-left'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Card } from '../src/components/ui/Card'
 import { ScreenErrorBoundary } from '../src/components/ScreenErrorBoundary'
 import { useTheme } from '../src/preferences/ThemePreferenceContext'
@@ -14,7 +16,7 @@ import { iconStroke } from '../src/theme/categoryIcons'
 export default function ContactScreen() {
   return (
     <ScreenErrorBoundary name="contact">
-      <Stack.Screen options={{ title: 'Contact us', headerShown: true }} />
+      <Stack.Screen options={{ title: 'Contact us', headerShown: false }} />
       <ContactBody />
     </ScreenErrorBoundary>
   )
@@ -24,10 +26,38 @@ function ContactBody() {
   const { colors } = useTheme()
   const styles = useMemo(() => createStyles(colors), [colors])
   const contactUrl = getContactPageUrl()
+  const router = useRouter()
+  const insets = useSafeAreaInsets()
+
+  // Opened directly (deep link / refresh) there is no history: fall back home.
+  const onBack = () => {
+    if (router.canGoBack()) {
+      router.back()
+    } else {
+      router.replace('/')
+    }
+  }
 
   return (
-    <ScrollView contentContainerStyle={styles.content} testID="contact-screen">
+    <ScrollView
+      contentContainerStyle={[styles.content, { paddingTop: Math.max(insets.top, 0) + space.sm }]}
+      testID="contact-screen"
+    >
       <View style={styles.column}>
+        <View style={styles.header}>
+          <Pressable
+            onPress={onBack}
+            accessibilityRole="button"
+            accessibilityLabel="Go back"
+            hitSlop={4}
+            style={({ pressed }) => [styles.back, pressed ? styles.pressed : null]}
+          >
+            <ArrowLeft size={22} strokeWidth={iconStroke} color={colors.text} />
+          </Pressable>
+          <Text style={styles.title} accessibilityRole="header">
+            Contact us
+          </Text>
+        </View>
         <Card>
           <View style={styles.body}>
             <Text style={styles.label}>Developer / publisher</Text>
@@ -84,6 +114,26 @@ function createStyles(c: AppColors) {
     },
     // Fix 8: cap the reading column at 720 and centre it on wide screens.
     column: { width: '100%', maxWidth: 720, alignSelf: 'center' },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: space.xs,
+      marginBottom: space.md,
+      marginLeft: -space.xs,
+    },
+    back: {
+      width: HIT_TARGET,
+      height: HIT_TARGET,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: HIT_TARGET / 2,
+    },
+    title: {
+      color: c.text,
+      fontSize: 24,
+      lineHeight: 30,
+      fontWeight: '700',
+    },
     body: { padding: space.lg },
     cardGap: { marginTop: space.md },
     label: {

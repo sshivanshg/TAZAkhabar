@@ -238,7 +238,7 @@ function createStyles(c: AppColors) {
     header: {
       paddingHorizontal: space.screen,
       paddingBottom: space.sm,
-      maxWidth: 980,
+      maxWidth: 720,
       width: '100%',
       alignSelf: 'center',
       ...(Platform.OS === 'web' ? { paddingTop: 8 } : {}),
@@ -246,7 +246,7 @@ function createStyles(c: AppColors) {
     list: {
       paddingHorizontal: space.screen,
       flexGrow: 1,
-      maxWidth: 980,
+      maxWidth: 720,
       width: '100%',
       alignSelf: 'center',
     },

@@ -113,9 +113,9 @@ function createStyles(c: AppColors) {
       ...(Platform.OS === 'web'
         ? ({
             maskImage:
-              'linear-gradient(to right, transparent 0%, black 12%, black 88%, transparent 100%)',
+              'linear-gradient(to right, transparent 0%, black 18%, black 82%, transparent 100%)',
             WebkitMaskImage:
-              'linear-gradient(to right, transparent 0%, black 12%, black 88%, transparent 100%)',
+              'linear-gradient(to right, transparent 0%, black 18%, black 82%, transparent 100%)',
           } as object)
         : null),
     },

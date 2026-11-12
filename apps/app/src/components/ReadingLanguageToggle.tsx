@@ -102,8 +102,8 @@ function createStyles(c: ToggleColors) {
       flexShrink: 0,
     },
     option: {
-      minWidth: 36,
-      minHeight: 32,
+      minWidth: 44,
+      minHeight: 44,
       paddingHorizontal: 8,
       alignItems: 'center',
       justifyContent: 'center',
@@ -121,7 +121,7 @@ function createStyles(c: ToggleColors) {
     },
     label: {
       color: c.text,
-      fontSize: 13,
+      fontSize: 14,
       fontWeight: '600',
       letterSpacing: 0.2,
     },

@@ -270,7 +270,7 @@ export const PAGE_SIZE = 20
 export const BREAKING_NEWS_COUNT = 5
 
 /** Floating tab bar height — keep in sync with tabBarStyle.height in (tabs)/_layout */
-export const TAB_BAR_HEIGHT = 72
+export const TAB_BAR_HEIGHT = 76
 /** Breathing room above the floating tab bar for the last list item */
 export const TAB_BAR_CONTENT_GAP = 20
 

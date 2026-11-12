@@ -96,9 +96,11 @@ export function TopStoriesCluster({ articles, onPress, onSeeAll }: Props) {
                 {lead.sourceName ?? 'Unknown source'}
               </Text>
             </View>
-            <Text style={styles.leadTitle} numberOfLines={3}>
-              {leadHeadline}
-            </Text>
+            {leadImageUrl ? (
+              <Text style={styles.leadTitle} numberOfLines={3}>
+                {leadHeadline}
+              </Text>
+            ) : null}
             <Text style={styles.time}>{formatRelativeTime(lead.publishedAt)}</Text>
           </View>
         </Pressable>

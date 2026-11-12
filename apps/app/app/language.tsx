@@ -178,6 +178,7 @@ function createStyles(c: AppColors) {
   return StyleSheet.create({
     screen: {
       flex: 1,
+      overflow: 'hidden',
       backgroundColor: c.background,
       paddingHorizontal: space.xl,
     },

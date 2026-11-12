@@ -127,14 +127,6 @@ export function DesktopSidebar() {
           >
             <Text style={styles.footerLinkText}>Support</Text>
           </Pressable>
-          <Pressable
-            onPress={() => router.push('/contact' as Href)}
-            accessibilityRole="link"
-            accessibilityLabel="Contact us"
-            style={({ pressed }) => [styles.footerLink, pressed ? styles.itemPressed : null]}
-          >
-            <Text style={styles.footerLinkText}>Contact us</Text>
-          </Pressable>
         </View>
         <Text style={styles.footerText} accessibilityLabel="Khabro version 0.1">
           Khabro v0.1

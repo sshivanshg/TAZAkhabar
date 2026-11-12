@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { Platform, StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useTheme } from '../../preferences/ThemePreferenceContext'
+import { useShellSidebarInset } from '../desktop/AppShell'
 import type { getShadows } from '../../theme/tokens'
 
 type Shadows = ReturnType<typeof getShadows>
@@ -16,6 +17,7 @@ type Props = {
 
 export function ArticleBottomBar({ bookmarked, onShare, onSave }: Props) {
   const insets = useSafeAreaInsets()
+  const sidebarInset = useShellSidebarInset()
   const { readerColors, shadows } = useTheme()
   const styles = useMemo(() => createStyles(readerColors, shadows), [readerColors, shadows])
 
@@ -27,6 +29,7 @@ export function ArticleBottomBar({ bookmarked, onShare, onSave }: Props) {
         styles.wrap,
         {
           paddingBottom: Math.max(insets.bottom, 8),
+          left: sidebarInset,
         },
       ]}
     >

@@ -3,6 +3,7 @@ import { Platform, Pressable, StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import ArrowLeft from 'lucide-react-native/icons/arrow-left'
 import { useTheme } from '../../preferences/ThemePreferenceContext'
+import { useShellSidebarInset } from '../desktop/AppShell'
 import type { getShadows } from '../../theme/tokens'
 
 type Shadows = ReturnType<typeof getShadows>
@@ -21,6 +22,7 @@ type Props = {
 
 export function ArticleTopBar({ elevated, scrollProgress, onBack }: Props) {
   const insets = useSafeAreaInsets()
+  const sidebarInset = useShellSidebarInset()
   const reducedMotion = usePrefersReducedMotion()
   const { readerColors, shadows } = useTheme()
   const styles = useMemo(() => createStyles(readerColors, shadows), [readerColors, shadows])
@@ -32,7 +34,7 @@ export function ArticleTopBar({ elevated, scrollProgress, onBack }: Props) {
       testID="article-top-bar"
       accessibilityRole="header"
       pointerEvents="box-none"
-      style={[styles.wrap, { paddingTop: safeTop }]}
+      style={[styles.wrap, { paddingTop: safeTop, left: sidebarInset }]}
     >
       <View style={[styles.shell, readerHeaderChrome(elevated, reducedMotion, readerColors)]}>
         <View style={styles.row}>

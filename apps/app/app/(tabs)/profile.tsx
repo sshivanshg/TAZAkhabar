@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState, type ReactNode } from 'react'
-import { Linking, Pressable, ScrollView, StyleSheet, View } from 'react-native'
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import Constants from 'expo-constants'
 import { useFocusEffect, useRouter } from 'expo-router'
@@ -45,7 +45,6 @@ import { iconStroke } from '../../src/theme/categoryIcons'
 import { useTabBarClearance } from '../../src/theme/useTabBarClearance'
 import { isDesktopLayout, useBreakpoint } from '../../src/hooks/useBreakpoint'
 
-import { CONTACT_EMAIL } from '../../src/config/contact'
 
 export default function ProfileScreen() {
   return (
@@ -128,8 +127,14 @@ function ProfileBody() {
         ]}
       >
         <View style={styles.pageHeader}>
-          <Text fontSize={24} lineHeight={30} fontWeight="$bold" color={colors.text}>
-            Settings
+          <Text
+            fontSize={24}
+            lineHeight={30}
+            fontWeight="$bold"
+            color={colors.text}
+            accessibilityRole="header"
+          >
+            Profile
           </Text>
           <Text
             fontSize={typography.summary.fontSize}
@@ -380,46 +385,41 @@ function ProfileBody() {
           </View>
         </Section>
 
-        <Section title="Contact us" Icon={Mail}>
-          <Text
-            fontSize={typography.summary.fontSize}
-            lineHeight={typography.summary.lineHeight}
-            color={colors.textSecondary}
-            mb="$3"
-          >
-            For app support, privacy questions, publisher requests, corrections, or other Khabro
-            contact needs, email the developer team.
-          </Text>
+        {/* Single contact entry point: the card opens the in-app /contact page. */}
+        <View style={styles.section}>
           <Pressable
-            onPress={() => {
-              void Linking.openURL(`mailto:${CONTACT_EMAIL}`)
-            }}
-            accessibilityRole="link"
-            accessibilityLabel={`Email Khabro at ${CONTACT_EMAIL}`}
-            style={({ pressed }) => [
-              styles.contactEmail,
-              pressed ? styles.contactEmailPressed : null,
-            ]}
-          >
-            <Mail size={18} strokeWidth={iconStroke} color={colors.accent} />
-            <Text style={styles.contactEmailText}>{CONTACT_EMAIL}</Text>
-          </Pressable>
-          <Text
-            fontSize={typography.meta.fontSize}
-            lineHeight={typography.meta.lineHeight}
-            color={colors.textMuted}
-            mt="$3"
-          >
-            This address is also listed on the Khabro website contact page.
-          </Text>
-          <SecondaryButton
-            label="Open Contact us page"
             onPress={() => router.push('/contact')}
-            accessibilityLabel="Open Contact us page"
-            style={styles.contactPageButton}
-            outline
-          />
-        </Section>
+            accessibilityRole="link"
+            accessibilityLabel="Contact us"
+            accessibilityHint="Opens the contact page"
+            style={({ pressed }) => [pressed ? styles.contactEmailPressed : null]}
+          >
+            <Card>
+              <View style={[styles.cardBody, styles.contactCardRow]}>
+                <Mail size={18} strokeWidth={iconStroke} color={colors.accent} />
+                <View style={styles.contactCardCopy}>
+                  <Text
+                    fontSize={typography.headlineSm.fontSize}
+                    lineHeight={typography.headlineSm.lineHeight}
+                    fontWeight="$semibold"
+                    color={colors.text}
+                  >
+                    Contact us
+                  </Text>
+                  <Text
+                    fontSize={typography.summary.fontSize}
+                    lineHeight={typography.summary.lineHeight}
+                    color={colors.textSecondary}
+                    mt="$1"
+                  >
+                    Support, privacy, publisher requests and corrections.
+                  </Text>
+                </View>
+                <ChevronRight size={20} strokeWidth={iconStroke} color={colors.textMuted} />
+              </View>
+            </Card>
+          </Pressable>
+        </View>
 
         <Section title="About this app" Icon={Info}>
           <Text fontSize={typography.summary.fontSize} lineHeight={24} color={colors.textSecondary}>
@@ -443,7 +443,7 @@ function ProfileBody() {
           >
             Khabro is a news aggregator. Articles belong to their original publishers.
           </Text>
-          <PublicLinks />
+          <PublicLinks exclude={['contact']} />
         </Section>
       </ScrollView>
     </MotiView>
@@ -664,28 +664,17 @@ function createStyles(c: AppColors) {
     alertSecondary: {
       alignSelf: 'flex-start',
     },
-    contactEmail: {
-      minHeight: HIT_TARGET,
-      alignSelf: 'flex-start',
+    contactCardRow: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: space.xs,
-      paddingHorizontal: space.sm,
-      borderRadius: 12,
-      backgroundColor: c.surfaceRaised,
+      gap: space.sm,
     },
-    contactPageButton: {
-      alignSelf: 'flex-start',
-      marginTop: space.sm,
+    contactCardCopy: {
+      flex: 1,
+      minWidth: 0,
     },
     contactEmailPressed: {
       opacity: 0.82,
-    },
-    contactEmailText: {
-      color: c.accent,
-      fontSize: typography.bodySemibold.fontSize,
-      lineHeight: typography.bodySemibold.lineHeight,
-      fontWeight: '700',
     },
     spacer: {
       height: space.md,
