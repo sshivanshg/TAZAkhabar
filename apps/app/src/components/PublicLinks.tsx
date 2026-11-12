@@ -16,7 +16,15 @@ const PUBLIC_PAGE_LINKS = [
   { id: 'corrections', label: 'Corrections', href: `${siteUrl}/corrections` },
 ] as const
 
-export function PublicLinks({ compact = false }: { compact?: boolean }) {
+type PublicLinkId = (typeof PUBLIC_PAGE_LINKS)[number]['id']
+
+export function PublicLinks({
+  compact = false,
+  exclude = [],
+}: {
+  compact?: boolean
+  exclude?: PublicLinkId[]
+}) {
   const { colors } = useTheme()
   const styles = useMemo(() => createStyles(colors), [colors])
 
@@ -26,7 +34,7 @@ export function PublicLinks({ compact = false }: { compact?: boolean }) {
       accessibilityLabel="Khabro information"
       style={[styles.root, compact ? styles.compact : null]}
     >
-      {PUBLIC_PAGE_LINKS.map((link) => (
+      {PUBLIC_PAGE_LINKS.filter((link) => !exclude.includes(link.id)).map((link) => (
         <Pressable
           key={link.id}
           onPress={() => {

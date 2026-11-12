@@ -8,6 +8,7 @@ import { HIT_TARGET, radius, space, typography, type AppColors } from '../theme/
 import { iconStroke } from '../theme/categoryIcons'
 import { formatRelativeTime } from '../utils/relativeTime'
 import { SourceAvatar } from './SourceAvatar'
+import { cleanHeadline } from '../lib/headline'
 
 type Props = {
   articles: ArticleResponse[]
@@ -36,45 +37,47 @@ export function RelatedStoriesStrip({ articles, onPress, onMorePress }: Props) {
       contentContainerStyle={styles.row}
     >
       {articles.map((article) => {
-        const headline = article.headline?.trim() || 'Untitled'
+        const headline = cleanHeadline(article.headline ?? '', article.sourceName) || 'Untitled'
         const source = article.sourceName?.trim() || 'Unknown source'
         const relative = formatRelativeTime(article.publishedAt)
         return (
-          <Pressable
-            key={String(article.id ?? headline)}
-            onPress={() => onPress(article)}
-            onLongPress={onMorePress ? () => onMorePress(article) : undefined}
-            delayLongPress={380}
-            accessibilityRole="button"
-            accessibilityLabel={`${headline}. ${source}. ${relative}`}
-            style={({ pressed }) => [styles.card, pressed ? styles.pressed : null]}
-          >
-            <View style={styles.sourceRow}>
-              <SourceAvatar name={source} size={18} />
-              <Text style={styles.source} numberOfLines={1}>
-                {source}
+          <View key={String(article.id ?? headline)} style={styles.cardWrap}>
+            <Pressable
+              onPress={() => onPress(article)}
+              onLongPress={onMorePress ? () => onMorePress(article) : undefined}
+              delayLongPress={380}
+              accessibilityRole="button"
+              accessibilityLabel={`${headline}. ${source}. ${relative}`}
+              style={({ pressed }) => [styles.card, pressed ? styles.pressed : null]}
+            >
+              <View style={styles.sourceRow}>
+                <SourceAvatar name={source} size={18} />
+                <Text style={styles.source} numberOfLines={1}>
+                  {source}
+                </Text>
+              </View>
+              <Text style={styles.headline} numberOfLines={4}>
+                {headline}
               </Text>
-              {onMorePress ? (
-                <Pressable
-                  onPress={() => onMorePress(article)}
-                  accessibilityRole="button"
-                  accessibilityLabel={`More options for ${headline}`}
-                  hitSlop={8}
-                  style={({ pressed }) => [styles.more, pressed ? styles.morePressed : null]}
-                >
-                  <Ellipsis size={16} strokeWidth={iconStroke} color={colors.textSecondary} />
-                </Pressable>
+              {relative ? (
+                <Text style={styles.meta} numberOfLines={1}>
+                  {relative}
+                </Text>
               ) : null}
-            </View>
-            <Text style={styles.headline} numberOfLines={4}>
-              {headline}
-            </Text>
-            {relative ? (
-              <Text style={styles.meta} numberOfLines={1}>
-                {relative}
-              </Text>
+            </Pressable>
+            {/* Overflow is a sibling of the card Pressable: no nested <button> on web. */}
+            {onMorePress ? (
+              <Pressable
+                onPress={() => onMorePress(article)}
+                accessibilityRole="button"
+                accessibilityLabel={`More options for ${headline}`}
+                hitSlop={0}
+                style={({ pressed }) => [styles.more, pressed ? styles.morePressed : null]}
+              >
+                <Ellipsis size={16} strokeWidth={iconStroke} color={colors.textSecondary} />
+              </Pressable>
             ) : null}
-          </Pressable>
+          </View>
         )
       })}
     </ScrollView>
@@ -107,6 +110,10 @@ function createStyles(c: AppColors) {
       flexDirection: 'row',
       alignItems: 'center',
       gap: 6,
+      paddingRight: HIT_TARGET - space.sm,
+    },
+    cardWrap: {
+      position: 'relative',
     },
     source: {
       flex: 1,
@@ -118,8 +125,8 @@ function createStyles(c: AppColors) {
     },
     headline: {
       color: c.text,
-      fontSize: 15,
-      lineHeight: 20,
+      fontSize: 16,
+      lineHeight: 22,
       fontWeight: '700',
       letterSpacing: -0.2,
       flexGrow: 1,
@@ -131,8 +138,11 @@ function createStyles(c: AppColors) {
       fontWeight: '500',
     },
     more: {
-      width: HIT_TARGET * 0.64,
-      height: HIT_TARGET * 0.64,
+      position: 'absolute',
+      top: 0,
+      right: 0,
+      width: HIT_TARGET,
+      height: HIT_TARGET,
       alignItems: 'center',
       justifyContent: 'center',
       borderRadius: radius.full,

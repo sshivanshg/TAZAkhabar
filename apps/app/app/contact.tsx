@@ -1,9 +1,11 @@
 import { useMemo } from 'react'
 import { Linking, Pressable, ScrollView, StyleSheet, View } from 'react-native'
-import { Stack } from 'expo-router'
+import { Stack, useRouter } from 'expo-router'
 import { Text } from '@gluestack-ui/themed'
 import Mail from 'lucide-react-native/icons/mail'
 import Globe from 'lucide-react-native/icons/globe'
+import ArrowLeft from 'lucide-react-native/icons/arrow-left'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Card } from '../src/components/ui/Card'
 import { ScreenErrorBoundary } from '../src/components/ScreenErrorBoundary'
 import { useTheme } from '../src/preferences/ThemePreferenceContext'
@@ -14,7 +16,7 @@ import { iconStroke } from '../src/theme/categoryIcons'
 export default function ContactScreen() {
   return (
     <ScreenErrorBoundary name="contact">
-      <Stack.Screen options={{ title: 'Contact us', headerShown: true }} />
+      <Stack.Screen options={{ title: 'Contact us', headerShown: false }} />
       <ContactBody />
     </ScreenErrorBoundary>
   )
@@ -24,67 +26,135 @@ function ContactBody() {
   const { colors } = useTheme()
   const styles = useMemo(() => createStyles(colors), [colors])
   const contactUrl = getContactPageUrl()
+  const router = useRouter()
+  const insets = useSafeAreaInsets()
+
+  // Opened directly (deep link / refresh) there is no history: fall back home.
+  const onBack = () => {
+    if (router.canGoBack()) {
+      router.back()
+    } else {
+      router.replace('/')
+    }
+  }
 
   return (
-    <ScrollView contentContainerStyle={styles.content} testID="contact-screen">
-      <Text style={styles.kicker}>CONTACT US</Text>
-      <Text style={styles.title} accessibilityRole="header">Contact Khabro</Text>
-      <Card>
-        <View style={styles.body}>
-          <Text style={styles.label}>Developer / publisher</Text>
-          <Text style={styles.value}>{DEVELOPER_NAME}</Text>
-
-          <Text style={[styles.label, styles.gap]}>Email</Text>
+    <ScrollView
+      contentContainerStyle={[styles.content, { paddingTop: Math.max(insets.top, 0) + space.sm }]}
+      testID="contact-screen"
+    >
+      <View style={styles.column}>
+        <View style={styles.header}>
           <Pressable
-            onPress={() => void Linking.openURL(`mailto:${CONTACT_EMAIL}`)}
-            accessibilityRole="link"
-            accessibilityLabel={`Email Khabro at ${CONTACT_EMAIL}`}
-            style={({ pressed }) => [styles.action, pressed ? styles.pressed : null]}
+            onPress={onBack}
+            accessibilityRole="button"
+            accessibilityLabel="Go back"
+            hitSlop={4}
+            style={({ pressed }) => [styles.back, pressed ? styles.pressed : null]}
           >
-            <Mail size={18} strokeWidth={iconStroke} color={colors.accent} />
-            <Text style={styles.actionText}>{CONTACT_EMAIL}</Text>
+            <ArrowLeft size={22} strokeWidth={iconStroke} color={colors.text} />
           </Pressable>
-          <Text style={styles.note}>
-            For app support, privacy questions, publisher requests, corrections, or takedown
-            requests.
-          </Text>
-
-          <Text style={[styles.label, styles.gap]}>Website</Text>
-          <Pressable
-            onPress={() => void Linking.openURL(contactUrl)}
-            accessibilityRole="link"
-            accessibilityLabel="Open the Khabro website contact page"
-            style={({ pressed }) => [styles.action, pressed ? styles.pressed : null]}
-          >
-            <Globe size={18} strokeWidth={iconStroke} color={colors.accent} />
-            <Text style={styles.actionText}>{contactUrl.replace(/^https?:\/\//, '')}</Text>
-          </Pressable>
-        </View>
-      </Card>
-      <Card style={styles.cardGap}>
-        <View style={styles.body}>
-          <Text style={styles.label}>About our content</Text>
-          <Text style={styles.note}>
-            Khabro is a news aggregator. Articles belong to their original publishers; every story
-            shows its source and links to the original article.
+          <Text style={styles.title} accessibilityRole="header">
+            Contact us
           </Text>
         </View>
-      </Card>
+        <Card>
+          <View style={styles.body}>
+            <Text style={styles.label}>Developer / publisher</Text>
+            <Text style={styles.value}>{DEVELOPER_NAME}</Text>
+
+            <Text style={[styles.label, styles.gap]}>Email</Text>
+            <Pressable
+              onPress={() => void Linking.openURL(`mailto:${CONTACT_EMAIL}`)}
+              accessibilityRole="link"
+              accessibilityLabel={`Email Khabro at ${CONTACT_EMAIL}`}
+              style={({ pressed }) => [styles.action, pressed ? styles.pressed : null]}
+            >
+              <Mail size={18} strokeWidth={iconStroke} color={colors.accent} />
+              <Text style={styles.actionText}>{CONTACT_EMAIL}</Text>
+            </Pressable>
+            <Text style={styles.note}>
+              For app support, privacy questions, publisher requests, corrections, or takedown
+              requests.
+            </Text>
+
+            <Text style={[styles.label, styles.gap]}>Website</Text>
+            <Pressable
+              onPress={() => void Linking.openURL(contactUrl)}
+              accessibilityRole="link"
+              accessibilityLabel="Open the Khabro website contact page"
+              style={({ pressed }) => [styles.action, pressed ? styles.pressed : null]}
+            >
+              <Globe size={18} strokeWidth={iconStroke} color={colors.accent} />
+              <Text style={styles.actionText}>{contactUrl.replace(/^https?:\/\//, '')}</Text>
+            </Pressable>
+          </View>
+        </Card>
+        <Card style={styles.cardGap}>
+          <View style={styles.body}>
+            <Text style={styles.label}>About our content</Text>
+            <Text style={styles.note}>
+              Khabro is a news aggregator. Articles belong to their original publishers; every story
+              shows its source and links to the original article.
+            </Text>
+          </View>
+        </Card>
+      </View>
     </ScrollView>
   )
 }
 
 function createStyles(c: AppColors) {
   return StyleSheet.create({
-    content: { padding: space.lg, paddingBottom: space.xl, backgroundColor: c.background, flexGrow: 1 },
-    kicker: { color: c.accent, fontSize: 12, lineHeight: 18, fontWeight: '800', letterSpacing: 1.4 },
-    title: { color: c.text, fontSize: 24, lineHeight: 30, fontWeight: '700', marginBottom: space.md },
+    content: {
+      padding: space.screen,
+      paddingBottom: space.xl,
+      backgroundColor: c.background,
+      flexGrow: 1,
+    },
+    // Fix 8: cap the reading column at 720 and centre it on wide screens.
+    column: { width: '100%', maxWidth: 720, alignSelf: 'center' },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: space.xs,
+      marginBottom: space.md,
+      marginLeft: -space.xs,
+    },
+    back: {
+      width: HIT_TARGET,
+      height: HIT_TARGET,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: HIT_TARGET / 2,
+    },
+    title: {
+      color: c.text,
+      fontSize: 24,
+      lineHeight: 30,
+      fontWeight: '700',
+    },
     body: { padding: space.lg },
     cardGap: { marginTop: space.md },
-    label: { color: c.textMuted, fontSize: typography.meta.fontSize, lineHeight: typography.meta.lineHeight, fontWeight: '700' },
-    value: { color: c.text, fontSize: typography.bodySemibold.fontSize, lineHeight: typography.bodySemibold.lineHeight, fontWeight: '700' },
+    label: {
+      color: c.textMuted,
+      fontSize: typography.meta.fontSize,
+      lineHeight: typography.meta.lineHeight,
+      fontWeight: '700',
+    },
+    value: {
+      color: c.text,
+      fontSize: typography.bodySemibold.fontSize,
+      lineHeight: typography.bodySemibold.lineHeight,
+      fontWeight: '700',
+    },
     gap: { marginTop: space.md },
-    note: { color: c.textSecondary, fontSize: typography.summary.fontSize, lineHeight: typography.summary.lineHeight, marginTop: space.xs },
+    note: {
+      color: c.textSecondary,
+      fontSize: typography.summary.fontSize,
+      lineHeight: typography.summary.lineHeight,
+      marginTop: space.xs,
+    },
     action: {
       minHeight: HIT_TARGET,
       alignSelf: 'flex-start',
@@ -97,6 +167,11 @@ function createStyles(c: AppColors) {
       marginTop: space.xs,
     },
     pressed: { opacity: 0.82 },
-    actionText: { color: c.accent, fontSize: typography.bodySemibold.fontSize, lineHeight: typography.bodySemibold.lineHeight, fontWeight: '700' },
+    actionText: {
+      color: c.accent,
+      fontSize: typography.bodySemibold.fontSize,
+      lineHeight: typography.bodySemibold.lineHeight,
+      fontWeight: '700',
+    },
   })
 }

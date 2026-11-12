@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, View } from 'react-native'
 import { Text } from '@gluestack-ui/themed'
 import { useTheme } from '../preferences/ThemePreferenceContext'
 import { goToGlobalHome } from '../navigation/goToGlobalHome'
-import { HIT_TARGET, radius, space, typography, type AppColors } from '../theme/tokens'
+import { HIT_TARGET, radius, space, type AppColors } from '../theme/tokens'
 import { BrandMark } from './BrandMark'
 
 type Props = {
@@ -37,8 +37,8 @@ export function BrandHomeButton({ size = 28, showWordmark = false }: Props) {
       {showWordmark ? (
         <View style={styles.wordmarkBlock}>
           <Text
-            fontSize={typography.label.fontSize}
-            lineHeight={typography.label.lineHeight}
+            fontSize={17}
+            lineHeight={22}
             fontWeight="$bold"
             color={colors.text}
             numberOfLines={1}

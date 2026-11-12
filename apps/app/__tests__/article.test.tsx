@@ -18,6 +18,7 @@ jest.mock('expo-router', () => ({
     replace: mockReplace,
   }),
   useLocalSearchParams: () => mockParams,
+  usePathname: () => '/article/1',
 }))
 
 jest.mock('../src/api/client', () => ({
@@ -264,5 +265,77 @@ describe('ArticleScreen', () => {
     expect(await screen.findByText('Fetched headline')).toBeTruthy()
     expect(screen.queryByText('Read original article ↗')).toBeNull()
     expect(screen.getAllByText(/City Desk/).length).toBeGreaterThan(0)
+  })
+
+  it('deep link outside the first page opens that exact story first', async () => {
+    mockParams.id = '7'
+    mockGetArticles.mockResolvedValue({ items: [second], total: 40, offset: 0, limit: 20 })
+    mockGetArticle.mockResolvedValue(fetched)
+    renderArticle()
+
+    expect(await screen.findByText('Fetched headline')).toBeTruthy()
+    const feed = screen.UNSAFE_getByType(FlatList)
+    expect((feed.props.data as ArticleResponse[])[0]?.id).toBe(7)
+    expect(mockGetArticle).toHaveBeenCalledWith('7', expect.anything())
+  })
+
+  it('shows no error block when the story simply has no body', async () => {
+    mockGetArticle.mockResolvedValue({ ...listed, body: null })
+    renderArticle()
+
+    expect(await screen.findByText('Fetched headline')).toBeTruthy()
+    await waitFor(() => expect(mockGetArticle).toHaveBeenCalled())
+    expect(screen.queryByText('Unable to load this story.')).toBeNull()
+  })
+
+  it('shows error + working Retry only when the body fetch fails', async () => {
+    mockGetArticles.mockResolvedValue({
+      items: [{ ...listed, summary: '' }],
+      total: 1,
+      offset: 0,
+      limit: 20,
+    })
+    mockGetArticle.mockRejectedValue(new Error('network'))
+    renderArticle()
+
+    expect(await screen.findAllByText('Unable to load this story.')).toBeTruthy()
+    const callsBefore = mockGetArticle.mock.calls.length
+    mockGetArticle.mockResolvedValue(fetched)
+    await act(async () => {
+      fireEvent.press(screen.getAllByLabelText(/retry/i)[0]!)
+    })
+    await waitFor(() => expect(mockGetArticle.mock.calls.length).toBeGreaterThan(callsBefore))
+    expect(await screen.findByText('Full story from the publisher.')).toBeTruthy()
+    expect(screen.queryByText('Unable to load this story.')).toBeNull()
+  })
+
+  it('drops a stale hydrate result that settles after a feed reload', async () => {
+    mockGetArticles.mockResolvedValue({
+      items: [{ ...listed, summary: '' }],
+      total: 1,
+      offset: 0,
+      limit: 20,
+    })
+    let rejectStale: (err: Error) => void = () => {}
+    mockGetArticle.mockImplementationOnce(
+      () => new Promise((_, reject) => {
+        rejectStale = reject
+      }),
+    )
+    mockGetArticle.mockImplementation(() => new Promise(() => {}))
+    renderArticle()
+
+    await screen.findByText('Fetched headline')
+    await waitFor(() => expect(mockGetArticle).toHaveBeenCalledTimes(1))
+
+    const feed = screen.UNSAFE_getByType(FlatList)
+    await act(async () => {
+      await feed.props.refreshControl.props.onRefresh()
+    })
+    await act(async () => {
+      rejectStale(new Error('late network failure'))
+    })
+
+    expect(screen.queryByText('Unable to load this story.')).toBeNull()
   })
 })

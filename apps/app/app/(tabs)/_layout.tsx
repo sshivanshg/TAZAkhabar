@@ -8,13 +8,15 @@ import User from 'lucide-react-native/icons/user'
 import { MotiView } from 'moti'
 import {
   space,
-  TAB_BAR_HEIGHT,
   type AppColors,
 } from '../../src/theme/tokens'
 import { iconStroke } from '../../src/theme/categoryIcons'
 import { ScreenErrorBoundary } from '../../src/components/ScreenErrorBoundary'
 import { isExpandedLayout, useBreakpoint } from '../../src/hooks/useBreakpoint'
 import { useTheme } from '../../src/preferences/ThemePreferenceContext'
+
+/** Spec 2026-11-12 #13: room for the 13px label under the icon pill. */
+const TAB_BAR_HEIGHT = 76
 
 function TabIcon({
   Icon,
@@ -94,9 +96,10 @@ export default function TabsLayout() {
             tabBarActiveTintColor: colors.accent,
             tabBarInactiveTintColor: colors.textMuted,
             tabBarLabelStyle: {
-              fontSize: 11,
+              fontSize: 13,
+              lineHeight: 16,
               fontWeight: '600',
-              letterSpacing: 0.2,
+              letterSpacing: 0.1,
             },
           }}
         >
@@ -124,6 +127,8 @@ export default function TabsLayout() {
             name="profile"
             options={{
               title: 'Profile',
+              // Title renders in-page inside the 720 column (not at the rail edge).
+              headerShown: false,
               tabBarLabel: 'Profile',
               tabBarIcon: ({ focused }) => <TabIcon Icon={User} focused={focused} />,
               tabBarAccessibilityLabel: 'Profile and settings',
@@ -161,6 +166,7 @@ function createStyles(c: AppColors) {
       justifyContent: 'center',
       borderRadius: 16,
       paddingHorizontal: 16,
+      marginBottom: 2,
     },
   })
 }

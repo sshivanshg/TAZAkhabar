@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, type StyleProp, type ViewStyle } from 'react-nat
 import { Text } from '@gluestack-ui/themed'
 import { MotiView } from 'moti'
 import { useTheme } from '../../preferences/ThemePreferenceContext'
-import { radius, space, typography, type AppColors } from '../../theme/tokens'
+import { HIT_TARGET, radius, space, typography, type AppColors } from '../../theme/tokens'
 
 type Props = {
   label: string
@@ -68,7 +68,7 @@ export function Chip({
 function createStyles(c: AppColors) {
   return StyleSheet.create({
     chip: {
-      minHeight: 36,
+      minHeight: HIT_TARGET,
       paddingHorizontal: space.md,
       borderRadius: radius.full,
       justifyContent: 'center',

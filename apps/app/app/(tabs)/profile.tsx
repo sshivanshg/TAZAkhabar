@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState, type ReactNode } from 'react'
-import { Linking, Pressable, ScrollView, StyleSheet, View } from 'react-native'
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import Constants from 'expo-constants'
 import { useFocusEffect, useRouter } from 'expo-router'
@@ -24,12 +24,17 @@ import { PublicLinks } from '../../src/components/PublicLinks'
 import { useFeedPreferences } from '../../src/preferences/FeedPreferencesContext'
 import { useLanguagePreference } from '../../src/preferences/LanguagePreferenceContext'
 import { useTheme } from '../../src/preferences/ThemePreferenceContext'
-import { registerNewsNotifications, suppressNotificationPrompt } from '../../src/notifications/registerNotifications'
-import { getNotificationPromptState, getNotificationPlatform, getOrCreateNotificationClientId } from '../../src/storage/notificationPreferences'
-import { READING_LANGUAGES } from '../../src/storage/languagePreference'
 import {
-  type ThemePreference,
-} from '../../src/storage/themePreference'
+  registerNewsNotifications,
+  suppressNotificationPrompt,
+} from '../../src/notifications/registerNotifications'
+import {
+  getNotificationPromptState,
+  getNotificationPlatform,
+  getOrCreateNotificationClientId,
+} from '../../src/storage/notificationPreferences'
+import { READING_LANGUAGES } from '../../src/storage/languagePreference'
+import { type ThemePreference } from '../../src/storage/themePreference'
 import {
   getCityDisplayLabel,
   getStoredCitySlug,
@@ -40,7 +45,6 @@ import { iconStroke } from '../../src/theme/categoryIcons'
 import { useTabBarClearance } from '../../src/theme/useTabBarClearance'
 import { isDesktopLayout, useBreakpoint } from '../../src/hooks/useBreakpoint'
 
-import { CONTACT_EMAIL } from '../../src/config/contact'
 
 export default function ProfileScreen() {
   return (
@@ -56,8 +60,7 @@ function ProfileBody() {
   const router = useRouter()
   const insets = useSafeAreaInsets()
   const prefs = useFeedPreferences()
-  const { preferredLanguage, setPreferredLanguage, ready: languageReady } =
-    useLanguagePreference()
+  const { preferredLanguage, setPreferredLanguage, ready: languageReady } = useLanguagePreference()
   const {
     colors,
     preference: themePreference,
@@ -70,7 +73,9 @@ function ProfileBody() {
   const desktop = isDesktopLayout(useBreakpoint())
   const [cityMeta, setCityMeta] = useState<CityResponse | null>(null)
   const [citySlug, setCitySlug] = useState<string | null>(null)
-  const [notificationStatus, setNotificationStatus] = useState<'unknown' | 'granted' | 'denied' | 'dismissed'>('unknown')
+  const [notificationStatus, setNotificationStatus] = useState<
+    'unknown' | 'granted' | 'denied' | 'dismissed'
+  >('unknown')
   const [notificationBusy, setNotificationBusy] = useState(false)
   const [notificationError, setNotificationError] = useState<string | null>(null)
 
@@ -103,8 +108,7 @@ function ProfileBody() {
   )
 
   const cityTitle = getCityDisplayLabel(citySlug ?? GLOBAL_CITY_SLUG, cityMeta?.name)
-  const version =
-    Constants.expoConfig?.version ?? Constants.nativeAppVersion ?? '0.1.0'
+  const version = Constants.expoConfig?.version ?? Constants.nativeAppVersion ?? '0.1.0'
 
   return (
     <MotiView
@@ -117,28 +121,24 @@ function ProfileBody() {
         contentContainerStyle={[
           styles.content,
           {
-            paddingTop: desktop
-              ? space.md
-              : Math.max(insets.top, space.xs) + space.md,
-            paddingBottom: desktop
-              ? space.xl
-              : tabClearance + Math.max(insets.bottom, 0),
+            paddingTop: desktop ? space.md : Math.max(insets.top, space.xs) + space.md,
+            paddingBottom: desktop ? space.xl : tabClearance + Math.max(insets.bottom, 0),
           },
         ]}
       >
         <View style={styles.pageHeader}>
-          <Text style={styles.kicker}>YOUR ACCOUNT</Text>
           <Text
             fontSize={24}
             lineHeight={30}
             fontWeight="$bold"
             color={colors.text}
+            accessibilityRole="header"
           >
-            Settings
+            Profile
           </Text>
           <Text
-            fontSize={14}
-            lineHeight={20}
+            fontSize={typography.summary.fontSize}
+            lineHeight={typography.summary.lineHeight}
             color={colors.textSecondary}
             mt="$1"
           >
@@ -152,7 +152,9 @@ function ProfileBody() {
           accessibilityRole="button"
           accessibilityLabel={`Change city from ${cityTitle}`}
         >
-          <View style={styles.welcomeIcon}><MapPin size={22} color={colors.textOnAccent} strokeWidth={2.2} /></View>
+          <View style={styles.welcomeIcon}>
+            <MapPin size={22} color={colors.textOnAccent} strokeWidth={2.2} />
+          </View>
           <View style={styles.welcomeCopy}>
             <Text style={styles.welcomeTitle}>{cityTitle}</Text>
             <Text style={styles.welcomeSubtitle}>Your local news edition</Text>
@@ -195,7 +197,7 @@ function ProfileBody() {
                     fontSize={typography.label.fontSize}
                     lineHeight={typography.label.lineHeight}
                     fontWeight="$semibold"
-                    color={selected ? colors.chipSelectedText : colors.chipInactiveText}
+                    color={selected ? colors.chipSelectedText : colors.text}
                   >
                     {option.label}
                   </Text>
@@ -240,7 +242,7 @@ function ProfileBody() {
                     fontSize={typography.label.fontSize}
                     lineHeight={typography.label.lineHeight}
                     fontWeight="$semibold"
-                    color={selected ? colors.chipSelectedText : colors.chipInactiveText}
+                    color={selected ? colors.chipSelectedText : colors.text}
                   >
                     {lang.label}
                   </Text>
@@ -277,7 +279,8 @@ function ProfileBody() {
             color={colors.textSecondary}
             mb="$3"
           >
-            Turn on city-specific news alerts for breaking stories. We ask once, then back off if you say not now.
+            Turn on city-specific news alerts for breaking stories. We ask once, then back off if
+            you say not now.
           </Text>
           <Text
             fontSize={typography.bodySemibold.fontSize}
@@ -286,7 +289,12 @@ function ProfileBody() {
             color={colors.text}
             mb="$2"
           >
-            Status: {notificationStatus === 'granted' ? 'On' : notificationStatus === 'denied' ? 'Off' : 'Not set'}
+            Status:{' '}
+            {notificationStatus === 'granted'
+              ? 'On'
+              : notificationStatus === 'denied'
+                ? 'Off'
+                : 'Not set'}
           </Text>
           {notificationError ? (
             <Text
@@ -329,7 +337,8 @@ function ProfileBody() {
                     if (result.status === 'denied') {
                       await suppressNotificationPrompt('denied')
                       setNotificationError(
-                        result.reason ?? 'Notifications are blocked for this app. Check device or browser settings.',
+                        result.reason ??
+                          'Notifications are blocked for this app. Check device or browser settings.',
                       )
                     } else if (result.status === 'unsupported') {
                       await suppressNotificationPrompt('dismissed')
@@ -376,53 +385,46 @@ function ProfileBody() {
           </View>
         </Section>
 
-        <Section title="Contact us" Icon={Mail}>
-          <Text
-            fontSize={typography.summary.fontSize}
-            lineHeight={typography.summary.lineHeight}
-            color={colors.textSecondary}
-            mb="$3"
-          >
-            For app support, privacy questions, publisher requests, corrections, or other Khabro
-            contact needs, email the developer team.
-          </Text>
+        {/* Single contact entry point: the card opens the in-app /contact page. */}
+        <View style={styles.section}>
           <Pressable
-            onPress={() => {
-              void Linking.openURL(`mailto:${CONTACT_EMAIL}`)
-            }}
-            accessibilityRole="link"
-            accessibilityLabel={`Email Khabro at ${CONTACT_EMAIL}`}
-            style={({ pressed }) => [styles.contactEmail, pressed ? styles.contactEmailPressed : null]}
-          >
-            <Mail size={18} strokeWidth={iconStroke} color={colors.accent} />
-            <Text style={styles.contactEmailText}>{CONTACT_EMAIL}</Text>
-          </Pressable>
-          <Text
-            fontSize={typography.meta.fontSize}
-            lineHeight={typography.meta.lineHeight}
-            color={colors.textMuted}
-            mt="$3"
-          >
-            This address is also listed on the Khabro website contact page.
-          </Text>
-          <SecondaryButton
-            label="Open Contact us page"
             onPress={() => router.push('/contact')}
-            accessibilityLabel="Open Contact us page"
-            style={styles.contactPageButton}
-            outline
-          />
-        </Section>
+            accessibilityRole="link"
+            accessibilityLabel="Contact us"
+            accessibilityHint="Opens the contact page"
+            style={({ pressed }) => [pressed ? styles.contactEmailPressed : null]}
+          >
+            <Card>
+              <View style={[styles.cardBody, styles.contactCardRow]}>
+                <Mail size={18} strokeWidth={iconStroke} color={colors.accent} />
+                <View style={styles.contactCardCopy}>
+                  <Text
+                    fontSize={typography.headlineSm.fontSize}
+                    lineHeight={typography.headlineSm.lineHeight}
+                    fontWeight="$semibold"
+                    color={colors.text}
+                  >
+                    Contact us
+                  </Text>
+                  <Text
+                    fontSize={typography.summary.fontSize}
+                    lineHeight={typography.summary.lineHeight}
+                    color={colors.textSecondary}
+                    mt="$1"
+                  >
+                    Support, privacy, publisher requests and corrections.
+                  </Text>
+                </View>
+                <ChevronRight size={20} strokeWidth={iconStroke} color={colors.textMuted} />
+              </View>
+            </Card>
+          </Pressable>
+        </View>
 
         <Section title="About this app" Icon={Info}>
-          <Text
-            fontSize={typography.summary.fontSize}
-            lineHeight={24}
-            color={colors.textSecondary}
-          >
-            Khabro is a local news summary you can add to your home screen. No login — pick a
-            city, read short summaries, save stories on this device, and share to WhatsApp in one
-            tap.
+          <Text fontSize={typography.summary.fontSize} lineHeight={24} color={colors.textSecondary}>
+            Khabro is a local news summary you can add to your home screen. No login — pick a city,
+            read short summaries, save stories on this device, and share to WhatsApp in one tap.
           </Text>
           <Text
             fontSize={typography.label.fontSize}
@@ -441,16 +443,7 @@ function ProfileBody() {
           >
             Khabro is a news aggregator. Articles belong to their original publishers.
           </Text>
-          <Pressable
-            onPress={() => router.push('/contact')}
-            accessibilityRole="link"
-            accessibilityLabel="Contact us"
-            style={({ pressed }) => [styles.contactEmail, styles.aboutContact, pressed ? styles.contactEmailPressed : null]}
-          >
-            <Mail size={18} strokeWidth={iconStroke} color={colors.accent} />
-            <Text style={styles.contactEmailText}>Contact us</Text>
-          </Pressable>
-          <PublicLinks />
+          <PublicLinks exclude={['contact']} />
         </Section>
       </ScrollView>
     </MotiView>
@@ -579,17 +572,13 @@ function createStyles(c: AppColors) {
     },
     content: {
       paddingHorizontal: space.screen,
+      // Fix 8: centred 720 column on wide screens.
+      width: '100%',
+      maxWidth: 720,
+      alignSelf: 'center',
     },
     pageHeader: {
       paddingBottom: space.md,
-    },
-    kicker: {
-      color: c.accent,
-      fontSize: 12,
-      lineHeight: 18,
-      fontWeight: '800',
-      letterSpacing: 1.4,
-      marginBottom: space.xs,
     },
     welcomeCard: {
       minHeight: 86,
@@ -609,7 +598,8 @@ function createStyles(c: AppColors) {
       width: 48,
       height: 48,
       borderRadius: 16,
-      backgroundColor: 'rgba(255,255,255,0.18)',
+      borderWidth: 1.5,
+      borderColor: c.textOnAccentMuted,
       alignItems: 'center',
       justifyContent: 'center',
     },
@@ -624,9 +614,9 @@ function createStyles(c: AppColors) {
       fontWeight: '800',
     },
     welcomeSubtitle: {
-      color: 'rgba(255,255,255,0.82)',
-      fontSize: 14,
-      lineHeight: 20,
+      color: c.textOnAccentMuted,
+      fontSize: typography.label.fontSize,
+      lineHeight: typography.label.lineHeight,
       marginTop: 2,
     },
     section: {
@@ -651,12 +641,14 @@ function createStyles(c: AppColors) {
       gap: space.xs,
     },
     langChip: {
-      minHeight: HIT_TARGET - 8,
+      minHeight: HIT_TARGET,
       paddingHorizontal: space.md,
       paddingVertical: space.xs,
       borderRadius: 999,
-      borderWidth: StyleSheet.hairlineWidth,
-      borderColor: c.chipInactiveBorder,
+      // Unselected chips need a full-strength border + text so dark mode
+      // doesn't read them as disabled.
+      borderWidth: 1,
+      borderColor: c.textMuted,
       backgroundColor: c.surface,
       justifyContent: 'center',
     },
@@ -674,31 +666,17 @@ function createStyles(c: AppColors) {
     alertSecondary: {
       alignSelf: 'flex-start',
     },
-    contactEmail: {
-      minHeight: HIT_TARGET,
-      alignSelf: 'flex-start',
+    contactCardRow: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: space.xs,
-      paddingHorizontal: space.sm,
-      borderRadius: 12,
-      backgroundColor: c.surfaceRaised,
+      gap: space.sm,
     },
-    contactPageButton: {
-      alignSelf: 'flex-start',
-      marginTop: space.sm,
-    },
-    aboutContact: {
-      marginTop: space.sm,
+    contactCardCopy: {
+      flex: 1,
+      minWidth: 0,
     },
     contactEmailPressed: {
       opacity: 0.82,
-    },
-    contactEmailText: {
-      color: c.accent,
-      fontSize: typography.bodySemibold.fontSize,
-      lineHeight: typography.bodySemibold.lineHeight,
-      fontWeight: '700',
     },
     spacer: {
       height: space.md,

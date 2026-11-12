@@ -2,6 +2,10 @@ import { useMemo } from 'react'
 import { Platform, StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useTheme } from '../../preferences/ThemePreferenceContext'
+import { useShellSidebarInset } from '../desktop/AppShell'
+import type { getShadows } from '../../theme/tokens'
+
+type Shadows = ReturnType<typeof getShadows>
 import { ARTICLE_BOTTOM_BAR_HEIGHT, type ReaderColors } from '../../theme/readerTokens'
 import { ArticleActions } from './ArticleActions'
 
@@ -11,14 +15,11 @@ type Props = {
   onSave: () => void
 }
 
-export function ArticleBottomBar({
-  bookmarked,
-  onShare,
-  onSave,
-}: Props) {
+export function ArticleBottomBar({ bookmarked, onShare, onSave }: Props) {
   const insets = useSafeAreaInsets()
-  const { readerColors } = useTheme()
-  const styles = useMemo(() => createStyles(readerColors), [readerColors])
+  const sidebarInset = useShellSidebarInset()
+  const { readerColors, shadows } = useTheme()
+  const styles = useMemo(() => createStyles(readerColors, shadows), [readerColors, shadows])
 
   return (
     <View
@@ -28,21 +29,18 @@ export function ArticleBottomBar({
         styles.wrap,
         {
           paddingBottom: Math.max(insets.bottom, 8),
+          left: sidebarInset,
         },
       ]}
     >
       <View style={styles.shell}>
-        <ArticleActions
-          bookmarked={bookmarked}
-          onShare={onShare}
-          onSave={onSave}
-        />
+        <ArticleActions bookmarked={bookmarked} onShare={onShare} onSave={onSave} />
       </View>
     </View>
   )
 }
 
-function createStyles(c: ReaderColors) {
+function createStyles(c: ReaderColors, sh: Shadows) {
   return StyleSheet.create({
     wrap: {
       // Web: fixed to the viewport so document/list growth cannot drag the bar.
@@ -53,27 +51,20 @@ function createStyles(c: ReaderColors) {
       bottom: 0,
       zIndex: 20,
       minHeight: ARTICLE_BOTTOM_BAR_HEIGHT,
-      paddingHorizontal: 12,
+      // Fix 11: anchored flush to the viewport edge with a solid surface, so
+      // content never shows through or around a floating pill.
       paddingTop: 6,
+      backgroundColor: c.headerSolid,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: c.sheetBorder,
+      ...sh.floating,
     },
     shell: {
       width: '100%',
       maxWidth: 760,
       alignSelf: 'center',
-      borderRadius: 24,
-      overflow: 'hidden',
+      paddingHorizontal: 12,
       backgroundColor: c.headerSolid,
-      ...(Platform.OS === 'web'
-        ? ({
-            boxShadow: '0px -10px 34px rgba(16, 24, 40, 0.12)',
-          } as object)
-        : {
-            shadowColor: '#101828',
-            shadowOffset: { width: 0, height: 8 },
-            shadowOpacity: 0.08,
-            shadowRadius: 20,
-            elevation: 5,
-          }),
     },
   })
 }

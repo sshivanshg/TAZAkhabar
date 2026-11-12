@@ -19,7 +19,7 @@ import LocateFixed from 'lucide-react-native/icons/locate-fixed'
 import Search from 'lucide-react-native/icons/search'
 import type { CityResponse } from '@tazakhabar/shared-types'
 import { useTheme } from '../preferences/ThemePreferenceContext'
-import { getShadows, radius, space, type AppColors } from '../theme/tokens'
+import { getShadows, HIT_TARGET, radius, space, type AppColors } from '../theme/tokens'
 import { iconStroke } from '../theme/categoryIcons'
 import { filterCities } from './CitySearch'
 
@@ -339,7 +339,7 @@ function createStyles(c: AppColors, shadows: ReturnType<typeof getShadows>) {
       marginTop: space.sm,
       marginBottom: space.xxs,
       paddingHorizontal: space.sm,
-      minHeight: 36,
+      minHeight: HIT_TARGET,
       borderRadius: radius.xs,
       backgroundColor: c.surfaceRaised,
     },
@@ -349,7 +349,7 @@ function createStyles(c: AppColors, shadows: ReturnType<typeof getShadows>) {
       lineHeight: 20,
       color: c.text,
       paddingVertical: 0,
-      minHeight: 36,
+      minHeight: HIT_TARGET,
       ...(Platform.OS === 'web'
         ? ({ outlineStyle: 'none', outlineWidth: 0 } as object)
         : null),
@@ -358,18 +358,18 @@ function createStyles(c: AppColors, shadows: ReturnType<typeof getShadows>) {
       flexDirection: 'row',
       alignItems: 'center',
       gap: space.xs,
-      minHeight: 36,
+      minHeight: HIT_TARGET,
       paddingHorizontal: space.md,
     },
     locateText: {
-      fontSize: 14,
-      lineHeight: 18,
+      fontSize: 16,
+      lineHeight: 22,
       fontWeight: '500',
       color: c.accent,
     },
     locationMessage: {
-      fontSize: 12,
-      lineHeight: 16,
+      fontSize: 14,
+      lineHeight: 20,
       color: c.textMuted,
       paddingHorizontal: space.md,
       paddingBottom: space.xxs,
@@ -381,7 +381,7 @@ function createStyles(c: AppColors, shadows: ReturnType<typeof getShadows>) {
       paddingBottom: space.xxs,
     },
     row: {
-      minHeight: 36,
+      minHeight: HIT_TARGET,
       paddingHorizontal: space.md,
       flexDirection: 'row',
       alignItems: 'center',
@@ -398,8 +398,8 @@ function createStyles(c: AppColors, shadows: ReturnType<typeof getShadows>) {
     },
     rowLabel: {
       flex: 1,
-      fontSize: 14,
-      lineHeight: 18,
+      fontSize: 16,
+      lineHeight: 22,
       color: c.text,
     },
     rowLabelSelected: {
@@ -411,15 +411,15 @@ function createStyles(c: AppColors, shadows: ReturnType<typeof getShadows>) {
       paddingVertical: space.lg,
     },
     emptyText: {
-      fontSize: 13,
-      lineHeight: 18,
+      fontSize: 15,
+      lineHeight: 20,
       color: c.textMuted,
       textAlign: 'center',
       paddingVertical: space.lg,
     },
     errorText: {
-      fontSize: 13,
-      lineHeight: 18,
+      fontSize: 15,
+      lineHeight: 20,
       color: c.destructive,
       textAlign: 'center',
       paddingVertical: space.lg,

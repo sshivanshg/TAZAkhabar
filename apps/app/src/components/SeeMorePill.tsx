@@ -3,7 +3,7 @@ import { Pressable, StyleSheet } from 'react-native'
 import { Text } from '@gluestack-ui/themed'
 import Newspaper from 'lucide-react-native/icons/newspaper'
 import { useTheme } from '../preferences/ThemePreferenceContext'
-import { radius, space, typography, type AppColors } from '../theme/tokens'
+import { HIT_TARGET, radius, space, typography, type AppColors } from '../theme/tokens'
 import { iconStroke } from '../theme/categoryIcons'
 
 type Props = {
@@ -21,7 +21,6 @@ export function SeeMorePill({ onPress, accessibilityLabel = 'See more' }: Props)
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
-      hitSlop={6}
       style={({ pressed }) => [styles.pill, pressed ? styles.pressed : null]}
     >
       <Newspaper size={14} strokeWidth={iconStroke} color={colors.accent} />
@@ -43,7 +42,7 @@ function createStyles(c: AppColors) {
       flexDirection: 'row',
       alignItems: 'center',
       gap: 5,
-      minHeight: 32,
+      minHeight: HIT_TARGET,
       paddingHorizontal: space.sm,
       borderRadius: radius.full,
       borderWidth: 1,

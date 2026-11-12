@@ -155,6 +155,7 @@ function ArticleFeedBody() {
   const [notice, setNotice] = useState<string | null>(null)
   const [shareTarget, setShareTarget] = useState<ArticleResponse | null>(null)
   const [loadingBodyIds, setLoadingBodyIds] = useState<Set<number>>(() => new Set())
+  const [failedBodyIds, setFailedBodyIds] = useState<Set<number>>(() => new Set())
   const offsetRef = useRef(0)
   const loadingMoreRef = useRef(false)
   const hydratedIdsRef = useRef(new Set<number>())
@@ -163,6 +164,14 @@ function ArticleFeedBody() {
   const pageCountRef = useRef(1)
   const activeIndexRef = useRef(0)
   const headerElevatedRef = useRef(false)
+  // Deep links: until the reader actually scrolls, the opened id stays active.
+  // Web relayout (pageHeight settles after mount) can emit viewability/snap
+  // events for page 1, which previously advanced to — and rewrote the URL to —
+  // the NEXT story.
+  const userScrolledRef = useRef(false)
+  // Bumped on lang reset / feed reload so late hydrate results are dropped.
+  const hydrateGenRef = useRef(0)
+  const [stackEpoch, setStackEpoch] = useState(0)
   const noticeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => setWebRobots('noindex,nofollow'), [])
@@ -239,8 +248,12 @@ function ArticleFeedBody() {
       }
 
       const safeStart = Math.max(0, startIndex)
-      offsetRef.current = items.length
+      // Count only feed-page items: a prepended deep-linked story is not part of the page.
+      offsetRef.current = first.items?.length ?? 0
+      userScrolledRef.current = false
+      hydrateGenRef.current += 1
       hydratedIdsRef.current = new Set()
+      setStackEpoch((n) => n + 1)
       setStack(items)
       setFeedStart(safeStart)
       setHasMore(items.length < pageTotal)
@@ -313,9 +326,60 @@ function ArticleFeedBody() {
   const visibleStack = useMemo(() => stack.slice(feedStart), [stack, feedStart])
 
   useEffect(() => {
+    hydrateGenRef.current += 1
     hydratedIdsRef.current = new Set()
     setLoadingBodyIds(new Set())
+    setFailedBodyIds(new Set())
   }, [lang])
+
+  // After a new stack commits, pin the list to the opened story (page 0).
+  useEffect(() => {
+    if (stackEpoch > 0) {
+      listRef.current?.scrollToOffset({ offset: 0, animated: false })
+    }
+  }, [stackEpoch])
+
+  const markUserScroll = useCallback(() => {
+    userScrolledRef.current = true
+  }, [])
+
+  const hydrateArticle = useCallback(
+    async (article: ArticleResponse) => {
+      const articleId = article.id
+      if (articleId == null) {
+        return
+      }
+      hydratedIdsRef.current.add(articleId)
+      const drop = (prev: Set<number>) => {
+        const next = new Set(prev)
+        next.delete(articleId)
+        return next
+      }
+      setFailedBodyIds(drop)
+      setLoadingBodyIds((prev) => new Set(prev).add(articleId))
+      const gen = hydrateGenRef.current
+      try {
+        const full = await apiClient.getArticle(String(articleId), lang)
+        if (gen !== hydrateGenRef.current) {
+          return
+        }
+        const fullId = full.id ?? articleId
+        setStack((prev) => prev.map((item) => (item.id === fullId ? { ...item, ...full } : item)))
+      } catch {
+        if (gen !== hydrateGenRef.current) {
+          return
+        }
+        // Only a failed fetch is an error; a 200 with no body is a summary-only story.
+        hydratedIdsRef.current.delete(articleId)
+        setFailedBodyIds((prev) => new Set(prev).add(articleId))
+      } finally {
+        if (gen === hydrateGenRef.current) {
+          setLoadingBodyIds(drop)
+        }
+      }
+    },
+    [lang],
+  )
 
   useEffect(() => {
     const nearby = [
@@ -334,34 +398,9 @@ function ArticleFeedBody() {
         hydratedIdsRef.current.add(article.id)
         continue
       }
-      hydratedIdsRef.current.add(article.id)
-      setLoadingBodyIds((prev) => {
-        const next = new Set(prev)
-        next.add(article.id!)
-        return next
-      })
-      void apiClient
-        .getArticle(String(article.id), lang)
-        .then((full) => {
-          setStack((prev) => prev.map((item) => (item.id === full.id ? { ...item, ...full } : item)))
-          setLoadingBodyIds((prev) => {
-            const next = new Set(prev)
-            if (full.id != null) {
-              next.delete(full.id)
-            }
-            return next
-          })
-        })
-        .catch(() => {
-          hydratedIdsRef.current.delete(article.id!)
-          setLoadingBodyIds((prev) => {
-            const next = new Set(prev)
-            next.delete(article.id!)
-            return next
-          })
-        })
+      void hydrateArticle(article)
     }
-  }, [activeLocalIndex, visibleStack, lang])
+  }, [activeLocalIndex, visibleStack, hydrateArticle])
 
   useEffect(() => {
     if (activeLocalIndex >= visibleStack.length - 3 && hasMore) {
@@ -402,7 +441,9 @@ function ArticleFeedBody() {
         return next
       })
     })
-    replaceArticlePathId(activeArticle.id)
+    if (userScrolledRef.current) {
+      replaceArticlePathId(activeArticle.id)
+    }
   }, [activeArticle, recordView])
 
   const onBack = useCallback(() => {
@@ -477,20 +518,8 @@ function ArticleFeedBody() {
   )
 
   const retryArticle = useCallback(
-    async (article: ArticleResponse) => {
-      if (article.id == null) {
-        return
-      }
-      hydratedIdsRef.current.delete(article.id)
-      try {
-        const full = await apiClient.getArticle(String(article.id), lang)
-        hydratedIdsRef.current.add(full.id!)
-        setStack((prev) => prev.map((item) => (item.id === full.id ? { ...item, ...full } : item)))
-      } catch {
-        hydratedIdsRef.current.delete(article.id)
-      }
-    },
-    [lang],
+    (article: ArticleResponse) => hydrateArticle(article),
+    [hydrateArticle],
   )
 
   const onScroll = useCallback((event: NativeSyntheticEvent<NativeScrollEvent>) => {
@@ -505,7 +534,7 @@ function ArticleFeedBody() {
   const onViewableItemsChanged = useRef(
     ({ viewableItems }: { viewableItems: ViewToken[] }) => {
       const visible = viewableItems.filter((token) => token.isViewable && token.index != null)
-      if (visible.length === 0) {
+      if (visible.length === 0 || !userScrolledRef.current) {
         return
       }
       const top = visible.reduce((best, token) =>
@@ -549,10 +578,31 @@ function ArticleFeedBody() {
       if (!(el instanceof HTMLElement)) {
         return false
       }
-      cleanup = attachWebArticlePaging(el, {
+      const detachPaging = attachWebArticlePaging(el, {
         getPageHeight: () => pageHeightRef.current,
         getPageCount: () => pageCountRef.current,
       })
+      // Only real input marks a user scroll — never scroll position, which
+      // layout/anchoring can move on its own.
+      const mark = () => {
+        userScrolledRef.current = true
+      }
+      const onKey = (event: KeyboardEvent) => {
+        if (['ArrowDown', 'ArrowUp', 'PageDown', 'PageUp', ' ', 'Home', 'End'].includes(event.key)) {
+          mark()
+        }
+      }
+      el.addEventListener('wheel', mark, { passive: true })
+      el.addEventListener('touchstart', mark, { passive: true })
+      el.addEventListener('pointerdown', mark, { passive: true })
+      window.addEventListener('keydown', onKey)
+      cleanup = () => {
+        detachPaging()
+        el.removeEventListener('wheel', mark)
+        el.removeEventListener('touchstart', mark)
+        el.removeEventListener('pointerdown', mark)
+        window.removeEventListener('keydown', onKey)
+      }
       return true
     }
     const tryAttach = () => {
@@ -614,7 +664,7 @@ function ArticleFeedBody() {
         style={styles.list}
         data={visibleStack}
         keyExtractor={(item) => String(item.id ?? item.headline)}
-        extraData={{ activeLocalIndex, lang, loadingBodyIds }}
+        extraData={{ activeLocalIndex, lang, loadingBodyIds, failedBodyIds }}
         renderItem={({ item, index: itemIndex }) => {
           const globalIndex = feedStart + itemIndex
           return (
@@ -632,6 +682,7 @@ function ArticleFeedBody() {
                   loadingBodyIds.has(item.id) &&
                   !(item.body ?? '').trim()
                 }
+                bodyFailed={item.id != null && failedBodyIds.has(item.id)}
                 onReadSource={() => onReadSource(item, globalIndex)}
                 onRetry={() => void retryArticle(item)}
               />
@@ -672,6 +723,8 @@ function ArticleFeedBody() {
           index,
         })}
         onScroll={onScroll}
+        onScrollBeginDrag={markUserScroll}
+        onMomentumScrollBegin={markUserScroll}
         scrollEventThrottle={16}
         refreshControl={
           <RefreshControl
@@ -775,7 +828,7 @@ function createStyles(c: ReaderColors) {
   list: {
     flex: 1,
     ...(Platform.OS === 'web'
-      ? ({ scrollSnapType: 'y mandatory' } as object)
+      ? ({ scrollSnapType: 'y mandatory', overflowAnchor: 'none' } as object)
       : null),
   },
   center: {

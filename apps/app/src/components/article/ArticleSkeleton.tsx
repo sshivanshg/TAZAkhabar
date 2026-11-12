@@ -9,7 +9,6 @@ export function ArticleSkeleton() {
 
   return (
     <View testID="article-skeleton" style={styles.root} accessibilityLabel="Loading next story">
-      <View style={styles.hero} />
       <View style={styles.column}>
         <View style={[styles.line, styles.cat]} />
         <View style={[styles.line, styles.title]} />
@@ -30,11 +29,6 @@ function createStyles(c: ReaderColors) {
       maxWidth: ARTICLE_COLUMN_MAX,
       alignSelf: 'center',
       paddingBottom: 32,
-    },
-    hero: {
-      width: '100%',
-      aspectRatio: 16 / 9,
-      backgroundColor: c.imageFallback,
     },
     column: {
       paddingHorizontal: 24,

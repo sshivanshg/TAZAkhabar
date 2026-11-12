@@ -9,19 +9,12 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native'
-import Newspaper from 'lucide-react-native/icons/newspaper'
 import type { ArticleResponse } from '@tazakhabar/shared-types'
 import { useTheme } from '../../preferences/ThemePreferenceContext'
-import { iconStroke } from '../../theme/categoryIcons'
-import {
-  ARTICLE_COLUMN_MAX,
-  type ReaderColors,
-} from '../../theme/readerTokens'
+import { cleanHeadline, isRedundantSummary } from '../../lib/headline'
+import { ARTICLE_COLUMN_MAX, type ReaderColors } from '../../theme/readerTokens'
 import { formatRelativeTime } from '../../utils/relativeTime'
-import {
-  buildArticleDisplayContent,
-  estimateArticleReadableText,
-} from '../../utils/articleContent'
+import { buildArticleDisplayContent, estimateArticleReadableText } from '../../utils/articleContent'
 import { estimateReadingMinutes, formatReadingTime } from '../../utils/readingTime'
 import { isHttpsUrl } from '../../utils/shareToWhatsApp'
 import { normalizeArticleSourceUrl } from '../../utils/normalizeArticleSourceUrl'
@@ -33,6 +26,8 @@ type Props = {
   cityLabel?: string
   priorityImage?: boolean
   bodyLoading?: boolean
+  /** True only when fetching the full story failed (not when the API has no body). */
+  bodyFailed?: boolean
   onReadSource: () => void
   onRetry?: () => void
 }
@@ -47,38 +42,30 @@ function ArticleHero({
   headline,
   priority,
   styles,
-  readerColors,
 }: {
   uri: string | null
   headline: string
   priority: boolean
   styles: ReturnType<typeof createStyles>
-  readerColors: ReaderColors
 }) {
   const [failed, setFailed] = useState(false)
   const [loaded, setLoaded] = useState(false)
   const showImage = Boolean(uri) && !failed
+  // Fix 4: no image (or a broken one) means no hero block at all.
+  if (!showImage) return null
 
   return (
     <View style={styles.hero} accessibilityRole="image" accessibilityLabel={headline}>
-      {showImage ? (
-        <Image
-          source={{ uri: uri! }}
-          style={StyleSheet.absoluteFillObject}
-          resizeMode="cover"
-          accessibilityIgnoresInvertColors
-          onLoad={() => setLoaded(true)}
-          onError={() => setFailed(true)}
-          {...(Platform.OS === 'web'
-            ? ({ loading: priority ? 'eager' : 'lazy' } as object)
-            : null)}
-        />
-      ) : (
-        <View style={styles.heroFallback} accessibilityElementsHidden>
-          <Newspaper size={28} strokeWidth={iconStroke} color={readerColors.textMuted} />
-        </View>
-      )}
-      {showImage && !loaded ? <View style={styles.heroPlaceholder} /> : null}
+      <Image
+        source={{ uri: uri! }}
+        style={StyleSheet.absoluteFillObject}
+        resizeMode="cover"
+        accessibilityIgnoresInvertColors
+        onLoad={() => setLoaded(true)}
+        onError={() => setFailed(true)}
+        {...(Platform.OS === 'web' ? ({ loading: priority ? 'eager' : 'lazy' } as object) : null)}
+      />
+      {!loaded ? <View style={styles.heroPlaceholder} /> : null}
     </View>
   )
 }
@@ -90,6 +77,7 @@ function ArticleStoryBase({
   bodyLoading = false,
   onReadSource,
   onRetry,
+  bodyFailed = false,
 }: Props) {
   const { readerColors } = useTheme()
   const styles = useMemo(() => createStyles(readerColors), [readerColors])
@@ -105,18 +93,22 @@ function ArticleStoryBase({
   })()
   const time = article.publishedAt ? formatRelativeTime(article.publishedAt) : null
   const displayContent = useMemo(
-    () => buildArticleDisplayContent(article.body, article.summary),
-    [article.body, article.summary],
+    () =>
+      buildArticleDisplayContent(
+        article.body,
+        isRedundantSummary(article.headline, article.summary) ? null : article.summary,
+      ),
+    [article.body, article.summary, article.headline],
   )
   const readingTime = formatReadingTime(
     estimateReadingMinutes(estimateArticleReadableText(displayContent)),
   )
   const metaParts = [publisher, time, readingTime].filter(Boolean)
-  const headline = (article.headline ?? '').trim() || 'Untitled story'
+  const headline = cleanHeadline(article.headline ?? '', publisher) || 'Untitled story'
   const headlineSize = width >= 768 ? 36 : 30
   const headlineLine = width >= 768 ? 40 : 34
   const hasContent = displayContent.hasReadableContent
-  const showLoadError = !hasContent && !bodyLoading
+  const showLoadError = bodyFailed && !hasContent && !bodyLoading
   const showBodyLoading = bodyLoading && !hasContent
 
   const renderBlocks = (blocks: ArticleBlock[], keyPrefix: string) =>
@@ -150,17 +142,8 @@ function ArticleStoryBase({
     })
 
   return (
-    <View
-      {...(Platform.OS === 'web' ? ({ role: 'article' } as object) : null)}
-      style={styles.root}
-    >
-      <ArticleHero
-        uri={imageUri}
-        headline={headline}
-        priority={priorityImage}
-        styles={styles}
-        readerColors={readerColors}
-      />
+    <View {...(Platform.OS === 'web' ? ({ role: 'article' } as object) : null)} style={styles.root}>
+      <ArticleHero key={imageUri} uri={imageUri} headline={headline} priority={priorityImage} styles={styles} />
 
       <View style={styles.column}>
         <View
@@ -169,17 +152,10 @@ function ArticleStoryBase({
           style={styles.header}
         >
           {location ? <Text style={styles.eyebrow}>{location}</Text> : null}
-          <Text
-            style={[
-              styles.headline,
-              { fontSize: headlineSize, lineHeight: headlineLine },
-            ]}
-          >
+          <Text style={[styles.headline, { fontSize: headlineSize, lineHeight: headlineLine }]}>
             {headline}
           </Text>
-          {metaParts.length > 0 ? (
-            <Text style={styles.meta}>{metaParts.join(' · ')}</Text>
-          ) : null}
+          {metaParts.length > 0 ? <Text style={styles.meta}>{metaParts.join(' · ')}</Text> : null}
         </View>
 
         {hasContent || showBodyLoading || showLoadError ? (
@@ -272,12 +248,6 @@ function createStyles(c: ReaderColors) {
       backgroundColor: c.imageFallback,
       overflow: 'hidden',
     },
-    heroFallback: {
-      ...StyleSheet.absoluteFillObject,
-      alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor: c.imageFallback,
-    },
     heroPlaceholder: {
       ...StyleSheet.absoluteFillObject,
       backgroundColor: c.imageFallback,
@@ -295,9 +265,10 @@ function createStyles(c: ReaderColors) {
     },
     eyebrow: {
       color: c.accent,
-      fontSize: 11,
+      fontSize: 13,
+      lineHeight: 18,
       fontWeight: '700',
-      letterSpacing: 1.3,
+      letterSpacing: 1.1,
       textTransform: 'uppercase',
     },
     headline: {
@@ -307,7 +278,7 @@ function createStyles(c: ReaderColors) {
     },
     meta: {
       color: c.textMuted,
-      fontSize: 14,
+      fontSize: 15,
       lineHeight: 22,
       marginTop: 2,
     },
@@ -421,15 +392,15 @@ function createStyles(c: ReaderColors) {
     },
     attributionKicker: {
       color: c.textSecondary,
-      fontSize: 12,
+      fontSize: 13,
       fontWeight: '700',
       letterSpacing: 0.6,
       textTransform: 'uppercase',
     },
     attributionBody: {
       color: c.textSecondary,
-      fontSize: 14,
-      lineHeight: 21,
+      fontSize: 16,
+      lineHeight: 24,
     },
     pressed: {
       opacity: 0.78,

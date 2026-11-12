@@ -9,6 +9,7 @@ import { radius, RIGHT_RAIL_WIDTH, space, typography, type AppColors } from '../
 import { formatRelativeTime } from '../../utils/relativeTime'
 import { isHttpsUrl } from '../../utils/shareToWhatsApp'
 import { SourceAvatar } from '../SourceAvatar'
+import { cleanHeadline } from '../../lib/headline'
 
 type Props = {
   articles: ArticleResponse[]
@@ -47,7 +48,7 @@ export function LocalNewsRail({ articles, onPress, onFilterPress }: Props) {
         contentContainerStyle={styles.list}
       >
         {articles.map((article, index) => {
-          const headline = article.headline?.trim() || 'Untitled'
+          const headline = cleanHeadline(article.headline ?? '', article.sourceName).trim() || 'Untitled'
           const source = article.sourceName?.trim() || 'Unknown source'
           const imageUrl =
             article.imageUrl && isHttpsUrl(article.imageUrl) ? article.imageUrl.trim() : null
@@ -115,8 +116,8 @@ function createStyles(c: AppColors) {
       color: c.accent,
     },
     settingsBtn: {
-      width: 36,
-      height: 36,
+      width: 44,
+      height: 44,
       alignItems: 'center',
       justifyContent: 'center',
       borderRadius: radius.full,
@@ -146,8 +147,8 @@ function createStyles(c: AppColors) {
     },
     source: {
       flex: 1,
-      fontSize: 12,
-      lineHeight: 16,
+      fontSize: 14,
+      lineHeight: 18,
       color: c.textMuted,
     },
     headline: {

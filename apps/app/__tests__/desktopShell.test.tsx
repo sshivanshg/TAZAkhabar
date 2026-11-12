@@ -46,52 +46,52 @@ jest.mock('expo-router', () => ({
 
 const { useBreakpoint } = require('../src/hooks/useBreakpoint')
 
+const safeMetrics = {
+  frame: { x: 0, y: 0, width: 1280, height: 800 },
+  insets: { top: 0, left: 0, right: 0, bottom: 0 },
+}
+
+function renderShell() {
+  return render(
+    <SafeAreaProvider initialMetrics={safeMetrics}>
+      <AppShell>
+        <Text>ChildOnly</Text>
+      </AppShell>
+    </SafeAreaProvider>,
+  )
+}
+
 it('passthrough on mobile — no shell chrome', () => {
   useBreakpoint.mockReturnValue('mobile')
-  const { toJSON } = render(
-    <AppShell sidebar={<Text>Sidebar</Text>}>
-      <Text>ChildOnly</Text>
-    </AppShell>,
-  )
+  mockUsePathname.mockReturnValue('/')
+  const { toJSON } = renderShell()
   expect(screen.getByText('ChildOnly')).toBeTruthy()
-  expect(screen.queryByText('Sidebar')).toBeNull()
-  // tree root should be the child text node path, not a shell row labeled AppShell
+  expect(screen.queryByTestId('desktop-shell-sidebar')).toBeNull()
   expect(JSON.stringify(toJSON())).not.toContain('Expanded shell')
 })
 
-it('renders expanded shell on tablet', () => {
-  useBreakpoint.mockReturnValue('tablet')
-  const { toJSON } = render(
-    <AppShell sidebar={<Text>Sidebar</Text>}>
-      <Text>ChildOnly</Text>
-    </AppShell>,
-  )
+it.each(['tablet', 'desktop', 'wide'])('renders the shared sidebar shell on %s', (bp) => {
+  useBreakpoint.mockReturnValue(bp)
+  mockUsePathname.mockReturnValue('/')
+  renderShell()
   expect(screen.getByText('ChildOnly')).toBeTruthy()
-  expect(screen.queryByText('Sidebar')).toBeNull()
-  expect(JSON.stringify(toJSON())).toContain('Expanded shell')
-})
-
-it('renders expanded shell on desktop', () => {
-  useBreakpoint.mockReturnValue('desktop')
-  render(
-    <AppShell sidebar={<Text>Sidebar</Text>}>
-      <Text>ChildOnly</Text>
-    </AppShell>,
-  )
-  expect(screen.getByText('ChildOnly')).toBeTruthy()
-  expect(screen.queryByText('Sidebar')).toBeNull()
   expect(screen.getByLabelText('Expanded shell')).toBeTruthy()
+  expect(screen.getByTestId('desktop-shell-sidebar')).toBeTruthy()
 })
 
-it('renders expanded shell on wide', () => {
-  useBreakpoint.mockReturnValue('wide')
-  render(
-    <AppShell sidebar={<Text>Sidebar</Text>}>
-      <Text>ChildOnly</Text>
-    </AppShell>,
-  )
+it.each(['/profile', '/contact', '/article/42'])('keeps the sidebar on %s', (path) => {
+  useBreakpoint.mockReturnValue('desktop')
+  mockUsePathname.mockReturnValue(path)
+  renderShell()
+  expect(screen.getByTestId('desktop-shell-sidebar')).toBeTruthy()
+})
+
+it('hides the sidebar on the language onboarding route', () => {
+  useBreakpoint.mockReturnValue('desktop')
+  mockUsePathname.mockReturnValue('/language')
+  renderShell()
+  expect(screen.queryByTestId('desktop-shell-sidebar')).toBeNull()
   expect(screen.getByText('ChildOnly')).toBeTruthy()
-  expect(screen.queryByText('Sidebar')).toBeNull()
 })
 
 function renderSidebar() {

@@ -5,10 +5,11 @@ import Ellipsis from 'lucide-react-native/icons/ellipsis'
 import { MotiView } from 'moti'
 import type { ArticleResponse } from '@tazakhabar/shared-types'
 import { useTheme } from '../preferences/ThemePreferenceContext'
-import { media, radius, space, typography, type AppColors } from '../theme/tokens'
+import { HIT_TARGET, media, radius, space, typography, type AppColors } from '../theme/tokens'
 import { iconStroke } from '../theme/categoryIcons'
 import { formatRelativeTime } from '../utils/relativeTime'
 import { SourceAvatar } from './SourceAvatar'
+import { cleanHeadline } from '../lib/headline'
 
 const CARD_GAP = space.sm
 
@@ -65,7 +66,7 @@ export function BreakingHeroCard({
 }: Props) {
   const { colors } = useTheme()
   const styles = useMemo(() => createStyles(colors), [colors])
-  const headline = article.headline ?? 'Untitled'
+  const headline = cleanHeadline(article.headline ?? '', article.sourceName) || 'Untitled'
   const source = article.sourceName ?? 'Unknown source'
   const relative = formatRelativeTime(article.publishedAt)
   const imageUrl = article.imageUrl
@@ -128,33 +129,34 @@ export function BreakingHeroCard({
           >
             {headline}
           </Text>
-          <View style={styles.metaRow}>
-            {relative ? (
-              <Text
-                fontSize={typography.label.fontSize}
-                lineHeight={typography.label.lineHeight}
-                fontWeight="$medium"
-                color={colors.textMuted}
-              >
-                {relative}
-              </Text>
-            ) : (
-              <View />
-            )}
-            {onMorePress ? (
-              <Pressable
-                onPress={() => onMorePress(article)}
-                accessibilityRole="button"
-                accessibilityLabel={`More options for ${headline}`}
-                hitSlop={10}
-                style={({ pressed }) => [styles.moreBtn, pressed ? styles.morePressed : null]}
-              >
-                <Ellipsis size={18} strokeWidth={iconStroke} color={colors.textSecondary} />
-              </Pressable>
-            ) : null}
-          </View>
         </View>
       </Pressable>
+      {/* Overflow sits outside the card Pressable: no nested <button> on web. */}
+      <View style={styles.metaRow}>
+        {relative ? (
+          <Text
+            fontSize={typography.label.fontSize}
+            lineHeight={typography.label.lineHeight}
+            fontWeight="$medium"
+            color={colors.textMuted}
+          >
+            {relative}
+          </Text>
+        ) : (
+          <View />
+        )}
+        {onMorePress ? (
+          <Pressable
+            onPress={() => onMorePress(article)}
+            accessibilityRole="button"
+            accessibilityLabel={`More options for ${headline}`}
+            hitSlop={10}
+            style={({ pressed }) => [styles.moreBtn, pressed ? styles.morePressed : null]}
+          >
+            <Ellipsis size={18} strokeWidth={iconStroke} color={colors.textSecondary} />
+          </Pressable>
+        ) : null}
+      </View>
     </MotiView>
   )
 }
@@ -210,12 +212,12 @@ function createStyles(c: AppColors) {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      marginTop: 2,
-      minHeight: 26,
+      minHeight: HIT_TARGET,
     },
     moreBtn: {
-      width: 32,
-      height: 32,
+      width: HIT_TARGET,
+      height: HIT_TARGET,
+      marginRight: -10,
       alignItems: 'center',
       justifyContent: 'center',
       borderRadius: radius.full,

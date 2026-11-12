@@ -12,6 +12,7 @@ import type { ArticleResponse } from '@tazakhabar/shared-types'
 import { useTheme } from '../../preferences/ThemePreferenceContext'
 import { iconStroke } from '../../theme/categoryIcons'
 import { media, radius, space, typography, type AppColors } from '../../theme/tokens'
+import { cleanHeadline } from '../../lib/headline'
 import { formatRelativeTime } from '../../utils/relativeTime'
 import { isHttpsUrl } from '../../utils/shareToWhatsApp'
 import { SourceAvatar } from '../SourceAvatar'
@@ -42,10 +43,16 @@ export function TopStoriesCluster({ articles, onPress, onSeeAll }: Props) {
 
   const lead = articles[0]!
   const related = articles.slice(1, 4)
-  const leadHeadline = lead.headline?.trim() || 'Top stories'
+  const leadHeadline = cleanHeadline(lead.headline ?? '', lead.sourceName) || 'Top stories'
+  const leadImageUrl = lead.imageUrl && isHttpsUrl(lead.imageUrl) ? lead.imageUrl : null
   const gap = space.md
-  const imageWidth = related.length > 0 ? Math.round(width * 0.52) : width
-  const sideWidth = related.length > 0 ? Math.max(0, width - imageWidth - gap) : 0
+  // The body is inset by space.md on both sides; measure against the inner width (#3).
+  const inner = Math.max(0, width - 2 * space.md)
+  // No lead image → no hero placeholder: the lead runs full width as text and
+  // related headlines stack beneath it (#4).
+  const sideBySide = related.length > 0 && leadImageUrl !== null
+  const imageWidth = sideBySide ? Math.round(inner * 0.52) : inner
+  const sideWidth = sideBySide ? Math.max(0, inner - imageWidth - gap) : inner
 
   return (
     <View style={styles.card} onLayout={onLayout}>
@@ -61,47 +68,49 @@ export function TopStoriesCluster({ articles, onPress, onSeeAll }: Props) {
         <Text style={styles.chevron}>{'›'}</Text>
       </Pressable>
 
-      <View style={styles.body}>
+      <View style={[styles.body, sideBySide ? null : styles.bodyStacked]}>
         <Pressable
           onPress={() => onPress(lead)}
           accessibilityRole="button"
           accessibilityLabel={leadHeadline}
           style={({ pressed }) => [
             styles.leadCol,
-            related.length > 0 ? { width: imageWidth } : styles.leadSolo,
+            sideBySide ? { width: imageWidth } : styles.leadSolo,
             pressed ? styles.pressed : null,
           ]}
         >
-          <View style={styles.leadImageWrap}>
-            {lead.imageUrl && isHttpsUrl(lead.imageUrl) ? (
+          {leadImageUrl ? (
+            <View style={styles.leadImageWrap}>
               <Image
-                source={{ uri: lead.imageUrl }}
+                source={{ uri: leadImageUrl }}
                 style={styles.leadImage}
                 resizeMode="cover"
                 accessibilityIgnoresInvertColors
               />
-            ) : (
-              <View style={styles.leadPlaceholder} />
-            )}
-          </View>
-          <View style={styles.leadMeta}>
+            </View>
+          ) : null}
+          <View style={[styles.leadMeta, leadImageUrl ? null : styles.leadMetaSolo]}>
             <View style={styles.sourceRow}>
               <SourceAvatar name={lead.sourceName ?? 'Source'} size={18} />
               <Text style={styles.source} numberOfLines={1}>
                 {lead.sourceName ?? 'Unknown source'}
               </Text>
             </View>
-            <Text style={styles.leadTitle} numberOfLines={3}>
-              {leadHeadline}
-            </Text>
+            {leadImageUrl ? (
+              <Text style={styles.leadTitle} numberOfLines={3}>
+                {leadHeadline}
+              </Text>
+            ) : null}
             <Text style={styles.time}>{formatRelativeTime(lead.publishedAt)}</Text>
           </View>
         </Pressable>
 
         {related.length > 0 ? (
-          <View style={[styles.sideCol, { width: sideWidth }]}>
+          <View
+            style={[styles.sideCol, sideBySide ? null : styles.sideColStacked, { width: sideWidth }]}
+          >
             {related.map((article, index) => {
-              const headline = article.headline?.trim() || 'Untitled'
+              const headline = cleanHeadline(article.headline ?? '', article.sourceName) || 'Untitled'
               const source = article.sourceName?.trim() || 'Unknown source'
               return (
                 <Pressable
@@ -204,9 +213,18 @@ function createStyles(c: AppColors, cardShadow: object) {
       width: '100%',
       height: '100%',
     },
-    leadPlaceholder: {
-      flex: 1,
-      backgroundColor: c.skeleton,
+    bodyStacked: {
+      flexDirection: 'column',
+      alignItems: 'stretch',
+      gap: 0,
+    },
+    leadMetaSolo: {
+      paddingTop: 0,
+    },
+    sideColStacked: {
+      marginTop: space.xs,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: c.border,
     },
     leadMeta: {
       paddingTop: space.sm,
@@ -254,13 +272,13 @@ function createStyles(c: AppColors, cardShadow: object) {
     },
     sideSource: {
       flex: 1,
-      fontSize: 12,
-      lineHeight: 16,
+      fontSize: 14,
+      lineHeight: 20,
       color: c.textMuted,
     },
     sideHeadline: {
-      fontSize: 14,
-      lineHeight: 20,
+      fontSize: 16,
+      lineHeight: 22,
       fontWeight: '600',
       color: c.text,
     },

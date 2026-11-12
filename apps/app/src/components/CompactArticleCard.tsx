@@ -13,6 +13,7 @@ import type { ArticleResponse } from '@tazakhabar/shared-types'
 import { useTheme } from '../preferences/ThemePreferenceContext'
 import { HIT_TARGET, media, radius, space, typography, type AppColors } from '../theme/tokens'
 import { iconStroke } from '../theme/categoryIcons'
+import { cleanHeadline, isRedundantSummary } from '../lib/headline'
 import { formatRelativeTime } from '../utils/relativeTime'
 import { isHttpsUrl } from '../utils/shareToWhatsApp'
 import { SeeMorePill } from './SeeMorePill'
@@ -71,8 +72,10 @@ export function CompactArticleCard({
   const { colors } = useTheme()
   const styles = useMemo(() => createStyles(colors), [colors])
   const dense = density === 'compact'
-  const headline = article.headline?.trim() || 'Untitled'
-  const summary = article.summary?.trim()
+  const headline = cleanHeadline(article.headline ?? '', article.sourceName) || 'Untitled'
+  const rawSummary = article.summary?.trim()
+  const summary =
+    rawSummary && !isRedundantSummary(article.headline, rawSummary) ? rawSummary : undefined
   const source = article.sourceName?.trim() || 'Unknown source'
   const relative = formatRelativeTime(article.publishedAt)
   const imageUrl =
@@ -112,7 +115,6 @@ export function CompactArticleCard({
             </Text>
           </View>
           <Text
-            accessibilityRole="header"
             style={[styles.headline, dense ? styles.headlineDense : null]}
             numberOfLines={hasImage ? 3 : 4}
           >
@@ -123,41 +125,6 @@ export function CompactArticleCard({
               {summary}
             </Text>
           ) : null}
-          <View style={styles.metaRow}>
-            {relative ? (
-              <Text style={styles.meta} numberOfLines={1}>
-                {relative}
-              </Text>
-            ) : (
-              <View style={styles.metaSpacer} />
-            )}
-            <View style={styles.metaActions}>
-              {!dense ? (
-                <SeeMorePill
-                  onPress={() => seeMore(article)}
-                  accessibilityLabel={`See more from ${source}`}
-                />
-              ) : null}
-              {showMore && openMore ? (
-                <Pressable
-                  onPress={() => openMore(article)}
-                  accessibilityRole="button"
-                  accessibilityLabel={`More options for ${headline}`}
-                  hitSlop={8}
-                  style={(state) => {
-                    const { pressed, focused } = state as WebPressableState
-                    return [
-                      styles.moreButton,
-                      pressed ? styles.morePressed : null,
-                      focusRing(colors.accent, focused),
-                    ]
-                  }}
-                >
-                  <Ellipsis size={18} strokeWidth={iconStroke} color={colors.textSecondary} />
-                </Pressable>
-              ) : null}
-            </View>
-          </View>
         </View>
 
         {hasImage ? (
@@ -176,6 +143,42 @@ export function CompactArticleCard({
           </View>
         ) : null}
       </Pressable>
+      {/* Meta actions sit outside the row Pressable: no nested <button> on web (#7). */}
+      <View style={styles.metaRow}>
+        {relative ? (
+          <Text style={styles.meta} numberOfLines={1}>
+            {relative}
+          </Text>
+        ) : (
+          <View style={styles.metaSpacer} />
+        )}
+        <View style={styles.metaActions}>
+          {!dense ? (
+            <SeeMorePill
+              onPress={() => seeMore(article)}
+              accessibilityLabel={`See more from ${source}`}
+            />
+          ) : null}
+          {showMore && openMore ? (
+            <Pressable
+              onPress={() => openMore(article)}
+              accessibilityRole="button"
+              accessibilityLabel={`More options for ${headline}`}
+              hitSlop={8}
+              style={(state) => {
+                const { pressed, focused } = state as WebPressableState
+                return [
+                  styles.moreButton,
+                  pressed ? styles.morePressed : null,
+                  focusRing(colors.accent, focused),
+                ]
+              }}
+            >
+              <Ellipsis size={18} strokeWidth={iconStroke} color={colors.textSecondary} />
+            </Pressable>
+          ) : null}
+        </View>
+      </View>
       <View style={styles.divider} />
     </View>
   )
@@ -237,12 +240,12 @@ function createStyles(c: AppColors) {
       alignItems: 'flex-start',
       gap: space.md,
       paddingTop: space.md,
-      paddingBottom: space.sm,
+      paddingBottom: space.xs,
     },
     rowDense: {
       gap: space.sm,
       paddingTop: space.sm,
-      paddingBottom: space.sm,
+      paddingBottom: space.xxs,
     },
     textCol: {
       flex: 1,
@@ -272,21 +275,21 @@ function createStyles(c: AppColors) {
       marginTop: 2,
     },
     headlineDense: {
-      fontSize: 15,
-      lineHeight: 20,
+      fontSize: 16,
+      lineHeight: 22,
       fontWeight: '600',
       letterSpacing: -0.15,
     },
     lede: {
       color: c.textSecondary,
-      fontSize: 14,
-      lineHeight: 20,
+      fontSize: 16,
+      lineHeight: 24,
       fontWeight: '400',
       marginTop: 2,
     },
     metaRow: {
-      marginTop: 8,
-      minHeight: 32,
+      minHeight: HIT_TARGET,
+      paddingBottom: space.xxs,
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
@@ -296,8 +299,8 @@ function createStyles(c: AppColors) {
       flexShrink: 1,
       minWidth: 0,
       color: c.textMuted,
-      fontSize: typography.label.fontSize,
-      lineHeight: typography.label.lineHeight,
+      fontSize: typography.meta.fontSize,
+      lineHeight: typography.meta.lineHeight,
       fontWeight: '500',
     },
     metaSpacer: {
@@ -320,8 +323,8 @@ function createStyles(c: AppColors) {
       height: '100%',
     },
     moreButton: {
-      width: HIT_TARGET * 0.72,
-      height: HIT_TARGET * 0.72,
+      width: HIT_TARGET,
+      height: HIT_TARGET,
       alignItems: 'center',
       justifyContent: 'center',
       borderRadius: radius.full,
