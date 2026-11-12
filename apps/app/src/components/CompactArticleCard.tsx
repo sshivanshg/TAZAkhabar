@@ -22,6 +22,8 @@ import { MotiView } from 'moti'
 import { useMotionTransition, usePrefersReducedMotion } from '../hooks/usePrefersReducedMotion'
 import { cardPress, iconPress } from '../lib/pressFeedback'
 import { useT } from '../i18n'
+import { adaptStylesForScript } from '../theme/scriptTypography'
+import { useAppLanguage } from '../i18n'
 
 type Density = 'default' | 'compact'
 
@@ -75,7 +77,11 @@ export function CompactArticleCard({
 }: Props) {
   const { colors } = useTheme()
   const t = useT()
-  const styles = useMemo(() => createStyles(colors), [colors])
+  const scriptLang = useAppLanguage()
+  const styles = useMemo(
+    () => adaptStylesForScript(createStyles(colors), scriptLang),
+    [colors, scriptLang],
+  )
   const dense = density === 'compact'
   const headline = cleanHeadline(article.headline ?? '', article.sourceName) || 'Untitled'
   const rawSummary = article.summary?.trim()
@@ -206,7 +212,11 @@ export function CompactArticleCardSkeleton({
 }) {
   const { colors } = useTheme()
   const t = useT()
-  const styles = useMemo(() => createStyles(colors), [colors])
+  const scriptLang = useAppLanguage()
+  const styles = useMemo(
+    () => adaptStylesForScript(createStyles(colors), scriptLang),
+    [colors, scriptLang],
+  )
   const dense = density === 'compact'
   const thumbSize = dense ? media.thumbDense : media.thumb
   const reduced = usePrefersReducedMotion()

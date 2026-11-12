@@ -48,3 +48,14 @@ describe('cityPreference', () => {
     await expect(getStoredCitySlug()).resolves.toBe('lucknow')
   })
 })
+
+describe('pickFeedCity precedence', () => {
+  const { pickFeedCity } = jest.requireActual('../src/storage/cityPreference') as typeof import('../src/storage/cityPreference')
+  it('URL param beats the stored city (deep link ?city=lucknow for a returning reader)', () => {
+    expect(pickFeedCity({ paramCity: 'lucknow', storedCity: 'global' })).toBe('lucknow')
+  })
+  it('falls back to stored, then All India', () => {
+    expect(pickFeedCity({ paramCity: undefined, storedCity: 'patna' })).toBe('patna')
+    expect(pickFeedCity({ paramCity: '', storedCity: null })).toBe('global')
+  })
+})

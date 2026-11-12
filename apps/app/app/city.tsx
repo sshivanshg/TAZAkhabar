@@ -1,5 +1,6 @@
-import { useCallback, useState } from 'react'
-import { StyleSheet, Text, View } from 'react-native'
+import { useCallback, useMemo, useState } from 'react'
+import { Pressable, StyleSheet, Text, View } from 'react-native'
+import { localizedCityName } from '../src/location/cityNamesHi'
 import { useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import type { CityResponse } from '@tazakhabar/shared-types'
@@ -17,15 +18,28 @@ import {
   setStoredCitySlug,
 } from '../src/storage/cityPreference'
 import { space, type AppColors } from '../src/theme/tokens'
-import { translate, useT } from '../src/i18n'
+import { translate, useAppLanguage, useT, type AppLanguage } from '../src/i18n'
+import { adaptStylesForScript } from '../src/theme/scriptTypography'
 
+
+const POPULAR_CITIES: CityResponse[] = [
+  { slug: 'delhi', name: 'Delhi' },
+  { slug: 'mumbai', name: 'Mumbai' },
+  { slug: 'lucknow', name: 'Lucknow' },
+  { slug: 'patna', name: 'Patna' },
+  { slug: 'jaipur', name: 'Jaipur' },
+  { slug: 'kolkata', name: 'Kolkata' },
+  { slug: 'bengaluru', name: 'Bengaluru' },
+  { slug: 'kanpur', name: 'Kanpur' },
+]
 
 /** Onboarding step after language (also reachable from Settings). */
 export default function CityStepScreen() {
   const router = useRouter()
   const insets = useSafeAreaInsets()
   const { colors } = useTheme()
-  const styles = createStyles(colors)
+  const scriptLang = useAppLanguage()
+  const styles = useMemo(() => adaptStylesForScript(createStyles(colors, scriptLang), scriptLang), [colors, scriptLang])
   const t = useT()
   const [locating, setLocating] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
@@ -105,6 +119,27 @@ export default function CityStepScreen() {
         ) : null}
       </View>
 
+      {/* Popular cities fill the middle: one tap for most readers. */}
+      <View style={styles.popular}>
+        <Text style={styles.popularLabel}>{t('city.popular')}</Text>
+        <View style={styles.chips}>
+          {POPULAR_CITIES.map((city) => {
+            const label = localizedCityName(city, scriptLang)
+            return (
+              <Pressable
+                key={city.slug}
+                accessibilityRole="button"
+                accessibilityLabel={label}
+                onPress={() => void choose(city)}
+                style={({ pressed }) => [styles.chip, pressed ? { opacity: 0.7 } : null]}
+              >
+                <Text style={styles.chipText}>{label}</Text>
+              </Pressable>
+            )
+          })}
+        </View>
+      </View>
+
       {/* Actions live in the lower half for one-handed use. */}
       <View style={styles.actions}>
         <PrimaryButton
@@ -127,7 +162,7 @@ export default function CityStepScreen() {
   )
 }
 
-function createStyles(c: AppColors) {
+function createStyles(c: AppColors, lang: AppLanguage) {
   return StyleSheet.create({
     screen: {
       flex: 1,
@@ -138,14 +173,27 @@ function createStyles(c: AppColors) {
     copy: { marginTop: space.xxl, maxWidth: 520, width: '100%', alignSelf: 'center' },
     eyebrow: {
       color: c.accent,
-      fontSize: 12,
+      fontSize: lang === 'hi' ? 14 : 12,
       fontWeight: '800',
       letterSpacing: 1.6,
       marginBottom: 10,
     },
-    title: { color: c.text, fontSize: 28, lineHeight: 34, fontWeight: '800', marginBottom: 8 },
+    title: { color: c.text, fontSize: 28, lineHeight: lang === 'hi' ? 38 : 34, fontWeight: '800', marginBottom: 8 },
     subtitle: { color: c.textSecondary, fontSize: 16, lineHeight: 24 },
     message: { color: c.text, fontSize: 16, lineHeight: 24, marginTop: space.md },
+    popular: { maxWidth: 520, width: '100%', alignSelf: 'center', gap: space.sm },
+    popularLabel: { color: c.textSecondary, fontSize: 15, lineHeight: 22, fontWeight: '600' },
+    chips: { flexDirection: 'row', flexWrap: 'wrap', gap: space.xs },
+    chip: {
+      minHeight: 44,
+      paddingHorizontal: 16,
+      borderRadius: 999,
+      borderWidth: 1,
+      borderColor: c.borderSolid,
+      backgroundColor: c.surface,
+      justifyContent: 'center',
+    },
+    chipText: { color: c.text, fontSize: 16, lineHeight: 22, fontWeight: '600' },
     actions: { gap: space.sm, maxWidth: 520, width: '100%', alignSelf: 'center' },
   })
 }

@@ -43,13 +43,14 @@ export function LanguagePreferenceProvider({ children }: { children: ReactNode }
   }, [])
 
   const setPreferredLanguage = useCallback((code: ReadingLanguageCode) => {
+    setAppLanguage(code)
     setPreferredLanguageState(code)
     setHasSelectedLanguage(true)
     void setStoredReadingLanguage(code)
   }, [])
 
   // Keep the non-hook translate() (toasts, announcements) in sync with the chosen language.
-  setAppLanguage(preferredLanguage)
+  // Synced in the setter (before re-render) and in this effect — never during render.
   useEffect(() => {
     setAppLanguage(preferredLanguage)
   }, [preferredLanguage])

@@ -10,6 +10,8 @@ import { formatRelativeTime } from '../utils/relativeTime'
 import { SourceAvatar } from './SourceAvatar'
 import { cleanHeadline } from '../lib/headline'
 import { useT } from '../i18n'
+import { adaptStylesForScript } from '../theme/scriptTypography'
+import { useAppLanguage } from '../i18n'
 
 type Props = {
   articles: ArticleResponse[]
@@ -23,7 +25,11 @@ const CARD_WIDTH = 220
 export function RelatedStoriesStrip({ articles, onPress, onMorePress }: Props) {
   const { colors } = useTheme()
   const t = useT()
-  const styles = useMemo(() => createStyles(colors), [colors])
+  const scriptLang = useAppLanguage()
+  const styles = useMemo(
+    () => adaptStylesForScript(createStyles(colors), scriptLang),
+    [colors, scriptLang],
+  )
 
   if (articles.length === 0) {
     return null

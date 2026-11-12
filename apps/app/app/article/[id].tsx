@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
-  AccessibilityInfo,
   ActivityIndicator,
   FlatList,
   Image,
@@ -17,6 +16,7 @@ import {
   type ViewToken,
 } from 'react-native'
 import { StatusBar } from 'expo-status-bar'
+import { toggleBookmarkAction } from '../../src/lib/toggleBookmark'
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router'
 import Copy from 'lucide-react-native/icons/copy'
 import MessageCircle from 'lucide-react-native/icons/message-circle'
@@ -35,17 +35,10 @@ import {
 import { ScreenErrorBoundary } from '../../src/components/ScreenErrorBoundary'
 import { readableErrorMessage, translate, useT } from '../../src/i18n'
 import { BottomSheet } from '../../src/components/ui/BottomSheet'
-import { showToast } from '../../src/components/ui/Toast'
-import { hapticLight } from '../../src/lib/haptics'
 import { iconPress } from '../../src/lib/pressFeedback'
 import { useLanguagePreference } from '../../src/preferences/LanguagePreferenceContext'
 import { useTheme } from '../../src/preferences/ThemePreferenceContext'
-import {
-  addBookmark,
-  articleToBookmark,
-  isBookmarked,
-  removeBookmark,
-} from '../../src/storage/bookmarks'
+import { isBookmarked } from '../../src/storage/bookmarks'
 import { getEffectiveCitySlug } from '../../src/storage/cityPreference'
 import { getPersonalizationId } from '../../src/storage/personalizationId'
 import { PAGE_SIZE } from '../../src/theme/tokens'
@@ -503,52 +496,40 @@ function ArticleFeedBody() {
     [flashNotice],
   )
 
+  const setBookmarkSaved = useCallback((id: number, saved: boolean) => {
+    setBookmarkedIds((prev) => {
+      const next = new Set(prev)
+      if (saved) next.add(id)
+      else next.delete(id)
+      return next
+    })
+  }, [])
+  // Live view of saved ids so a fast double-tap reads the latest state, not a stale closure.
+  const bookmarkedIdsRef = useRef(bookmarkedIds)
+  bookmarkedIdsRef.current = bookmarkedIds
+
   const onToggleBookmark = useCallback(
     async (article: ArticleResponse) => {
       if (article.id == null) {
         return
       }
-      const snapshot = articleToBookmark(article, citySlug || undefined)
-      if (!snapshot) {
-        return
-      }
-      const articleId = article.id
-      const markSaved = (saved: boolean) =>
-        setBookmarkedIds((prev) => {
-          const next = new Set(prev)
-          if (saved) next.add(articleId)
-          else next.delete(articleId)
-          return next
-        })
-      const currently = bookmarkedIds.has(articleId)
-      // Optimistic: flip the UI first, roll back if storage fails.
-      markSaved(!currently)
-      if (!currently) {
-        hapticLight()
-        AccessibilityInfo.announceForAccessibility(translate('toast.saved'))
-      }
-      try {
-        if (currently) {
-          await removeBookmark(articleId)
-          showToast({
-            message: translate('toast.removed'),
-            actionLabel: translate('toast.undo'),
-            onAction: () => {
-              markSaved(true)
-              void addBookmark(snapshot).catch(() => markSaved(false))
-            },
-          })
-        } else {
-          await addBookmark(snapshot)
-          showToast({ message: translate('toast.saved') })
-        }
-      } catch {
-        markSaved(currently)
-        showToast({ message: translate('article.saveFailed') })
-      }
+      await toggleBookmarkAction({
+        article,
+        citySlug: citySlug || undefined,
+        currentlySaved: bookmarkedIdsRef.current.has(article.id),
+        setSaved: setBookmarkSaved,
+      })
     },
-    [bookmarkedIds, citySlug],
+    [citySlug, setBookmarkSaved],
   )
+
+  // "Next story ↓" cue: advance the pager one page (same snap the swipe uses).
+  const goToNextStory = useCallback((fromIndex: number) => {
+    listRef.current?.scrollToOffset({
+      offset: pageHeightRef.current * (fromIndex + 1),
+      animated: true,
+    })
+  }, [])
 
   const onReadSource = useCallback(
     (article: ArticleResponse, storyIndex: number) => {
@@ -723,6 +704,7 @@ function ArticleFeedBody() {
                 article={item}
                 citySlug={citySlug}
                 showNextCue={itemIndex < visibleStack.length - 1 || hasMore}
+                onNextStory={() => goToNextStory(itemIndex)}
                 priorityImage={itemIndex <= 1}
                 bodyLoading={
                   item.id != null &&

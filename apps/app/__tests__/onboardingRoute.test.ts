@@ -18,3 +18,12 @@ describe('onboarding routing', () => {
     expect(routeAfterLanguage('global')).toEqual({ pathname: '/(tabs)', params: { city: 'global' } })
   })
 })
+
+describe('boot route with a URL city', () => {
+  it('a deep-link city wins over the stored one for returning readers', () => {
+    expect(resolveBootRoute({ hasSelectedLanguage: true, storedCity: 'global', urlCity: 'lucknow' })).toEqual({
+      pathname: '/(tabs)',
+      params: { city: 'lucknow' },
+    })
+  })
+})

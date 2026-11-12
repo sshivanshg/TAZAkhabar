@@ -11,6 +11,8 @@ import { HIT_TARGET, radius, space, typography, type AppColors } from '../../the
 import { BrandHomeButton } from '../BrandHomeButton'
 import { getPublicSiteUrl } from '../../utils/publicSiteUrl'
 import { useT, type StringKey } from '../../i18n'
+import { adaptStylesForScript } from '../../theme/scriptTypography'
+import { useAppLanguage } from '../../i18n'
 
 type NavItem = {
   id: 'home' | 'bookmarks' | 'profile'
@@ -54,7 +56,11 @@ export function DesktopSidebar() {
   const insets = useSafeAreaInsets()
   const { colors } = useTheme()
   const t = useT()
-  const styles = useMemo(() => createStyles(colors), [colors])
+  const scriptLang = useAppLanguage()
+  const styles = useMemo(
+    () => adaptStylesForScript(createStyles(colors), scriptLang),
+    [colors, scriptLang],
+  )
   const openExternal = (path: string) => {
     void Linking.openURL(`${siteUrl}${path}`)
   }

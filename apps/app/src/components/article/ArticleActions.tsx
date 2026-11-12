@@ -12,7 +12,7 @@ import type { ReaderColors } from '../../theme/readerTokens'
 import { pressableState, webFocusRing } from './focusStyle'
 import { usePrefersReducedMotion } from '../../hooks/usePrefersReducedMotion'
 import { cardPress } from '../../lib/pressFeedback'
-import { useAccessibilityLanguage, useT } from '../../i18n'
+import { useAccessibilityLanguage, useAppLanguage, useT, type AppLanguage } from '../../i18n'
 
 type Props = {
   bookmarked: boolean
@@ -47,7 +47,8 @@ function ActionButton({
 }: ActionProps) {
   const { readerColors } = useTheme()
   const a11yLang = useAccessibilityLanguage()
-  const styles = useMemo(() => createStyles(readerColors), [readerColors])
+  const scriptLang = useAppLanguage()
+  const styles = useMemo(() => createStyles(readerColors, scriptLang), [readerColors, scriptLang])
 
   return (
     <Pressable
@@ -112,7 +113,8 @@ export function SavePop({ saved, children }: { saved: boolean; children: ReactNo
 
 function ArticleActionsBase({ bookmarked, onShare, onSave, onBack, languageSlot }: Props) {
   const { readerColors } = useTheme()
-  const styles = useMemo(() => createStyles(readerColors), [readerColors])
+  const scriptLang = useAppLanguage()
+  const styles = useMemo(() => createStyles(readerColors, scriptLang), [readerColors, scriptLang])
   const SaveIcon = bookmarked ? BookmarkCheck : Bookmark
   const t = useT()
 
@@ -162,7 +164,7 @@ function ArticleActionsBase({ bookmarked, onShare, onSave, onBack, languageSlot 
 
 export const ArticleActions = memo(ArticleActionsBase)
 
-function createStyles(c: ReaderColors) {
+function createStyles(c: ReaderColors, lang: AppLanguage) {
   return StyleSheet.create({
     row: {
       flexDirection: 'row',
@@ -196,7 +198,8 @@ function createStyles(c: ReaderColors) {
       backgroundColor: c.accentSoft,
     },
     label: {
-      fontSize: 13,
+      // Devanagari at 13px loses its matras; Hindi bar labels are 14px.
+      fontSize: lang === 'hi' ? 14 : 13,
       fontWeight: '600',
       color: c.textSecondary,
     },

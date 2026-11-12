@@ -421,7 +421,7 @@ describe('ArticleScreen', () => {
       Object.defineProperty(Platform, 'OS', { value: originalOS, configurable: true })
     })
 
-    it('saves optimistically with a light haptic, announcement and one toast', async () => {
+    it('saves optimistically with a light haptic and one toast (the only announcer)', async () => {
       const announce = jest.spyOn(AccessibilityInfo, 'announceForAccessibility')
       renderArticle()
       await screen.findByText('Fetched headline')
@@ -429,7 +429,7 @@ describe('ArticleScreen', () => {
         fireEvent.press(screen.getByLabelText('Save'))
       })
       expect(Haptics.impactAsync).toHaveBeenCalledWith('light')
-      expect(announce).toHaveBeenCalledWith('Saved')
+      expect(announce).not.toHaveBeenCalled()
       expect(mockShowToast).toHaveBeenCalledTimes(1)
       expect(mockShowToast).toHaveBeenCalledWith({ message: 'Saved' })
       const save = screen.getByLabelText('Remove bookmark')

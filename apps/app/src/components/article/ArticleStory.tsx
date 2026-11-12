@@ -21,7 +21,10 @@ import { normalizeArticleSourceUrl } from '../../utils/normalizeArticleSourceUrl
 import type { ArticleBlock } from '../../utils/splitArticleBody'
 import { pressableState, webFocusRing } from './focusStyle'
 import { storyEyebrow } from './eyebrow'
+import { cityNameHiByEnglish } from '../../location/cityNamesHi'
 import { feedCategoryLabel, useT } from '../../i18n'
+import { adaptStylesForScript } from '../../theme/scriptTypography'
+import { useAppLanguage } from '../../i18n'
 
 type Props = {
   article: ArticleResponse
@@ -29,6 +32,8 @@ type Props = {
   citySlug?: string
   /** Show the calm "Next story ↓" cue at the end of the story. */
   showNextCue?: boolean
+  /** Advance the pager when the cue is tapped. */
+  onNextStory?: () => void
   priorityImage?: boolean
   bodyLoading?: boolean
   /** True only when fetching the full story failed (not when the API has no body). */
@@ -79,6 +84,7 @@ function ArticleStoryBase({
   article,
   citySlug,
   showNextCue = false,
+  onNextStory,
   priorityImage = false,
   bodyLoading = false,
   onReadSource,
@@ -87,11 +93,17 @@ function ArticleStoryBase({
 }: Props) {
   const { readerColors } = useTheme()
   const t = useT()
-  const styles = useMemo(() => createStyles(readerColors), [readerColors])
+  const scriptLang = useAppLanguage()
+  const styles = useMemo(
+    () => adaptStylesForScript(createStyles(readerColors), scriptLang),
+    [readerColors, scriptLang],
+  )
   const { width } = useWindowDimensions()
   const imageUri = article.imageUrl && isHttpsUrl(article.imageUrl) ? article.imageUrl : null
   const eyebrow = storyEyebrow(citySlug, article.category)
-  const location = eyebrow ? feedCategoryLabel(t, eyebrow) : undefined
+  const location = eyebrow
+    ? (scriptLang === 'hi' ? cityNameHiByEnglish(eyebrow) : undefined) ?? feedCategoryLabel(t, eyebrow)
+    : undefined
   const publisher = publisherName(article)
   const sourceUrl = (() => {
     const normalized = normalizeArticleSourceUrl(article.sourceUrl)
@@ -111,8 +123,10 @@ function ArticleStoryBase({
   )
   const metaParts = [publisher, time, readingTime].filter(Boolean)
   const headline = cleanHeadline(article.headline ?? '', publisher) || t('article.untitled')
+  // Devanagari needs room for matras above the shirorekha and no tracking.
+  const devanagari = scriptLang === 'hi' || DEVANAGARI.test(headline)
   const headlineSize = width >= 768 ? 36 : 30
-  const headlineLine = width >= 768 ? 40 : 34
+  const headlineLine = devanagari ? (width >= 768 ? 48 : 40) : width >= 768 ? 40 : 34
   const hasContent = displayContent.hasReadableContent
   const showLoadError = bodyFailed && !hasContent && !bodyLoading
   const showBodyLoading = bodyLoading && !hasContent
@@ -158,7 +172,13 @@ function ArticleStoryBase({
           style={styles.header}
         >
           {location ? <Text style={styles.eyebrow}>{location}</Text> : null}
-          <Text style={[styles.headline, { fontSize: headlineSize, lineHeight: headlineLine }]}>
+          <Text
+            style={[
+              styles.headline,
+              { fontSize: headlineSize, lineHeight: headlineLine },
+              devanagari ? { letterSpacing: 0 } : null,
+            ]}
+          >
             {headline}
           </Text>
           {metaParts.length > 0 ? <Text style={styles.meta}>{metaParts.join(' · ')}</Text> : null}
@@ -236,14 +256,16 @@ function ArticleStoryBase({
         ) : null}
 
         {showNextCue ? (
-          <View
+          <Pressable
             testID="next-story-cue"
-            style={styles.nextCue}
-            accessible
+            onPress={onNextStory}
+            disabled={!onNextStory}
+            accessibilityRole="button"
             accessibilityLabel={t('article.nextStoryA11y')}
+            style={({ pressed }) => [styles.nextCue, pressed ? { opacity: 0.7 } : null]}
           >
             <Text style={styles.nextCueText}>{t('article.nextStory')}</Text>
-          </View>
+          </Pressable>
         ) : null}
       </View>
     </View>
@@ -251,6 +273,8 @@ function ArticleStoryBase({
 }
 
 export const ArticleStory = memo(ArticleStoryBase)
+
+const DEVANAGARI = /[\u0900-\u097F]/
 
 function createStyles(c: ReaderColors) {
   return StyleSheet.create({
@@ -424,8 +448,12 @@ function createStyles(c: ReaderColors) {
     },
     nextCue: {
       alignItems: 'center',
-      paddingTop: 20,
-      paddingBottom: 8,
+      justifyContent: 'center',
+      alignSelf: 'center',
+      minHeight: 44,
+      minWidth: 44,
+      paddingHorizontal: 16,
+      marginTop: 12,
     },
     nextCueText: {
       color: c.textMuted,

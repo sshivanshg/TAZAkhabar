@@ -7,11 +7,13 @@ import type { Href } from 'expo-router'
 export function resolveBootRoute(opts: {
   hasSelectedLanguage: boolean
   storedCity: string | null
+  /** `?city=` from the URL; a deep link beats the stored city. */
+  urlCity?: string | null
 }): Href {
   if (!opts.hasSelectedLanguage) {
     return '/language'
   }
-  return routeAfterLanguage(opts.storedCity)
+  return routeAfterLanguage(opts.urlCity || opts.storedCity)
 }
 
 export function routeAfterLanguage(storedCity: string | null): Href {

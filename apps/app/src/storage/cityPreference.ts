@@ -1,7 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import type { CityResponse } from '@tazakhabar/shared-types'
 import { CITY_STORAGE_KEY } from '../theme/tokens'
-import { translate } from '../i18n/runtime'
+import { getAppLanguage, translateIn, type AppLanguage } from '../i18n/runtime'
+import { cityNameHi } from '../location/cityNamesHi'
 
 /** Virtual feed scope: nationwide articles ranked with the same personalization pipeline. */
 export const GLOBAL_CITY_SLUG = 'global'
@@ -23,11 +24,27 @@ export function createGlobalCity(): CityResponse {
 export function getCityDisplayLabel(
   slug: string | null | undefined,
   cityName?: string | null,
+  lang: AppLanguage = getAppLanguage(),
 ): string {
   if (isGlobalCitySlug(slug)) {
-    return translate('city.allIndia')
+    return translateIn(lang, 'city.allIndia')
   }
-  return cityName ?? slug ?? translate('city.allIndia')
+  if (lang === 'hi') {
+    const hindi = cityNameHi(slug)
+    if (hindi) return hindi
+  }
+  return cityName ?? slug ?? translateIn(lang, 'city.allIndia')
+}
+
+/**
+ * Feed city precedence: an explicit URL `?city=` (deep link or a fresh pick,
+ * which also writes the param) wins, then the stored preference, then All India.
+ */
+export function pickFeedCity(opts: {
+  paramCity: string | null | undefined
+  storedCity: string | null | undefined
+}): string {
+  return opts.paramCity || opts.storedCity || GLOBAL_CITY_SLUG
 }
 
 export async function getStoredCitySlug(): Promise<string | null> {

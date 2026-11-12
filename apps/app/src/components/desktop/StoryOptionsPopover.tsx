@@ -23,6 +23,8 @@ import {
 import { iconStroke } from '../../theme/categoryIcons'
 import type { BottomSheetSection } from '../ui/BottomSheet'
 import { useT } from '../../i18n'
+import { adaptStylesForScript } from '../../theme/scriptTypography'
+import { useAppLanguage } from '../../i18n'
 
 export type StoryOptionsAnchor = {
   x: number
@@ -92,7 +94,11 @@ export function StoryOptionsPopover({ visible, anchor, title, sections, onClose 
   const hasCapturedFocusRef = useRef(false)
   const { colors, shadows } = useTheme()
   const t = useT()
-  const styles = useMemo(() => createStyles(colors, shadows), [colors, shadows])
+  const scriptLang = useAppLanguage()
+  const styles = useMemo(
+    () => adaptStylesForScript(createStyles(colors, shadows), scriptLang),
+    [colors, shadows, scriptLang],
+  )
 
   const focusableItems = useCallback((): HTMLElement[] => {
     if (Platform.OS !== 'web' || typeof document === 'undefined') {

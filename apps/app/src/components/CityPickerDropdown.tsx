@@ -24,7 +24,8 @@ import { iconStroke } from '../theme/categoryIcons'
 import { filterCities } from './CitySearch'
 import { useMotionTransition } from '../hooks/usePrefersReducedMotion'
 import { hapticSelection } from '../lib/haptics'
-import { translate, useT } from '../i18n'
+import { useAppLanguage, useT } from '../i18n'
+import { cityRowLabel } from '../location/cityNamesHi'
 
 export type CityPickerAnchor = {
   x: number
@@ -87,11 +88,6 @@ function popoverPosition(
   return { top, left }
 }
 
-function cityLine(city: CityResponse): string {
-  const name = city.name?.trim() || translate('common.unknownCity')
-  const state = city.state?.trim()
-  return state ? `${name}, ${state}` : name
-}
 
 /** Minimal floating city menu — search, optional location, compact list. */
 export function CityPickerDropdown({
@@ -116,6 +112,8 @@ export function CityPickerDropdown({
   const returnFocusRef = useRef<HTMLElement | null>(null)
   const { colors, shadows } = useTheme()
   const t = useT()
+  const lang = useAppLanguage()
+  const cityLine = (city: CityResponse) => cityRowLabel(city, lang, t)
   const motionTransition = useMotionTransition({ type: 'timing', duration: MOTION_MS })
   const styles = useMemo(() => createStyles(colors, shadows), [colors, shadows])
 
@@ -201,7 +199,8 @@ export function CityPickerDropdown({
           style={[
             styles.panel,
             effectiveSheet
-              ? [styles.panelSheet, { maxHeight: panelHeight }]
+              ? // Fixed height so filtering never makes the sheet jump.
+                [styles.panelSheet, { height: panelHeight, maxHeight: panelHeight }]
               : pos
                 ? [styles.panelPopover, { top: pos.top, left: pos.left, maxHeight: panelHeight }]
                 : null,
@@ -218,6 +217,7 @@ export function CityPickerDropdown({
               returnKeyType="search"
               autoCorrect={false}
               autoCapitalize="none"
+              autoFocus={open}
               style={styles.searchInput}
             />
           </View>
@@ -384,6 +384,7 @@ function createStyles(c: AppColors, shadows: ReturnType<typeof getShadows>) {
     },
     list: {
       flexGrow: 0,
+      flexShrink: 1,
     },
     listContent: {
       paddingBottom: space.xxs,

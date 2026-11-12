@@ -18,6 +18,8 @@ import {
 } from '../notifications/registerNotifications'
 import { radius, space, typography, type AppColors } from '../theme/tokens'
 import { translate, useT } from '../i18n'
+import { adaptStylesForScript } from '../theme/scriptTypography'
+import { useAppLanguage } from '../i18n'
 
 const PROMPT_COOLDOWN_DAYS = 7
 
@@ -30,7 +32,11 @@ export function NotificationOptInBanner() {
   const [error, setError] = useState<string | null>(null)
   const { colors, shadows } = useTheme()
   const t = useT()
-  const styles = useMemo(() => createStyles(colors), [colors])
+  const scriptLang = useAppLanguage()
+  const styles = useMemo(
+    () => adaptStylesForScript(createStyles(colors), scriptLang),
+    [colors, scriptLang],
+  )
 
   useEffect(() => {
     let cancelled = false

@@ -108,10 +108,10 @@ export default function TabsLayout() {
             tabBarActiveTintColor: colors.accent,
             tabBarInactiveTintColor: colors.textMuted,
             tabBarLabelStyle: {
-              fontSize: 13,
-              lineHeight: isHindi ? 19 : 16,
+              fontSize: isHindi ? 14 : 13,
+              lineHeight: isHindi ? 20 : 16,
               fontWeight: '600',
-              letterSpacing: 0.1,
+              letterSpacing: isHindi ? 0 : 0.1,
             },
           }}
         >

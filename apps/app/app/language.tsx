@@ -20,6 +20,8 @@ import { hapticSelection } from '../src/lib/haptics'
 import { cardPress } from '../src/lib/pressFeedback'
 import { useT } from '../src/i18n'
 import { HIT_TARGET, radius, space, type AppColors } from '../src/theme/tokens'
+import { adaptStylesForScript } from '../src/theme/scriptTypography'
+import { useAppLanguage } from '../src/i18n'
 
 // Each option is shown in its own language on purpose, whatever the app language is.
 const LANGUAGE_COPY: Record<
@@ -44,7 +46,11 @@ export default function LanguageScreen() {
   const { colors, shadows } = useTheme()
   const { preferredLanguage, hasSelectedLanguage, setPreferredLanguage } =
     useLanguagePreference()
-  const styles = useMemo(() => createStyles(colors), [colors])
+  const scriptLang = useAppLanguage()
+  const styles = useMemo(
+    () => adaptStylesForScript(createStyles(colors), scriptLang),
+    [colors, scriptLang],
+  )
   const reduced = usePrefersReducedMotion()
   const t = useT()
   const motion = (config: { type: 'timing'; duration: number; delay?: number; loop?: boolean }) =>
@@ -158,7 +164,6 @@ export default function LanguageScreen() {
                     </Text>
                     <Text
                       style={[styles.optionSample, selected && styles.optionSampleSelected]}
-                      numberOfLines={1}
                     >
                       {copy.sample}
                     </Text>

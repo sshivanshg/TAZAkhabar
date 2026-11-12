@@ -8,6 +8,7 @@ import { useTheme } from '../preferences/ThemePreferenceContext'
 import { HIT_TARGET, radius, space, type AppColors } from '../theme/tokens'
 import { iconStroke } from '../theme/categoryIcons'
 import { useT } from '../i18n'
+import { cityAliasesHi } from '../location/cityNamesHi'
 
 type Props = {
   value: string
@@ -24,7 +25,11 @@ export function filterCities(cities: CityResponse[], query: string): CityRespons
   return cities.filter((city) => {
     const name = (city.name ?? '').toLowerCase()
     const state = (city.state ?? '').toLowerCase()
-    return name.includes(needle) || state.includes(needle)
+    return (
+      name.includes(needle) ||
+      state.includes(needle) ||
+      cityAliasesHi(city.slug).some((alias) => alias.includes(needle))
+    )
   })
 }
 

@@ -5,7 +5,7 @@ export const LANGUAGE_STORAGE_KEY = 'khabro.preferredReadingLanguage.v1'
 /** v1 reading languages — UI list only; API accepts any ISO code. */
 export const READING_LANGUAGES = [
   { code: 'en', label: 'English', accessibilityLabel: 'English' },
-  { code: 'hi', label: 'हिन्दी', accessibilityLabel: 'हिन्दी' },
+  { code: 'hi', label: 'हिंदी', accessibilityLabel: 'हिंदी' },
 ] as const
 
 export type ReadingLanguageCode = (typeof READING_LANGUAGES)[number]['code']

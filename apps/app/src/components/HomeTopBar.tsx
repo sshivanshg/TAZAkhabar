@@ -61,7 +61,7 @@ export function HomeTopBar({
             <ReadingLanguageToggle value={readingLanguage} onChange={onSelectLanguage} />
           ) : null}
           {cityTitle ? (
-            <View ref={cityButtonRef} collapsable={false}>
+            <View ref={cityButtonRef} collapsable={false} style={styles.cityWrap}>
               <Pressable
                 onPress={onCityPress}
                 accessibilityRole="button"
@@ -76,6 +76,8 @@ export function HomeTopBar({
                   fontWeight="$semibold"
                   color={colors.accent}
                   numberOfLines={1}
+                  ellipsizeMode="tail"
+                  style={styles.cityText}
                 >
                   {cityTitle}
                 </Text>
@@ -118,8 +120,17 @@ function createStyles(c: AppColors) {
       flexDirection: 'row',
       alignItems: 'center',
       gap: 6,
-      flexShrink: 0,
-      maxWidth: '52%',
+      flexShrink: 1,
+      minWidth: 0,
+      maxWidth: '48%',
+    },
+    cityWrap: {
+      flexShrink: 1,
+      minWidth: 0,
+    },
+    cityText: {
+      flexShrink: 1,
+      minWidth: 0,
     },
     iconHit: {
       width: HIT_TARGET,

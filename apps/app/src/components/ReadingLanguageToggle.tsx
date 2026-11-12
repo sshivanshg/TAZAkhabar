@@ -8,6 +8,8 @@ import { useTheme } from '../preferences/ThemePreferenceContext'
 import { radius } from '../theme/tokens'
 import { pressableState, webFocusRing } from './article/focusStyle'
 import { useT } from '../i18n'
+import { adaptStylesForScript } from '../theme/scriptTypography'
+import { useAppLanguage } from '../i18n'
 
 type Palette = 'app' | 'reader'
 
@@ -51,7 +53,11 @@ export function ReadingLanguageToggle({ value, onChange, palette = 'app' }: Prop
           },
     [colors, palette, readerColors],
   )
-  const styles = useMemo(() => createStyles(toggleColors), [toggleColors])
+  const scriptLang = useAppLanguage()
+  const styles = useMemo(
+    () => adaptStylesForScript(createStyles(toggleColors), scriptLang),
+    [toggleColors, scriptLang],
+  )
 
   return (
     <View

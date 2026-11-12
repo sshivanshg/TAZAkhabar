@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useMemo, useEffect, useState } from 'react'
 import { AccessibilityInfo, Platform } from 'react-native'
 
 /** Respect OS / browser reduced-motion so reader chrome does not animate. */
@@ -57,5 +57,10 @@ export function resolveMotionTransition<T extends MotionTransition>(
 
 /** Returns `config`, or a duration-0 timing when the user prefers reduced motion. */
 export function useMotionTransition<T extends MotionTransition>(config: T) {
-  return resolveMotionTransition(config, usePrefersReducedMotion())
+  const reduced = usePrefersReducedMotion()
+  // Stable identity for an equal config: a fresh object each render makes Moti
+  // restart the animation, which left the hero fade stuck mid-way.
+  const key = JSON.stringify(config)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  return useMemo(() => resolveMotionTransition(config, reduced), [key, reduced])
 }

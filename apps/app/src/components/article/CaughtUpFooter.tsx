@@ -5,6 +5,8 @@ import { HIT_TARGET } from '../../theme/tokens'
 import type { ReaderColors } from '../../theme/readerTokens'
 import { pressableState, webFocusRing } from './focusStyle'
 import { useT } from '../../i18n'
+import { adaptStylesForScript } from '../../theme/scriptTypography'
+import { useAppLanguage } from '../../i18n'
 
 type Props = {
   onBack: () => void
@@ -13,7 +15,11 @@ type Props = {
 export function CaughtUpFooter({ onBack }: Props) {
   const { readerColors } = useTheme()
   const t = useT()
-  const styles = useMemo(() => createStyles(readerColors), [readerColors])
+  const scriptLang = useAppLanguage()
+  const styles = useMemo(
+    () => adaptStylesForScript(createStyles(readerColors), scriptLang),
+    [readerColors, scriptLang],
+  )
 
   return (
     <View testID="caught-up" style={styles.wrap}>

@@ -76,11 +76,12 @@ export function BreakingHeroCard({
   const imageUrl = article.imageUrl
   const metrics = heroMetrics(size)
   const compact = size === 'secondary'
-  const enterTransition = useMotionTransition({
-    type: 'timing',
-    duration: 240,
-    delay: Math.min(index * 40, 160),
-  })
+  const enterDelay = Math.min(index * 40, 160)
+  const enterConfig = useMemo(
+    () => ({ type: 'timing' as const, duration: 240, delay: enterDelay }),
+    [enterDelay],
+  )
+  const enterTransition = useMotionTransition(enterConfig)
 
   return (
     <MotiView

@@ -41,18 +41,16 @@ import { EmptyState } from '../../src/components/ui/EmptyState'
 import { useFeedPreferences } from '../../src/preferences/FeedPreferencesContext'
 import { useLanguagePreference } from '../../src/preferences/LanguagePreferenceContext'
 import { useTheme } from '../../src/preferences/ThemePreferenceContext'
-import {
-  articleToBookmark,
-  getBookmarks,
-  removeBookmark,
-  addBookmark,
-} from '../../src/storage/bookmarks'
+import { getBookmarks } from '../../src/storage/bookmarks'
+import { toggleBookmarkAction } from '../../src/lib/toggleBookmark'
+import { sectionTitle } from '../../src/utils/feedSectionTitle'
 import {
   createGlobalCity,
   getCityDisplayLabel,
   getStoredCitySlug,
   GLOBAL_CITY_SLUG,
   isGlobalCitySlug,
+  pickFeedCity,
   setStoredCitySlug,
 } from '../../src/storage/cityPreference'
 import { getPersonalizationId } from '../../src/storage/personalizationId'
@@ -210,6 +208,15 @@ function HomeFeedBody() {
     setBookmarkedIds(new Set(list.map((b) => b.id)))
   }, [])
 
+  const setBookmarkSaved = useCallback((id: number, saved: boolean) => {
+    setBookmarkedIds((prev) => {
+      const next = new Set(prev)
+      if (saved) next.add(id)
+      else next.delete(id)
+      return next
+    })
+  }, [])
+
   useFocusEffect(
     useCallback(() => {
       void refreshBookmarks()
@@ -222,33 +229,25 @@ function HomeFeedBody() {
     }
   }, [params.category, category])
 
+  // City precedence (see pickFeedCity): URL ?city= > stored > All India.
+  // Keyed on params.city only — a fresh pick updates the param via setParams,
+  // so this never snaps the feed back to a stale URL city.
   useEffect(() => {
     let cancelled = false
     async function resolveCity() {
-      const fromParams = params.city
-      if (fromParams) {
-        if (!cancelled) {
-          if (citySlug !== fromParams) {
-            setCitySlug(fromParams)
-          }
-          await setStoredCitySlug(fromParams)
-        }
-        return
-      }
       const stored = await getStoredCitySlug()
-      const effective = stored ?? GLOBAL_CITY_SLUG
-      if (!cancelled) {
-        setCitySlug(effective)
-        if (!stored) {
-          await setStoredCitySlug(GLOBAL_CITY_SLUG)
-        }
+      const next = pickFeedCity({ paramCity: params.city, storedCity: stored })
+      if (cancelled) return
+      setCitySlug(next)
+      if (next !== stored) {
+        await setStoredCitySlug(next)
       }
     }
     void resolveCity()
     return () => {
       cancelled = true
     }
-  }, [citySlug, params.city])
+  }, [params.city])
 
   const cityList = useAsyncResource(
     () => apiClient.getCities(),
@@ -451,7 +450,7 @@ function HomeFeedBody() {
     }
   }, [citySlug, category, preferredLanguage, languageReady, loadPage])
 
-  const cityTitle = getCityDisplayLabel(citySlug, cityMeta?.name)
+  const cityTitle = getCityDisplayLabel(citySlug, cityMeta?.name, preferredLanguage)
 
   const { openCityPicker, picker: cityPicker } = useCityPicker({
     citySlug,
@@ -461,6 +460,7 @@ function HomeFeedBody() {
       if (city.slug) {
         setCitySlug(city.slug)
         setCityMeta(city)
+        router.setParams({ city: city.slug })
       }
     },
   })
@@ -551,7 +551,7 @@ function HomeFeedBody() {
           rows.push({
             kind: 'section',
             key: `section-${section.key ?? 'general'}`,
-            title: section.title ?? '',
+            title: sectionTitle(section, t),
           })
           for (const row of buildMobileFeedRows(section.items)) {
             if (row.kind !== 'empty') {
@@ -694,27 +694,19 @@ function HomeFeedBody() {
       return []
     }
     const cat = actionArticle.category ?? ''
-    const source = actionArticle.sourceName ?? 'this source'
+    const source = actionArticle.sourceName ?? t('block.thisSource')
     const saved =
       actionArticle.id != null && bookmarkedIds.has(actionArticle.id)
     return buildStorySections({
       article: actionArticle,
       saved,
       onSave: () => {
-        void (async () => {
-          if (actionArticle.id == null) {
-            return
-          }
-          if (saved) {
-            await removeBookmark(actionArticle.id)
-          } else {
-            const snap = articleToBookmark(actionArticle, citySlug ?? undefined)
-            if (snap) {
-              await addBookmark(snap)
-            }
-          }
-          await refreshBookmarks()
-        })()
+        void toggleBookmarkAction({
+          article: actionArticle,
+          citySlug: citySlug ?? undefined,
+          currentlySaved: saved,
+          setSaved: setBookmarkSaved,
+        })
       },
       onShare: () => {
         void shareArticle({
@@ -741,7 +733,7 @@ function HomeFeedBody() {
         ? () => setBlockCategoryName(cat)
         : undefined,
     })
-  }, [actionArticle, bookmarkedIds, citySlug, prefs, refreshBookmarks])
+  }, [actionArticle, bookmarkedIds, citySlug, prefs, setBookmarkSaved, t])
 
   const onEndReached = () => {
     if (!loading && !refreshing && !loadingMore && hasMore) {
@@ -815,7 +807,7 @@ function HomeFeedBody() {
             {error && articles.length === 0 ? (
               <View
                 testID={expanded ? 'error-column' : undefined}
-                style={expanded ? styles.errorColumn : undefined}
+                style={expanded ? styles.errorColumn : styles.listFlex}
               >
                 <ErrorState
                   title={t('home.errorTitle')}
@@ -937,9 +929,10 @@ function HomeFeedBody() {
                     const primaryLabel = filteredAway
                       ? t('home.openSettings')
                       : t('common.changeCity')
+                    // Empty (not filtered): an explicit Refresh beside Change city.
                     const secondaryLabel = filteredAway
                       ? t('common.changeCity')
-                      : undefined
+                      : t('home.refresh')
                     return (
                       <EmptyState
                         title={title}
@@ -952,7 +945,9 @@ function HomeFeedBody() {
                         }
                         primaryAccessibilityLabel={primaryLabel}
                         secondaryLabel={secondaryLabel}
-                        onSecondary={filteredAway ? openCityPicker : undefined}
+                        onSecondary={
+                          filteredAway ? openCityPicker : () => void loadPage('replace')
+                        }
                         secondaryAccessibilityLabel={secondaryLabel}
                       />
                     )

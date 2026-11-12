@@ -212,12 +212,14 @@ function BookmarksBody() {
                 />
               </View>
             ) : (
-              <View>
-                <CompactArticleCard
-                  article={item}
-                  index={index}
-                  onPress={() => openArticle(item)}
-                />
+              <View style={styles.savedRow}>
+                <View style={styles.savedCard}>
+                  <CompactArticleCard
+                    article={item}
+                    index={index}
+                    onPress={() => openArticle(item)}
+                  />
+                </View>
                 <Pressable
                   onPress={() => void onRemove(item.id)}
                   accessibilityRole="button"
@@ -286,14 +288,22 @@ function createStyles(c: AppColors) {
       justifyContent: 'center',
       marginBottom: 8,
     },
+    savedRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    savedCard: {
+      flex: 1,
+      minWidth: 0,
+    },
+    // Remove sits in the card row: a full 44px target, not a stray line below.
     removeBtn: {
-      alignSelf: 'flex-start',
       minHeight: 44,
+      minWidth: 44,
+      alignItems: 'center',
       justifyContent: 'center',
-      paddingVertical: space.xs,
-      paddingHorizontal: space.xxs,
-      marginBottom: space.sm,
-      marginTop: -space.xs,
+      paddingHorizontal: space.xs,
+      marginLeft: space.xxs,
     },
   })
 }

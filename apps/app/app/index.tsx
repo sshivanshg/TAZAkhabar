@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Redirect } from 'expo-router'
+import { Redirect, useLocalSearchParams } from 'expo-router'
 import { Box, Spinner, Text, VStack } from '@gluestack-ui/themed'
 import { useTheme } from '../src/preferences/ThemePreferenceContext'
 import { useLanguagePreference } from '../src/preferences/LanguagePreferenceContext'
@@ -11,6 +11,7 @@ export default function IndexScreen() {
   const { colors } = useTheme()
   const t = useT()
   const { ready: languageReady, hasSelectedLanguage } = useLanguagePreference()
+  const { city: urlCity } = useLocalSearchParams<{ city?: string }>()
   const [ready, setReady] = useState(false)
   const [slug, setSlug] = useState<string | null>(null)
 
@@ -41,5 +42,5 @@ export default function IndexScreen() {
   }
 
   // language → city → tabs; returning readers (stored city) go straight to tabs.
-  return <Redirect href={resolveBootRoute({ hasSelectedLanguage, storedCity: slug })} />
+  return <Redirect href={resolveBootRoute({ hasSelectedLanguage, storedCity: slug, urlCity })} />
 }

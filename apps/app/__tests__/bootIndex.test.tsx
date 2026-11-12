@@ -10,6 +10,7 @@ jest.mock('@react-native-async-storage/async-storage', () => ({
 }))
 
 jest.mock('expo-router', () => ({
+  useLocalSearchParams: () => ({}),
   Redirect: (props: { href: unknown }) => {
     mockRedirect(props.href)
     return null
