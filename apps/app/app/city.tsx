@@ -6,6 +6,7 @@ import type { CityResponse } from '@tazakhabar/shared-types'
 import { apiClient } from '../src/api/client'
 import { PrimaryButton, SecondaryButton } from '../src/components/ui/PrimaryButton'
 import { showToast } from '../src/components/ui/Toast'
+import { hapticSelection } from '../src/lib/haptics'
 import { useCityPicker } from '../src/hooks/useCityPicker'
 import { getCurrentCoordinates } from '../src/location/getCurrentCoordinates'
 import { findNearestCity } from '../src/location/nearestCity'
@@ -57,6 +58,7 @@ export default function CityStepScreen() {
   const choose = useCallback(
     async (city: CityResponse) => {
       if (!city.slug) return
+      hapticSelection()
       await setStoredCitySlug(city.slug)
       showToast({
         message: CITY_STEP_COPY.savedToast(getCityDisplayLabel(city.slug, city.name)),

@@ -36,6 +36,7 @@ import { TabScreenShell } from '../../src/components/TabScreenShell'
 import { ErrorState } from '../../src/components/ui/ErrorState'
 import { OfflineBanner } from '../../src/components/OfflineBanner'
 import { readOfflineFeed } from '../../src/lib/feedCache'
+import { hapticSuccess } from '../../src/lib/haptics'
 import { EmptyState } from '../../src/components/ui/EmptyState'
 import { useFeedPreferences } from '../../src/preferences/FeedPreferencesContext'
 import { useLanguagePreference } from '../../src/preferences/LanguagePreferenceContext'
@@ -188,6 +189,8 @@ function HomeFeedBody() {
   )
   const [trendingEpoch, setTrendingEpoch] = useState(0)
   const [articles, setArticles] = useState<ArticleResponse[]>([])
+  const articlesRef = useRef<ArticleResponse[]>([])
+  articlesRef.current = articles
   // Sectioned For-you partition from getFeedSections; null = flat list mode
   // (category drill-down, fallback, or cached entry without sections).
   const [sections, setSections] = useState<FeedSection[] | null>(null)
@@ -405,6 +408,10 @@ function HomeFeedBody() {
         const items = result.items ?? []
         const nextTotal = result.total ?? items.length
         setTotal(nextTotal)
+        if (mode === 'refresh') {
+          const seen = new Set(articlesRef.current.map((a) => a.id))
+          if (items.some((a) => !seen.has(a.id))) hapticSuccess()
+        }
         setArticles((prev) => (mode === 'append' ? [...prev, ...items] : items))
         if (mode !== 'append') {
           setSections(nextSections)

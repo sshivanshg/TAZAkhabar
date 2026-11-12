@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState, type JSX } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { MotiView } from 'moti'
+import { useMotionTransition } from '../../hooks/usePrefersReducedMotion'
+import { iconPress } from '../../lib/pressFeedback'
 import { useTheme } from '../../preferences/ThemePreferenceContext'
 import { HIT_TARGET, radius, space } from '../../theme/tokens'
 
@@ -31,6 +34,7 @@ export function ToastHost(): JSX.Element {
   const insets = useSafeAreaInsets()
   const { colors } = useTheme()
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const transition = useMotionTransition({ type: 'timing', duration: 180 })
 
   useEffect(() => {
     listener = setToast
@@ -55,8 +59,11 @@ export function ToastHost(): JSX.Element {
       accessibilityLiveRegion="polite"
     >
       {toast ? (
-        <View
+        <MotiView
           key={toast.id}
+          from={{ opacity: 0, translateY: 8 }}
+          animate={{ opacity: 1, translateY: 0 }}
+          transition={transition}
           testID="toast"
           accessibilityRole="alert"
           style={[styles.toast, { backgroundColor: colors.text }]}
@@ -71,14 +78,14 @@ export function ToastHost(): JSX.Element {
                 toast.onAction?.()
                 setToast(null)
               }}
-              style={({ pressed }) => [styles.action, pressed && styles.pressed]}
+              style={({ pressed }) => [styles.action, iconPress(pressed)]}
             >
               <Text style={[styles.actionText, { color: colors.background }]}>
                 {toast.actionLabel}
               </Text>
             </Pressable>
           ) : null}
-        </View>
+        </MotiView>
       ) : null}
     </View>
   )
@@ -112,5 +119,4 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   actionText: { fontSize: 16, fontWeight: '700', textDecorationLine: 'underline' },
-  pressed: { opacity: 0.6 },
 })

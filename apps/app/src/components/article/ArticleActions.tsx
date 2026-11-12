@@ -1,4 +1,5 @@
-import { memo, useMemo, type ReactNode } from 'react'
+import { memo, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { MotiView } from 'moti'
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native'
 import Bookmark from 'lucide-react-native/icons/bookmark'
 import BookmarkCheck from 'lucide-react-native/icons/bookmark-check'
@@ -9,6 +10,8 @@ import { HIT_TARGET } from '../../theme/tokens'
 import { iconStroke } from '../../theme/categoryIcons'
 import type { ReaderColors } from '../../theme/readerTokens'
 import { pressableState, webFocusRing } from './focusStyle'
+import { usePrefersReducedMotion } from '../../hooks/usePrefersReducedMotion'
+import { cardPress } from '../../lib/pressFeedback'
 import { ARTICLE_COPY } from './copy'
 
 type Props = {
@@ -59,7 +62,7 @@ function ActionButton({
           styles.btn,
           size === 'wide' ? styles.btnWide : size === 'narrow' ? styles.btnNarrow : null,
           primary ? styles.btnPrimary : null,
-          pressed ? styles.pressed : null,
+          cardPress(pressed),
           webFocusRing(Boolean(focused), readerColors),
         ]
       }}
@@ -74,6 +77,34 @@ function ActionButton({
         {label}
       </Text>
     </Pressable>
+  )
+}
+
+const POP_SPRING = { type: 'spring' as const, damping: 14, stiffness: 220, mass: 0.6 }
+
+/** Pops the save icon 1→1.15→1 when it becomes saved. Static under reduced motion. */
+export function SavePop({ saved, children }: { saved: boolean; children: ReactNode }) {
+  const reduced = usePrefersReducedMotion()
+  const [popKey, setPopKey] = useState(0)
+  const prev = useRef(saved)
+  useEffect(() => {
+    if (saved && !prev.current) setPopKey((k) => k + 1)
+    prev.current = saved
+  }, [saved])
+
+  if (reduced || popKey === 0) {
+    return <View testID="save-pop-static">{children}</View>
+  }
+  return (
+    <MotiView
+      key={popKey}
+      testID="save-pop"
+      from={{ scale: 1 }}
+      animate={{ scale: [1.15, 1] }}
+      transition={POP_SPRING}
+    >
+      {children}
+    </MotiView>
   )
 }
 
@@ -103,12 +134,14 @@ function ArticleActionsBase({ bookmarked, onShare, onSave, onBack, languageSlot 
         size={onBack ? 'narrow' : undefined}
         onPress={onSave}
       >
-        <SaveIcon
-          size={18}
-          strokeWidth={iconStroke}
-          color={bookmarked ? readerColors.accent : readerColors.text}
-          fill={bookmarked ? readerColors.accent : 'none'}
-        />
+        <SavePop saved={bookmarked}>
+          <SaveIcon
+            size={18}
+            strokeWidth={iconStroke}
+            color={bookmarked ? readerColors.accent : readerColors.text}
+            fill={bookmarked ? readerColors.accent : 'none'}
+          />
+        </SavePop>
       </ActionButton>
       <ActionButton
         testID="bottom-whatsapp"
@@ -170,10 +203,6 @@ function createStyles(c: ReaderColors) {
     langSlot: {
       justifyContent: 'center',
       flexShrink: 0,
-    },
-    pressed: {
-      opacity: 0.78,
-      transform: [{ scale: 0.985 }],
     },
   })
 }

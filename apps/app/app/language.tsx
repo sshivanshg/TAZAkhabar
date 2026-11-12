@@ -12,6 +12,12 @@ import { useTheme } from '../src/preferences/ThemePreferenceContext'
 import { getStoredCitySlug } from '../src/storage/cityPreference'
 import { routeAfterLanguage } from '../src/lib/onboarding'
 import { READING_LANGUAGES, type ReadingLanguageCode } from '../src/storage/languagePreference'
+import {
+  resolveMotionTransition,
+  usePrefersReducedMotion,
+} from '../src/hooks/usePrefersReducedMotion'
+import { hapticSelection } from '../src/lib/haptics'
+import { cardPress } from '../src/lib/pressFeedback'
 import { HIT_TARGET, radius, space, type AppColors } from '../src/theme/tokens'
 
 const LANGUAGE_COPY: Record<
@@ -37,8 +43,12 @@ export default function LanguageScreen() {
   const { preferredLanguage, hasSelectedLanguage, setPreferredLanguage } =
     useLanguagePreference()
   const styles = useMemo(() => createStyles(colors), [colors])
+  const reduced = usePrefersReducedMotion()
+  const motion = (config: { type: 'timing'; duration: number; delay?: number; loop?: boolean }) =>
+    resolveMotionTransition(config, reduced)
 
   const choose = (code: ReadingLanguageCode) => {
+    hapticSelection()
     setPreferredLanguage(code)
     // First run continues to the city step; readers with a city go home.
     void getStoredCitySlug().then((stored) => router.replace(routeAfterLanguage(stored)))
@@ -60,27 +70,27 @@ export default function LanguageScreen() {
         <MotiView
           from={{ opacity: 0, translateY: 18, scale: 0.94 }}
           animate={{ opacity: 1, translateY: 0, scale: 1 }}
-          transition={{ type: 'timing', duration: 520 }}
+          transition={motion({ type: 'timing' as const, duration: 520 })}
           style={styles.hero}
         >
           <View style={styles.markWrap}>
             <MotiView
               from={{ opacity: 0.7, scale: 0.88 }}
               animate={{ opacity: 1, scale: 1 }}
-              transition={{ type: 'timing', duration: 900 }}
+              transition={motion({ type: 'timing' as const, duration: 900 })}
             >
               <BrandMark size={72} />
             </MotiView>
             <MotiView
               from={{ opacity: 0, scale: 0.6 }}
               animate={{ opacity: 1, scale: 1 }}
-              transition={{ type: 'timing', duration: 480, delay: 280 }}
+              transition={motion({ type: 'timing' as const, duration: 480, delay: 280 })}
               style={styles.liveBadge}
             >
               <MotiView
                 from={{ opacity: 0.35 }}
                 animate={{ opacity: 1 }}
-                transition={{ type: 'timing', duration: 900, loop: true }}
+                transition={motion({ type: 'timing' as const, duration: 900, loop: true })}
                 style={styles.liveDot}
               />
               <Text style={styles.liveText}>LIVE</Text>
@@ -94,7 +104,7 @@ export default function LanguageScreen() {
         <MotiView
           from={{ opacity: 0, translateY: 16 }}
           animate={{ opacity: 1, translateY: 0 }}
-          transition={{ type: 'timing', duration: 480, delay: 180 }}
+          transition={motion({ type: 'timing' as const, duration: 480, delay: 180 })}
           style={styles.copyBlock}
         >
           <Text style={styles.eyebrow}>START YOUR BRIEF</Text>
@@ -112,11 +122,11 @@ export default function LanguageScreen() {
                 key={language.code}
                 from={{ opacity: 0, translateY: 22 }}
                 animate={{ opacity: 1, translateY: 0 }}
-                transition={{
-                  type: 'timing',
+                transition={motion({
+                  type: 'timing' as const,
                   duration: 420,
                   delay: 280 + index * 90,
-                }}
+                })}
               >
                 <Pressable
                   accessibilityRole="radio"
@@ -127,7 +137,7 @@ export default function LanguageScreen() {
                     styles.option,
                     selected && styles.optionSelected,
                     shadows.card,
-                    pressed && styles.pressed,
+                    cardPress(pressed),
                   ]}
                 >
                   <View style={[styles.langChip, selected && styles.langChipSelected]}>
@@ -167,7 +177,7 @@ export default function LanguageScreen() {
         <MotiView
           from={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ type: 'timing', duration: 500, delay: 520 }}
+          transition={motion({ type: 'timing' as const, duration: 500, delay: 520 })}
           style={styles.footer}
         >
           <View style={styles.footerRule} />
@@ -348,10 +358,6 @@ function createStyles(c: AppColors) {
     },
     optionActionSelected: {
       backgroundColor: c.surface,
-    },
-    pressed: {
-      opacity: 0.9,
-      transform: [{ scale: 0.985 }],
     },
     footer: {
       marginTop: space.xxl,

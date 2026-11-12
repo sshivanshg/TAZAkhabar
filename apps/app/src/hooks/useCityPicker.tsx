@@ -17,6 +17,7 @@ import {
   getCityDisplayLabel,
 } from '../storage/cityPreference'
 import { showToast } from '../components/ui/Toast'
+import { hapticSelection } from '../lib/haptics'
 
 /** English for now; extracted to the string catalog in phase 3. */
 export const CITY_PICKER_COPY = {
@@ -99,6 +100,7 @@ export function useCityPicker({
         closeCityPicker()
         return
       }
+      hapticSelection()
       setSavingSlug(city.slug)
       try {
         await setStoredCitySlug(city.slug)

@@ -48,6 +48,14 @@ jest.mock('@react-native-async-storage/async-storage', () => ({
   setItem: jest.fn(async () => undefined),
 }))
 
+jest.mock('expo-haptics', () => ({
+  selectionAsync: jest.fn(() => Promise.resolve()),
+  impactAsync: jest.fn(() => Promise.resolve()),
+  notificationAsync: jest.fn(() => Promise.resolve()),
+  ImpactFeedbackStyle: { Light: 'light' },
+  NotificationFeedbackType: { Success: 'success' },
+}))
+
 jest.mock('react-native-svg', () => {
   const React = require('react')
   const { View } = require('react-native')
@@ -66,6 +74,10 @@ jest.mock('react-native-svg', () => {
   }
 })
 
+import AsyncStorage from '@react-native-async-storage/async-storage'
+import * as Haptics from 'expo-haptics'
+import { AccessibilityInfo, Platform } from 'react-native'
+import { BOOKMARKS_STORAGE_KEY } from '../src/storage/bookmarks'
 import ArticleScreen from '../app/article/[id]'
 
 const listed: ArticleResponse = {
@@ -162,12 +174,15 @@ describe('ArticleScreen', () => {
 
     await screen.findByText('Fetched headline')
     const feed = screen.UNSAFE_getByType(FlatList)
-    const pageHeight = feed.props.snapToInterval as number
+    const firstPage = feed.props.getItemLayout(null, 0)
+    const pageHeight = firstPage.length as number
     const secondPage = feed.props.getItemLayout(null, 1)
 
     expect(feed.props.pagingEnabled).toBe(true)
     expect(feed.props.disableIntervalMomentum).toBe(true)
-    expect(feed.props.decelerationRate).toBe('normal')
+    expect(feed.props.decelerationRate).toBe('fast')
+    expect(feed.props.snapToInterval).toBeUndefined()
+    expect(feed.props.snapToAlignment).toBeUndefined()
     expect(feed.props.testID).toBe('article-feed')
     expect(pageHeight).toBeGreaterThan(0)
     expect(secondPage).toEqual({
@@ -398,5 +413,53 @@ describe('ArticleScreen', () => {
         expect.objectContaining({ message: 'Removed', actionLabel: 'Undo' }),
       ),
     )
+  })
+
+  describe('bookmark save (M2)', () => {
+    const originalOS = Platform.OS
+    afterEach(() => {
+      Object.defineProperty(Platform, 'OS', { value: originalOS, configurable: true })
+    })
+
+    it('saves optimistically with a light haptic, announcement and one toast', async () => {
+      const announce = jest.spyOn(AccessibilityInfo, 'announceForAccessibility')
+      renderArticle()
+      await screen.findByText('Fetched headline')
+      await act(async () => {
+        fireEvent.press(screen.getByLabelText('Save'))
+      })
+      expect(Haptics.impactAsync).toHaveBeenCalledWith('light')
+      expect(announce).toHaveBeenCalledWith('Saved')
+      expect(mockShowToast).toHaveBeenCalledTimes(1)
+      expect(mockShowToast).toHaveBeenCalledWith({ message: 'Saved' })
+      const save = screen.getByLabelText('Remove bookmark')
+      expect(save.props.accessibilityState).toEqual({ selected: true })
+    })
+
+    it('rolls back and shows an error toast when saving fails', async () => {
+      ;(AsyncStorage.setItem as jest.Mock).mockImplementation(async (key: string) => {
+        if (key === BOOKMARKS_STORAGE_KEY) throw new Error('disk full')
+      })
+      renderArticle()
+      await screen.findByText('Fetched headline')
+      await act(async () => {
+        fireEvent.press(screen.getByLabelText('Save'))
+      })
+      await waitFor(() => expect(screen.getByLabelText('Save')).toBeTruthy())
+      expect(screen.getByLabelText('Save').props.accessibilityState).toEqual({ selected: false })
+      expect(mockShowToast).toHaveBeenCalledTimes(1)
+      expect(mockShowToast).not.toHaveBeenCalledWith({ message: 'Saved' })
+      ;(AsyncStorage.setItem as jest.Mock).mockImplementation(async () => undefined)
+    })
+
+    it('does not fire haptics on web', async () => {
+      renderArticle()
+      await screen.findByText('Fetched headline')
+      Object.defineProperty(Platform, 'OS', { value: 'web', configurable: true })
+      await act(async () => {
+        fireEvent.press(screen.getByLabelText('Save'))
+      })
+      expect(Haptics.impactAsync).not.toHaveBeenCalled()
+    })
   })
 })

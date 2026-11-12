@@ -17,6 +17,7 @@ import type { BottomSheetSection } from '../../src/components/ui/BottomSheet'
 import { EmptyState } from '../../src/components/ui/EmptyState'
 import { useTheme } from '../../src/preferences/ThemePreferenceContext'
 import { showToast } from '../../src/components/ui/Toast'
+import { iconPress } from '../../src/lib/pressFeedback'
 import {
   type BookmarkSnapshot,
   addBookmark,
@@ -227,7 +228,7 @@ function BookmarksBody() {
                   accessibilityLabel={`Remove bookmark ${item.headline}`}
                   style={({ pressed }) => [
                     styles.removeBtn,
-                    pressed ? styles.removePressed : null,
+                    iconPress(pressed),
                   ]}
                 >
                   <Text fontSize={15} lineHeight={20} fontWeight="$semibold" color={colors.textSecondary}>
@@ -297,9 +298,6 @@ function createStyles(c: AppColors) {
       paddingHorizontal: space.xxs,
       marginBottom: space.sm,
       marginTop: -space.xs,
-    },
-    removePressed: {
-      opacity: 0.7,
     },
   })
 }

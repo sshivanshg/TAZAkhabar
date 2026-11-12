@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
+  AccessibilityInfo,
   ActivityIndicator,
   FlatList,
   Image,
@@ -27,6 +28,7 @@ import {
   ArticleSkeleton,
   ArticleStory,
   ArticleTopBar,
+  ContentFadeIn,
   CaughtUpFooter,
   FeedSentinel,
 } from '../../src/components/article'
@@ -34,6 +36,8 @@ import { ScreenErrorBoundary } from '../../src/components/ScreenErrorBoundary'
 import { ARTICLE_COPY } from '../../src/components/article/copy'
 import { BottomSheet } from '../../src/components/ui/BottomSheet'
 import { showToast } from '../../src/components/ui/Toast'
+import { hapticLight } from '../../src/lib/haptics'
+import { iconPress } from '../../src/lib/pressFeedback'
 import { useLanguagePreference } from '../../src/preferences/LanguagePreferenceContext'
 import { useTheme } from '../../src/preferences/ThemePreferenceContext'
 import {
@@ -516,23 +520,29 @@ function ArticleFeedBody() {
           return next
         })
       const currently = bookmarkedIds.has(articleId)
+      // Optimistic: flip the UI first, roll back if storage fails.
+      markSaved(!currently)
+      if (!currently) {
+        hapticLight()
+        AccessibilityInfo.announceForAccessibility(ARTICLE_COPY.toastSaved)
+      }
       try {
         if (currently) {
           await removeBookmark(articleId)
-          markSaved(false)
           showToast({
             message: ARTICLE_COPY.toastRemoved,
             actionLabel: ARTICLE_COPY.toastUndo,
             onAction: () => {
-              void addBookmark(snapshot).then(() => markSaved(true))
+              markSaved(true)
+              void addBookmark(snapshot).catch(() => markSaved(false))
             },
           })
         } else {
           await addBookmark(snapshot)
-          markSaved(true)
           showToast({ message: ARTICLE_COPY.toastSaved })
         }
       } catch {
+        markSaved(currently)
         showToast({ message: ARTICLE_COPY.toastSaveFailed })
       }
     },
@@ -670,7 +680,7 @@ function ArticleFeedBody() {
           accessibilityRole="button"
           accessibilityLabel="Go back"
           onPress={onBack}
-          style={styles.errorBtn}
+          style={({ pressed }) => [styles.errorBtn, iconPress(pressed)]}
         >
           <Text style={styles.errorBtnText}>Back</Text>
         </Pressable>
@@ -707,6 +717,7 @@ function ArticleFeedBody() {
               padTop={padTop}
               padBottom={padBottom}
             >
+              <ContentFadeIn>
               <ArticleStory
                 article={item}
                 citySlug={citySlug}
@@ -721,6 +732,7 @@ function ArticleFeedBody() {
                 onReadSource={() => onReadSource(item, globalIndex)}
                 onRetry={() => void retryArticle(item)}
               />
+              </ContentFadeIn>
             </ArticlePage>
           )
         }}
@@ -734,7 +746,7 @@ function ArticleFeedBody() {
                     accessibilityRole="button"
                     accessibilityLabel="Retry loading the next story"
                     onPress={() => void loadMore()}
-                    style={styles.retryMore}
+                    style={({ pressed }) => [styles.retryMore, iconPress(pressed)]}
                   >
                     <Text style={styles.retryMoreText}>Couldn’t load the next story. Retry</Text>
                   </Pressable>
@@ -748,10 +760,8 @@ function ArticleFeedBody() {
         }
         showsVerticalScrollIndicator={false}
         pagingEnabled
-        snapToInterval={pageHeight}
-        snapToAlignment="start"
         disableIntervalMomentum
-        decelerationRate="normal"
+        decelerationRate="fast"
         getItemLayout={(_, index) => ({
           length: pageHeight,
           offset: pageHeight * index,

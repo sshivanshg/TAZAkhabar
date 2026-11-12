@@ -1,4 +1,5 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native'
+import { iconPress } from '../lib/pressFeedback'
 import { useTheme } from '../preferences/ThemePreferenceContext'
 import { HIT_TARGET, radius, space } from '../theme/tokens'
 
@@ -23,7 +24,7 @@ export function OfflineBanner({ onRetry }: { onRetry?: () => void }) {
           accessibilityRole="button"
           accessibilityLabel={OFFLINE_BANNER_COPY.retryA11y}
           onPress={onRetry}
-          style={({ pressed }) => [styles.retry, pressed && { opacity: 0.6 }]}
+          style={({ pressed }) => [styles.retry, iconPress(pressed)]}
         >
           <Text style={[styles.retryText, { color: colors.accent }]}>
             {OFFLINE_BANNER_COPY.retry}

@@ -14,6 +14,8 @@ import { iconStroke } from '../../src/theme/categoryIcons'
 import { ScreenErrorBoundary } from '../../src/components/ScreenErrorBoundary'
 import { isExpandedLayout, useBreakpoint } from '../../src/hooks/useBreakpoint'
 import { useTheme } from '../../src/preferences/ThemePreferenceContext'
+import { useMotionTransition } from '../../src/hooks/usePrefersReducedMotion'
+import { hapticSelection } from '../../src/lib/haptics'
 
 /** Spec 2026-11-12 #13: room for the 13px label under the icon pill. */
 const TAB_BAR_HEIGHT = 76
@@ -27,14 +29,14 @@ function TabIcon({
 }) {
   const { colors } = useTheme()
   const styles = useMemo(() => createStyles(colors), [colors])
+  const transition = useMotionTransition({ type: 'timing', duration: 160 })
 
   return (
     <MotiView
       animate={{
-        scale: focused ? 1 : 0.96,
         backgroundColor: focused ? colors.accentFill : 'transparent',
       }}
-      transition={{ type: 'timing', duration: 200 }}
+      transition={transition}
       style={styles.tabIconWrap}
     >
       <Icon
@@ -61,6 +63,12 @@ export default function TabsLayout() {
     <ScreenErrorBoundary name="tabs">
       <View style={[styles.shell, { paddingBottom: bottomPad }]}>
         <Tabs
+          screenListeners={({ navigation }) => ({
+            tabPress: () => {
+              // Selection haptic only when the tab actually changes.
+              if (!navigation.isFocused()) hapticSelection()
+            },
+          })}
           screenOptions={{
             headerStyle: { backgroundColor: colors.background },
             headerTintColor: colors.text,

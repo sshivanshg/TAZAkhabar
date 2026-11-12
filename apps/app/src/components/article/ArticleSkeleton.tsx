@@ -1,15 +1,26 @@
-import { useMemo } from 'react'
+import { useMemo, type ReactNode } from 'react'
 import { StyleSheet, View } from 'react-native'
+import { MotiView } from 'moti'
+import { usePrefersReducedMotion } from '../../hooks/usePrefersReducedMotion'
 import { useTheme } from '../../preferences/ThemePreferenceContext'
 import { ARTICLE_COLUMN_MAX, type ReaderColors } from '../../theme/readerTokens'
 
 export function ArticleSkeleton() {
   const { readerColors } = useTheme()
   const styles = useMemo(() => createStyles(readerColors), [readerColors])
+  const reduced = usePrefersReducedMotion()
+  const Column = reduced ? View : MotiView
+  const pulse = reduced
+    ? {}
+    : {
+        from: { opacity: 0.55 },
+        animate: { opacity: 1 },
+        transition: { type: 'timing' as const, duration: 1100, loop: true, repeatReverse: true },
+      }
 
   return (
     <View testID="article-skeleton" style={styles.root} accessibilityLabel="Loading next story">
-      <View style={styles.column}>
+      <Column testID={reduced ? 'skeleton-static' : 'skeleton-pulse'} style={styles.column} {...pulse}>
         <View style={[styles.line, styles.cat]} />
         <View style={[styles.line, styles.title]} />
         <View style={[styles.line, styles.titleShort]} />
@@ -17,8 +28,24 @@ export function ArticleSkeleton() {
         <View style={[styles.line, styles.body]} />
         <View style={[styles.line, styles.body]} />
         <View style={[styles.line, styles.bodyShort]} />
-      </View>
+      </Column>
     </View>
+  )
+}
+
+/** Story content fades in over 180ms once rendered; instant under reduced motion. */
+export function ContentFadeIn({ children }: { children: ReactNode }) {
+  const reduced = usePrefersReducedMotion()
+  if (reduced) return <>{children}</>
+  return (
+    <MotiView
+      style={{ flex: 1 }}
+      from={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ type: 'timing', duration: 180 }}
+    >
+      {children}
+    </MotiView>
   )
 }
 
@@ -39,7 +66,6 @@ function createStyles(c: ReaderColors) {
       height: 14,
       borderRadius: 6,
       backgroundColor: c.imageFallback,
-      opacity: 0.7,
     },
     cat: {
       width: 72,
