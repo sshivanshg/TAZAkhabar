@@ -74,6 +74,12 @@ const legalPages: Record<Exclude<PageId, 'home'>, LegalPage> = {
         ],
       },
       {
+        title: 'Developer and publisher',
+        body: [
+          'Khabro is developed and published by Khabro. Khabro is a news aggregator: articles belong to their original publishers, and every story shows its source and links to the original article.',
+        ],
+      },
+      {
         title: 'What to include',
         bullets: [
           'For app support: your city, device, platform, and what happened.',

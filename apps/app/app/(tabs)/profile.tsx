@@ -40,7 +40,7 @@ import { iconStroke } from '../../src/theme/categoryIcons'
 import { useTabBarClearance } from '../../src/theme/useTabBarClearance'
 import { isDesktopLayout, useBreakpoint } from '../../src/hooks/useBreakpoint'
 
-const CONTACT_EMAIL = 'contact@khabro.in'
+import { CONTACT_EMAIL } from '../../src/config/contact'
 
 export default function ProfileScreen() {
   return (
@@ -405,6 +405,13 @@ function ProfileBody() {
           >
             This address is also listed on the Khabro website contact page.
           </Text>
+          <SecondaryButton
+            label="Open Contact us page"
+            onPress={() => router.push('/contact')}
+            accessibilityLabel="Open Contact us page"
+            style={styles.contactPageButton}
+            outline
+          />
         </Section>
 
         <Section title="About this app" Icon={Info}>
@@ -426,6 +433,23 @@ function ProfileBody() {
           >
             Version {version}
           </Text>
+          <Text
+            fontSize={typography.meta.fontSize}
+            lineHeight={typography.meta.lineHeight}
+            color={colors.textMuted}
+            mt="$2"
+          >
+            Khabro is a news aggregator. Articles belong to their original publishers.
+          </Text>
+          <Pressable
+            onPress={() => router.push('/contact')}
+            accessibilityRole="link"
+            accessibilityLabel="Contact us"
+            style={({ pressed }) => [styles.contactEmail, styles.aboutContact, pressed ? styles.contactEmailPressed : null]}
+          >
+            <Mail size={18} strokeWidth={iconStroke} color={colors.accent} />
+            <Text style={styles.contactEmailText}>Contact us</Text>
+          </Pressable>
           <PublicLinks />
         </Section>
       </ScrollView>
@@ -659,6 +683,13 @@ function createStyles(c: AppColors) {
       paddingHorizontal: space.sm,
       borderRadius: 12,
       backgroundColor: c.surfaceRaised,
+    },
+    contactPageButton: {
+      alignSelf: 'flex-start',
+      marginTop: space.sm,
+    },
+    aboutContact: {
+      marginTop: space.sm,
     },
     contactEmailPressed: {
       opacity: 0.82,
