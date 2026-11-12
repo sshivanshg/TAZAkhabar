@@ -208,3 +208,19 @@ New endpoint checklist:
 - No PR merges without passing CI: lint, unit/integration tests, and builds.
 - Do not write tests that only assert mocks were called. Assert behavior and
   outputs.
+
+## Claude agent team
+
+Claude Code (and Cursor) load project subagents from `.claude/agents/khabro-*.md`;
+skills live in `.agents/skills/` (`khabro-*` project skills plus generic ones) and are
+symlinked from `.claude/skills/`. `khabro-principal-engineer` plans substantial work;
+`khabro-backend-engineer`, `khabro-database-engineer`, `khabro-mobile-engineer` (Expo
+reader), `khabro-frontend-engineer` (admin/site/web), `khabro-motion-engineer`,
+`khabro-platform-engineer` and `khabro-test-engineer` implement; `khabro-design-director`
+and `khabro-ux-engineer` set and check the UI bar; `khabro-code-reviewer`,
+`khabro-security-reviewer`, `khabro-performance-reviewer` and
+`khabro-architecture-reviewer` are read-only reviewers; `khabro-git-steward` keeps the
+qa/GitHub trail, `khabro-ops-watcher` and `khabro-sre` watch Render, Pages, Neon and the
+ingest workflows, and `khabro-skill-curator` captures new procedures as skills. After any
+non-trivial change, run a fresh `khabro-code-reviewer`; the author never approves their
+own diff. These rules sit on top of the sections above, which stay authoritative.
