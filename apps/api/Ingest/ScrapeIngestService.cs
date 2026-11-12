@@ -490,6 +490,9 @@ public sealed class ScrapeIngestService
             return false;
         }
 
+        headline = IngestTextCleaner.CleanHeadline(headline, source.Name);
+        summary = IngestTextCleaner.CleanSummary(summary, headline);
+
         var now = DateTimeOffset.UtcNow;
         var article = new Article
         {

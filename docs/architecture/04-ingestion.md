@@ -1,7 +1,7 @@
 # Ingestion
 
 > **Living doc** — update when pipelines, article status on insert, cron, SSE, or intelligence providers change.  
-> **Last verified against:** 2026-09-02 (RSS/scrape content categorization)
+> **Last verified against:** 2026-11-12 (ingest headline suffix and redundant-summary cleanup)
 
 ## Purpose
 
@@ -163,6 +163,8 @@ OpenAI scrape rewrite via `OpenAiRewrite__Enabled` (default `true`), `OpenAiRewr
 | **Scrape** | `OpenAiArticleRewriter.RewriteScrapedArticleAsync` (fallback to extract on missing key/failure); disabled for `/api/ingest/daily` | OpenAI digest, or extracted snippet | OpenAI digest body, or `HtmlArticleExtractor.ExtractBody` (~50k chars, never raw HTML) |
 | **RSS** | Claude `SummarizeArticleAsync` (fallback to feed snippet on failure); disabled for scheduled `/api/ingest/rss` and `/api/ingest/daily` | Claude digest for review-mode runs, or feed snippet for scheduled no-AI public runs | Fetched HTML body when review-mode link is reachable; omitted for scheduled no-AI public runs |
 | **PDF** | Claude `ExtractStoriesAsync` / image extract | Claude story summary | PdfPig plain text (shared across stories from that file) |
+
+Before save, RSS and scrape inserts run `IngestTextCleaner`: `CleanHeadline` strips trailing ` - <source>` / ` | <source>` suffixes (repeated, case-insensitive) matching the feed/source name or the item's parsed publisher, and never returns an empty title (falls back to the original). `CleanSummary` stores an empty summary when it equals or starts with the cleaned headline after normalization (case, punctuation, whitespace); the reader already hides empty summaries. Existing rows are not backfilled; the app strips them defensively.
 
 Translate still runs on read for headline/summary when `?lang=` differs from detected language. Body is not translated.
 

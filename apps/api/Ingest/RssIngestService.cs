@@ -338,11 +338,14 @@ public sealed class RssIngestService(
             ? await TryFetchArticleBodyAsync(sourceUrl, cancellationToken)
             : null;
 
+        var headline = IngestTextCleaner.CleanHeadline(item.Title, source.Name, item.SourceName);
+        summary = IngestTextCleaner.CleanSummary(summary, headline);
+
         var now = DateTimeOffset.UtcNow;
         var article = new Article
         {
             CityId = city.Id,
-            Headline = item.Title,
+            Headline = headline,
             Summary = HtmlText.Truncate(summary.Trim(), 1000),
             Body = body,
             SourceName = sourceName,
