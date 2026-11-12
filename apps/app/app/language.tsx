@@ -9,6 +9,8 @@ import { BrandMark } from '../src/components/BrandMark'
 import { NewsStartBackdrop } from '../src/components/onboarding/NewsStartBackdrop'
 import { useLanguagePreference } from '../src/preferences/LanguagePreferenceContext'
 import { useTheme } from '../src/preferences/ThemePreferenceContext'
+import { getStoredCitySlug } from '../src/storage/cityPreference'
+import { routeAfterLanguage } from '../src/lib/onboarding'
 import { READING_LANGUAGES, type ReadingLanguageCode } from '../src/storage/languagePreference'
 import { HIT_TARGET, radius, space, type AppColors } from '../src/theme/tokens'
 
@@ -32,13 +34,14 @@ export default function LanguageScreen() {
   const router = useRouter()
   const insets = useSafeAreaInsets()
   const { colors, shadows } = useTheme()
-  const { preferredLanguage, setPreferredLanguage } = useLanguagePreference()
+  const { preferredLanguage, hasSelectedLanguage, setPreferredLanguage } =
+    useLanguagePreference()
   const styles = useMemo(() => createStyles(colors), [colors])
 
   const choose = (code: ReadingLanguageCode) => {
     setPreferredLanguage(code)
-    // Language is the only required first-run step; city defaults to All India.
-    router.replace('/(tabs)')
+    // First run continues to the city step; readers with a city go home.
+    void getStoredCitySlug().then((stored) => router.replace(routeAfterLanguage(stored)))
   }
 
   return (
@@ -96,12 +99,13 @@ export default function LanguageScreen() {
         >
           <Text style={styles.eyebrow}>START YOUR BRIEF</Text>
           <Text style={styles.title}>How do you want to read the news?</Text>
-          <Text style={styles.subtitle}>Pick once — change anytime from your profile.</Text>
+          <Text style={styles.subtitle}>Pick once — change anytime in Settings.</Text>
         </MotiView>
 
         <View style={styles.options}>
           {READING_LANGUAGES.map((language, index) => {
-            const selected = language.code === preferredLanguage
+            // No preselection on first launch: the default 'en' is not a choice.
+            const selected = hasSelectedLanguage && language.code === preferredLanguage
             const copy = LANGUAGE_COPY[language.code]
             return (
               <MotiView

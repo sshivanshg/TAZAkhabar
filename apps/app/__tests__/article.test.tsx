@@ -19,7 +19,15 @@ jest.mock('expo-router', () => ({
   }),
   useLocalSearchParams: () => mockParams,
   usePathname: () => '/article/1',
+  Stack: { Screen: () => null },
 }))
+
+const mockShowToast = jest.fn()
+jest.mock(
+  '../src/components/ui/Toast',
+  () => ({ showToast: (...args: unknown[]) => mockShowToast(...args) }),
+  { virtual: true },
+)
 
 jest.mock('../src/api/client', () => ({
   apiClient: {
@@ -125,7 +133,10 @@ describe('ArticleScreen', () => {
     expect(await screen.findByText('Fetched headline')).toBeTruthy()
     expect(await screen.findByText('Full story from the publisher.')).toBeTruthy()
     expect(screen.getByTestId('article-bottom-bar')).toBeTruthy()
-    expect(screen.getByLabelText('Share')).toBeTruthy()
+    expect(screen.getByLabelText('Share on WhatsApp')).toBeTruthy()
+    expect(screen.getByText('WhatsApp')).toBeTruthy()
+    expect(screen.getByLabelText('Back to news')).toBeTruthy()
+    expect(screen.getByTestId('language-segment')).toBeTruthy()
     expect(screen.getByLabelText('Save')).toBeTruthy()
     expect(mockGetArticles).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -337,5 +348,55 @@ describe('ArticleScreen', () => {
     })
 
     expect(screen.queryByText('Unable to load this story.')).toBeNull()
+  })
+
+  it('Back to news in the bottom bar returns Home', async () => {
+    renderArticle()
+
+    await screen.findByText('Fetched headline')
+    fireEvent.press(screen.getByLabelText('Back to news'))
+
+    expect(mockReplace).toHaveBeenCalledWith('/(tabs)')
+  })
+
+  it('shows a calm next-story cue when another story follows', async () => {
+    renderArticle()
+
+    await screen.findByText('Fetched headline')
+    expect(screen.getAllByText('Next story ↓').length).toBeGreaterThan(0)
+  })
+
+  it('labels the eyebrow with the reader city', async () => {
+    renderArticle()
+
+    await screen.findByText('Fetched headline')
+    expect(screen.getAllByText('JHANSI').length).toBeGreaterThan(0)
+    expect(screen.queryByText('GLOBAL')).toBeNull()
+  })
+
+  it('never labels a story GLOBAL for the All India feed', async () => {
+    mockParams.city = 'global'
+    renderArticle()
+
+    await screen.findByText('Fetched headline')
+    expect(screen.queryByText('GLOBAL')).toBeNull()
+    expect(screen.queryByText('global')).toBeNull()
+  })
+
+  it('confirms save and offers undo on remove via toast', async () => {
+    renderArticle()
+
+    await screen.findByText('Fetched headline')
+    fireEvent.press(screen.getByLabelText('Save'))
+    await waitFor(() =>
+      expect(mockShowToast).toHaveBeenCalledWith(expect.objectContaining({ message: 'Saved' })),
+    )
+
+    fireEvent.press(await screen.findByLabelText('Remove bookmark'))
+    await waitFor(() =>
+      expect(mockShowToast).toHaveBeenCalledWith(
+        expect.objectContaining({ message: 'Removed', actionLabel: 'Undo' }),
+      ),
+    )
   })
 })

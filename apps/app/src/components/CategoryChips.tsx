@@ -25,6 +25,9 @@ type Props = {
   onSelect: (category: FeedCategory) => void
   onLongPressCategory?: (category: FeedCategory) => void
   categories?: readonly FeedCategory[]
+  /** Shows a trailing "Manage topics" control (explicit alternative to long press). */
+  onManageTopics?: () => void
+  manageTopicsLabel?: string
 }
 
 type WebPressableState = PressableStateCallbackType & {
@@ -40,6 +43,8 @@ export function CategoryChipRow({
   onSelect,
   onLongPressCategory,
   categories = FEED_CATEGORIES,
+  onManageTopics,
+  manageTopicsLabel = 'Manage topics',
 }: Props) {
   const expanded = isExpandedLayout(useBreakpoint())
   const { colors } = useTheme()
@@ -94,6 +99,23 @@ export function CategoryChipRow({
             </Pressable>
           )
         })}
+        {onManageTopics ? (
+          <Pressable
+            onPress={onManageTopics}
+            accessibilityRole="button"
+            accessibilityLabel={manageTopicsLabel}
+            style={({ pressed }) => [styles.tab, pressed ? styles.tabPressed : null]}
+          >
+            <Text
+              fontSize={typography.bodySemibold.fontSize}
+              lineHeight={typography.bodySemibold.lineHeight}
+              fontWeight="$semibold"
+              color={colors.accent}
+            >
+              {manageTopicsLabel}
+            </Text>
+          </Pressable>
+        ) : null}
       </ScrollView>
       <View style={styles.rule} />
     </View>

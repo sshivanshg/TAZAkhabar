@@ -7,6 +7,13 @@ import { space, typography } from '../../theme/tokens'
 import { PrimaryButton } from './PrimaryButton'
 import { SecondaryButton } from './PrimaryButton'
 
+export const ERROR_STATE_COPY = {
+  title: 'Something went wrong',
+  retry: 'Try again',
+  retryA11y: 'Retry loading articles',
+  secondary: 'Back to feed',
+} as const
+
 type Props = {
   title?: string
   message: string
@@ -34,17 +41,17 @@ function OfflineIcon({ stroke }: { stroke: string }) {
 }
 
 /**
- * Vertically centered error / empty failure state.
+ * Error state: explanation in the upper half, actions in the lower half.
  * Primary + secondary buttons stay visually distinct.
  */
 export function ErrorState({
-  title = 'Something went wrong',
+  title = ERROR_STATE_COPY.title,
   message,
   onRetry,
-  retryLabel = 'Try again',
+  retryLabel = ERROR_STATE_COPY.retry,
   retryAccessibilityLabel,
   onSecondary,
-  secondaryLabel = 'Back to feed',
+  secondaryLabel = ERROR_STATE_COPY.secondary,
 }: Props) {
   const { colors } = useTheme()
 
@@ -71,13 +78,16 @@ export function ErrorState({
         >
           {message}
         </Text>
+      </View>
+      {/* Actions sit in the lower half, inside thumb reach on a phone. */}
+      <View style={[styles.group, styles.actions]}>
         {onRetry ? (
           <PrimaryButton
             label={retryLabel}
             onPress={onRetry}
             accessibilityLabel={
               retryAccessibilityLabel ??
-              (retryLabel === 'Try again' ? 'Retry loading articles' : retryLabel)
+              (retryLabel === ERROR_STATE_COPY.retry ? ERROR_STATE_COPY.retryA11y : retryLabel)
             }
             fullWidth
             style={styles.primary}
@@ -100,7 +110,7 @@ export function ErrorState({
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: 'space-evenly',
     alignItems: 'center',
     paddingHorizontal: space.xl,
     paddingVertical: space.xl,
@@ -111,6 +121,9 @@ const styles = StyleSheet.create({
     maxWidth: 360,
     alignItems: 'center',
     gap: space.xs,
+  },
+  actions: {
+    marginTop: space.xl,
   },
   message: {
     marginBottom: space.sm,

@@ -126,12 +126,12 @@ export default function TabsLayout() {
           <Tabs.Screen
             name="profile"
             options={{
-              title: 'Profile',
+              title: 'Settings',
               // Title renders in-page inside the 720 column (not at the rail edge).
               headerShown: false,
-              tabBarLabel: 'Profile',
+              tabBarLabel: 'Settings',
               tabBarIcon: ({ focused }) => <TabIcon Icon={User} focused={focused} />,
-              tabBarAccessibilityLabel: 'Profile and settings',
+              tabBarAccessibilityLabel: 'Settings',
             }}
           />
           <Tabs.Screen

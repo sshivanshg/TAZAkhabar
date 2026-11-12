@@ -18,6 +18,9 @@ import { formatRelativeTime } from '../utils/relativeTime'
 import { isHttpsUrl } from '../utils/shareToWhatsApp'
 import { SeeMorePill } from './SeeMorePill'
 import { SourceAvatar } from './SourceAvatar'
+import { MotiView } from 'moti'
+import { useMotionTransition, usePrefersReducedMotion } from '../hooks/usePrefersReducedMotion'
+import { cardPress, iconPress } from '../lib/pressFeedback'
 
 type Density = 'default' | 'compact'
 
@@ -85,9 +88,16 @@ export function CompactArticleCard({
   const openMore = onMorePress ?? onLongPress
   const thumbSize = dense ? media.thumbDense : media.thumb
   const seeMore = onSeeMorePress ?? onPress
+  const fadeIn = useMotionTransition({ type: 'timing', duration: 180 })
 
   return (
-    <View style={styles.wrap} {...webArticleProps}>
+    <MotiView
+      from={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={fadeIn}
+      style={styles.wrap}
+      {...webArticleProps}
+    >
       <Pressable
         onPress={() => onPress(article)}
         onLongPress={onLongPress ? () => onLongPress(article) : undefined}
@@ -102,7 +112,7 @@ export function CompactArticleCard({
             styles.row,
             dense ? styles.rowDense : null,
             hovered && Platform.OS === 'web' ? styles.rowHover : null,
-            pressed ? styles.pressed : null,
+            cardPress(pressed),
             focusRing(colors.accent, focused),
           ]
         }}
@@ -169,7 +179,7 @@ export function CompactArticleCard({
                 const { pressed, focused } = state as WebPressableState
                 return [
                   styles.moreButton,
-                  pressed ? styles.morePressed : null,
+                  iconPress(pressed),
                   focusRing(colors.accent, focused),
                 ]
               }}
@@ -180,7 +190,7 @@ export function CompactArticleCard({
         </View>
       </View>
       <View style={styles.divider} />
-    </View>
+    </MotiView>
   )
 }
 
@@ -196,10 +206,22 @@ export function CompactArticleCardSkeleton({
   const styles = useMemo(() => createStyles(colors), [colors])
   const dense = density === 'compact'
   const thumbSize = dense ? media.thumbDense : media.thumb
+  const reduced = usePrefersReducedMotion()
+  const pulse = useMotionTransition({
+    type: 'timing',
+    duration: 1100,
+    loop: true,
+    repeatReverse: true,
+  })
 
   return (
-    <View style={styles.wrap}>
-      <View style={[styles.row, dense ? styles.rowDense : null]}>
+    <View style={styles.wrap} accessibilityLabel="Loading story">
+      <MotiView
+        from={{ opacity: reduced ? 1 : 0.55 }}
+        animate={{ opacity: 1 }}
+        transition={pulse}
+        style={[styles.row, dense ? styles.rowDense : null]}
+      >
         <View style={styles.textCol}>
           <View style={styles.sourceRow}>
             <Box h={20} w={20} bg={colors.skeleton} borderRadius={radius.xs} />
@@ -224,7 +246,7 @@ export function CompactArticleCardSkeleton({
             ]}
           />
         ) : null}
-      </View>
+      </MotiView>
       <View style={styles.divider} />
     </View>
   )

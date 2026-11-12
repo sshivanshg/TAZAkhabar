@@ -20,10 +20,15 @@ import { isHttpsUrl } from '../../utils/shareToWhatsApp'
 import { normalizeArticleSourceUrl } from '../../utils/normalizeArticleSourceUrl'
 import type { ArticleBlock } from '../../utils/splitArticleBody'
 import { pressableState, webFocusRing } from './focusStyle'
+import { storyEyebrow } from './eyebrow'
+import { ARTICLE_COPY } from './copy'
 
 type Props = {
   article: ArticleResponse
-  cityLabel?: string
+  /** Reader's city slug; `global` falls back to the story category. */
+  citySlug?: string
+  /** Show the calm "Next story ↓" cue at the end of the story. */
+  showNextCue?: boolean
   priorityImage?: boolean
   bodyLoading?: boolean
   /** True only when fetching the full story failed (not when the API has no body). */
@@ -72,7 +77,8 @@ function ArticleHero({
 
 function ArticleStoryBase({
   article,
-  cityLabel,
+  citySlug,
+  showNextCue = false,
   priorityImage = false,
   bodyLoading = false,
   onReadSource,
@@ -83,9 +89,7 @@ function ArticleStoryBase({
   const styles = useMemo(() => createStyles(readerColors), [readerColors])
   const { width } = useWindowDimensions()
   const imageUri = article.imageUrl && isHttpsUrl(article.imageUrl) ? article.imageUrl : null
-  const category = article.category?.trim()
-  const displayCategory = category?.toLowerCase() === 'local' ? undefined : category
-  const location = cityLabel?.trim() || displayCategory
+  const location = storyEyebrow(citySlug, article.category)
   const publisher = publisherName(article)
   const sourceUrl = (() => {
     const normalized = normalizeArticleSourceUrl(article.sourceUrl)
@@ -226,6 +230,17 @@ function ArticleStoryBase({
                 ? `This story is based on reporting published by ${publisher}.`
                 : 'This story is based on the original publisher’s reporting.'}
             </Text>
+          </View>
+        ) : null}
+
+        {showNextCue ? (
+          <View
+            testID="next-story-cue"
+            style={styles.nextCue}
+            accessible
+            accessibilityLabel={ARTICLE_COPY.nextStoryA11y}
+          >
+            <Text style={styles.nextCueText}>{ARTICLE_COPY.nextStory}</Text>
           </View>
         ) : null}
       </View>
@@ -404,6 +419,17 @@ function createStyles(c: ReaderColors) {
     },
     pressed: {
       opacity: 0.78,
+    },
+    nextCue: {
+      alignItems: 'center',
+      paddingTop: 20,
+      paddingBottom: 8,
+    },
+    nextCueText: {
+      color: c.textMuted,
+      fontSize: 15,
+      lineHeight: 22,
+      fontWeight: '600',
     },
   })
 }

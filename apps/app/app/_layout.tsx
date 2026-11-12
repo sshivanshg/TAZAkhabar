@@ -13,6 +13,7 @@ import {
 } from '../src/preferences/ThemePreferenceContext'
 import { ScreenErrorBoundary } from '../src/components/ScreenErrorBoundary'
 import { AppShell } from '../src/components/desktop'
+import { ToastHost } from '../src/components/ui/Toast'
 import { tazakhabarConfig } from '../src/theme/gluestack-config'
 import { applyWebColorScheme } from '../src/theme/applyWebColorScheme'
 import { registerWebServiceWorker } from '../src/pwa/registerWebServiceWorker'
@@ -73,6 +74,7 @@ function RootNavigation() {
           />
         </Stack>
       </AppShell>
+      <ToastHost />
     </>
   )
 }

@@ -3,7 +3,8 @@ import { Redirect } from 'expo-router'
 import { Box, Spinner, Text, VStack } from '@gluestack-ui/themed'
 import { useTheme } from '../src/preferences/ThemePreferenceContext'
 import { useLanguagePreference } from '../src/preferences/LanguagePreferenceContext'
-import { resolveCitySlug } from '../src/storage/cityPreference'
+import { getStoredCitySlug } from '../src/storage/cityPreference'
+import { resolveBootRoute } from '../src/lib/onboarding'
 
 export default function IndexScreen() {
   const { colors } = useTheme()
@@ -13,7 +14,7 @@ export default function IndexScreen() {
 
   useEffect(() => {
     let cancelled = false
-    resolveCitySlug().then((value) => {
+    getStoredCitySlug().then((value) => {
       if (!cancelled) {
         setSlug(value)
         setReady(true)
@@ -37,11 +38,6 @@ export default function IndexScreen() {
     )
   }
 
-  if (!hasSelectedLanguage) {
-    return <Redirect href="/language" />
-  }
-
-  // City is optional: default All India is already persisted by resolveCitySlug.
-  // Never force /city onboarding — readers change city from the home header.
-  return <Redirect href={{ pathname: '/(tabs)', params: { city: slug ?? undefined } }} />
+  // language → city → tabs; returning readers (stored city) go straight to tabs.
+  return <Redirect href={resolveBootRoute({ hasSelectedLanguage, storedCity: slug })} />
 }

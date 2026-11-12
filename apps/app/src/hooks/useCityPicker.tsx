@@ -10,7 +10,20 @@ import {
 } from '../components/CityPickerDropdown'
 import { getCurrentCoordinates } from '../location/getCurrentCoordinates'
 import { findNearestCity } from '../location/nearestCity'
-import { setStoredCitySlug, GLOBAL_CITY_SLUG, createGlobalCity } from '../storage/cityPreference'
+import {
+  setStoredCitySlug,
+  GLOBAL_CITY_SLUG,
+  createGlobalCity,
+  getCityDisplayLabel,
+} from '../storage/cityPreference'
+import { showToast } from '../components/ui/Toast'
+
+/** English for now; extracted to the string catalog in phase 3. */
+export const CITY_PICKER_COPY = {
+  savedToast: (city: string) => `Showing news for ${city}`,
+  noMatch: 'Could not match your location.',
+  unavailable: 'Location unavailable. Pick a city below.',
+} as const
 
 const EMPTY_CITIES: CityResponse[] = []
 const TEST_CITY_SLUG = 'emptyville'
@@ -91,6 +104,7 @@ export function useCityPicker({
         await setStoredCitySlug(city.slug)
         onCitySelected(city)
         closeCityPicker()
+        showToast({ message: CITY_PICKER_COPY.savedToast(getCityDisplayLabel(city.slug, city.name)) })
       } finally {
         setSavingSlug(null)
       }
@@ -108,12 +122,12 @@ export function useCityPicker({
       const coordinates = await getCurrentCoordinates()
       const match = findNearestCity(coordinates, selectableCities)
       if (!match) {
-        setLocationMessage('Could not match your location.')
+        setLocationMessage(CITY_PICKER_COPY.noMatch)
         return
       }
       await selectCity(match.city)
     } catch {
-      setLocationMessage('Location unavailable. Pick a city below.')
+      setLocationMessage(CITY_PICKER_COPY.unavailable)
     } finally {
       setDetectingLocation(false)
     }

@@ -322,8 +322,8 @@ describe('FeedScreen', () => {
     mockGetArticles.mockRejectedValueOnce(new Error('Server unavailable'))
     renderFeed()
 
-    expect(await screen.findByText('Something went wrong')).toBeTruthy()
-    expect(screen.getByText('Server unavailable')).toBeTruthy()
+    expect(await screen.findByText("Couldn't load the news")).toBeTruthy()
+    expect(screen.getByText('Check your internet connection and try again.')).toBeTruthy()
     expect(screen.queryByTestId('error-column')).toBeNull()
 
     mockGetFeedSections.mockResolvedValueOnce(sectioned(makeArticles(6)))
@@ -373,7 +373,7 @@ describe('FeedScreen', () => {
     mockGetArticles.mockRejectedValueOnce(new Error('Server unavailable'))
     renderFeed()
 
-    expect(await screen.findByText('Something went wrong')).toBeTruthy()
+    expect(await screen.findByText("Couldn't load the news")).toBeTruthy()
     const column = screen.getByTestId('error-column')
     expect(StyleSheet.flatten(column.props.style).maxWidth).toBe(ERROR_COLUMN_MAX)
   })

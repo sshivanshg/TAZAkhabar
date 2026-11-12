@@ -22,6 +22,8 @@ import { useTheme } from '../preferences/ThemePreferenceContext'
 import { getShadows, HIT_TARGET, radius, space, type AppColors } from '../theme/tokens'
 import { iconStroke } from '../theme/categoryIcons'
 import { filterCities } from './CitySearch'
+import { useMotionTransition } from '../hooks/usePrefersReducedMotion'
+import { hapticSelection } from '../lib/haptics'
 
 export type CityPickerAnchor = {
   x: number
@@ -112,6 +114,7 @@ export function CityPickerDropdown({
   const [query, setQuery] = useState('')
   const returnFocusRef = useRef<HTMLElement | null>(null)
   const { colors, shadows } = useTheme()
+  const motionTransition = useMotionTransition({ type: 'timing', duration: MOTION_MS })
   const styles = useMemo(() => createStyles(colors, shadows), [colors, shadows])
 
   const matches = useMemo(() => filterCities(cities, query), [cities, query])
@@ -176,7 +179,7 @@ export function CityPickerDropdown({
           <MotiView
             from={{ opacity: 0 }}
             animate={{ opacity: open ? 1 : 0 }}
-            transition={{ type: 'timing', duration: MOTION_MS }}
+            transition={motionTransition}
             style={styles.scrim}
           />
         </Pressable>
@@ -192,7 +195,7 @@ export function CityPickerDropdown({
                 ? { opacity: 0, translateY: 16 }
                 : { opacity: 0 }
           }
-          transition={{ type: 'timing', duration: MOTION_MS }}
+          transition={motionTransition}
           style={[
             styles.panel,
             effectiveSheet
@@ -264,7 +267,10 @@ export function CityPickerDropdown({
                 return (
                   <Pressable
                     key={slug || `${cityLine(city)}-${index}`}
-                    onPress={() => onSelect(city)}
+                    onPress={() => {
+                      hapticSelection()
+                      onSelect(city)
+                    }}
                     disabled={saving || !slug}
                     accessibilityRole="menuitem"
                     accessibilityState={{ selected }}

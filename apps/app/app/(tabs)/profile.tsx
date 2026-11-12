@@ -134,7 +134,7 @@ function ProfileBody() {
             color={colors.text}
             accessibilityRole="header"
           >
-            Profile
+            Settings
           </Text>
           <Text
             fontSize={typography.summary.fontSize}
@@ -361,6 +361,7 @@ function ProfileBody() {
               style={styles.alertPrimary}
               disabled={notificationBusy}
             />
+            {notificationStatus === 'granted' ? (
             <SecondaryButton
               label="Turn off"
               onPress={() => {
@@ -380,8 +381,9 @@ function ProfileBody() {
               accessibilityLabel="Turn off alerts"
               style={styles.alertSecondary}
               outline
-              disabled={notificationBusy || notificationStatus !== 'granted'}
+              disabled={notificationBusy}
             />
+            ) : null}
           </View>
         </Section>
 

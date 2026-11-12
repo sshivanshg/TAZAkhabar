@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   FlatList,
   Image,
+  Linking,
   Platform,
   Pressable,
   RefreshControl,
@@ -15,7 +16,7 @@ import {
   type ViewToken,
 } from 'react-native'
 import { StatusBar } from 'expo-status-bar'
-import { useLocalSearchParams, useRouter } from 'expo-router'
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router'
 import Copy from 'lucide-react-native/icons/copy'
 import MessageCircle from 'lucide-react-native/icons/message-circle'
 import type { ArticleResponse } from '@tazakhabar/shared-types'
@@ -30,7 +31,9 @@ import {
   FeedSentinel,
 } from '../../src/components/article'
 import { ScreenErrorBoundary } from '../../src/components/ScreenErrorBoundary'
+import { ARTICLE_COPY } from '../../src/components/article/copy'
 import { BottomSheet } from '../../src/components/ui/BottomSheet'
+import { showToast } from '../../src/components/ui/Toast'
 import { useLanguagePreference } from '../../src/preferences/LanguagePreferenceContext'
 import { useTheme } from '../../src/preferences/ThemePreferenceContext'
 import {
@@ -48,14 +51,19 @@ import {
   type ReaderColors,
 } from '../../src/theme/readerTokens'
 import { todayCityIso } from '../../src/utils/cityCalendar'
-import { formatLocationLabel } from '../../src/utils/formatLocationLabel'
 import { openArticleSource } from '../../src/utils/openArticleSource'
 import {
   articleShareUrl,
   copyTextToClipboard,
   shareArticle,
 } from '../../src/utils/shareArticle'
-import { shareArticleToWhatsApp, isHttpsUrl } from '../../src/utils/shareToWhatsApp'
+import {
+  canOpenWhatsApp,
+  formatWhatsAppShareText,
+  isHttpsUrl,
+  shareArticleToWhatsApp,
+  whatsAppShareUrl,
+} from '../../src/utils/shareToWhatsApp'
 import { replaceArticlePathId } from '../../src/utils/syncArticleUrl'
 import { attachWebArticlePaging } from '../../src/utils/pagedArticleScroll'
 import { setWebRobots } from '../../src/utils/setWebRobots'
@@ -86,6 +94,15 @@ function paramsLookComplete(params: {
 
 const HERO_ELEVATE_AFTER = 120
 
+/** Primary share: open WhatsApp directly when installed, else the existing share path. */
+async function openWhatsAppShare(article: ArticleResponse): Promise<void> {
+  if (Platform.OS !== 'web' && (await canOpenWhatsApp())) {
+    await Linking.openURL(whatsAppShareUrl(formatWhatsAppShareText(article)))
+    return
+  }
+  await shareArticleToWhatsApp(article)
+}
+
 function ArticleFeedBody() {
   const router = useRouter()
   const insets = useSafeAreaInsets()
@@ -110,7 +127,7 @@ function ArticleFeedBody() {
   const routeCity = paramString(raw.city)
   const feedCategory = paramString(raw.feedCategory)
   const routeDate = paramString(raw.date)
-  const { preferredLanguage } = useLanguagePreference()
+  const { preferredLanguage, setPreferredLanguage } = useLanguagePreference()
   const { readerColors } = useTheme()
   const styles = useMemo(() => createStyles(readerColors), [readerColors])
   const lang = preferredLanguage
@@ -490,17 +507,33 @@ function ArticleFeedBody() {
       if (!snapshot) {
         return
       }
-      const currently = bookmarkedIds.has(article.id)
-      if (currently) {
-        await removeBookmark(article.id)
+      const articleId = article.id
+      const markSaved = (saved: boolean) =>
         setBookmarkedIds((prev) => {
           const next = new Set(prev)
-          next.delete(article.id!)
+          if (saved) next.add(articleId)
+          else next.delete(articleId)
           return next
         })
-      } else {
-        await addBookmark(snapshot)
-        setBookmarkedIds((prev) => new Set(prev).add(article.id!))
+      const currently = bookmarkedIds.has(articleId)
+      try {
+        if (currently) {
+          await removeBookmark(articleId)
+          markSaved(false)
+          showToast({
+            message: ARTICLE_COPY.toastRemoved,
+            actionLabel: ARTICLE_COPY.toastUndo,
+            onAction: () => {
+              void addBookmark(snapshot).then(() => markSaved(true))
+            },
+          })
+        } else {
+          await addBookmark(snapshot)
+          markSaved(true)
+          showToast({ message: ARTICLE_COPY.toastSaved })
+        }
+      } catch {
+        showToast({ message: ARTICLE_COPY.toastSaveFailed })
       }
     },
     [bookmarkedIds, citySlug],
@@ -555,7 +588,6 @@ function ArticleFeedBody() {
   const loadedCount = visibleStack.length
   const scrollProgress =
     loadedCount <= 1 ? 0 : activeLocalIndex / Math.max(1, loadedCount - 1)
-  const cityLabel = formatLocationLabel(citySlug)
   const pageHeight = viewportHeight > 0 ? viewportHeight : windowHeight
   const padTop = articleChromeTop(insets.top)
   const padBottom = articleChromeBottom(insets.bottom)
@@ -658,6 +690,8 @@ function ArticleFeedBody() {
       {...(Platform.OS === 'web' ? ({ role: 'main' } as object) : null)}
     >
       <StatusBar style="dark" />
+      {/* iOS edge/full-screen swipe-back pops to the screen that opened the story. */}
+      <Stack.Screen options={{ gestureEnabled: true, fullScreenGestureEnabled: true }} />
       <FlatList
         ref={listRef}
         testID="article-feed"
@@ -675,7 +709,8 @@ function ArticleFeedBody() {
             >
               <ArticleStory
                 article={item}
-                cityLabel={cityLabel}
+                citySlug={citySlug}
+                showNextCue={itemIndex < visibleStack.length - 1 || hasMore}
                 priorityImage={itemIndex <= 1}
                 bodyLoading={
                   item.id != null &&
@@ -755,10 +790,15 @@ function ArticleFeedBody() {
 
       <ArticleBottomBar
         bookmarked={activeArticle?.id != null && bookmarkedIds.has(activeArticle.id)}
+        onBack={onBack}
+        language={lang}
+        onLanguageChange={setPreferredLanguage}
         onShare={() => {
-          if (activeArticle) {
-            void onShare(activeArticle)
+          if (!activeArticle) {
+            return
           }
+          // WhatsApp is the primary share; fall back to the generic share path.
+          openWhatsAppShare(activeArticle).catch(() => void onShare(activeArticle))
         }}
         onSave={() => {
           if (activeArticle) {

@@ -12,6 +12,9 @@ import {
   iconInactiveColor,
   iconStroke,
 } from '../../src/theme/categoryIcons'
+import { useMotionTransition, usePrefersReducedMotion } from '../../src/hooks/usePrefersReducedMotion'
+import { hapticLight } from '../../src/lib/haptics'
+import { cardPress } from '../../src/lib/pressFeedback'
 import { type FeedCategory, radius, space, type AppColors } from '../../src/theme/tokens'
 
 export default function CategoriesScreen() {
@@ -20,6 +23,8 @@ export default function CategoriesScreen() {
   const { colors } = useTheme()
   const styles = useMemo(() => createStyles(colors), [colors])
   const [blockCategoryName, setBlockCategoryName] = useState<string | null>(null)
+  const reduced = usePrefersReducedMotion()
+  const screenTransition = useMotionTransition({ type: 'timing', duration: 220 })
 
   const categories = useMemo(
     () => TOPIC_CATEGORIES.filter((c) => !prefs.isCategoryBlocked(c)),
@@ -34,7 +39,7 @@ export default function CategoriesScreen() {
     <MotiView
       from={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      transition={{ type: 'timing', duration: 220 }}
+      transition={screenTransition}
       style={styles.root}
     >
       <FlatList
@@ -50,19 +55,17 @@ export default function CategoriesScreen() {
         }
         renderItem={({ item, index }) => {
           const Icon = categoryIcon(item)
-          return (
-            <MotiView
-              from={{ opacity: 0, translateY: 8 }}
-              animate={{ opacity: 1, translateY: 0 }}
-              transition={{ type: 'timing', duration: 220, delay: Math.min(index * 40, 200) }}
-            >
+          const row = (
               <Pressable
                 onPress={() => openCategory(item)}
-                onLongPress={() => setBlockCategoryName(item)}
+                onLongPress={() => {
+                  hapticLight()
+                  setBlockCategoryName(item)
+                }}
                 delayLongPress={380}
                 accessibilityRole="button"
                 accessibilityLabel={`${item} category. Long press to block.`}
-                style={({ pressed }) => [styles.row, pressed ? styles.rowPressed : null]}
+                style={({ pressed }) => [styles.row, cardPress(pressed)]}
               >
                 <View style={styles.iconWrap}>
                   <Icon size={22} strokeWidth={iconStroke} color={iconInactiveColor(colors)} />
@@ -80,6 +83,18 @@ export default function CategoriesScreen() {
                   Open
                 </Text>
               </Pressable>
+          )
+          // M9: stagger only the first rows; reduced motion renders them static.
+          if (reduced || index >= 6) {
+            return row
+          }
+          return (
+            <MotiView
+              from={{ opacity: 0, translateY: 8 }}
+              animate={{ opacity: 1, translateY: 0 }}
+              transition={{ type: 'timing', duration: 220, delay: index * 40 }}
+            >
+              {row}
             </MotiView>
           )
         }}

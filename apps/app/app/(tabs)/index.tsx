@@ -34,6 +34,8 @@ import { HomeTopBar } from '../../src/components/HomeTopBar'
 import { ScreenErrorBoundary } from '../../src/components/ScreenErrorBoundary'
 import { TabScreenShell } from '../../src/components/TabScreenShell'
 import { ErrorState } from '../../src/components/ui/ErrorState'
+import { OfflineBanner } from '../../src/components/OfflineBanner'
+import { readOfflineFeed } from '../../src/lib/feedCache'
 import { EmptyState } from '../../src/components/ui/EmptyState'
 import { useFeedPreferences } from '../../src/preferences/FeedPreferencesContext'
 import { useLanguagePreference } from '../../src/preferences/LanguagePreferenceContext'
@@ -56,7 +58,6 @@ import { getPersonalizationId } from '../../src/storage/personalizationId'
 import {
   feedCacheKey,
   isFeedCacheFresh,
-  readFeedCache,
   writeFeedCache,
 } from '../../src/storage/feedCache'
 import {
@@ -107,6 +108,16 @@ type WebHoverHandlers = {
   onMouseEnter?: () => void
   onMouseLeave?: () => void
 }
+
+/** English for now; extracted to the string catalog in phase 3. */
+const HOME_COPY = {
+  errorTitle: "Couldn't load the news",
+  errorMessage: 'Check your internet connection and try again.',
+  retry: 'Try again',
+  manageTopics: 'Manage topics',
+  topicShown: 'Shown · tap to hide',
+  topicHidden: 'Hidden · tap to show',
+} as const
 
 const EMPTY_CITIES: CityResponse[] = []
 const EMPTY_ARTICLES: ArticleResponse[] = []
@@ -193,6 +204,7 @@ function HomeFeedBody() {
   const cityButtonRef = useRef<View>(null)
   const [blockSourceName, setBlockSourceName] = useState<string | null>(null)
   const [blockCategoryName, setBlockCategoryName] = useState<string | null>(null)
+  const [manageTopicsOpen, setManageTopicsOpen] = useState(false)
   const [bookmarkedIds, setBookmarkedIds] = useState<Set<number>>(new Set())
   const offsetRef = useRef(0)
   const loadingMoreLock = useRef(false)
@@ -301,7 +313,8 @@ function HomeFeedBody() {
         setAppendError(false)
         offsetRef.current = 0
 
-        const cached = await readFeedCache(cacheKey)
+        // Cached copies older than 7 days are never shown (article retention).
+        const cached = await readOfflineFeed(cacheKey)
         if (gen !== loadGenRef.current) {
           return
         }
@@ -768,6 +781,8 @@ function HomeFeedBody() {
           selected={category}
           onSelect={setCategory}
           categories={visibleCategories}
+          onManageTopics={() => setManageTopicsOpen(true)}
+          manageTopicsLabel={HOME_COPY.manageTopics}
           onLongPressCategory={(chip) => {
             if (chip !== 'All') {
               setBlockCategoryName(chip)
@@ -795,16 +810,19 @@ function HomeFeedBody() {
             transition={{ type: 'timing', duration: 220 }}
             style={{ flex: 1 }}
           >
+            {error && articles.length > 0 ? (
+              <OfflineBanner onRetry={() => void loadPage('replace')} />
+            ) : null}
             {error && articles.length === 0 ? (
               <View
                 testID={expanded ? 'error-column' : undefined}
                 style={expanded ? styles.errorColumn : undefined}
               >
                 <ErrorState
-                  title="Something went wrong"
-                  message={error}
+                  title={HOME_COPY.errorTitle}
+                  message={HOME_COPY.errorMessage}
                   onRetry={() => void loadPage('replace')}
-                  retryLabel="Try again"
+                  retryLabel={HOME_COPY.retry}
                 />
               </View>
             ) : (
@@ -1061,6 +1079,31 @@ function HomeFeedBody() {
           onClose={() => setActionArticle(null)}
         />
       )}
+
+      <BottomSheet
+        visible={manageTopicsOpen}
+        title={HOME_COPY.manageTopics}
+        showCancel
+        items={FEED_CATEGORIES.filter((c) => c !== 'All').map((c) => {
+          const hidden = prefs.blockedCategories.includes(c)
+          return {
+            key: c,
+            label: FEED_CATEGORY_LABELS[c],
+            detail: hidden ? HOME_COPY.topicHidden : HOME_COPY.topicShown,
+            onPress: () => {
+              if (hidden) {
+                prefs.unblockCategory(c)
+              } else {
+                prefs.blockCategory(c)
+                if (category === c) {
+                  setCategory('All')
+                }
+              }
+            },
+          }
+        })}
+        onClose={() => setManageTopicsOpen(false)}
+      />
 
       <ConfirmModal
         visible={blockSourceName != null}

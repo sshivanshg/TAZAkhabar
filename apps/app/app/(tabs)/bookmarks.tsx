@@ -16,8 +16,10 @@ import { TabScreenShell } from '../../src/components/TabScreenShell'
 import type { BottomSheetSection } from '../../src/components/ui/BottomSheet'
 import { EmptyState } from '../../src/components/ui/EmptyState'
 import { useTheme } from '../../src/preferences/ThemePreferenceContext'
+import { showToast } from '../../src/components/ui/Toast'
 import {
   type BookmarkSnapshot,
+  addBookmark,
   getBookmarks,
   removeBookmark,
 } from '../../src/storage/bookmarks'
@@ -25,6 +27,13 @@ import { radius, space, type AppColors } from '../../src/theme/tokens'
 import { useTabBarClearance } from '../../src/theme/useTabBarClearance'
 import { isDesktopLayout, useBreakpoint } from '../../src/hooks/useBreakpoint'
 import { articleRouteParams } from '../../src/utils/articleRouteParams'
+
+/** Bookmarks copy. English for now; phase 3 moves these into the string catalog. */
+const BOOKMARKS_COPY = {
+  removed: 'Removed',
+  undo: 'Undo',
+  removeFailed: 'Couldn’t remove. Try again.',
+} as const
 
 export default function BookmarksScreen() {
   return (
@@ -77,10 +86,25 @@ function BookmarksBody() {
 
   const onRemove = useCallback(
     async (id: number) => {
-      await removeBookmark(id)
+      const snapshot = bookmarks.find((item) => item.id === id)
+      try {
+        await removeBookmark(id)
+      } catch {
+        showToast({ message: BOOKMARKS_COPY.removeFailed })
+        return
+      }
       await reload()
+      showToast({
+        message: BOOKMARKS_COPY.removed,
+        actionLabel: snapshot ? BOOKMARKS_COPY.undo : undefined,
+        onAction: snapshot
+          ? () => {
+              void addBookmark(snapshot).then(reload)
+            }
+          : undefined,
+      })
     },
-    [reload],
+    [bookmarks, reload],
   )
 
   const closeStoryActions = useCallback(() => {

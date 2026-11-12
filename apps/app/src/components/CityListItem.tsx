@@ -33,9 +33,12 @@ type WebPressableState = PressableStateCallbackType & {
 }
 
 function cityLabel(city: CityResponse): { name: string; state: string } {
+  const name = city.name?.trim() || 'Unknown city'
+  const state = city.state?.trim() || ''
+  // "All India, India" reads twice; drop the state when the name already says it.
   return {
-    name: city.name?.trim() || 'Unknown city',
-    state: city.state?.trim() || '',
+    name,
+    state: state && name.toLowerCase().includes(state.toLowerCase()) ? '' : state,
   }
 }
 
