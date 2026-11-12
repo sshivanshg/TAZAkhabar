@@ -1,7 +1,7 @@
 # Reader app
 
 > **Living doc** — update when Expo routes, city/feed/share behavior, or desktop web layer change.  
-> **Last verified against:** 2026-09-16 (Profile contact section for Play News policy)
+> **Last verified against:** 2026-11-12 (in-app Contact us screen for Play News policy)
 
 ## Purpose
 
@@ -55,6 +55,7 @@ flowchart LR
 | `(tabs)/search.tsx` | Search / Discover (hidden from tab bar; opened from home search) |
 | `(tabs)/bookmarks.tsx` | Local bookmarks |
 | `(tabs)/profile.tsx` | Settings: city, appearance (Light/Dark/System), language, blocks, alerts, contact |
+| `contact.tsx` | Contact us stack screen: developer name, `EXPO_PUBLIC_CONTACT_EMAIL` (default contact@khabro.in), site /contact link, aggregator note. Reached from Settings (Contact + About cards) and the desktop sidebar footer |
 | `(tabs)/categories.tsx` | Hidden (`href: null`) |
 | `article/[id].tsx` | Continuous editorial article feed; hydrates `body` via `getArticle`; Back returns to Home; article pages render as inset card sheets with simplified floating top/bottom chrome |
 | `feed.tsx` | Legacy redirect → tabs |
@@ -221,7 +222,7 @@ Manual verification still required before claiming a comprehensive a11y sweep is
 - Appearance: Light / Dark / System (default Light), persisted in AsyncStorage; Profile controls it. Brand accent fill stays `#155EEF`.
 - No login — city, theme, first-page feed cache, and the anonymous personalization id are device-local only.
 - Location permission is foreground-only and user initiated. Never request it at boot or make it mandatory for reading.
-- Contact, privacy, support, terms, and corrections live on the standalone public website and open externally from the reader. Profile also lists the public contact email directly for store-review visibility.
+- Contact, privacy, support, terms, and corrections live on the standalone public website and open externally from the reader. The in-app `/contact` screen (config in `src/config/contact.ts`) and Profile also show the contact email directly for Play News policy review.
 - Feed cache: first page only; TTL 45 minutes; max 16 key entries (LRU). Fresh cache skips the network until pull-to-refresh or key change (city / category / language / Discover `q`). Stale cache paints then revalidates.
 - List payloads omit `body`; the reader shows full plain-text `body` when `GET /api/articles/{id}` returns it, otherwise the summary. For translated reads, the API suppresses original-language `body` so the story shows translated headline/summary rather than mixing languages.
 - The article screen uses Reels-style vertical paging: each story is one viewport-tall page so two stories never share the screen. A scroll gesture snaps to the next story with a slower eased transition on web (~700ms; instant when the reader prefers reduced motion). Native paging uses the normal deceleration rate rather than the snappy `fast` default. Short stories pad to fill the page; longer stories scroll inside that page. Story content now sits inside an inset rounded card sheet on the Khabro canvas so the detail view feels aligned with the feed cards. Publisher download CTAs such as “Download in high quality” are stripped from body copy. Later stories append as the reader approaches the end. The FlatList is the only paging surface (`flex: 1` inside an overflow-clipped root); the sticky top bar and compact bottom action bar sit outside that list (viewport-fixed on web) so chrome does not move with story content. Share and Save live only in that bottom bar — not duplicated in the story body.

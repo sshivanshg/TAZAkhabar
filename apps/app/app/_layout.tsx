@@ -52,6 +52,7 @@ function RootNavigation() {
           <Stack.Screen name="language" options={{ headerShown: false, animation: 'fade' }} />
           <Stack.Screen name="(tabs)" options={{ headerShown: false, animation: 'fade' }} />
           <Stack.Screen name="feed" options={{ headerShown: false }} />
+          <Stack.Screen name="contact" options={{ headerShown: true, title: 'Contact us' }} />
           <Stack.Screen
             name="city"
             options={{

@@ -1,7 +1,7 @@
 # Marketing site
 
 > **Living doc** — update when the public website, legal routes, or reader handoff changes.  
-> **Last verified against:** 2026-09-16 (public contact route and support email for Play News policy)
+> **Last verified against:** 2026-11-12 (/contact adds developer name + aggregator note for Play News policy)
 
 ## Purpose
 
