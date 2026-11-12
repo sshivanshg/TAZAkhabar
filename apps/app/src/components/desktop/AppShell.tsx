@@ -7,6 +7,9 @@ import { SIDEBAR_WIDTH, type AppColors } from '../../theme/tokens'
 import { ContentRail } from './ContentRail'
 import { DesktopSidebar } from './DesktopSidebar'
 
+/** Onboarding routes render full-bleed, without the navigation sidebar. */
+const BARE_ROUTES = new Set(['/language'])
+
 export { SIDEBAR_WIDTH }
 
 /**
@@ -22,9 +25,6 @@ export function useShellSidebarInset(): number {
 type Props = {
   children: ReactNode
 }
-
-/** Onboarding routes render full-bleed, without the navigation sidebar. */
-const BARE_ROUTES = new Set(['/language'])
 
 /**
  * Root layout switch. Phone returns children unchanged.

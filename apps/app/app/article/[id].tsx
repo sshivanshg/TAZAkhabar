@@ -169,6 +169,9 @@ function ArticleFeedBody() {
   // events for page 1, which previously advanced to — and rewrote the URL to —
   // the NEXT story.
   const userScrolledRef = useRef(false)
+  // Bumped on lang reset / feed reload so late hydrate results are dropped.
+  const hydrateGenRef = useRef(0)
+  const [stackEpoch, setStackEpoch] = useState(0)
   const noticeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => setWebRobots('noindex,nofollow'), [])
@@ -248,8 +251,9 @@ function ArticleFeedBody() {
       // Count only feed-page items: a prepended deep-linked story is not part of the page.
       offsetRef.current = first.items?.length ?? 0
       userScrolledRef.current = false
-      requestAnimationFrame(() => listRef.current?.scrollToOffset({ offset: 0, animated: false }))
+      hydrateGenRef.current += 1
       hydratedIdsRef.current = new Set()
+      setStackEpoch((n) => n + 1)
       setStack(items)
       setFeedStart(safeStart)
       setHasMore(items.length < pageTotal)
@@ -322,10 +326,22 @@ function ArticleFeedBody() {
   const visibleStack = useMemo(() => stack.slice(feedStart), [stack, feedStart])
 
   useEffect(() => {
+    hydrateGenRef.current += 1
     hydratedIdsRef.current = new Set()
     setLoadingBodyIds(new Set())
     setFailedBodyIds(new Set())
   }, [lang])
+
+  // After a new stack commits, pin the list to the opened story (page 0).
+  useEffect(() => {
+    if (stackEpoch > 0) {
+      listRef.current?.scrollToOffset({ offset: 0, animated: false })
+    }
+  }, [stackEpoch])
+
+  const markUserScroll = useCallback(() => {
+    userScrolledRef.current = true
+  }, [])
 
   const hydrateArticle = useCallback(
     async (article: ArticleResponse) => {
@@ -341,16 +357,25 @@ function ArticleFeedBody() {
       }
       setFailedBodyIds(drop)
       setLoadingBodyIds((prev) => new Set(prev).add(articleId))
+      const gen = hydrateGenRef.current
       try {
         const full = await apiClient.getArticle(String(articleId), lang)
+        if (gen !== hydrateGenRef.current) {
+          return
+        }
         const fullId = full.id ?? articleId
         setStack((prev) => prev.map((item) => (item.id === fullId ? { ...item, ...full } : item)))
       } catch {
+        if (gen !== hydrateGenRef.current) {
+          return
+        }
         // Only a failed fetch is an error; a 200 with no body is a summary-only story.
         hydratedIdsRef.current.delete(articleId)
         setFailedBodyIds((prev) => new Set(prev).add(articleId))
       } finally {
-        setLoadingBodyIds(drop)
+        if (gen === hydrateGenRef.current) {
+          setLoadingBodyIds(drop)
+        }
       }
     },
     [lang],
@@ -499,9 +524,6 @@ function ArticleFeedBody() {
 
   const onScroll = useCallback((event: NativeSyntheticEvent<NativeScrollEvent>) => {
     const y = event.nativeEvent.contentOffset.y
-    if (y > 8) {
-      userScrolledRef.current = true
-    }
     const elevated = y > HERO_ELEVATE_AFTER
     if (elevated !== headerElevatedRef.current) {
       headerElevatedRef.current = elevated
@@ -556,10 +578,31 @@ function ArticleFeedBody() {
       if (!(el instanceof HTMLElement)) {
         return false
       }
-      cleanup = attachWebArticlePaging(el, {
+      const detachPaging = attachWebArticlePaging(el, {
         getPageHeight: () => pageHeightRef.current,
         getPageCount: () => pageCountRef.current,
       })
+      // Only real input marks a user scroll — never scroll position, which
+      // layout/anchoring can move on its own.
+      const mark = () => {
+        userScrolledRef.current = true
+      }
+      const onKey = (event: KeyboardEvent) => {
+        if (['ArrowDown', 'ArrowUp', 'PageDown', 'PageUp', ' ', 'Home', 'End'].includes(event.key)) {
+          mark()
+        }
+      }
+      el.addEventListener('wheel', mark, { passive: true })
+      el.addEventListener('touchstart', mark, { passive: true })
+      el.addEventListener('pointerdown', mark, { passive: true })
+      window.addEventListener('keydown', onKey)
+      cleanup = () => {
+        detachPaging()
+        el.removeEventListener('wheel', mark)
+        el.removeEventListener('touchstart', mark)
+        el.removeEventListener('pointerdown', mark)
+        window.removeEventListener('keydown', onKey)
+      }
       return true
     }
     const tryAttach = () => {
@@ -680,6 +723,8 @@ function ArticleFeedBody() {
           index,
         })}
         onScroll={onScroll}
+        onScrollBeginDrag={markUserScroll}
+        onMomentumScrollBegin={markUserScroll}
         scrollEventThrottle={16}
         refreshControl={
           <RefreshControl
@@ -783,7 +828,7 @@ function createStyles(c: ReaderColors) {
   list: {
     flex: 1,
     ...(Platform.OS === 'web'
-      ? ({ scrollSnapType: 'y mandatory' } as object)
+      ? ({ scrollSnapType: 'y mandatory', overflowAnchor: 'none' } as object)
       : null),
   },
   center: {

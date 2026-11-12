@@ -308,4 +308,34 @@ describe('ArticleScreen', () => {
     expect(await screen.findByText('Full story from the publisher.')).toBeTruthy()
     expect(screen.queryByText('Unable to load this story.')).toBeNull()
   })
+
+  it('drops a stale hydrate result that settles after a feed reload', async () => {
+    mockGetArticles.mockResolvedValue({
+      items: [{ ...listed, summary: '' }],
+      total: 1,
+      offset: 0,
+      limit: 20,
+    })
+    let rejectStale: (err: Error) => void = () => {}
+    mockGetArticle.mockImplementationOnce(
+      () => new Promise((_, reject) => {
+        rejectStale = reject
+      }),
+    )
+    mockGetArticle.mockImplementation(() => new Promise(() => {}))
+    renderArticle()
+
+    await screen.findByText('Fetched headline')
+    await waitFor(() => expect(mockGetArticle).toHaveBeenCalledTimes(1))
+
+    const feed = screen.UNSAFE_getByType(FlatList)
+    await act(async () => {
+      await feed.props.refreshControl.props.onRefresh()
+    })
+    await act(async () => {
+      rejectStale(new Error('late network failure'))
+    })
+
+    expect(screen.queryByText('Unable to load this story.')).toBeNull()
+  })
 })
